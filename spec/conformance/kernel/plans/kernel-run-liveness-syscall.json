@@ -1,0 +1,1636 @@
+{
+  "planId": "tuvren.kernel.run-liveness.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.syscall", "kernel.run-liveness"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.run-liveness.lease_renewal",
+      "claimIds": [
+        "kernel.syscall.run-liveness.lease_renewal",
+        "kernel.run-liveness.lease_renewal",
+        "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc003",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadrenewal",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadrenewal",
+            "schemaId": "dc003",
+            "initialBranchId": "branchrenewal"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadrenewal",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnrenewal",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnrenewal",
+            "threadId": "threadrenewal",
+            "branchId": "branchrenewal",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadrenewal.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnrenewal",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runrenewal",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runrenewal",
+              "turnId": "turnrenewal",
+              "branchId": "branchrenewal",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadrenewal.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 20
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runrenewal",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "renew",
+          "operation": "kernel.runLiveness.renewLease",
+          "arguments": {
+            "runId": "runrenewal",
+            "executionOwnerId": "owner-primary",
+            "fencingToken": {
+              "$ref": "capture.runrenewal.fencingToken"
+            },
+            "nextLeaseExpiresAtMs": 40
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "renew",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "wrongOwner",
+          "operation": "kernel.runLiveness.renewLease",
+          "arguments": {
+            "runId": "runrenewal",
+            "executionOwnerId": "owner-secondary",
+            "fencingToken": {
+              "$ref": "capture.renew.fencingToken"
+            },
+            "nextLeaseExpiresAtMs": 50
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [
+            {
+              "kind": "schemaValid",
+              "path": "$.state.adapterError",
+              "schema": "$.fixture.expected.wrongOwner"
+            }
+          ]
+        },
+        {
+          "stepId": "staleToken",
+          "operation": "kernel.runLiveness.renewLease",
+          "arguments": {
+            "runId": "runrenewal",
+            "executionOwnerId": "owner-primary",
+            "fencingToken": {
+              "$ref": "capture.runrenewal.fencingToken"
+            },
+            "nextLeaseExpiresAtMs": 50
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [
+            {
+              "kind": "schemaValid",
+              "path": "$.state.adapterError",
+              "schema": "$.fixture.expected.staleToken"
+            }
+          ]
+        },
+        {
+          "stepId": "backend25",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker25",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "afterOriginalExpiry",
+          "operation": "kernel.runLiveness.listExpired",
+          "arguments": {
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "afterOriginalExpiry",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend41",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 41
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker41",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 41
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "afterRenewedExpiry",
+          "operation": "kernel.runLiveness.listExpired",
+          "arguments": {
+            "nowMs": 41
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "afterRenewedExpiry",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.renew.result.leaseExpiresAtMs",
+          "equals": 40
+        },
+        {
+          "kind": "schemaValid",
+          "path": "$.state.trace.wrongOwner.state.adapterError",
+          "schema": "$.fixture.expected.wrongOwner"
+        },
+        {
+          "kind": "schemaValid",
+          "path": "$.state.trace.staleToken.state.adapterError",
+          "schema": "$.fixture.expected.staleToken"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.renew.result.fencingToken",
+          "notEqualsPath": "$.result.trace.runrenewal.result.fencingToken"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.runrenewal.result.status",
+          "equals": "running"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.runrenewal.result.executionOwnerId",
+          "equals": "owner-primary"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.afterOriginalExpiry.result",
+          "length": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.afterRenewedExpiry.result",
+          "length": 1
+        }
+      ],
+      "evidence": [
+        "trace.renew.result",
+        "trace.afterOriginalExpiry.result",
+        "trace.afterRenewedExpiry.result"
+      ],
+      "capabilities": ["kernel.protocol", "kernel.run-liveness"],
+      "fixture": "errors"
+    },
+    {
+      "checkId": "kernel.syscall.run-liveness.expired_listing",
+      "claimIds": [
+        "kernel.syscall.run-liveness.expired_listing",
+        "kernel.run-liveness.expired_listing",
+        "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+        "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc003",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadexpired",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadexpired",
+            "schemaId": "dc003",
+            "initialBranchId": "branchexpired"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadexpired",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnexpired",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnexpired",
+            "threadId": "threadexpired",
+            "branchId": "branchexpired",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadexpired.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnexpired",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runexpired",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runexpired",
+              "turnId": "turnexpired",
+              "branchId": "branchexpired",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadexpired.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 20
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runexpired",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadfresh",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadfresh",
+            "schemaId": "dc003",
+            "initialBranchId": "branchfresh"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadfresh",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnfresh",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnfresh",
+            "threadId": "threadfresh",
+            "branchId": "branchfresh",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadfresh.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnfresh",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runfresh",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runfresh",
+              "turnId": "turnfresh",
+              "branchId": "branchfresh",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadfresh.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 50
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runfresh",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadpaused",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadpaused",
+            "schemaId": "dc003",
+            "initialBranchId": "branchpaused"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadpaused",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnpaused",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnpaused",
+            "threadId": "threadpaused",
+            "branchId": "branchpaused",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadpaused.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnpaused",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runpaused",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runpaused",
+              "turnId": "turnpaused",
+              "branchId": "branchpaused",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadpaused.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 20
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runpaused",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "paused",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "runpaused",
+            "status": "paused"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "paused",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadfailed",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadfailed",
+            "schemaId": "dc003",
+            "initialBranchId": "branchfailed"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadfailed",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnfailed",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnfailed",
+            "threadId": "threadfailed",
+            "branchId": "branchfailed",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadfailed.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnfailed",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runfailed",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runfailed",
+              "turnId": "turnfailed",
+              "branchId": "branchfailed",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadfailed.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 20
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runfailed",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "failed",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "runfailed",
+            "status": "failed"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "failed",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadcompleted",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadcompleted",
+            "schemaId": "dc003",
+            "initialBranchId": "branchcompleted"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadcompleted",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turncompleted",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turncompleted",
+            "threadId": "threadcompleted",
+            "branchId": "branchcompleted",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadcompleted.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turncompleted",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runcompleted",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runcompleted",
+              "turnId": "turncompleted",
+              "branchId": "branchcompleted",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadcompleted.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 20
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runcompleted",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "completed",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "runcompleted",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "completed",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "beforeExpiry",
+          "operation": "kernel.runLiveness.listExpired",
+          "arguments": {
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "beforeExpiry",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend25",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker25",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "expired",
+          "operation": "kernel.runLiveness.listExpired",
+          "arguments": {
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "expired",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pausedStillBlocks",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runblocked",
+              "turnId": "turnpaused",
+              "branchId": "branchpaused",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadpaused.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-secondary",
+              "leaseExpiresAtMs": 50
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.run-liveness.expired_listing",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_branch_already_active"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.beforeExpiry.result",
+          "length": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.expired.result",
+          "length": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.expired.result",
+          "length": 1,
+          "every": {
+            "field": "$.runId",
+            "equals": "runexpired"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.expired.result",
+          "length": 1,
+          "every": {
+            "field": "$.status",
+            "equals": "running"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.pausedStillBlocks.state.adapterError.code",
+          "equals": "kernel_runtime_branch_already_active"
+        }
+      ],
+      "evidence": [
+        "trace.beforeExpiry.result",
+        "trace.expired.result",
+        "trace.pausedStillBlocks.state.adapterError.code"
+      ],
+      "capabilities": ["kernel.protocol", "kernel.run-liveness"]
+    },
+    {
+      "checkId": "kernel.syscall.run-liveness.stale_preemption",
+      "claimIds": [
+        "kernel.syscall.run-liveness.stale_preemption",
+        "kernel.run-liveness.stale_preemption",
+        "kernel-restart-af.expired-running-requires-preemption"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc003",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadpreemption",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadpreemption",
+            "schemaId": "dc003",
+            "initialBranchId": "branchpreemption"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadpreemption",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnpreemption",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnpreemption",
+            "threadId": "threadpreemption",
+            "branchId": "branchpreemption",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadpreemption.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnpreemption",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runpreemption",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runpreemption",
+              "turnId": "turnpreemption",
+              "branchId": "branchpreemption",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadpreemption.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 20
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runpreemption",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "begin",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "runpreemption",
+            "stepId": "iterate"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "begin",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "stage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "runpreemption",
+            "blob": {
+              "$bytes": "617373697374616e74"
+            },
+            "taskId": "assistant_message",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "stage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "before",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "runpreemption"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "before",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend25",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker25",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "expired",
+          "operation": "kernel.runLiveness.listExpired",
+          "arguments": {
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "expired",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "preempt",
+          "operation": "kernel.runLiveness.preemptExpired",
+          "arguments": {
+            "runId": "runpreemption",
+            "preemptingOwnerId": "owner-secondary",
+            "nowMs": 25,
+            "reason": "stale_running_recovery"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "preempt",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "branch",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "branchpreemption"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "branch",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "node",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.preempt.lastTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "node",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "staging",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "runpreemption"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "staging",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "recovery",
+          "operation": "kernel.run.recover",
+          "arguments": {
+            "runId": "runpreemption"
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "recovery",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "after",
+          "operation": "kernel.runLiveness.listExpired",
+          "arguments": {
+            "nowMs": 25
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "after",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "replacement",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "replacement",
+              "turnId": "turnpreemption",
+              "branchId": "branchpreemption",
+              "schemaId": "dc003",
+              "startTurnNodeHash": {
+                "$ref": "capture.preempt.lastTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-secondary",
+              "leaseExpiresAtMs": 50
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.run-liveness.stale_preemption",
+            "kernel-restart-af.expired-running-requires-preemption"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "replacement",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.expired.result",
+          "length": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.expired.result",
+          "length": 1,
+          "every": {
+            "field": "$.runId",
+            "equals": "runpreemption"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.before.result",
+          "length": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.preempt.result.uncommittedStagedResults",
+          "length": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.preempt.result.lastTurnNodeHash",
+          "equalsPath": "$.result.trace.branch.result.headTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.preempt.result.lastTurnNodeHash",
+          "notEqualsPath": "$.result.trace.threadpreemption.result.rootTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.preempt.result.consumedStagedResults",
+          "length": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.preempt.result.consumedStagedResults.0.taskId",
+          "equals": "assistant_message"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.preempt.result.consumedStagedResults",
+          "equalsPath": "$.result.trace.before.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.node.result.consumedStagedResults",
+          "equalsPath": "$.result.trace.before.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.node.result.previousTurnNodeHash",
+          "equalsPath": "$.result.trace.threadpreemption.result.rootTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.staging.result",
+          "length": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recovery.result",
+          "equalsPath": "$.result.trace.preempt.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.after.result",
+          "length": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.replacement.result.status",
+          "equals": "running"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.replacement.result.executionOwnerId",
+          "equals": "owner-secondary"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.replacement.result.startTurnNodeHash",
+          "equalsPath": "$.result.trace.branch.result.headTurnNodeHash"
+        }
+      ],
+      "evidence": [
+        "trace.preempt.result",
+        "trace.branch.result",
+        "trace.node.result",
+        "trace.staging.result",
+        "trace.recovery.result",
+        "trace.after.result",
+        "trace.replacement.result"
+      ],
+      "capabilities": ["kernel.protocol", "kernel.run-liveness"]
+    }
+  ],
+  "fixtures": {
+    "errors": "../fixtures/run-liveness/errors.json"
+  }
+}

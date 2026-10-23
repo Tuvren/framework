@@ -1,0 +1,23 @@
+{
+  "input": {},
+  "expected": {
+    "wrongOwner": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "run_lease_owner_mismatch"
+        }
+      },
+      "required": ["code"]
+    },
+    "staleToken": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "run_lease_token_mismatch"
+        }
+      },
+      "required": ["code"]
+    }
+  }
+}

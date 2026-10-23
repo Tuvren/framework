@@ -6022,6 +6022,390 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.pausedStillBlocks.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.5.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.result.trace.beforeExpiry.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.result.trace.expired.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.trace.beforeExpiry.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.trace.expired.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.trace.pausedStillBlocks.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.run-liveness.expired_listing",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.run-liveness.syscall",
+        "adapterErrors": {
+          "pausedStillBlocks": {
+            "code": "kernel_runtime_branch_already_active",
+            "message": "branch \"branchpaused\" already has an active run \"runpaused\""
+          }
+        },
+        "traceStepIds": [
+          "backend10",
+          "worker10",
+          "schema",
+          "threadexpired",
+          "turnexpired",
+          "runexpired",
+          "threadfresh",
+          "turnfresh",
+          "runfresh",
+          "threadpaused",
+          "turnpaused",
+          "runpaused",
+          "paused",
+          "threadfailed",
+          "turnfailed",
+          "runfailed",
+          "failed",
+          "threadcompleted",
+          "turncompleted",
+          "runcompleted",
+          "completed",
+          "beforeExpiry",
+          "backend25",
+          "worker25",
+          "expired",
+          "pausedStillBlocks"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.wrongOwner.1.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.staleToken.1.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.2.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.afterOriginalExpiry.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.afterRenewedExpiry.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.renew.result.fencingToken",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.renew.result.leaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.runrenewal.result.executionOwnerId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.runrenewal.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.trace.afterOriginalExpiry.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.trace.afterRenewedExpiry.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.trace.renew.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.run-liveness.lease_renewal",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.run-liveness.syscall",
+        "adapterErrors": {
+          "wrongOwner": {
+            "code": "run_lease_owner_mismatch",
+            "message": "run \"runrenewal\" lease owner does not match"
+          },
+          "staleToken": {
+            "code": "run_lease_token_mismatch",
+            "message": "run \"runrenewal\" lease fencing token is stale"
+          }
+        },
+        "traceStepIds": [
+          "backend10",
+          "worker10",
+          "schema",
+          "threadrenewal",
+          "turnrenewal",
+          "runrenewal",
+          "renew",
+          "wrongOwner",
+          "staleToken",
+          "backend25",
+          "worker25",
+          "afterOriginalExpiry",
+          "backend41",
+          "worker41",
+          "afterRenewedExpiry"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.after.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.before.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.expired.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.node.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.node.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.consumedStagedResults.0.taskId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.recovery.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.replacement.result.executionOwnerId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.replacement.result.startTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.replacement.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.after.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.branch.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.node.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.preempt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.recovery.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.replacement.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.run-liveness.stale_preemption",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.run-liveness.syscall",
+        "traceStepIds": [
+          "backend10",
+          "worker10",
+          "schema",
+          "threadpreemption",
+          "turnpreemption",
+          "runpreemption",
+          "begin",
+          "stage",
+          "before",
+          "backend25",
+          "worker25",
+          "expired",
+          "preempt",
+          "branch",
+          "node",
+          "staging",
+          "recovery",
+          "after",
+          "replacement"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.1.resultField",
           "status": "pass"
         },
@@ -6220,9 +6604,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 130,
-    "totalChecks": 132,
-    "applicableChecks": 130,
+    "passedChecks": 133,
+    "totalChecks": 135,
+    "applicableChecks": 133,
     "nonApplicableChecks": 2
   },
   "suiteId": "tuvren.kernel.protocol",

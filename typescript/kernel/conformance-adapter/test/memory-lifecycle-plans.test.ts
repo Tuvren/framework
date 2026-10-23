@@ -6,7 +6,7 @@ import {
 } from "../../../../tools/conformance/plan-compiler/certification-assessment.ts";
 import { loadConformancePlan } from "../../../../tools/conformance/plan-compiler/index.ts";
 
-const plans = ["scope-isolation", "reclamation"].map(
+const plans = ["scope-isolation", "reclamation", "run-liveness"].map(
   (name) => `spec/conformance/kernel/plans/kernel-${name}-syscall.json`
 );
 
@@ -45,6 +45,7 @@ test("DC syscall checks declare every catalogued operation capability", async ()
     "protocol-extended",
     "reclamation",
     "scope-isolation",
+    "run-liveness",
   ];
   const compiled = await Promise.all(
     syscallPlans.map(
@@ -73,6 +74,7 @@ test("memory lifecycle traces enforce certification through catalogued observati
   expect(assessments.map((assessment) => assessment.mode)).toEqual([
     "enforcing",
     "enforcing",
+    "enforcing",
   ]);
   expect(assessments.flatMap((assessment) => assessment.violations)).toEqual(
     []
@@ -87,6 +89,53 @@ test("memory lifecycle traces enforce certification through catalogued observati
         expect(step.arguments).toBeDefined();
         expect(step.claimIds?.length).toBeGreaterThan(0);
         expect(step.operation).not.toMatch(/probe$/u);
+      }
+    }
+  }
+});
+
+test("lease controls activate and fail designated run-liveness syscall assertions", async () => {
+  const { NEGATIVE_CONTROL_PORTS, runNegativeControls } =
+    await import("../../../../tools/conformance/meta-conformance/negative-controls.ts");
+  const config = NEGATIVE_CONTROL_PORTS.find((port) => port.port === "kernel");
+  if (config === undefined) {
+    throw new Error("missing kernel negative-control configuration");
+  }
+  const report = await runNegativeControls(config, {
+    mutants: [
+      "kernel.lease-takeover-before-expiry",
+      "kernel.accept-stale-owner-after-takeover",
+    ],
+  });
+  expect(report.control.status).toBe("pass");
+  expect(report.mutants).toHaveLength(2);
+  for (const mutant of report.mutants) {
+    expect(mutant, mutant.reason).toMatchObject({
+      activated: true,
+      outcome: "killed",
+    });
+    expect(mutant.activationCount).toBeGreaterThan(0);
+    expect(mutant.designatedFailures.length).toBeGreaterThan(0);
+    expect(
+      mutant.designatedFailures.every((id) =>
+        id.startsWith("kernel.syscall.run-liveness.")
+      )
+    ).toBe(true);
+  }
+}, 60_000);
+
+test("lease error expectations stay outside instance input and operation arguments", async () => {
+  const { plan } = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-run-liveness-syscall.json"
+  );
+  for (const check of plan.checks) {
+    expect(check.input).toBeUndefined();
+    for (const assertion of [
+      ...check.assertions,
+      ...(check.steps ?? []).flatMap((step) => step.assertions ?? []),
+    ]) {
+      if (assertion.kind === "schemaValid") {
+        expect(assertion.schema).toStartWith("$.fixture.expected.");
       }
     }
   }

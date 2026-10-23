@@ -711,6 +711,9 @@
             "kernel.run-liveness.expired_listing",
             "kernel.run-liveness.lease_renewal",
             "kernel.run-liveness.stale_preemption",
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.stale_preemption",
             "kernel.scope-isolation.enumeration_is_scope_confined",
             "kernel.scope-isolation.store_get_is_scope_confined",
             "kernel.scope-isolation.store_has_is_scope_confined",
@@ -719,9 +722,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 128,
-            "totalChecks": 132,
-            "applicableChecks": 128,
+            "passedChecks": 131,
+            "totalChecks": 135,
+            "applicableChecks": 131,
             "nonApplicableChecks": 4
           },
           "declaredCapabilities": [
@@ -876,6 +879,9 @@
             "kernel.run-liveness.expired_listing",
             "kernel.run-liveness.lease_renewal",
             "kernel.run-liveness.stale_preemption",
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.stale_preemption",
             "kernel.scope-isolation.enumeration_is_scope_confined",
             "kernel.scope-isolation.store_get_is_scope_confined",
             "kernel.scope-isolation.store_has_is_scope_confined",
@@ -884,9 +890,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 129,
-            "totalChecks": 132,
-            "applicableChecks": 129,
+            "passedChecks": 132,
+            "totalChecks": 135,
+            "applicableChecks": 132,
             "nonApplicableChecks": 3
           },
           "declaredCapabilities": [
@@ -1042,6 +1048,9 @@
             "kernel.run-liveness.expired_listing",
             "kernel.run-liveness.lease_renewal",
             "kernel.run-liveness.stale_preemption",
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.syscall.run-liveness.lease_renewal",
+            "kernel.syscall.run-liveness.stale_preemption",
             "kernel.scope-isolation.enumeration_is_scope_confined",
             "kernel.scope-isolation.store_get_is_scope_confined",
             "kernel.scope-isolation.store_has_is_scope_confined",
@@ -1050,9 +1059,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 130,
-            "totalChecks": 132,
-            "applicableChecks": 130,
+            "passedChecks": 133,
+            "totalChecks": 135,
+            "applicableChecks": 133,
             "nonApplicableChecks": 2
           },
           "declaredCapabilities": [
@@ -1239,9 +1248,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 56,
-            "totalChecks": 132,
+            "totalChecks": 135,
             "applicableChecks": 56,
-            "nonApplicableChecks": 76
+            "nonApplicableChecks": 79
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1338,9 +1347,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 132,
+            "totalChecks": 135,
             "applicableChecks": 68,
-            "nonApplicableChecks": 64
+            "nonApplicableChecks": 67
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1440,9 +1449,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 132,
+            "totalChecks": 135,
             "applicableChecks": 68,
-            "nonApplicableChecks": 64
+            "nonApplicableChecks": 67
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1542,9 +1551,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 132,
+            "totalChecks": 135,
             "applicableChecks": 68,
-            "nonApplicableChecks": 64
+            "nonApplicableChecks": 67
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

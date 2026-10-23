@@ -2470,6 +2470,9 @@
     "kernel.crash-recovery.in_process_fault_points",
     "kernel.restart-recovery.close_reopen_checkpoint",
     "kernel.run-liveness.clock_skew_preemption",
+    "kernel.syscall.run-liveness.expired_listing",
+    "kernel.syscall.run-liveness.lease_renewal",
+    "kernel.syscall.run-liveness.stale_preemption",
     "kernel.scope-isolation.enumeration_is_scope_confined",
     "kernel.scope-isolation.store_get_is_scope_confined",
     "kernel.scope-isolation.store_has_is_scope_confined",
@@ -2483,9 +2486,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 56,
-    "totalChecks": 132,
+    "totalChecks": 135,
     "applicableChecks": 56,
-    "nonApplicableChecks": 76
+    "nonApplicableChecks": 79
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
