@@ -1,5 +1,5 @@
 id: DC
-name: Isolation, reclamation, liveness, and in-process recovery syscall plans on the TypeScript memory kernel
+name: "Isolation, reclamation, liveness, and in-process recovery syscall plans on the TypeScript memory kernel"
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DB]
@@ -21,7 +21,7 @@ scope:
     - reports/compatibility
     - ".changeset/certification-dc-kernel-memory.md"
   tech_spec_patchable:
-    - .constitution/tech-spec/contracts/certification-profile.meta.yaml
+    - ".constitution/tech-spec/contracts/certification-profile.meta.yaml"
 estimated_diff_lines: 9000
 estimate_source: planned
 tickets:
@@ -36,7 +36,7 @@ tickets:
         - typescript/kernel/testkit
         - tools/conformance/harness
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; setClock and armFault with mode throw are dispatched by the runner, faults are armed at the ADR-0076 storage-boundary points, and faultActivated assertions read the returned token's activation."
     stop_conditions:
       - "STOP if a storage-boundary point cannot be reached in the memory backend; mark it unsupported for kernel.memory; do not improvise."
@@ -53,14 +53,14 @@ tickets:
           - tools/scripts/compatibility-report.ts
           - tools/scripts/lib/conformance-contract.ts
           - tools/scripts/lib/conformance-contract.test.ts
-          - .changeset/certification-dc-kernel-memory.md
+          - ".changeset/certification-dc-kernel-memory.md"
           - tools/scripts/verify.ts
         justification: "The verify tooling test inventory registers the moved fault-activation test. Catalog faultOutcome metadata and per-check unsupported outcomes need the catalog and evidence schemas, the evidence contract, and the compatibility report to carry them; the changeset covers the memory backend and kernel runtime changes."
       - files:
           - tools/conformance/meta-conformance/negative-controls.ts
           - tools/conformance/meta-conformance/negative-controls.test.ts
           - spec/conformance/kernel/negative-controls.json
-        justification: "The missing-activation rejection channel routed to this ticket must reach the negative-control runner so instrumentation controls can be killed."
+        justification: The missing-activation rejection channel routed to this ticket must reach the negative-control runner so instrumentation controls can be killed.
       - files:
           - tools/conformance/plan-compiler/index.ts
           - tools/conformance/plan-compiler/certification-rules.ts
@@ -75,9 +75,7 @@ tickets:
           - typescript/kernel/backends/memory
           - reports/compatibility/compatibility-matrix.schema.json
         justification: "Review moved fault outcome codes, the ADR-0076 point enum, and the closed selector into the catalog, added control checks to the syscall plans, removed the retired midCommit assertions from the legacy recovery plan and the memory backend, and let evidence count unsupported checks."
-      - files:
-          - spec/kernel/authority-packet.json
-          - reports/compatibility
+      - files: [spec/kernel/authority-packet.json, reports/compatibility]
         justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
     status: done
   - id: KRT-DC002
@@ -92,7 +90,7 @@ tickets:
         - typescript/kernel/conformance-adapter
         - typescript/kernel/testkit
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; the rewritten plans pass on the TypeScript memory kernel and the scope and reclamation mutants are killed."
     stop_conditions:
       - "STOP if reclamation grace semantics cannot be driven through setClock and run-liveness syscalls; record a specification finding; do not improvise."
@@ -103,13 +101,10 @@ tickets:
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     deviations:
-      - files:
-          - spec/kernel/authority-packet.json
-          - reports/compatibility
+      - files: [spec/kernel/authority-packet.json, reports/compatibility]
         justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
-      - files:
-          - typescript/kernel/testkit/test/kernel-mutants.test.ts
-        justification: "Testkit control validation had to accept grouped claimIds on syscall traces."
+      - files: [typescript/kernel/testkit/test/kernel-mutants.test.ts]
+        justification: Testkit control validation had to accept grouped claimIds on syscall traces.
     status: done
   - id: KRT-DC003
     title: Rewrite run-liveness plans with runner-owned clocks
@@ -122,7 +117,7 @@ tickets:
         - spec/conformance/kernel/negative-controls.json
         - typescript/kernel/conformance-adapter
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; lease renewal, expired listing, and stale preemption pass on the TypeScript memory kernel with clock values only from the plan, and the lease mutants are killed."
     stop_conditions:
       - "STOP if a liveness obligation needs the shared-backend clock; leave it for the kernel.shared-backend profile; do not improvise."
@@ -133,9 +128,7 @@ tickets:
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     deviations:
-      - files:
-          - spec/kernel/authority-packet.json
-          - reports/compatibility
+      - files: [spec/kernel/authority-packet.json, reports/compatibility]
         justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
       - files:
           - spec/conformance/kernel/fixtures/run-liveness/errors.json
@@ -154,7 +147,7 @@ tickets:
         - typescript/kernel/conformance-adapter
         - typescript/kernel/testkit
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; in-process crash-recovery checks pass on the TypeScript memory kernel with expected heads taken from earlier trace observations, and the staged-work and fault-never-fires mutants are detected."
     stop_conditions:
       - "STOP if recovery requires an adapter-inserted reconcile call that is not part of the public recovery lifecycle; record a specification finding; do not improvise."
@@ -165,17 +158,11 @@ tickets:
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     deviations:
-      - files:
-          - spec/kernel/authority-packet.json
-          - reports/compatibility
+      - files: [spec/kernel/authority-packet.json, reports/compatibility]
         justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
     status: done
 closeout:
-  tickets_completed:
-    - KRT-DC001
-    - KRT-DC002
-    - KRT-DC003
-    - KRT-DC004
+  tickets_completed: [KRT-DC001, KRT-DC002, KRT-DC003, KRT-DC004]
   tickets_deferred: []
   points_completed: 18
   spec_patches: []
@@ -209,12 +196,30 @@ closeout:
       commit: 3ab5297
     - summary: "Fault arming tokens are deterministic per instance (fault-N), and syscall runs require explicit clocks configured before backend initialization."
       kind: convention
-      paths:
-        - typescript/kernel/testkit/src/lib/kernel-test-controls.ts
+      paths: [typescript/kernel/testkit/src/lib/kernel-test-controls.ts]
       commit: 3ab5297
-    - summary: "Runner-only expectation fixtures that are not codec vectors live in per-family subdirectories such as spec/conformance/kernel/fixtures/run-liveness/."
+    - summary: Runner-only expectation fixtures that are not codec vectors live in per-family subdirectories such as spec/conformance/kernel/fixtures/run-liveness/.
       kind: convention
-      paths:
-        - spec/conformance/kernel/fixtures/run-liveness/errors.json
+      paths: [spec/conformance/kernel/fixtures/run-liveness/errors.json]
       commit: 7db47de
   settled: []
+  actuals:
+    diff_lines: 18563
+    files_touched: 76
+    milestones: 10
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-DC001
+        diff_lines: 6172
+        review_rounds: 0
+      - id: KRT-DC002
+        diff_lines: 5981
+        review_rounds: 0
+      - id: KRT-DC003
+        diff_lines: 3653
+        review_rounds: 0
+      - id: KRT-DC004
+        diff_lines: 2757
+        review_rounds: 0
+    merged_commit: 3fa1a99
+    measured_at: 2026-10-23

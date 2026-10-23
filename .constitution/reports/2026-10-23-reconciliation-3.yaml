@@ -1,0 +1,32 @@
+date: 2026-10-23
+commit: 3fa1a99
+epics: [DC]
+routed:
+  - stage: tech-spec
+    item: "DC002-S01: cross-scope isolation needs two scoped instances over one retained substrate; the catalog has no lifecycle control for it and the trace runner drives one instance per trace. The resolve-object-across-scopes obligations stay on the legacy plan; the multi-instance work in EPIC-DE or EPIC-DF should migrate them before EPIC-DJ retires the legacy plans."
+    from: DC
+  - stage: tech-spec
+    item: "SPEC-DC003-01: no catalogued syscall exposes run status, preemptionReason, or cleared-lease fields, so eight legacy run-metadata assertions stay on the legacy run-liveness plan; decide whether the catalog gains a run read operation."
+    from: DC
+  - stage: tech-spec
+    item: "SPEC-DC003-02: the catalog lists no canonical code for premature preemption (the TypeScript kernel emits kernel_runtime_run_lease_not_expired), so direct premature-preemption rejection is unclaimed; KRT-DF005's remaining scope is this code plus the shared-backend clock-skew obligations."
+    from: DC
+  - stage: tech-spec
+    item: "ADR-0076 limits when-branches to points with open outcomes, but on kernel.memory only before-commit and after-commit-before-ack are reachable; the recovery syscall plan pins each point unconditionally and uses a shared all-or-nothing when-block, so the open-outcome branch is first genuinely exercised at commit-outcome-unknown on a durable backend."
+    from: DC
+  - stage: tech-spec
+    item: "code decision (contract_shape): kernel.fault.arm declares a faultOutcome {code, unsupportedCode}, a closed enum of the ADR-0076 fault points, and a closed selector; the runner binds controls from catalog kind, handles, and required inputs plus plan actions, and reports unsupported checks with summary.unsupportedChecks. [spec/conformance/kernel/operations.json, tools/conformance/harness/run.ts, tools/conformance/harness/fault-activation.ts] at 3ab5297"
+    from: DC
+  - stage: tech-spec
+    item: "code decision (convention): Fault arming tokens are deterministic per instance (fault-N), and syscall runs require explicit clocks configured before backend initialization. [typescript/kernel/testkit/src/lib/kernel-test-controls.ts] at 3ab5297"
+    from: DC
+  - stage: tech-spec
+    item: "code decision (convention): Runner-only expectation fixtures that are not codec vectors live in per-family subdirectories such as spec/conformance/kernel/fixtures/run-liveness/. [spec/conformance/kernel/fixtures/run-liveness/errors.json] at 7db47de"
+    from: DC
+proposed_decisions: []
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-DC002/manifest.yaml: KRT-DC002"
+  - ".constitution/evidence/KRT-DC001/manifest.yaml: KRT-DC001"
+  - ".constitution/evidence/KRT-DC004/manifest.yaml: KRT-DC004"
+  - ".constitution/evidence/KRT-DC003/manifest.yaml: KRT-DC003"

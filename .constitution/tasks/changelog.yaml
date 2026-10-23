@@ -1,4 +1,21 @@
 entries:
+  - version: v0.50.3
+    date: 2026-10-23
+    changed:
+      - "EPIC-DC Isolation, reclamation, liveness, and in-process recovery syscall plans on the TypeScript memory kernel archived: 4 tickets, 18 points, 18563 diff lines, 0 review rounds"
+    added:
+      - "EPIC-DC landed runner-owned clock and fault controls (storage-boundary fault points with activation tokens, unsupported-point reporting, and a missing_fault_activation rejection channel) and syscall-trace plans for reclamation, own-scope isolation, run liveness, and in-process crash recovery on the TypeScript memory kernel, killing all 13 kernel negative-control mutants with activation proof; every one of the 72 syscall claimIds is designated by a mutant or listed undetected with a reason."
+      - "Follow-up from EPIC-DC: The SQLite and PostgreSQL backends still advertise mid-commit and keep unused midCommit hooks, and docs/guides/add-a-kernel-backend.md and .constitution/tech-spec/data-models/README.md still name mid-commit; retire them in EPIC-DF."
+      - "Follow-up from EPIC-DC: Native error expectations use schemaValid on state.adapterError to avoid the absent-operand rule; add a first-class expected-native-error assertion to the harness so later families do not copy the workaround."
+      - "Follow-up from EPIC-DC: kernel.memory compatibility evidence does not record the three unsupported fault points; only isolated harness tests arm them."
+      - "Follow-up from EPIC-DC: The scope-isolation syscall plan covers own-scope observations only; its matrix status should not be read as isolation coverage until the cross-scope claims migrate."
+      - "Follow-up from EPIC-DC: Testkit control validation accepts any overlap between a grouped check's claimIds and a control's claimIds; tighten it if more grouped checks appear."
+    by: reconcile
+    fast_lane_through: 3fa1a991c42dce8274907e35ad75b192ff24be8b
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.48.1
   - version: v0.50.2
     date: 2026-10-23
     changed:
