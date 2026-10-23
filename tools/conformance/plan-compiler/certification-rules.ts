@@ -55,6 +55,7 @@ type JsonSchema = boolean | Record<string, unknown>;
 type ObservationDomain = "events" | "result" | "state";
 
 export interface CatalogOperation {
+  deprecated?: boolean;
   errors?: readonly string[];
   kind: "control" | "double" | "syscall";
   observation: Partial<Record<ObservationDomain, JsonSchema>>;
@@ -148,6 +149,7 @@ const readOperation = (value: Record<string, unknown>): CatalogOperation => {
   }
 
   return {
+    deprecated: value.deprecated === true,
     errors: Array.isArray(value.errors) ? value.errors.map(String) : [],
     kind: value.kind as CatalogOperation["kind"],
     observation,
@@ -626,12 +628,34 @@ const observationProblem = (
     : undefined;
 };
 
+const nativeErrorEqualityProblem = (
+  catalog: OperationCatalog,
+  target: Extract<PathTarget, { kind: "observation" }>,
+  equals: unknown
+): string | undefined => {
+  if (
+    target.domain !== "state" ||
+    target.segments[0] !== "adapterError" ||
+    target.segments[1] === "message" ||
+    equals === undefined
+  ) {
+    return undefined;
+  }
+  const code =
+    target.segments.length === 1 && isRecord(equals) ? equals.code : equals;
+  const errors = catalog.operations.get(target.operationId)?.errors ?? [];
+  return typeof code === "string" && errors.includes(code)
+    ? undefined
+    : `asserts an error code not declared by ${target.operationId}`;
+};
+
 const checkObservationPath = (
   context: RuleContext,
   scope: AssertionScope,
   segments: PathSegment[] | undefined,
   label: string,
-  allowExternal: boolean
+  allowExternal: boolean,
+  equals?: unknown
 ): boolean => {
   if (context.catalog === undefined) {
     return true;
@@ -656,7 +680,9 @@ const checkObservationPath = (
       ? undefined
       : `reads $.${renderPath(segments)}, which is not an observation`;
   } else {
-    problem = observationProblem(context.catalog, target);
+    problem =
+      observationProblem(context.catalog, target) ??
+      nativeErrorEqualityProblem(context.catalog, target, equals);
   }
 
   if (problem !== undefined) {
@@ -870,7 +896,8 @@ const checkAssertion = (
         scope,
         node.actual,
         node.label,
-        false
+        false,
+        node.operators.equals
       );
     }
 

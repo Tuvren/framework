@@ -24,14 +24,10 @@ milestone's conformance checks read back (`duplicate_schema_path`,
 `kernel_runtime_branch_already_active`, `kernel_runtime_unexpected_step`,
 `kernel_runtime_missing_event_object`, `kernel_runtime_lateral_head_movement`,
 `turn_node_thread_mismatch`) and this module's callers must raise them
-byte-for-byte as written, not through some intermediate "logical" alias --
-unlike the TypeScript port, which raises an internal
-`kernel_runtime_lineage_mismatch` and only produces the adapter-facing
-`turn_node_thread_mismatch` by normalizing it in the conformance adapter's
-host support, this Python port raises `turn_node_thread_mismatch` directly
-from `tuvren_kernel.runtime`, since the plan only ever asserts the public
-name and an extra alias layer would add indirection with no behavioral
-payoff. The remaining codes in this module are this port's own invented
+byte-for-byte as written, not through some intermediate "logical" alias.
+Both the TypeScript and Python ports raise `turn_node_thread_mismatch`
+directly from their native runtimes. Conformance adapters forward native
+codes unchanged. The remaining codes in this module are this port's own invented
 names for Appendix B rejections the M2 plan does not directly assert
 (`kernel_runtime_unknown_schema`, `kernel_runtime_missing_tree`, ...); they
 follow the same `kernel_runtime_<reason>` shape as the TypeScript runtime's

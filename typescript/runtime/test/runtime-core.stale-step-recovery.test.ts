@@ -156,61 +156,69 @@ const createRunnerRegistry = (
   runners: (TestRuntimeRunner | RuntimeRunnerFactory)[] = []
 ) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
-  test("drops runner output that arrives after lease loss aborts the execution", async () => {
-    const harness = createFakeKernelHarness();
-    const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
-      onRenewLease() {
-        throw new TuvrenRuntimeError("lease fencing token is stale", {
-          code: "kernel_runtime_run_lease_token_mismatch",
-        });
-      },
-    });
-    const runner = {
-      async execute(context) {
-        await waitForAbort(context.signal);
-        await delay(20);
-        return {
-          messages: [assistantText("late success")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
-      id: "fake",
-      resume() {
-        throw new Error("resume was not expected");
-      },
-    } satisfies TestRuntimeRunner;
-    const runtime = createTuvrenRuntime({
-      defaultRunnerId: "fake",
-      kernel: livenessHarness.kernel,
-      runLiveness: {
-        executionOwnerId: "worker-1",
-        leaseDurationMs: 40,
-        renewBeforeMs: 20,
-      },
-      runnerRegistry: createRunnerRegistry([runner]),
-    });
-    const thread = await runtime.createThread({});
-    const handle = runtime.executeTurn({
-      branchId: thread.branchId,
-      config: { name: "primary" },
-      signal: textSignal("Ignore cancellation and answer late"),
-      threadId: thread.threadId,
-    });
+  test.each(["run_lease_owner_mismatch", "run_lease_token_mismatch"])(
+    "drops runner output after lease loss (%s)",
+    async (code) => {
+      const harness = createFakeKernelHarness();
+      const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
+        onRenewLease() {
+          throw new TuvrenRuntimeError("lease fencing token is stale", {
+            code,
+          });
+        },
+      });
+      const runner = {
+        async execute(context) {
+          await waitForAbort(context.signal);
+          await delay(20);
+          return {
+            messages: [assistantText("late success")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        },
+        id: "fake",
+        resume() {
+          throw new Error("resume was not expected");
+        },
+      } satisfies TestRuntimeRunner;
+      const runtime = createTuvrenRuntime({
+        defaultRunnerId: "fake",
+        kernel: livenessHarness.kernel,
+        runLiveness: {
+          executionOwnerId: "worker-1",
+          leaseDurationMs: 40,
+          renewBeforeMs: 20,
+        },
+        runnerRegistry: createRunnerRegistry([runner]),
+      });
+      const thread = await runtime.createThread({});
+      const handle = runtime.executeTurn({
+        branchId: thread.branchId,
+        config: { name: "primary" },
+        signal: textSignal("Ignore cancellation and answer late"),
+        threadId: thread.threadId,
+      });
 
-    await collectEvents(handle.events());
+      const events = await collectEvents(handle.events());
+      const error = events.find((event) => event.type === "error");
+      expect(error).toMatchObject({
+        error: { code: "runtime_execution_lease_lost" },
+        type: "error",
+      });
 
-    expect(handle.status().phase).toBe("failed");
-    expect(livenessHarness.getRenewLeaseCalls()).toBeGreaterThan(0);
-    expect(
-      hasAssistantTextMessage(
-        await harness.readBranchMessages(thread.branchId),
-        "late success"
-      )
-    ).toBe(false);
-  });
+      expect(handle.status().phase).toBe("failed");
+      expect(livenessHarness.getRenewLeaseCalls()).toBeGreaterThan(0);
+      expect(
+        hasAssistantTextMessage(
+          await harness.readBranchMessages(thread.branchId),
+          "late success"
+        )
+      ).toBe(false);
+    }
+  );
 
   test("drops runner output after another owner preempts and clears the lease", async () => {
     const harness = createFakeKernelHarness();

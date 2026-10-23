@@ -2,6 +2,9 @@ import { expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import process from "node:process";
+
+import { spawn } from "bun";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
 const valid =
@@ -180,7 +183,7 @@ for (const [name, fields] of [
           planVersion: "0.1.0",
         })
       );
-      const child = Bun.spawn(
+      const child = spawn(
         ["bun", "tools/conformance/harness/run.ts", "--adapter", adapter],
         {
           cwd: root,

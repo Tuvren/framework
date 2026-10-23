@@ -915,3 +915,31 @@ test.each(["every", "some"] as const)(
     ).toEqual([]);
   }
 );
+
+describe("native error assertions", () => {
+  test.each([
+    ["listed", "run_lease_token_mismatch", false],
+    ["unlisted", "unlisted_native_code", true],
+    ["non-string", { code: "run_lease_token_mismatch" }, true],
+  ] as const)(
+    "checks adapterError equality against catalog errors: %s",
+    async (_label, code, rejected) => {
+      const authority = await loadCertificationAuthority([
+        "spec/kernel/authority-packet.json",
+      ]);
+      const kernelCatalog = authority.packets.get(
+        "tuvren.kernel.protocol"
+      )?.catalog;
+      const plan = planWith(
+        hasCheck(
+          [{ kind: "stateField", field: "$.adapterError.code", equals: code }],
+          { operation: "kernel.runLiveness.renewLease" }
+        )
+      );
+      const violations = evaluateCertificationRules(plan, kernelCatalog);
+      expect(
+        violations.some((entry) => entry.rule === "observation-path")
+      ).toBe(rejected);
+    }
+  );
+});

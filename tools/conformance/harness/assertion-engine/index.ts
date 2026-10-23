@@ -32,9 +32,6 @@ import { readPath } from "./path.js";
 import { assertSchemaValid } from "./schema.js";
 import { valuesAreEqual } from "./value-comparison.js";
 
-export { readPath } from "./path.js";
-export { getCompiledSchemaValidator } from "./schema.js";
-
 export interface AssertionContext {
   events?: readonly unknown[];
   evidence?: Record<string, unknown>;

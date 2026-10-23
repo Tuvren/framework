@@ -39,10 +39,12 @@ import {
   findCertifiedEntriesForAdapter,
   readCertificationManifest,
 } from "../certification/certification-manifest.js";
+import type { CatalogOperation } from "../plan-compiler/certification-rules.js";
 import type {
   CompiledConformancePlan,
   CompiledConformancePlanCheck,
   ConformancePlanCheck,
+  ConformancePlanAssertion,
   ConformancePlanStep,
 } from "../plan-compiler/index.js";
 import { JsonRpcAdapterClient, previewFrames } from "./adapter-client.js";
@@ -54,12 +56,12 @@ import { JsonRpcAdapterError } from "./adapter-error.js";
 import {
   diagnoseAssertions,
   diagnoseRequiredEvidence,
-  readPath,
 } from "./assertion-engine/index.js";
 import type {
   AssertionContext,
   AssertionDiagnosis,
 } from "./assertion-engine/index.js";
+import { readPath } from "./assertion-engine/path.js";
 import {
   ObservationEncodingError,
   validateObservation,
@@ -551,6 +553,52 @@ const rejectLegacySelectors = (input: unknown): void => {
   }
 };
 
+class NativeOperationError extends Error {}
+
+const errorAssertion = (
+  assertions: readonly ConformancePlanAssertion[],
+  field: string
+): boolean =>
+  assertions.some(
+    (assertion) =>
+      (assertion.kind === "stateField" ||
+        assertion.kind === "resultField" ||
+        assertion.kind === "evidenceField") &&
+      (assertion.field === field || assertion.field?.startsWith(`${field}.`))
+  );
+
+const traceErrorAsserted = (
+  check: ConformancePlanCheck,
+  step: ConformancePlanStep
+): boolean =>
+  errorAssertion(
+    (step.assertions ?? []).filter(
+      (assertion) => assertion.kind === "stateField"
+    ),
+    "$.adapterError"
+  ) ||
+  errorAssertion(check.assertions, `$.trace.${step.stepId}.state.adapterError`);
+
+const validateNativeError = (
+  error: { code: string },
+  operation: CatalogOperation | undefined,
+  asserted = true
+): void => {
+  if (
+    operation !== undefined &&
+    !(operation.errors ?? []).includes(error.code)
+  ) {
+    throw new NativeOperationError(
+      `${operation.operationId} emitted undeclared native error ${error.code}`
+    );
+  }
+  if (!asserted) {
+    throw new NativeOperationError(
+      `unexpected native error ${error.code} has no adapterError assertion`
+    );
+  }
+};
+
 const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -631,10 +679,13 @@ const runTraceCheck = async (
         outcome.kind === "result"
       );
       if (outcome.kind === "error") {
-        // Trace-step adapter errors are diagnostic evidence only; plan
-        // assertions still decide pass/fail through runner-owned context.
         traceAdapterErrors[step.stepId] = outcome.error;
         recorder.operationErrors.push(outcome.error);
+        validateNativeError(
+          outcome.error,
+          catalogOperation,
+          traceErrorAsserted(check, step)
+        );
       }
 
       const extraEvents = await client.events(
@@ -660,9 +711,7 @@ const runTraceCheck = async (
         validateObservation(catalogOperation, { state: inspectedState });
       }
 
-      if (inspectedState !== undefined && inspectedState !== null) {
-        context.state = inspectedState;
-      }
+      mergeInspectedState(context, inspectedState, outcome);
 
       trace[step.stepId] = context;
       recordStepCaptures(
@@ -769,6 +818,7 @@ const executeCheck = async (
     observed.outcome = outcome;
     if (outcome.kind === "error") {
       recorder.operationErrors.push(outcome.error);
+      validateNativeError(outcome.error, catalogOperation);
     }
     const context = createAssertionContext(
       outcome,
@@ -822,6 +872,15 @@ const executeCheck = async (
     recorder.thrown = error;
     const message = readErrorMessage(error);
     const assertionResults = [
+      ...(error instanceof NativeOperationError
+        ? [
+            {
+              assertionId: `${check.checkId}.nativeError`,
+              message,
+              status: "fail" as const,
+            },
+          ]
+        : []),
       ...check.assertions.map((assertion, index) => ({
         assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
         message,
@@ -854,7 +913,12 @@ const classifyFailure = (
     return "verification";
   }
 
-  if (thrown instanceof ObservationEncodingError) return "adapter_protocol";
+  if (thrown instanceof ObservationEncodingError) {
+    return "adapter_protocol";
+  }
+  if (thrown instanceof NativeOperationError) {
+    return "implementation";
+  }
 
   const signals = [
     checkStderr,

@@ -12,8 +12,10 @@ const object = (value: unknown): Record<string, unknown> => {
 };
 const strings = (value: unknown): string[] => {
   if (
-    !Array.isArray(value) ||
-    !value.every((entry: unknown) => typeof entry === "string")
+    !(
+      Array.isArray(value) &&
+      value.every((entry: unknown) => typeof entry === "string")
+    )
   ) {
     throw new Error("expected identity projection fields");
   }

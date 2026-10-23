@@ -300,8 +300,8 @@ export const isRunLeaseFenceError = (error: unknown): boolean => {
   return (
     error.code === "kernel_runtime_run_lease_expired" ||
     error.code === "kernel_runtime_run_not_leased" ||
-    error.code === "kernel_runtime_run_lease_owner_mismatch" ||
-    error.code === "kernel_runtime_run_lease_token_mismatch"
+    error.code === "run_lease_owner_mismatch" ||
+    error.code === "run_lease_token_mismatch"
   );
 };
 
