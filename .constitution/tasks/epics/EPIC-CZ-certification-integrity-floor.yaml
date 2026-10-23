@@ -32,6 +32,27 @@ scope:
     - .constitution/tech-spec/contracts/certification-evidence.meta.yaml
 estimated_diff_lines: 12000
 estimate_source: planned
+decisions:
+  - id: OD-15
+    question: "Where is the kernel.mutant.activation control declared before the kernel operation catalog exists?"
+    blocks: [KRT-CZ007]
+    options:
+      - name: Declare it in the kernel catalog authored by KRT-DB001
+        pros: ["Keeps one authored kernel catalog; no throwaway catalog file in CZ."]
+        cons: ["Until DB001 lands, the activation observation is validated only by adapter tests, not by an authority-backed schema."]
+      - name: Create a minimal kernel catalog in CZ with only this control
+        pros: ["The control is catalogued immediately."]
+        cons: ["Pre-empts KRT-DB001's catalog design and adds a partial authority artifact that DB001 must rewrite."]
+    recommendation: Declare it in the kernel catalog authored by KRT-DB001
+    closure: ruling
+    status: proposed
+    asked:
+      date: 2026-10-23
+      in: EPIC-CZ
+    proposed_by: "EPIC-CZ at 9bcf111"
+    interim:
+      assumption: "kernel.mutant.activation stays an uncatalogued control until KRT-DB001 adds it to spec/conformance/kernel/operations.json with a closed observation schema; the negative-control runner reads it as a diagnostic signal, not as certification evidence."
+      applied_by: [typescript/kernel/conformance-adapter/src/host.ts, KRT-CZ007, KRT-CZ009, KRT-DB001]
 tickets:
   - id: KRT-CZ001
     title: Make certification statuses and the certified fleet truthful
@@ -180,7 +201,7 @@ tickets:
     deviations:
       - files: [tools/scripts/lib/conformance-contract.test.ts, tools/conformance/harness/assertion-engine/index.ts, tools/conformance/harness/adapter-client.ts]
         justification: "The evidence-contract tests for the failure block live in the sibling test file of tools/scripts/lib/conformance-contract.ts; operand capture needs the assertion engine and the frame log and stderr tail need the adapter client, both inside tools/conformance/harness but named explicitly here because the ticket scope listed only the harness directory generically."
-    status: planned
+    status: done
   - id: KRT-CZ007
     title: Add a test-only mutant seam with activation proof
     type: Feature
@@ -269,4 +290,4 @@ tickets:
       evidence: "Assert a step's adapter input equals its resolved projection, a $ref into fixture.expected fails compilation, a capture from one step resolves in a later step, and an adapter-side probe never sees expected values."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    status: done
