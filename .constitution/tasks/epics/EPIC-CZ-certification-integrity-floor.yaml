@@ -269,7 +269,10 @@ tickets:
       evidence: "Assert a synthetic mutant that crashes at startup is classified invalid, a mutant whose designated assertion fails is killed, a non-activated mutant is not counted, and the baseline report for the current plans is captured in the evidence manifest."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
-    status: planned
+    deviations:
+      - files: [tools/scripts/verify.ts]
+        justification: "The certification tool suites, including this ticket's negative-control tests, join the durable tooling acceptance lane in tools/scripts/verify.ts so they run in bun run verify."
+    status: done
   - id: KRT-CZ010
     title: Execute explicit arguments, references, and captures in the runner
     type: Feature

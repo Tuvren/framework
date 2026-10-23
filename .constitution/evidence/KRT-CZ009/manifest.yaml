@@ -1,0 +1,13 @@
+owner: KRT-CZ009
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: 50418c5
+  command: "bun tools/conformance/meta-conformance/negative-controls.ts"
+result: pass
+pass_criteria: "The unmutated control passes; synthetic startup crashes are invalid, activated mutants with failing designated assertions are killed, non-activated mutants are not counted, collateral failures are not kills; the baseline against the current kernel plans is captured."
+files:
+  - path: baseline-summary.txt
+    sha256: c669d1dfbf5d182e982d3dca4e3e9f953fde437be6e9dd0984473ed1b22b04c0
+    bytes: 2348
+    role: measurement

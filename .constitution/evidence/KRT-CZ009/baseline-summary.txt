@@ -1,0 +1,19 @@
+negative controls kernel (kernel.memory, report mode): unmutated control typescript/kernel/conformance-adapter/adapter.json pass (68/68)
+activated 12, killed 10, survived 1, equivalent 0, unsupported 1, invalid 1 of 13
+mutant                                             kind             activated  outcome      designated failures  collateral
+kernel.accept-noncanonical-cbor                    implementation   true       killed       1                    0
+kernel.accept-stale-head-update                    implementation   true       killed       3                    0
+kernel.accept-stale-owner-after-takeover           implementation   true       killed       2                    0
+kernel.delete-object-reachable-through-live-root   implementation   true       killed       2                    0
+kernel.drop-uncommitted-staged-result-on-recovery  implementation   true       killed       2                    0
+kernel.fault-seam-never-fires                      instrumentation  true       unsupported  0                    10
+kernel.lease-takeover-before-expiry                implementation   false      invalid      0                    0
+kernel.never-sweep-eligible-objects                implementation   true       killed       4                    1
+kernel.noncanonical-changed-paths-order            implementation   true       survived     0                    0
+kernel.promote-staged-before-checkpoint            implementation   true       killed       5                    0
+kernel.resolve-object-across-scopes                implementation   true       killed       2                    0
+kernel.sweep-inside-grace-window                   implementation   true       killed       2                    0
+kernel.wrong-opaque-object-hash                    implementation   true       killed       18                   0
+  kernel.fault-seam-never-fires: the harness has no runner rejection channel, so the expected rejection missing_fault_activation cannot occur; not counted as killed
+  kernel.lease-takeover-before-expiry: no designated assertion was evaluated: kernel.run-liveness.clock_skew_preemption.1.resultField not applicable (capability gap), kernel.run-liveness.clock_skew_preemption.3.resultField not applicable (capability gap)
+  kernel.noncanonical-changed-paths-order: activated, but no designated assertion failed
