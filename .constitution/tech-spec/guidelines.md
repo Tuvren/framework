@@ -159,7 +159,15 @@ layout:
   - path: dart
     purpose: The Dart kernel-port line as pub workspace members under the root pubspec.yaml.
   - path: tools/conformance/harness
-    purpose: The shared semantic conformance engine that every implementation adapter runs against.
+    purpose: The shared semantic conformance engine that every implementation adapter runs against. It owns verdicts, scheduling, storage provisioning, process supervision, and fault arming (ADR-0075 to ADR-0077).
+  - path: tools/conformance/adapter-protocol
+    purpose: "The JSON-RPC adapter protocol: protocol and adapter-manifest schemas, binding guides, the reference TypeScript stdio host, and the protocol validator."
+  - path: tools/conformance/meta-conformance
+    purpose: "Verification of the verifier: assertion-engine and plan-compiler cases plus the negative-control runner that drives mutant builds through unchanged plans (ADR-0079)."
+  - path: tools/schemas
+    purpose: "Tooling schemas for authority packets, conformance plans, operation catalogs, observation encoding, certification profiles, negative-control manifests, and certification evidence."
+  - path: spec/conformance
+    purpose: "Shared conformance authority per port: plans, fixtures, scenarios, operation catalogs, certification profiles, negative-control manifests, and kernel identity recipes."
   - path: tools/scripts
     purpose: "Repository gates invoked through Nx and bun scripts: freeze, portability, host boundary, API freeze, verify, and release lanes."
   - path: tools/generators
@@ -916,7 +924,24 @@ Sequencing for ADR-0056/ADR-0057/ADR-0058 lives in the execution plan (the const
 
 PostgreSQL is `bun run proving-host:scenario-postgres` after `bun run services:up`. It is not a recipe, because a dark-factory run cannot assume the service is up. The remote WebSocket session has a local launcher (`--serve-ws` plus `typescript/host/repl/scripts/ws-peer.ts`, covered by `repl-serve-ws.e2e.test.ts`), and that test needs the same PostgreSQL service. It is omitted for the same reason, not because no command exists.
 
-No contract is pinned. There is no active epic, so no shape is shared by a wave. The next wave's step 0 should consider pinning the kernel record profile, the core TypeSpec, the authority-packet schema, and the duplex session frames.
+Four certification contracts are pinned because several certification epics build against them: the operation catalog, the observation encoding, adapter protocol 0.2.0, and the conformance plan extensions. Their entities and fields are in `contracts/conformance-certification.md`. The kernel record profile, the core TypeSpec, the authority-packet schema, and the duplex session frames remain unpinned.
+
+### 5.10 Observation-only certification (ADR-0075 to ADR-0081)
+
+These rules bind every conformance change from this revision on.
+
+1. **Adapters are syscall bridges.** One catalogued operation is one native public action. Allowed binding work: lossless value translation, native error forwarding, bounded iterator collection, and handle management. Forbidden: comparisons, counts used as verdicts, sorting ordered results, choosing expectations, scripting scenarios, owning clocks, simulating restart or reconciliation, and fabricating events. Adapter-side error-code normalization is removed.
+2. **Scenarios and verdicts are plan data.** Multi-step behavior is a plan trace with explicit `arguments` projections and captures. Expected values come from plan literals, runner-read fixture paths, or earlier observations, never from adapter output computed for the purpose. The plan compiler enforces catalog membership, the observation-schema paths, the no-echo rule, and native-boolean-only literal comparisons.
+3. **Non-vacuity.** Unresolved operands fail. Quantifiers need a cardinality assertion. Negative event assertions need a proven trigger and window. Zero applicable checks is never `pass`.
+4. **Lifecycle.** Storage is provisioned per check by the harness, and processes are supervised by the harness. Crash points are storage boundaries armed through `armFault` and count only with activation evidence. Memory implementations certify only `kernel.memory`. PostgreSQL is started by the operator with `bun run services:up`, never by the harness.
+5. **Negative controls gate certification.** A migrated family lands together with its mutants in the language testkit and its entries in `spec/conformance/<port>/negative-controls.json`. A kill counts only with a passing unmutated control, proven activation, and a failing designated assertion.
+6. **Migration discipline.**
+   - Each family keeps stable `claimId`s and ships an old-to-new obligation map in its pull request.
+   - Expectations are never regenerated from passing implementation output.
+   - Legacy composite operations stay `deprecated` in the catalog until every adapter has migrated, then they are deleted.
+   - Unit tests made redundant or self-asserting by a migration are removed in the same change, with the reason listed in the obligation map.
+7. **Triage.** Every failure from a migrated family gets an entry in the epic's `.constitution/evidence/<EPIC-ID>/certification-triage.yaml`, written by the epic lead and classed V, I, S, or E (ADR-0081). I entries become GitHub issues with the replay command. S entries become proposed decisions in the epic's `decisions` list. A classification never makes a red check green.
+8. **Comments.** Keep code comments to the minimum the code cannot express. A repository-wide comment cleanup is planned, and certification code must not add to it.
 
 ## 1. Stack Specification (Bill of Materials)
 

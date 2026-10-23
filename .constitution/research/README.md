@@ -1,6 +1,6 @@
 # Research records
 
-This directory contains the seven checked-in research records that preserve investigations and assessments outside the live constitutional authority chain.
+This directory contains the eight checked-in research records that preserve investigations and assessments outside the live constitutional authority chain.
 
 - `epic-al-rust-re-entry-gate-reassessment.md`
 - `krt-bl001-freeze-candidate-audit.md`
@@ -9,3 +9,4 @@ This directory contains the seven checked-in research records that preserve inve
 - `bh005-bridge-provider-executed-fidelity-audit.md`
 - `ay001-provider-surface-matrix.md`
 - `108-git-faithful-blob-persistence.md`
+- `2026-10-22-observation-only-certification-designs.md`

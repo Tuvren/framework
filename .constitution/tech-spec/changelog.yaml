@@ -1,4 +1,15 @@
 entries:
+  - version: v0.48.0
+    date: 2026-10-22
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "Added ADR-0075 to ADR-0081 for observation-only conformance certification: adapters become syscall bridges over per-port operation catalogs, the runner owns scenarios, expectations, clocks, storage, process supervision, and fault arming, observations cross the adapter boundary in a lossless encoding with runner-side kernel content-integrity checks, behavioral negative controls gate certification, profiles and complete evidence bundles define a certificate, and failures are triaged as verification, implementation, specification, or environment findings. ADR-0076 supersedes ADR-0045 for crash and durability certification."
+      - "Recorded the owner's rulings: certification precedes the remaining Bazel wave, Rust is the second kernel language, tree.diff changedPaths has canonical UTF-8 byte order (ADR-0080), kernel erasure conformance covers only ciphertext retention and unchanged lineage, and self-asserting or redundant unit tests may be removed during migration."
+      - "Added sidecars for the operation catalog, observation encoding, adapter protocol, certification profile, negative-control manifest, certification evidence, and kernel identity recipes, with the companion conformance-certification.md. Pinned the operation catalog, observation encoding, adapter protocol 0.2.0, and conformance plan extensions because several certification epics build against them."
+      - "Added guidelines section 5.10 and layout records for the adapter protocol, meta-conformance, tooling schemas, and shared conformance authority. Preserved the audit, the adversarial review, and both independent designs in research/2026-10-22-observation-only-certification-designs.md."
   - version: v0.47.10
     date: 2026-10-19
     by: stage

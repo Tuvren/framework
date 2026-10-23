@@ -1,0 +1,11 @@
+artifact_path: "tools/schemas/certification-profile.schema.json"
+surface: "json"
+flows:
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-27
+  - BND-29
+companion: "conformance-certification.md"
+certainty: "assumed"
+assumption: "Per-port profiles at spec/conformance/<port>/profiles.json declare required capabilities, claims, evidence, fault coverage, and controls (ADR-0081)."
+settles_when: "The harness rejects a claimed profile with a non-applicable required check and certifies the TypeScript memory kernel under kernel.memory in a cited closeout."

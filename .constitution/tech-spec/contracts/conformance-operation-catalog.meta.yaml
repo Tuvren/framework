@@ -1,0 +1,14 @@
+artifact_path: "tools/schemas/conformance-operation-catalog.schema.json"
+surface: "json"
+flows:
+  - flow-authority-packet-driven-conformance
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-27
+  - BND-28
+  - BND-29
+companion: "conformance-certification.md"
+pinned: true
+certainty: "assumed"
+assumption: "Per-port operation catalogs at spec/conformance/<port>/operations.json validate against this schema (ADR-0075). The kernel catalog is the first instance; framework ports follow per family."
+settles_when: "The plan compiler validates a migrated kernel plan against the kernel catalog and a TypeScript and a Rust adapter observation pass catalog validation in a cited closeout."
