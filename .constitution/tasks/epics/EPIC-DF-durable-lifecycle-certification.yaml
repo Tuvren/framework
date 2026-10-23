@@ -1,0 +1,144 @@
+id: DF
+name: Durable lifecycle certification for SQLite and PostgreSQL
+kind: product
+capabilities: [CAP-035, CAP-037, CAP-038]
+depends_on: [DE]
+priority: 7
+scope:
+  paths:
+    - tools/conformance/harness
+    - tools/conformance/adapter-protocol
+    - tools/conformance/meta-conformance
+    - tools/conformance/certification
+    - spec/conformance/kernel
+    - typescript/kernel/conformance-adapter
+    - typescript/kernel/testkit
+    - typescript/kernel/backends/sqlite
+    - typescript/kernel/backends/postgres
+    - typescript/kernel/certification-sqlite
+    - typescript/kernel/certification-postgres
+    - reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json
+    - reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json
+    - ".changeset/certification-df-durable-backends.md"
+  tech_spec_patchable:
+    - .constitution/tech-spec/contracts/certification-profile.meta.yaml
+estimated_diff_lines: 12000
+estimate_source: planned
+tickets:
+  - id: KRT-DF001
+    title: Provision per-check storage and reattach instances
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/adapter-protocol
+        - typescript/kernel/conformance-adapter
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0 after bun run services:up; each check gets a fresh SQLite directory or PostgreSQL database, openInstance reattaches without reseeding, and resources are dropped afterwards."
+    stop_conditions:
+      - "STOP if provisioning would require the harness to start PostgreSQL; do not improvise."
+    description: "ADR-0076 decision 2. Add the harness resource manager for sqlite-directory and postgres-database storage kinds, pass opaque storageRef values to createInstance and openInstance, retain SQLite sidecars, and drop resources after each check. Adapters stop choosing storage locations."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert two checks never share a resource, openInstance sees state written by an earlier instance on the same storageRef, resources are removed after the check including on failure, and adapter code no longer creates databases or directories."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DF002
+    title: Supervise adapter processes and certify persistent reopen
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DF001]
+    scope:
+      in:
+        - tools/conformance/harness
+        - spec/conformance/kernel/plans
+        - typescript/kernel/conformance-adapter
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; restart, kill, and respawn steps run against the built adapter executable, evidence records PIDs, epochs, signals, and exits, and the close-reopen checks pass on SQLite and PostgreSQL."
+    stop_conditions:
+      - "STOP if the supervised executable is a launcher whose child survives a kill; do not improvise."
+    description: "ADR-0076 decision 3. Add the process supervisor that runs the built adapter executable, records executable digest, PID, process epoch, signal, and exit, and serves restart, kill, and respawn steps. Rewrite the close-reopen-checkpoint checks as traces that write, restart the process, reattach to the same storage, and observe through syscalls, replacing the adapter's sqlite child processes and derived booleans."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert a respawned process has a new PID and epoch on the same storageRef, the reopen checks pass on SQLite and PostgreSQL, and no adapter code spawns its own kernel processes."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DF003
+    title: Add blocking fault seams with receipts to the SQLite and PostgreSQL backends
+    type: Feature
+    effort: 8
+    depends_on: [KRT-DF002]
+    scope:
+      in:
+        - typescript/kernel/backends/sqlite
+        - typescript/kernel/backends/postgres
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - ".changeset/certification-df-durable-backends.md"
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; armFault with mode block emits faultReached with the arming token inside the real transaction at each instrumentable point and holds until killed."
+    stop_conditions:
+      - "STOP if a hook would be reachable without constructing the test-only seam; do not improvise."
+    description: "ADR-0076 decisions 4 and 5. Expose test-only commit-phase hooks inside the SQLite and PostgreSQL transactions at the storage-boundary points, implement mode block with a faultReached receipt carrying the token and process epoch, and report points a backend cannot instrument as unsupported. Add a changeset for any public package whose test-only hook surface changes."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each supported point emits exactly one receipt with the arming token before blocking, unsupported points report unsupported, and production construction paths cannot reach the hooks."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DF004
+    title: Certify process-crash recovery on SQLite and PostgreSQL
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DF003]
+    scope:
+      in:
+        - spec/conformance/kernel/plans
+        - spec/conformance/kernel/negative-controls.json
+        - tools/conformance/harness
+        - typescript/kernel/testkit
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; each crash check arms a point, receives the receipt, kills the process, respawns on the same storage, and passes recovery assertions; the incomplete-checkpoint mutant is killed."
+    stop_conditions:
+      - "STOP if a backend shows partial checkpoint state after a kill; record the implementation finding and keep the check red; do not improvise."
+    description: "ADR-0076. Rewrite crash-recovery-durable as process-crash traces: baseline checkpoint, arm with mode block, attempt, wait for the receipt, kill, respawn, reattach, recover through the public surface, and assert the all-or-nothing invariant with when-branches only for the uncertain-commit point. Add the durable mutant that exposes a new head with an incomplete checkpoint. Triage every failure."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every supported point has a receipt followed by a forced death of the same epoch, recovery assertions pass or are triaged red, a missing receipt invalidates the run, and the incomplete-checkpoint mutant is killed."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DF005
+    title: Certify the shared backend profile with two-process races and clock skew
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DF004]
+    scope:
+      in:
+        - spec/conformance/kernel
+        - tools/conformance/harness
+        - typescript/kernel/conformance-adapter
+        - typescript/kernel/testkit
+        - tools/conformance/certification
+        - reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json
+        - reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; two adapter processes race on one PostgreSQL storageRef with entry receipts, clock-skew preemption follows the backend clock, and the persistent-reopen, process-crash, and shared-backend profiles produce certificates."
+    stop_conditions:
+      - "STOP if PostgreSQL cannot provide a backend-authoritative clock observation; record a specification finding; do not improvise."
+    description: "ADR-0076 and ADR-0077. Run the concurrent-writer check from two processes on one PostgreSQL storageRef, rewrite clock-skew preemption with setClock on the worker domain against the backend clock, add the worker-clock expiry mutant, write the kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend profiles, claim them for SQLite and PostgreSQL as applicable, and emit their certificates."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the two-process race needs both receipts before release, the worker-clock mutant is killed, and SQLite and PostgreSQL certificates validate with matching control runs."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned

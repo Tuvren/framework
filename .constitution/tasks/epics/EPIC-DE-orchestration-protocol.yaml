@@ -1,0 +1,133 @@
+id: DE
+name: Adapter protocol 0.2 orchestration for races, cancellation, and live streams
+kind: product
+capabilities: [CAP-035, CAP-037, CAP-038]
+depends_on: [DD]
+priority: 6
+scope:
+  paths:
+    - tools/conformance/harness
+    - tools/conformance/adapter-protocol
+    - tools/conformance/meta-conformance
+    - spec/conformance/kernel
+    - typescript/kernel/conformance-adapter
+    - typescript/kernel/testkit
+    - rust/kernel
+    - rust/kernel-conformance-adapter
+  tech_spec_patchable:
+    - .constitution/tech-spec/contracts/conformance-adapter-protocol.meta.yaml
+estimated_diff_lines: 9000
+estimate_source: planned
+tickets:
+  - id: KRT-DE001
+    title: Run operations through handles on a concurrent stdio host
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/adapter-protocol
+        - typescript/kernel/conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; startOperation, awaitOperation, and cancelOperation work against the TypeScript kernel adapter and the host answers requests while operations run."
+    stop_conditions:
+      - "STOP if concurrency in the host changes the result of any existing serial check; do not improvise."
+    description: "ADR-0077 decision 1. Make the reference TypeScript stdio host process requests concurrently with one response per id, add operation handles to the runner and the TypeScript kernel adapter, and keep blocking dispatch for unmigrated plans."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert two started operations progress independently, an inspectState request is answered while an operation is blocked, and existing serial plans keep their results."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DE002
+    title: Stream events live with pull credit and a runner frame log
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DE001]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/adapter-protocol
+        - typescript/kernel/conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; subscribe and pull deliver event notifications with sequence numbers, terminal notifications are distinct from exhaustion, and arrival assertions read the runner's frame log."
+    stop_conditions:
+      - "STOP if an implementation stream can only be observed after completion through its public API; record a specification finding; do not improvise."
+    description: "ADR-0077 decisions 2, 3, and 7. Add subscribe, pull with credit, event and eventsEnd notifications, the runner frame log with arrival order and monotonic time, and the arrival assertion. Batch events() stays for unmigrated families."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert frames arrive incrementally under limited credit, a terminal notification differs from exhaustion and RPC failure, and an arrival assertion detects a subscription that only delivers after completion."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DE003
+    title: Certify racing writers with entry receipts and barriers
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DE001]
+    scope:
+      in:
+        - spec/conformance/kernel/plans
+        - spec/conformance/kernel/negative-controls.json
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - tools/conformance/harness
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the concurrent-writer check passes on the TypeScript memory kernel only when both contenders reached the native seam before release, in both orderings, and the stale-head mutant is killed."
+    stop_conditions:
+      - "STOP if the barrier seam must sit inside an exclusive lock to hold both contenders; record the design gap; do not improvise."
+    description: "ADR-0077 decision 5. Add a reviewed barrier seam in the testkit's persistence path that emits implementation-entry receipts and holds contenders until released. Rewrite the concurrent-writer checks of kernel-restart-recovery.json to establish a common head, start both contenders, wait for both receipts, release, and assert one success, one typed lateral conflict, and the head equal to the winner, in both orderings. Remove the adapter's race composite and derived booleans."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the check fails when contenders run sequentially (no second receipt before release), passes on the TypeScript memory kernel in both orderings, and kills the stale-head mutant."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DE004
+    title: Own cancellation and deadlines in the runner
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DE002]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/adapter-protocol
+        - typescript/kernel/conformance-adapter
+        - tools/conformance/meta-conformance
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the runner issues cancelOperation after an observed event, records elapsed time, and distinguishes native deadline expiry from its watchdog."
+    stop_conditions:
+      - "STOP if an adapter needs to self-cancel to make a check pass; do not improvise."
+    description: "ADR-0077 decision 6. Move cancelAfterEvent into the runner, release gated dependencies after cancellation, and check for prohibited late events or writes. Record elapsed time and watchdog terminations in evidence. Add an ignored-cancellation mutant."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert cancellation is issued by the runner, a late event after terminal fails, and the ignored-cancellation mutant is killed."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DE005
+    title: Bring the Rust kernel adapter to protocol 0.2 and the writer race
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DE003]
+    scope:
+      in:
+        - rust/kernel
+        - rust/kernel-conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the Rust adapter serves operation handles concurrently and the concurrent-writer check passes or is triaged against the Rust kernel."
+    stop_conditions:
+      - "STOP if the Rust kernel cannot run two writers concurrently in one process; record the implementation finding; do not improvise."
+    description: "ADR-0077. Make the Rust adapter host concurrent, bind startOperation, awaitOperation, and cancelOperation, add a test-only barrier seam in the Rust in-memory persistence path, and run the concurrent-writer checks. Triage every failure."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the Rust adapter answers requests while operations run, both contenders reach the seam before release, and each failure has a triage entry."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned

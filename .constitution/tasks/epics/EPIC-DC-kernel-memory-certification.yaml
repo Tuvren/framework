@@ -1,0 +1,143 @@
+id: DC
+name: Isolation, reclamation, liveness, and in-process recovery on the TypeScript memory kernel
+kind: product
+capabilities: [CAP-035, CAP-037, CAP-038]
+depends_on: [DB]
+priority: 4
+scope:
+  paths:
+    - spec/conformance/kernel
+    - spec/kernel/authority-packet.json
+    - tools/conformance/harness
+    - tools/conformance/plan-compiler
+    - tools/conformance/meta-conformance
+    - tools/conformance/certification
+    - tools/scripts/conformance
+    - typescript/kernel/conformance-adapter
+    - typescript/kernel/testkit
+    - typescript/kernel/runtime
+    - typescript/kernel/backends/memory
+    - typescript/kernel/backends/shared
+    - reports/compatibility
+    - ".changeset/certification-dc-kernel-memory.md"
+  tech_spec_patchable:
+    - .constitution/tech-spec/contracts/certification-profile.meta.yaml
+estimated_diff_lines: 11000
+estimate_source: planned
+tickets:
+  - id: KRT-DC001
+    title: Bind clock and in-process fault controls in the TypeScript kernel adapter
+    type: Feature
+    effort: 3
+    depends_on: []
+    scope:
+      in:
+        - typescript/kernel/conformance-adapter
+        - typescript/kernel/testkit
+        - tools/conformance/harness
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; setClock and armFault with mode throw are dispatched by the runner, faults are armed at the ADR-0076 storage-boundary points, and faultActivated assertions read the returned token's activation."
+    stop_conditions:
+      - "STOP if a storage-boundary point cannot be reached in the memory backend; mark it unsupported for kernel.memory; do not improvise."
+    description: "ADR-0076 decisions 4 and 5 (throw mode) and the setClock control. Re-express the testkit fault seam at the storage-boundary points, retire the mid-commit name, return an activation token from armFault, and bind backend and worker clock domains to setClock. The runner owns arming and clock values; the adapter only forwards them to the implementation's test seams."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert a fault armed at each supported point produces a typed fault outcome and activation evidence for its token, an unreached arming is reported as invalid rather than pass, and setClock values are the only clock the kernel observes in these runs."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DC002
+    title: Rewrite scope-isolation and reclamation plans as syscall traces
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DC001]
+    scope:
+      in:
+        - spec/conformance/kernel/plans
+        - spec/conformance/kernel/negative-controls.json
+        - typescript/kernel/conformance-adapter
+        - typescript/kernel/testkit
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the rewritten plans pass on the TypeScript memory kernel and the scope and reclamation mutants are killed."
+    stop_conditions:
+      - "STOP if reclamation grace semantics cannot be driven through setClock and run-liveness syscalls; record a specification finding; do not improvise."
+    description: "ADR-0075 and the owner's erasure ruling. Rewrite kernel-scope-isolation.json and kernel-reclamation.json as traces over store, tree, branch, run, and maintenance syscalls, with clocks set by the runner. Limit erasure checks to ciphertext retention and unchanged lineage; key destruction leaves the kernel plans. Reduce the adapter's reclaim-probe, erasure-probe, and cross-scope-probe composites to bindings, ship the obligation map, remove redundant unit tests with reasons, and triage every failure."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the rewritten plans pass, every old obligation maps to a claimId or removal reason, the cross-scope, reachable-delete, grace-sweep, and never-sweep mutants are killed with activation proof, and no erasure check depends on adapter-owned keys."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DC003
+    title: Rewrite run-liveness plans with runner-owned clocks
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DC001]
+    scope:
+      in:
+        - spec/conformance/kernel/plans
+        - spec/conformance/kernel/negative-controls.json
+        - typescript/kernel/conformance-adapter
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; lease renewal, expired listing, and stale preemption pass on the TypeScript memory kernel with clock values only from the plan, and the lease mutants are killed."
+    stop_conditions:
+      - "STOP if a liveness obligation needs the shared-backend clock; leave it for the kernel.shared-backend profile; do not improvise."
+    description: "ADR-0075 and ADR-0076. Rewrite the memory-applicable checks of kernel-run-liveness.json as traces over run-liveness syscalls and setClock, removing workerClockWouldExpire and every adapter-derived liveness boolean. Clock-skew preemption moves to the kernel.shared-backend profile in the durable lifecycle epic. Ship the obligation map, remove redundant unit tests with reasons, and triage every failure."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the rewritten checks pass, the lease-before-expiry and stale-owner mutants are killed, and no plan asserts a value computed from two plan constants."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DC004
+    title: Rewrite in-process recovery checks with armed faults and conditional outcomes
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DC001]
+    scope:
+      in:
+        - spec/conformance/kernel/plans
+        - spec/conformance/kernel/negative-controls.json
+        - typescript/kernel/conformance-adapter
+        - typescript/kernel/testkit
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; in-process crash-recovery checks pass on the TypeScript memory kernel with expected heads taken from earlier trace observations, and the staged-work and fault-never-fires mutants are detected."
+    stop_conditions:
+      - "STOP if recovery requires an adapter-inserted reconcile call that is not part of the public recovery lifecycle; record a specification finding; do not improvise."
+    description: "ADR-0076 decisions 4 to 6. Rewrite the in-process crash-recovery checks of kernel-restart-recovery.json as traces: establish a baseline checkpoint, arm a fault at each supported point, attempt the checkpoint, recover through the public recovery surface, and assert head and staging state against earlier captures, using when-branches only where the authority allows two outcomes. Remove the adapter's expected-head selection and the derived booleans. Concurrent-writer checks wait for the orchestration epic. Ship the obligation map, remove redundant unit tests with reasons, and triage every failure."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every supported fault point yields activation evidence and a passing recovery trace, both when-branches are exercised across points, the drop-staged and promote-staged mutants are killed, and the fault-never-fires mutant is detected by the runner's missing-activation rejection."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DC005
+    title: Certify the TypeScript memory kernel under kernel.memory
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DC002, KRT-DC003, KRT-DC004]
+    scope:
+      in:
+        - spec/conformance/kernel/profiles.json
+        - spec/kernel/authority-packet.json
+        - tools/conformance/certification
+        - tools/conformance/harness
+        - tools/conformance/meta-conformance
+        - typescript/kernel/conformance-adapter
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the kernel.memory profile is enforcing, the negative-control gate is enforcing for it, and the TypeScript memory kernel produces a complete certificate bundle."
+    stop_conditions:
+      - "STOP if any kernel.memory claim has no designated detecting mutant and no recorded reason; do not improvise."
+    description: "ADR-0079 decision 4 and ADR-0081. Write spec/conformance/kernel/profiles.json with kernel.memory, make compiler rules and the negative-control gate enforcing for its plans, claim the profile in the TypeScript memory adapter manifest, and emit the certificate bundle with digests and the matching control run. Delete legacy composite kernel operations no longer used by any TypeScript plan only after confirming other adapters do not depend on them; otherwise keep them deprecated."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert a claimed profile with a non-applicable required check fails, the TypeScript memory certificate validates against tools/schemas/certification-evidence.schema.json with a control run matching all verifier digests, and every kernel.memory claim has a detecting mutant or a recorded reason."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned

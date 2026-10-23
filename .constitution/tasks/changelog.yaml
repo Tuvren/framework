@@ -1,4 +1,15 @@
 entries:
+  - version: v0.50.0
+    date: 2026-10-22
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.48.0
+    added:
+      - "Planned the kernel line of observation-only certification from ADR-0075 to ADR-0081 in nine epics: CZ lands the integrity floor, the pinned schemas, and the negative-control baseline against the current plans; DB and DC rewrite the kernel plans as syscall traces and certify the TypeScript memory kernel under kernel.memory; DD certifies Rust as the second kernel language; DE adds protocol 0.2 orchestration for races, cancellation, and live streams; DF certifies SQLite and PostgreSQL under persistent-reopen, process-crash, and shared-backend; DG, DH, and DI certify Go, Python, and Dart under kernel.memory in one wave."
+    changed:
+      - "Applied the owner's sequencing ruling that certification precedes the remaining Bazel wave: EPIC-CB now depends on DF, DG, DH, and DI. The framework ports (providers, engine, runners, streaming, tools, telemetry) and the certificate-driven compatibility ledger are deferred to a later Stage 4 pass calibrated on the kernel line's actuals, which will also extend CB's dependencies."
+      - "Estimated against the observed INFO-CAL ratio of 1.14 actual to estimate over 22 completed epics. Most certification tickets are assumed because they first exercise the new pinned contracts and each plan rewrite may surface implementation or specification findings."
   - version: v0.49.1
     date: 2026-10-19
     changed:
