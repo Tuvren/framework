@@ -85,7 +85,9 @@
     "rust": "rust/kernel",
     "go": "go/kernel",
     "python": "python/kernel",
-    "dart": "dart/kernel"
+    "dart": "dart/kernel",
+    "adapter-protocol": "tools/conformance/adapter-protocol/protocol.schema.json",
+    "typescript-testkit": "typescript/kernel/testkit"
   },
   "bindingSections": {
     "scope-isolation": {
@@ -115,7 +117,9 @@
     "dart/kernel-certification",
     "dart/kernel-conformance-adapter",
     "docs",
-    ".constitution"
+    ".constitution",
+    "tools/conformance/adapter-protocol/protocol.schema.json",
+    "typescript/kernel/testkit"
   ],
   "verificationPaths": [
     {
@@ -142,5 +146,7 @@
       "kind": "conformance-plan",
       "target": "spec/conformance/kernel/plans/kernel-reclamation.json"
     }
-  ]
+  ],
+  "operationCatalog": "spec/conformance/kernel/operations.json",
+  "identityRecipes": "spec/conformance/kernel/identity-recipes.json"
 }

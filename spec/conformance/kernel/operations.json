@@ -1,0 +1,5608 @@
+{
+  "catalogId": "tuvren.kernel.operations",
+  "catalogVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "operations": [
+    {
+      "operationId": "kernel.store.put",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "blob": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/bytes"
+          },
+          "mediaType": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["blob"]
+      },
+      "observation": {
+        "result": {
+          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+        }
+      },
+      "errors": ["kernel_persistence_fault_injected"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.store.put"
+    },
+    {
+      "operationId": "kernel.store.get",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["hash"]
+      },
+      "observation": {
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/bytes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.store.get"
+    },
+    {
+      "operationId": "kernel.store.has",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["hash"]
+      },
+      "observation": {
+        "result": {
+          "type": "boolean"
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.store.has"
+    },
+    {
+      "operationId": "kernel.schema.register",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "schemaId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "path": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "collection": {
+                      "enum": ["ordered", "single"]
+                    },
+                    "metadata": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": ["path", "collection"]
+                }
+              },
+              "incorporationRules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "objectType": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "targetPath": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    }
+                  },
+                  "required": ["objectType", "targetPath"]
+                }
+              }
+            },
+            "required": ["schemaId", "paths", "incorporationRules"]
+          }
+        },
+        "required": ["schema"]
+      },
+      "observation": {
+        "result": {
+          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+        }
+      },
+      "errors": ["duplicate_schema_path", "kernel_persistence_fault_injected"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.schema.register"
+    },
+    {
+      "operationId": "kernel.schema.get",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["schemaId"]
+      },
+      "observation": {
+        "result": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "schemaId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "path": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "collection": {
+                        "enum": ["ordered", "single"]
+                      },
+                      "metadata": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                      }
+                    },
+                    "required": ["path", "collection"]
+                  }
+                },
+                "incorporationRules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "targetPath": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      }
+                    },
+                    "required": ["objectType", "targetPath"]
+                  }
+                }
+              },
+              "required": ["schemaId", "paths", "incorporationRules"]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.schema.get"
+    },
+    {
+      "operationId": "kernel.tree.create",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "changes": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "$map": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    {
+                      "anyOf": [
+                        {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              }
+            },
+            "required": ["$map"]
+          },
+          "baseTurnTreeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["schemaId", "changes"]
+      },
+      "observation": {
+        "result": {
+          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+        }
+      },
+      "errors": [
+        "kernel_runtime_missing_required_tree_path",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.tree.create"
+    },
+    {
+      "operationId": "kernel.tree.incorporate",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseTurnTreeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          },
+          "stagedResults": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "taskId": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "objectHash": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                    },
+                    "objectType": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "timestamp": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                    },
+                    "status": {
+                      "enum": ["completed", "failed"]
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "objectHash",
+                    "objectType",
+                    "timestamp",
+                    "status"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "taskId": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "objectHash": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                    },
+                    "objectType": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "timestamp": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                    },
+                    "status": {
+                      "const": "interrupted"
+                    },
+                    "interruptPayload": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "objectHash",
+                    "objectType",
+                    "timestamp",
+                    "status",
+                    "interruptPayload"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "required": ["baseTurnTreeHash", "stagedResults"]
+      },
+      "observation": {
+        "result": {
+          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+        }
+      },
+      "errors": ["kernel_persistence_fault_injected"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.tree.incorporate"
+    },
+    {
+      "operationId": "kernel.tree.diff",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "treeHashA": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          },
+          "treeHashB": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["treeHashA", "treeHashB"]
+      },
+      "observation": {
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "uniqueItems": true,
+          "description": "Changed paths in ascending unsigned UTF-8 byte order (ADR-0080)."
+        }
+      },
+      "errors": ["kernel_runtime_tree_schema_mismatch_diff"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.tree.diff"
+    },
+    {
+      "operationId": "kernel.tree.resolve",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "treeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          },
+          "path": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["treeHash", "path"]
+      },
+      "observation": {
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.tree.resolve"
+    },
+    {
+      "operationId": "kernel.tree.manifest",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "treeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["treeHash"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "$map": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  {
+                    "anyOf": [
+                      {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          },
+          "required": ["$map"]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.tree.manifest"
+    },
+    {
+      "operationId": "kernel.node.get",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["hash"]
+      },
+      "observation": {
+        "result": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "hash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                },
+                "schemaId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "turnTreeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                },
+                "previousTurnNodeHash": {
+                  "anyOf": [
+                    {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "eventHash": {
+                  "anyOf": [
+                    {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "consumedStagedResults": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "taskId": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                          },
+                          "objectHash": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                          },
+                          "objectType": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                          },
+                          "timestamp": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                          },
+                          "status": {
+                            "enum": ["completed", "failed"]
+                          }
+                        },
+                        "required": [
+                          "taskId",
+                          "objectHash",
+                          "objectType",
+                          "timestamp",
+                          "status"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "taskId": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                          },
+                          "objectHash": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                          },
+                          "objectType": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                          },
+                          "timestamp": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                          },
+                          "status": {
+                            "const": "interrupted"
+                          },
+                          "interruptPayload": {
+                            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                          }
+                        },
+                        "required": [
+                          "taskId",
+                          "objectHash",
+                          "objectType",
+                          "timestamp",
+                          "status",
+                          "interruptPayload"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "hash",
+                "schemaId",
+                "turnTreeHash",
+                "previousTurnNodeHash",
+                "eventHash",
+                "consumedStagedResults"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.node.get"
+    },
+    {
+      "operationId": "kernel.node.walkBack",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "fromHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["fromHash"]
+      },
+      "observation": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "hash": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              },
+              "schemaId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "turnTreeHash": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              },
+              "previousTurnNodeHash": {
+                "anyOf": [
+                  {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "eventHash": {
+                "anyOf": [
+                  {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "consumedStagedResults": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "taskId": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                        },
+                        "objectHash": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                        },
+                        "objectType": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                        },
+                        "timestamp": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                        },
+                        "status": {
+                          "enum": ["completed", "failed"]
+                        }
+                      },
+                      "required": [
+                        "taskId",
+                        "objectHash",
+                        "objectType",
+                        "timestamp",
+                        "status"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "taskId": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                        },
+                        "objectHash": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                        },
+                        "objectType": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                        },
+                        "timestamp": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                        },
+                        "status": {
+                          "const": "interrupted"
+                        },
+                        "interruptPayload": {
+                          "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                        }
+                      },
+                      "required": [
+                        "taskId",
+                        "objectHash",
+                        "objectType",
+                        "timestamp",
+                        "status",
+                        "interruptPayload"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "hash",
+              "schemaId",
+              "turnTreeHash",
+              "previousTurnNodeHash",
+              "eventHash",
+              "consumedStagedResults"
+            ]
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.node.walkBack"
+    },
+    {
+      "operationId": "kernel.branch.create",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "threadId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "fromTurnNodeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["branchId", "threadId", "fromTurnNodeHash"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "branchId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "threadId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "headTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            }
+          },
+          "required": ["branchId", "threadId", "headTurnNodeHash"]
+        }
+      },
+      "errors": [
+        "turn_node_thread_mismatch",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.branch.create"
+    },
+    {
+      "operationId": "kernel.branch.get",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["branchId"]
+      },
+      "observation": {
+        "result": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "branchId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "threadId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "headTurnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "required": ["branchId", "threadId", "headTurnNodeHash"]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.branch.get"
+    },
+    {
+      "operationId": "kernel.branch.list",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "threadId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["threadId"]
+      },
+      "observation": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.branch.list"
+    },
+    {
+      "operationId": "kernel.branch.setHead",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "turnNodeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["branchId", "turnNodeHash"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "branch": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "branchId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "threadId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "headTurnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "required": ["branchId", "threadId", "headTurnNodeHash"]
+            },
+            "archiveBranch": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "branchId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "threadId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "headTurnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "required": ["branchId", "threadId", "headTurnNodeHash"]
+            }
+          },
+          "required": ["branch"]
+        }
+      },
+      "errors": [
+        "turn_node_thread_mismatch",
+        "kernel_runtime_lateral_head_movement",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.branch.setHead"
+    },
+    {
+      "operationId": "kernel.thread.create",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "threadId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "schemaId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "initialBranchId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["threadId", "schemaId", "initialBranchId"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "threadId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "branchId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "rootTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "rootTurnTreeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            }
+          },
+          "required": [
+            "threadId",
+            "branchId",
+            "rootTurnNodeHash",
+            "rootTurnTreeHash"
+          ]
+        }
+      },
+      "errors": ["kernel_persistence_fault_injected"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.thread.create"
+    },
+    {
+      "operationId": "kernel.thread.get",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "threadId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["threadId"]
+      },
+      "observation": {
+        "result": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "threadId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "schemaId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "rootTurnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "required": ["threadId", "schemaId", "rootTurnNodeHash"]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.thread.get"
+    },
+    {
+      "operationId": "kernel.thread.list",
+      "kind": "syscall",
+      "capability": "kernel-protocol.thread.enumeration",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "cursor": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "filter": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "schemaId": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  }
+                },
+                "required": []
+              }
+            },
+            "required": []
+          }
+        },
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "threads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "threadId": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "schemaId": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "rootTurnNodeHash": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                  },
+                  "createdAtMs": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                  }
+                },
+                "required": [
+                  "threadId",
+                  "schemaId",
+                  "rootTurnNodeHash",
+                  "createdAtMs"
+                ]
+              }
+            },
+            "nextCursor": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            }
+          },
+          "required": ["threads"]
+        }
+      },
+      "errors": ["kernel_capability_unsupported"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.thread.list"
+    },
+    {
+      "operationId": "kernel.staging.stage",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "blob": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/bytes"
+          },
+          "taskId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "objectType": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "status": {
+            "enum": ["completed", "failed", "interrupted"]
+          },
+          "interruptPayload": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+          }
+        },
+        "required": ["runId", "blob", "taskId", "objectType", "status"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "objectHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "stagedResult": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "taskId": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "objectHash": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                    },
+                    "objectType": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "timestamp": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                    },
+                    "status": {
+                      "enum": ["completed", "failed"]
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "objectHash",
+                    "objectType",
+                    "timestamp",
+                    "status"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "taskId": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "objectHash": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                    },
+                    "objectType": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "timestamp": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                    },
+                    "status": {
+                      "const": "interrupted"
+                    },
+                    "interruptPayload": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "objectHash",
+                    "objectType",
+                    "timestamp",
+                    "status",
+                    "interruptPayload"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": ["objectHash", "stagedResult"]
+        }
+      },
+      "errors": ["kernel_persistence_fault_injected"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.staging.stage"
+    },
+    {
+      "operationId": "kernel.staging.current",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["runId"]
+      },
+      "observation": {
+        "result": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "taskId": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "objectHash": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                  },
+                  "objectType": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "timestamp": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                  },
+                  "status": {
+                    "enum": ["completed", "failed"]
+                  }
+                },
+                "required": [
+                  "taskId",
+                  "objectHash",
+                  "objectType",
+                  "timestamp",
+                  "status"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "taskId": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "objectHash": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                  },
+                  "objectType": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "timestamp": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                  },
+                  "status": {
+                    "const": "interrupted"
+                  },
+                  "interruptPayload": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                  }
+                },
+                "required": [
+                  "taskId",
+                  "objectHash",
+                  "objectType",
+                  "timestamp",
+                  "status",
+                  "interruptPayload"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.staging.current"
+    },
+    {
+      "operationId": "kernel.run.create",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "turnId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "branchId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "schemaId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "startTurnNodeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "deterministic": {
+                  "type": "boolean"
+                },
+                "sideEffects": {
+                  "type": "boolean"
+                },
+                "metadata": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                }
+              },
+              "required": ["id", "deterministic", "sideEffects"]
+            }
+          }
+        },
+        "required": [
+          "runId",
+          "turnId",
+          "branchId",
+          "schemaId",
+          "startTurnNodeHash",
+          "steps"
+        ]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "runId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "turnId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "branchId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "schemaId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "startTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "status": {
+              "enum": ["running", "paused", "completed", "failed"]
+            },
+            "currentStepIndex": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "stepSequence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "deterministic": {
+                    "type": "boolean"
+                  },
+                  "sideEffects": {
+                    "type": "boolean"
+                  },
+                  "metadata": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                  }
+                },
+                "required": ["id", "deterministic", "sideEffects"]
+              }
+            },
+            "createdTurnNodes": {
+              "type": "array",
+              "items": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              }
+            },
+            "executionOwnerId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "fencingToken": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "leaseExpiresAtMs": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+            },
+            "preemptionReason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "turnId",
+            "branchId",
+            "schemaId",
+            "startTurnNodeHash",
+            "status",
+            "currentStepIndex",
+            "stepSequence",
+            "createdTurnNodes"
+          ]
+        }
+      },
+      "errors": [
+        "kernel_runtime_branch_already_active",
+        "turn_node_thread_mismatch",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.run.create"
+    },
+    {
+      "operationId": "kernel.run.beginStep",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "stepId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["runId", "stepId"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "step": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "deterministic": {
+                  "type": "boolean"
+                },
+                "sideEffects": {
+                  "type": "boolean"
+                },
+                "metadata": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                }
+              },
+              "required": ["id", "deterministic", "sideEffects"]
+            },
+            "schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "schemaId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "path": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "collection": {
+                        "enum": ["ordered", "single"]
+                      },
+                      "metadata": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                      }
+                    },
+                    "required": ["path", "collection"]
+                  }
+                },
+                "incorporationRules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "targetPath": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      }
+                    },
+                    "required": ["objectType", "targetPath"]
+                  }
+                }
+              },
+              "required": ["schemaId", "paths", "incorporationRules"]
+            },
+            "signals": {
+              "type": "array",
+              "items": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+              }
+            },
+            "currentTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            }
+          },
+          "required": ["step", "schema", "signals", "currentTurnNodeHash"]
+        }
+      },
+      "errors": [
+        "kernel_runtime_unexpected_step",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.run.beginStep"
+    },
+    {
+      "operationId": "kernel.run.completeStep",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "stepId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "eventHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          },
+          "observeResults": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "annotations": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/map"
+                  }
+                },
+                "signals": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                  }
+                }
+              },
+              "required": ["annotations", "signals"]
+            }
+          },
+          "treeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["runId", "stepId"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "checkpointed": {
+              "type": "boolean"
+            },
+            "turnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "lease": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "fencingToken": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "leaseExpiresAtMs": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                }
+              },
+              "required": ["fencingToken", "leaseExpiresAtMs"]
+            }
+          },
+          "required": ["checkpointed"]
+        }
+      },
+      "errors": [
+        "kernel_runtime_unexpected_step",
+        "kernel_runtime_missing_event_object",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.run.completeStep"
+    },
+    {
+      "operationId": "kernel.run.recover",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["runId"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lastTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "lastCompletedStepId": {
+              "anyOf": [
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "stepSequence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "deterministic": {
+                    "type": "boolean"
+                  },
+                  "sideEffects": {
+                    "type": "boolean"
+                  },
+                  "metadata": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                  }
+                },
+                "required": ["id", "deterministic", "sideEffects"]
+              }
+            },
+            "consumedStagedResults": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "enum": ["completed", "failed"]
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "const": "interrupted"
+                      },
+                      "interruptPayload": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status",
+                      "interruptPayload"
+                    ]
+                  }
+                ]
+              }
+            },
+            "uncommittedStagedResults": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "enum": ["completed", "failed"]
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "const": "interrupted"
+                      },
+                      "interruptPayload": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status",
+                      "interruptPayload"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "lastTurnNodeHash",
+            "lastCompletedStepId",
+            "stepSequence",
+            "consumedStagedResults",
+            "uncommittedStagedResults"
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.run.recover"
+    },
+    {
+      "operationId": "kernel.run.complete",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "status": {
+            "enum": ["completed", "failed", "paused"]
+          },
+          "eventHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["runId", "status"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "turnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            }
+          },
+          "required": []
+        }
+      },
+      "errors": [
+        "kernel_runtime_missing_event_object",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.run.complete"
+    },
+    {
+      "operationId": "kernel.turn.create",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "turnId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "threadId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "branchId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "parentTurnId": {
+            "anyOf": [
+              {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startTurnNodeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["turnId", "threadId", "branchId", "startTurnNodeHash"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "turnId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "threadId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "branchId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "parentTurnId": {
+              "anyOf": [
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "headTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            }
+          },
+          "required": [
+            "turnId",
+            "threadId",
+            "branchId",
+            "parentTurnId",
+            "startTurnNodeHash",
+            "headTurnNodeHash"
+          ]
+        }
+      },
+      "errors": [
+        "turn_node_thread_mismatch",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.turn.create"
+    },
+    {
+      "operationId": "kernel.turn.get",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "turnId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          }
+        },
+        "required": ["turnId"]
+      },
+      "observation": {
+        "result": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "turnId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "threadId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "branchId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "parentTurnId": {
+                  "anyOf": [
+                    {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "startTurnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                },
+                "headTurnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "required": [
+                "turnId",
+                "threadId",
+                "branchId",
+                "parentTurnId",
+                "startTurnNodeHash",
+                "headTurnNodeHash"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.turn.get"
+    },
+    {
+      "operationId": "kernel.turn.updateHead",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "turnId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "headTurnNodeHash": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+          }
+        },
+        "required": ["turnId", "headTurnNodeHash"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": [
+        "turn_node_thread_mismatch",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.turn.updateHead"
+    },
+    {
+      "operationId": "kernel.verdicts.compose",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "verdicts": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "proceed"
+                    }
+                  },
+                  "required": ["kind"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "abort"
+                    },
+                    "disposition": {
+                      "enum": ["HardFail", "SoftFail", "EndTurn"]
+                    },
+                    "reason": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    }
+                  },
+                  "required": ["kind", "disposition", "reason"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "modify"
+                    },
+                    "transform": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": ["kind", "transform"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "pause"
+                    },
+                    "reason": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "resumptionSchema": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": ["kind", "reason", "resumptionSchema"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "retry"
+                    },
+                    "adjustment": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": ["kind", "adjustment"]
+                }
+              ]
+            }
+          }
+        },
+        "required": ["verdicts"]
+      },
+      "observation": {
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "proceed"
+                }
+              },
+              "required": ["kind"]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "abort"
+                },
+                "disposition": {
+                  "enum": ["HardFail", "SoftFail", "EndTurn"]
+                },
+                "reason": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                }
+              },
+              "required": ["kind", "disposition", "reason"]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "modify"
+                },
+                "transform": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                }
+              },
+              "required": ["kind", "transform"]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "pause"
+                },
+                "reason": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "resumptionSchema": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                }
+              },
+              "required": ["kind", "reason", "resumptionSchema"]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "retry"
+                },
+                "adjustment": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                }
+              },
+              "required": ["kind", "adjustment"]
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.verdicts.compose"
+    },
+    {
+      "operationId": "kernel.runLiveness.createLeasedRun",
+      "kind": "syscall",
+      "capability": "kernel.run-liveness",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "runId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "turnId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "branchId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "schemaId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "startTurnNodeHash": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "deterministic": {
+                      "type": "boolean"
+                    },
+                    "sideEffects": {
+                      "type": "boolean"
+                    },
+                    "metadata": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": ["id", "deterministic", "sideEffects"]
+                }
+              },
+              "executionOwnerId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "leaseExpiresAtMs": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+              }
+            },
+            "required": [
+              "runId",
+              "turnId",
+              "branchId",
+              "schemaId",
+              "startTurnNodeHash",
+              "steps",
+              "executionOwnerId",
+              "leaseExpiresAtMs"
+            ]
+          }
+        },
+        "required": ["input"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "runId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "turnId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "branchId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "schemaId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "startTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "status": {
+              "enum": ["running", "paused", "completed", "failed"]
+            },
+            "currentStepIndex": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "stepSequence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "deterministic": {
+                    "type": "boolean"
+                  },
+                  "sideEffects": {
+                    "type": "boolean"
+                  },
+                  "metadata": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                  }
+                },
+                "required": ["id", "deterministic", "sideEffects"]
+              }
+            },
+            "createdTurnNodes": {
+              "type": "array",
+              "items": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              }
+            },
+            "executionOwnerId": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "fencingToken": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "leaseExpiresAtMs": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+            },
+            "preemptionReason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "turnId",
+            "branchId",
+            "schemaId",
+            "startTurnNodeHash",
+            "status",
+            "currentStepIndex",
+            "stepSequence",
+            "createdTurnNodes"
+          ]
+        }
+      },
+      "errors": [
+        "kernel_runtime_branch_already_active",
+        "turn_node_thread_mismatch",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernelRunLiveness.runLiveness.createLeasedRun"
+    },
+    {
+      "operationId": "kernel.runLiveness.renewLease",
+      "kind": "syscall",
+      "capability": "kernel.run-liveness",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "executionOwnerId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "fencingToken": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "nextLeaseExpiresAtMs": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+          }
+        },
+        "required": [
+          "runId",
+          "executionOwnerId",
+          "fencingToken",
+          "nextLeaseExpiresAtMs"
+        ]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fencingToken": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            },
+            "leaseExpiresAtMs": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+            }
+          },
+          "required": ["fencingToken", "leaseExpiresAtMs"]
+        }
+      },
+      "errors": [
+        "run_lease_owner_mismatch",
+        "run_lease_token_mismatch",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernelRunLiveness.runLiveness.renewLease"
+    },
+    {
+      "operationId": "kernel.runLiveness.listExpired",
+      "kind": "syscall",
+      "capability": "kernel.run-liveness",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "nowMs": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+          }
+        },
+        "required": ["nowMs"]
+      },
+      "observation": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "runId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "turnId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "branchId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "schemaId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "startTurnNodeHash": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+              },
+              "status": {
+                "enum": ["running", "paused", "completed", "failed"]
+              },
+              "currentStepIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "stepSequence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                    },
+                    "deterministic": {
+                      "type": "boolean"
+                    },
+                    "sideEffects": {
+                      "type": "boolean"
+                    },
+                    "metadata": {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    }
+                  },
+                  "required": ["id", "deterministic", "sideEffects"]
+                }
+              },
+              "createdTurnNodes": {
+                "type": "array",
+                "items": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "executionOwnerId": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "fencingToken": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+              },
+              "leaseExpiresAtMs": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+              },
+              "preemptionReason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "runId",
+              "turnId",
+              "branchId",
+              "schemaId",
+              "startTurnNodeHash",
+              "status",
+              "currentStepIndex",
+              "stepSequence",
+              "createdTurnNodes"
+            ]
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernelRunLiveness.runLiveness.listExpired"
+    },
+    {
+      "operationId": "kernel.runLiveness.preemptExpired",
+      "kind": "syscall",
+      "capability": "kernel.run-liveness",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "preemptingOwnerId": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "nowMs": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["runId", "preemptingOwnerId", "nowMs", "reason"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lastTurnNodeHash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "lastCompletedStepId": {
+              "anyOf": [
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "stepSequence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                  },
+                  "deterministic": {
+                    "type": "boolean"
+                  },
+                  "sideEffects": {
+                    "type": "boolean"
+                  },
+                  "metadata": {
+                    "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                  }
+                },
+                "required": ["id", "deterministic", "sideEffects"]
+              }
+            },
+            "consumedStagedResults": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "enum": ["completed", "failed"]
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "const": "interrupted"
+                      },
+                      "interruptPayload": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status",
+                      "interruptPayload"
+                    ]
+                  }
+                ]
+              }
+            },
+            "uncommittedStagedResults": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "enum": ["completed", "failed"]
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "taskId": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "objectHash": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                      },
+                      "objectType": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                      },
+                      "timestamp": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                      },
+                      "status": {
+                        "const": "interrupted"
+                      },
+                      "interruptPayload": {
+                        "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                      }
+                    },
+                    "required": [
+                      "taskId",
+                      "objectHash",
+                      "objectType",
+                      "timestamp",
+                      "status",
+                      "interruptPayload"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "lastTurnNodeHash",
+            "lastCompletedStepId",
+            "stepSequence",
+            "consumedStagedResults",
+            "uncommittedStagedResults"
+          ]
+        }
+      },
+      "errors": ["kernel_persistence_fault_injected"],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernelRunLiveness.runLiveness.preemptExpired"
+    },
+    {
+      "operationId": "kernel.maintenance.reclaim",
+      "kind": "syscall",
+      "capability": "kernel.reclamation",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nowMs": {
+                "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+              }
+            },
+            "required": []
+          }
+        },
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "releasedArchivedBranchCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "releasedObjectCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "releasedOrderedPathChunkCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "releasedRunCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "releasedTurnCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "releasedTurnNodeCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "releasedTurnTreeCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "retainedObjectCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "releasedArchivedBranchCount",
+            "releasedObjectCount",
+            "releasedOrderedPathChunkCount",
+            "releasedRunCount",
+            "releasedTurnCount",
+            "releasedTurnNodeCount",
+            "releasedTurnTreeCount",
+            "retainedObjectCount"
+          ]
+        }
+      },
+      "errors": [
+        "kernel_capability_unsupported",
+        "kernel_persistence_fault_injected"
+      ],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/protocol#RuntimeKernel.maintenance.reclaim"
+    },
+    {
+      "operationId": "kernel.clock.set",
+      "kind": "control",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/handle"
+          },
+          "domain": {
+            "enum": ["backend", "worker"]
+          },
+          "nowMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["instance", "domain", "nowMs"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "tools/conformance/adapter-protocol/protocol.schema.json#/$defs/SetClockParams"
+    },
+    {
+      "operationId": "kernel.fault.arm",
+      "kind": "control",
+      "capability": "kernel.fault-injection",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/handle"
+          },
+          "point": {
+            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+          },
+          "selector": {},
+          "occurrence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "mode": {
+            "enum": ["throw", "block"]
+          }
+        },
+        "required": ["instance", "point", "selector", "occurrence", "mode"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "token": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/handle"
+            }
+          },
+          "required": ["token"]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "tools/conformance/adapter-protocol/protocol.schema.json#/$defs/ArmFaultParams"
+    },
+    {
+      "operationId": "kernel.mutant.activation",
+      "kind": "control",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "activation": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "activated": {
+                  "type": "boolean"
+                },
+                "activationCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "kind": {
+                  "enum": ["implementation", "observation", "instrumentation"]
+                },
+                "mutantId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "signal": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                }
+              },
+              "required": [
+                "activated",
+                "activationCount",
+                "kind",
+                "mutantId",
+                "signal"
+              ]
+            }
+          },
+          "required": ["activation"]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      },
+      "binding": "typescript/kernel/testkit#SelectedKernelMutant.readActivation"
+    },
+    {
+      "operationId": "kernel.lineage.cross-thread-rejection",
+      "kind": "control",
+      "capability": "kernel.logical",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.logical.branch-list",
+      "kind": "control",
+      "capability": "kernel.logical",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.logical.diff-paths",
+      "kind": "control",
+      "capability": "kernel.logical",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.logical.recovery-state",
+      "kind": "control",
+      "capability": "kernel.logical",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.logical.thread-list",
+      "kind": "control",
+      "capability": "kernel-protocol.thread.enumeration",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.protocol.canonical-rejection",
+      "kind": "control",
+      "capability": "kernel.protocol",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.protocol.deterministic-hashing",
+      "kind": "control",
+      "capability": "kernel.protocol",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.protocol.edge-validation",
+      "kind": "control",
+      "capability": "kernel.edge-validation",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.protocol.modify-composition",
+      "kind": "control",
+      "capability": "kernel.protocol",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.protocol.schema-roundtrip",
+      "kind": "control",
+      "capability": "kernel.protocol",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.reclamation.erasure-probe",
+      "kind": "control",
+      "capability": "kernel.reclamation",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.reclamation.reclaim-probe",
+      "kind": "control",
+      "capability": "kernel.reclamation",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.restart-recovery.close-reopen-checkpoint",
+      "kind": "control",
+      "capability": "kernel.restart-recovery",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.restart-recovery.concurrent-writer",
+      "kind": "control",
+      "capability": "kernel.restart-recovery",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.restart-recovery.crash-recovery-durable",
+      "kind": "control",
+      "capability": "kernel.restart-recovery",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.restart-recovery.crash-recovery-in-process",
+      "kind": "control",
+      "capability": "kernel.restart-recovery",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.run-liveness.clock-skew-preemption",
+      "kind": "control",
+      "capability": "kernel.run-liveness",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.run-liveness.expired-listing",
+      "kind": "control",
+      "capability": "kernel.run-liveness",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.run-liveness.lease-renewal",
+      "kind": "control",
+      "capability": "kernel.run-liveness",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.run-liveness.stale-preemption",
+      "kind": "control",
+      "capability": "kernel.run-liveness",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.scope-isolation.cross-scope-probe",
+      "kind": "control",
+      "capability": "kernel.scope-isolation",
+      "deprecated": true,
+      "input": true,
+      "observation": {
+        "result": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "events": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/legacyValue",
+          "$defs": {
+            "legacyValue": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/safeInteger"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/legacyValue"
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    ".*": {
+                      "$ref": "#/$defs/legacyValue"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    }
+  ]
+}

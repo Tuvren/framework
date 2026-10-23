@@ -1,0 +1,93 @@
+{
+  "recipeId": "tuvren.kernel.identity-recipes",
+  "recipeVersion": "0.1.0",
+  "recipes": [
+    {
+      "recordType": "opaque-object",
+      "projection": {
+        "source": "bytes"
+      },
+      "cborProfile": {
+        "encoding": "raw-bytes"
+      },
+      "hash": "sha256"
+    },
+    {
+      "recordType": "turn-node",
+      "projection": {
+        "fields": [
+          "schemaId",
+          "turnTreeHash",
+          "previousTurnNodeHash",
+          "eventHash",
+          "consumedStagedResults"
+        ],
+        "stagedResultProjection": {
+          "fields": [
+            "taskId",
+            "objectHash",
+            "objectType",
+            "status",
+            "timestamp",
+            "interruptPayload"
+          ],
+          "optionalFields": ["interruptPayload"]
+        }
+      },
+      "cborProfile": {
+        "encoding": "deterministic-cbor",
+        "mapKeyOrder": "unsigned-bytewise-lexicographic-deterministic-cbor-encoded-text-keys",
+        "integerEncoding": "major-type-0-for-n>=0; major-type-1-with-argument=-1-n-for-n<0; shortest-argument-width; no-floats",
+        "lengthEncoding": "shortest-definite-length; text-length-is-utf8-byte-count; map-length-is-entry-count",
+        "integerDomain": [-9007199254740991, 9007199254740991],
+        "textEncoding": "utf-8-without-normalization",
+        "bytesEncoding": "untagged-major-type-2",
+        "arrayOrder": "preserve",
+        "tags": false,
+        "negativeZero": false,
+        "argumentEncoding": "0..23-inline; 24..255-uint8; 256..65535-uint16; 65536..4294967295-uint32; larger-uint64; big-endian"
+      },
+      "hash": "sha256"
+    },
+    {
+      "recordType": "turn-tree",
+      "projection": {
+        "fields": ["schemaId", "manifest"]
+      },
+      "cborProfile": {
+        "encoding": "deterministic-cbor",
+        "mapKeyOrder": "unsigned-bytewise-lexicographic-deterministic-cbor-encoded-text-keys",
+        "integerEncoding": "major-type-0-for-n>=0; major-type-1-with-argument=-1-n-for-n<0; shortest-argument-width; no-floats",
+        "lengthEncoding": "shortest-definite-length; text-length-is-utf8-byte-count; map-length-is-entry-count",
+        "integerDomain": [-9007199254740991, 9007199254740991],
+        "textEncoding": "utf-8-without-normalization",
+        "bytesEncoding": "untagged-major-type-2",
+        "arrayOrder": "preserve",
+        "tags": false,
+        "negativeZero": false,
+        "argumentEncoding": "0..23-inline; 24..255-uint8; 256..65535-uint16; 65536..4294967295-uint32; larger-uint64; big-endian"
+      },
+      "hash": "sha256"
+    },
+    {
+      "recordType": "schema",
+      "projection": {
+        "fields": ["schemaId", "paths", "incorporationRules"]
+      },
+      "cborProfile": {
+        "encoding": "deterministic-cbor",
+        "mapKeyOrder": "unsigned-bytewise-lexicographic-deterministic-cbor-encoded-text-keys",
+        "integerEncoding": "major-type-0-for-n>=0; major-type-1-with-argument=-1-n-for-n<0; shortest-argument-width; no-floats",
+        "lengthEncoding": "shortest-definite-length; text-length-is-utf8-byte-count; map-length-is-entry-count",
+        "integerDomain": [-9007199254740991, 9007199254740991],
+        "textEncoding": "utf-8-without-normalization",
+        "bytesEncoding": "untagged-major-type-2",
+        "arrayOrder": "preserve",
+        "tags": false,
+        "negativeZero": false,
+        "argumentEncoding": "0..23-inline; 24..255-uint8; 256..65535-uint16; 65536..4294967295-uint32; larger-uint64; big-endian"
+      },
+      "hash": "sha256"
+    }
+  ]
+}
