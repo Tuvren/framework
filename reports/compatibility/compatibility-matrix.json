@@ -1197,6 +1197,8 @@
             "kernel.protocol.deterministic_hashing",
             "kernel.protocol.modify_composition",
             "kernel.protocol.schema_roundtrip",
+            "kernel.syscall.controls.after_commit_before_ack",
+            "kernel.syscall.controls.before_commit",
             "kernel.syscall.lineage.cross_thread_rejection",
             "kernel.syscall.logical.branch_list",
             "kernel.syscall.logical.diff_paths",
@@ -1300,14 +1302,15 @@
             "kernel.syscall.run-liveness.stale_preemption"
           ],
           "checkSummary": {
-            "failedChecks": 52,
-            "passedChecks": 56,
+            "failedChecks": 0,
+            "passedChecks": 110,
             "totalChecks": 137,
-            "applicableChecks": 108,
-            "nonApplicableChecks": 29
+            "applicableChecks": 110,
+            "nonApplicableChecks": 27
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
+            "kernel.fault-injection",
             "kernel.logical",
             "kernel.protocol",
             "kernel.reclamation",
@@ -1316,8 +1319,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
           "reportLabel": "Rust process-local kernel baseline",
-          "reportStatus": "unexpected_fail",
-          "status": "fail",
+          "reportStatus": "capability_subset_pass",
+          "status": "pass",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
         }

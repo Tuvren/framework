@@ -1360,7 +1360,7 @@ fn run_create_rejects_empty_step_sequence() {
 }
 
 #[test]
-fn run_complete_completed_requires_all_steps() {
+fn run_complete_can_terminate_a_run_before_all_declared_steps() {
     let (kernel, _) = kernel_with_steps(vec![
         StepDeclaration {
             deterministic: true,
@@ -1375,11 +1375,12 @@ fn run_complete_completed_requires_all_steps() {
             side_effects: false,
         },
     ]);
-    let error = kernel
+    kernel
         .run_complete("run_main", RunCompletionStatus::Completed, None)
-        .expect_err("completed run must exhaust steps");
-
-    assert_eq!(error.payload.code, "run_steps_incomplete");
+        .expect("terminal completion is a public action independent of remaining steps");
+    let run = kernel.run_get("run_main").unwrap().unwrap();
+    assert_eq!(run.status, tuvren_kernel_rust::RunStatus::Completed);
+    assert_eq!(run.current_step_index, 0);
 }
 
 #[test]

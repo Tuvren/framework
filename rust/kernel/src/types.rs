@@ -206,12 +206,12 @@ pub struct LeasedRunCreateInput {
 }
 
 /// KRT-BK010: reachability-reclamation sweep summary (`kernel.reclamation`).
-/// Mirrors the TypeScript `ReclamationSummary` shape, minus ordered-path-chunk
-/// counts: the Rust in-memory kernel has no TurnTree chunking to sweep.
+/// The in-memory backend has no ordered-path chunks to sweep.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReclamationSummary {
     pub released_archived_branch_count: usize,
     pub released_object_count: usize,
+    pub released_ordered_path_chunk_count: usize,
     pub released_run_count: usize,
     pub released_turn_count: usize,
     pub released_turn_node_count: usize,

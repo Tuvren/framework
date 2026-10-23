@@ -70,6 +70,22 @@ pub(crate) fn encode_record(value: &KernelRecord) -> EncodingResult<Value> {
     })
 }
 
+pub(crate) fn encode_error_details(value: &KernelRecord) -> EncodingResult<Value> {
+    match value {
+        KernelRecord::Map(entries) => entries
+            .iter()
+            .map(|(key, value)| Ok((key.clone(), encode_error_details(value)?)))
+            .collect::<EncodingResult<Map<_, _>>>()
+            .map(Value::Object),
+        KernelRecord::Array(entries) => entries
+            .iter()
+            .map(encode_error_details)
+            .collect::<EncodingResult<Vec<_>>>()
+            .map(Value::Array),
+        _ => encode_record(value),
+    }
+}
+
 pub(crate) fn decode_record(value: &Value) -> EncodingResult<KernelRecord> {
     Ok(match value {
         Value::Null => KernelRecord::Null,

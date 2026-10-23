@@ -16,6 +16,8 @@ pub mod cbor;
 pub mod identity;
 pub mod memory;
 pub mod telemetry;
+#[cfg(feature = "conformance")]
+pub mod testkit;
 pub mod types;
 
 pub use cbor::{

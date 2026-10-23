@@ -37,7 +37,15 @@ impl Adapter {
     fn instance(&mut self) -> Value {
         let response = self.request("createInstance", json!({"input":{}}));
         assert!(response["result"].is_string(), "{response}");
-        response["result"].clone()
+        let instance = response["result"].clone();
+        for domain in ["backend", "worker"] {
+            self.result(
+                &instance,
+                "kernel.clock.set",
+                json!({"domain":domain,"nowMs":0}),
+            );
+        }
+        instance
     }
     fn call(&mut self, instance: &Value, operation: &str, input: Value) -> Value {
         self.request(
@@ -252,4 +260,164 @@ fn integer_tokens_are_checked_before_float_rounding() {
         );
         assert_eq!(adapter.raw(&frame)["result"]["kind"], "result", "{token}");
     }
+}
+
+#[test]
+fn controls_require_explicit_clocks_before_kernel_initialization() {
+    let mut adapter = Adapter::new();
+    let instance = adapter.request("createInstance", json!({"input":{}}))["result"].clone();
+    assert!(
+        adapter.call(
+            &instance,
+            "kernel.store.put",
+            json!({"blob":{"$bytes":"01"}})
+        )["error"]
+            .is_object()
+    );
+    adapter.result(
+        &instance,
+        "kernel.clock.set",
+        json!({"domain":"worker","nowMs":700}),
+    );
+    assert!(
+        adapter.call(
+            &instance,
+            "kernel.store.put",
+            json!({"blob":{"$bytes":"01"}})
+        )["error"]
+            .is_object()
+    );
+    adapter.result(
+        &instance,
+        "kernel.clock.set",
+        json!({"domain":"backend","nowMs":100}),
+    );
+    adapter.result(
+        &instance,
+        "kernel.store.put",
+        json!({"blob":{"$bytes":"01"}}),
+    );
+}
+
+#[test]
+fn unsupported_fault_phases_and_block_mode_use_catalogued_error() {
+    let mut adapter = Adapter::new();
+    let instance = adapter.instance();
+    for (point, mode) in [
+        ("after-turn-node-write-before-head", "throw"),
+        ("after-head-move-before-staging-clear", "throw"),
+        ("commit-outcome-unknown", "throw"),
+        ("before-commit", "block"),
+        ("after-commit-before-ack", "block"),
+    ] {
+        let response = adapter.call(
+            &instance,
+            "kernel.fault.arm",
+            json!({"point":point,"selector":{},"occurrence":1,"mode":mode}),
+        );
+        assert_eq!(
+            response["result"]["error"]["code"], "kernel_fault_point_unsupported",
+            "{response}"
+        );
+    }
+}
+
+#[test]
+fn supported_faults_carry_activation_tokens_and_preserve_atomic_checkpoints() {
+    let mut adapter = Adapter::new();
+    for point in ["before-commit", "after-commit-before-ack"] {
+        let instance = adapter.instance();
+        for domain in ["backend", "worker"] {
+            adapter.result(
+                &instance,
+                "kernel.clock.set",
+                json!({"domain":domain,"nowMs":0}),
+            );
+        }
+        adapter.result(&instance, "kernel.schema.register", json!({"schema":{"schemaId":"s","paths":[{"path":"p","collection":"ordered"}],"incorporationRules":[{"objectType":"o","targetPath":"p"}]}}));
+        let thread = adapter.result(
+            &instance,
+            "kernel.thread.create",
+            json!({"threadId":"t","schemaId":"s","initialBranchId":"b"}),
+        );
+        adapter.result(&instance,"kernel.turn.create",json!({"turnId":"t","threadId":"t","branchId":"b","startTurnNodeHash":thread["rootTurnNodeHash"]}));
+        adapter.result(&instance,"kernel.run.create",json!({"runId":"r","turnId":"t","branchId":"b","schemaId":"s","startTurnNodeHash":thread["rootTurnNodeHash"],"steps":[{"id":"one","deterministic":false,"sideEffects":false},{"id":"two","deterministic":false,"sideEffects":false}]}));
+        adapter.result(&instance,"kernel.staging.stage",json!({"runId":"r","blob":{"$bytes":"01"},"taskId":"task","objectType":"o","status":"completed"}));
+        let arming = adapter.result(&instance, "kernel.fault.arm", json!({"point":point,"selector":{"operation":"checkpoint","branchId":"b"},"occurrence":1,"mode":"throw"}));
+        assert_eq!(arming["token"], "fault-1");
+        let response = adapter.call(
+            &instance,
+            "kernel.run.completeStep",
+            json!({"runId":"r","stepId":"one"}),
+        );
+        assert_eq!(
+            response["result"]["error"]["code"], "kernel_persistence_fault_injected",
+            "{response}"
+        );
+        assert_eq!(
+            response["result"]["error"]["details"],
+            json!({"token":arming["token"],"point":point})
+        );
+        let recovered = adapter.result(&instance, "kernel.run.recover", json!({"runId":"r"}));
+        let branch = adapter.result(&instance, "kernel.branch.get", json!({"branchId":"b"}));
+        assert_eq!(recovered["lastTurnNodeHash"], branch["headTurnNodeHash"]);
+        if point == "before-commit" {
+            assert_eq!(recovered["lastTurnNodeHash"], thread["rootTurnNodeHash"]);
+            assert_eq!(
+                recovered["uncommittedStagedResults"]
+                    .as_array()
+                    .unwrap()
+                    .len(),
+                1
+            );
+            assert_eq!(recovered["lastCompletedStepId"], Value::Null);
+            adapter.result(
+                &instance,
+                "kernel.run.completeStep",
+                json!({"runId":"r","stepId":"one"}),
+            );
+        } else {
+            assert_ne!(recovered["lastTurnNodeHash"], thread["rootTurnNodeHash"]);
+            assert_eq!(recovered["uncommittedStagedResults"], json!([]));
+            assert_eq!(recovered["lastCompletedStepId"], "one");
+            adapter.result(
+                &instance,
+                "kernel.run.completeStep",
+                json!({"runId":"r","stepId":"two"}),
+            );
+        }
+        assert_eq!(
+            adapter.result(
+                &instance,
+                "kernel.fault.arm",
+                json!({"point":point,"selector":{},"occurrence":1,"mode":"throw"})
+            )["token"],
+            "fault-2"
+        );
+    }
+}
+
+#[test]
+fn production_grpc_dependency_graph_excludes_test_controls() {
+    let output = Command::new("cargo")
+        .args([
+            "tree",
+            "--offline",
+            "-p",
+            "tuvren-kernel-rust-grpc-service",
+            "--edges",
+            "normal",
+            "--format",
+            "{p} features={f}",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let graph = String::from_utf8(output.stdout).unwrap();
+    assert!(graph.contains("tuvren-kernel-rust v"));
+    assert!(!graph.contains("conformance"), "{graph}");
 }
