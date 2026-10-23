@@ -93,7 +93,7 @@ tickets:
       expected: "Exit 0; the Python kernel claims kernel.memory with every required check applicable, and its certificate validates or its red checks are triaged."
     stop_conditions:
       - "STOP if certifying requires weakening a plan; record the finding instead; do not improvise."
-    description: "ADR-0081. Claim kernel.memory in the Python adapter manifest, launch the built executable directly, emit the certificate bundle (the certified list itself is updated in the compatibility-ledger epic), fix small local implementation findings, and file the rest as issues with replay commands. Every finding is classified in this ticket's certification-triage.yaml."
+    description: "ADR-0081. Claim kernel.memory in the Python adapter manifest, launch the built executable directly, emit the certificate bundle (the certified list itself is updated when the legacy kernel plans retire), fix small local implementation findings, and file the rest as issues with replay commands. Every finding is classified in this ticket's certification-triage.yaml."
     acceptance:
       mode: contract_test
       evidence: "Assert the kernel.memory run is complete, each failure has a triage entry and, for implementation findings, an issue with a replay command."

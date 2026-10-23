@@ -18,8 +18,10 @@ scope:
     - typescript/kernel/runtime
     - typescript/kernel/protocol
     - typescript/kernel/backends/memory
+    - rust/kernel
     - ".changeset/certification-db-kernel-protocol.md"
   tech_spec_patchable:
+    - .constitution/tech-spec/adrs/ADR-0078-lossless-observation-encoding-and-kernel-content-integrity.md
     - .constitution/tech-spec/contracts/kernel-identity-recipes.meta.yaml
     - .constitution/tech-spec/contracts/conformance-operation-catalog.meta.yaml
 estimated_diff_lines: 12000
@@ -61,10 +63,10 @@ tickets:
         - typescript/kernel/conformance-adapter
     verification:
       command: bun run conformance
-      expected: "Exit 0; migrated fixtures use $bytes, the runner rejects observations violating the encoding, and digest, canonicalCbor, identity, and referenceWalk assertions pass on the committed vectors and fail on byte flips."
+      expected: "Exit 0; the new fixtures use $bytes, legacy lanes are unchanged, the runner rejects observations violating the encoding, and digest, canonicalCbor, identity, and referenceWalk assertions pass on the committed vectors and fail on byte flips."
     stop_conditions:
       - "STOP if the runner's encoder disagrees with a committed vector; record it as a verification or specification finding and do not regenerate the vector; do not improvise."
-    description: "ADR-0078. Validate every observation against tools/schemas/conformance-observation-encoding.schema.json and the operation's observation schema before assertions. Migrate kernel fixtures from integer arrays to $bytes. Add the digest, canonicalCbor, identity, and referenceWalk assertion kinds using a verifier encoder pinned to committed vectors and identity recipes, independent of the production encoder import path. Generate JSON Schema for kernel records from spec/kernel/cddl/kernel-records.cddl through the existing codegen lane so schemaValid can check observed records. Add the TypeScript adapter encoding helpers."
+    description: "ADR-0078. Validate every observation against tools/schemas/conformance-observation-encoding.schema.json and the operation's observation schema before assertions. Add $bytes copies of the kernel fixtures for the new syscall plans; legacy fixtures stay unchanged for adapters that have not migrated. Add the digest, canonicalCbor, identity, and referenceWalk assertion kinds using a verifier encoder pinned to committed vectors and identity recipes, independent of the production encoder import path. Record shapes are the catalog's closed observation schemas; no CDDL-to-JSON-Schema generator exists, so ADR-0078 decision 5 is reported as physical drift for a spec-patch milestone rather than built here. Add the TypeScript adapter encoding helpers."
     acceptance:
       mode: contract_test
       evidence: "Assert each integrity assertion passes on every committed vector and fails on a flipped byte, a reordered map key, a dropped optional field, and an altered reference; assert an observation with a duplicate key, a fractional integer field, or an undeclared field is an adapter_protocol failure."
@@ -114,10 +116,32 @@ tickets:
       expected: "Exit 0; the rewritten protocol plans pass on the TypeScript memory kernel, the compiler enforces the certification rules on them, and the designated mutants for these claims are killed."
     stop_conditions:
       - "STOP if an obligation in the old plans has no catalogued operation to express it; record a specification finding instead of adding a composite operation; do not improvise."
-    description: "ADR-0075. Rewrite kernel-protocol-core.json and kernel-protocol-extended.json as plan traces over catalogued syscalls with claimIds, explicit arguments, and captures, and ship an old-to-new obligation map in the pull request. Replace canonical-rejection, thread-list, recovery-state, edge-validation, and cross-thread-rejection composites with direct observations judged by the runner. Reduce the TypeScript kernel adapter for these operations to syscall bindings, remove normalizeLogicalErrorCode, and align the TypeScript kernel's emitted error codes with the three canonical plan codes (turn_node_thread_mismatch, run_lease_owner_mismatch, run_lease_token_mismatch) as an implementation finding with a changeset; the adapter's unbacked turn_head_lateral_move mapping is a specification finding settled in authority before any code changes (ADR-0075 decision 2). Update the negative-control designations to the new claims. Remove unit tests made redundant or self-asserting by the migration, listing each with its reason in the obligation map. Record every failure in this ticket's certification-triage.yaml."
+    description: "ADR-0075. Write syscall versions of kernel-protocol-core and kernel-protocol-extended as new plan files with new planIds, gated by a kernel.syscall capability and listed in the authority packet beside the legacy plans, which stay unchanged until every kernel adapter has migrated. The new plans are traces over catalogued syscalls with claimIds, explicit arguments, and captures, and ship an old-to-new obligation map in the pull request. Replace canonical-rejection, thread-list, recovery-state, edge-validation, and cross-thread-rejection composites with direct observations judged by the runner. Add syscall bindings to the TypeScript kernel adapter and claim kernel.syscall, remove normalizeLogicalErrorCode, and align the TypeScript kernel's emitted error codes with the three canonical plan codes (turn_node_thread_mismatch, run_lease_owner_mismatch, run_lease_token_mismatch) as an implementation finding with a changeset; the adapter's unbacked turn_head_lateral_move mapping is a specification finding settled in authority before any code changes (ADR-0075 decision 2). Update the negative-control designations to the new claims. Remove unit tests made redundant or self-asserting by the migration, listing each with its reason in the obligation map. Record every failure in this ticket's certification-triage.yaml."
     acceptance:
       mode: contract_test
       evidence: "Assert the rewritten plans pass on the TypeScript memory kernel with compiler rules enforcing, every old obligation maps to a claimId or an explicit removal reason, the designated mutants for these claims are killed with activation proof, and no adapter code path compares, sorts, or normalizes for these operations."
     flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DB005
+    title: Cross-validate kernel vectors and identity recipes with the Rust encoder
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DB002]
+    scope:
+      in:
+        - rust/kernel
+        - spec/conformance/kernel/fixtures
+        - spec/conformance/kernel/identity-recipes.json
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; a Rust test reproduces every committed kernel vector and identity recipe digest byte for byte."
+    stop_conditions:
+      - "STOP if the Rust encoder disagrees with a committed vector; record it as a specification or implementation finding with both encodings and do not change the vector; do not improvise."
+    description: "ADR-0078 decision 4. Before any identity recipe is promoted into a certificate, a Rust test in rust/kernel recomputes canonical CBOR and digests for every committed vector and identity recipe, so the runner's verifier and the TypeScript production encoder are cross-checked by an independent implementation."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the Rust test reproduces every committed vector and recipe digest and fails on a deliberately altered vector."
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned

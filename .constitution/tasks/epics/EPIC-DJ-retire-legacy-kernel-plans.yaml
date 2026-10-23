@@ -1,0 +1,51 @@
+id: DJ
+name: Retire legacy kernel plans and composite operations
+kind: product
+capabilities: [CAP-037, CAP-038]
+depends_on: [DF, DG, DH, DI]
+priority: 10
+scope:
+  paths:
+    - spec/conformance/kernel
+    - spec/kernel/authority-packet.json
+    - tools/conformance/plan-compiler
+    - tools/conformance/certification
+    - typescript/kernel/conformance-adapter
+    - rust/kernel-conformance-adapter
+    - go/kernel-conformance-adapter
+    - python/kernel-conformance-adapter
+    - dart/kernel-conformance-adapter
+    - reports/compatibility
+  tech_spec_patchable: []
+estimated_diff_lines: 6000
+estimate_source: planned
+tickets:
+  - id: KRT-DJ001
+    title: Delete legacy kernel plans, fixtures, and composites and enforce every kernel rule
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - spec/conformance/kernel
+        - spec/kernel/authority-packet.json
+        - tools/conformance/plan-compiler
+        - tools/conformance/certification
+        - typescript/kernel/conformance-adapter
+        - rust/kernel-conformance-adapter
+        - go/kernel-conformance-adapter
+        - python/kernel-conformance-adapter
+        - dart/kernel-conformance-adapter
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; no kernel plan, fixture, catalog entry, or adapter handler for a legacy composite remains, kernel compiler rules are enforcing everywhere, and the certified list names each kernel implementation with its claimed profiles."
+    stop_conditions:
+      - "STOP if any kernel adapter still depends on a legacy plan or composite; do not improvise."
+    description: "ADR-0075 consequences and ADR-0081 decision 2. Once every kernel adapter claims kernel.syscall, remove the legacy kernel plans and integer-array fixtures from the authority packet and spec/conformance/kernel, delete the deprecated composite operations from the catalog and every kernel adapter, rename the syscall plans to the canonical plan ids if that keeps the packet simpler, switch kernel compiler rules to enforcing, and update tools/conformance/certification so the certified list names each kernel implementation and profile. Link every remaining red check to its triage entry."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert no legacy kernel plan or composite operation remains, every kernel rule is enforcing, every kernel implementation in the certified list has a certificate for each claimed profile, and each red check links to an issue or proposed decision."
+    flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned

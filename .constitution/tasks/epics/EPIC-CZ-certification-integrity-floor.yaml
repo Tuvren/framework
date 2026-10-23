@@ -16,6 +16,7 @@ scope:
     - tools/scripts/compatibility-report.ts
     - tools/scripts/authority-guardrails
     - tools/scripts/conformance
+    - tools/scripts/conformance.ts
     - reports/compatibility
     - spec/conformance
     - typescript/kernel/testkit
@@ -78,12 +79,12 @@ tickets:
       mode: contract_test
       evidence: "Assert each new operator passes and fails on hand-built contexts, that two unresolved operands fail, that every and some without a length assertion are rejected at compile time, and that a when branch that never applies is reported; list any plan corrected with its verification finding."
     flows: [flow-authority-packet-driven-conformance]
-    certainty: settled
+    certainty: assumed
     status: planned
   - id: KRT-CZ003
     title: Land the pinned catalog, encoding, and plan schemas
     type: Feature
-    effort: 5
+    effort: 8
     depends_on: [KRT-CZ002]
     scope:
       in:
@@ -103,12 +104,12 @@ tickets:
       mode: contract_test
       evidence: "Assert the four schemas validate the companion's example shapes, reject additional properties, reject expected-root references inside arguments, and keep every existing plan and packet valid."
     flows: [flow-authority-packet-driven-conformance]
-    certainty: settled
+    certainty: assumed
     status: planned
   - id: KRT-CZ004
     title: Land adapter protocol 0.2.0, profile, control, and evidence schemas
     type: Feature
-    effort: 5
+    effort: 8
     depends_on: [KRT-CZ003]
     scope:
       in:
@@ -127,7 +128,7 @@ tickets:
       mode: contract_test
       evidence: "Assert the protocol validator accepts every pinned 0.2.0 message, rejects mismatched parameter names, and still accepts all checked-in 0.1.0 adapters; assert the profile, control, and evidence schemas validate the companion examples and reject unknown fields."
     flows: [flow-multi-implementation-conformance-compatibility]
-    certainty: settled
+    certainty: assumed
     status: planned
   - id: KRT-CZ005
     title: Enforce certification plan rules in report mode with a baseline inventory
@@ -150,7 +151,7 @@ tickets:
       mode: contract_test
       evidence: "Assert each rule fires on a minimal violating plan and stays silent on a compliant one; assert report mode does not fail current lanes; assert enforcing mode fails a migrated plan with a violation; record the baseline violation counts per port in this ticket's evidence manifest."
     flows: [flow-authority-packet-driven-conformance]
-    certainty: settled
+    certainty: assumed
     status: planned
   - id: KRT-CZ006
     title: Emit failure artifacts with preliminary classification
@@ -193,7 +194,7 @@ tickets:
       mode: contract_test
       evidence: "Assert the registry activates exactly the selected mutant, activation is observable through the control, certification discovery excludes mutant manifests, and no production package imports the registry."
     flows: [flow-multi-implementation-conformance-compatibility]
-    certainty: settled
+    certainty: assumed
     status: planned
   - id: KRT-CZ008
     title: Implement the initial kernel mutant set and control manifest
@@ -213,9 +214,9 @@ tickets:
     description: "ADR-0079 decision 6, memory-applicable subset: wrong opaque-object hash, accept one noncanonical CBOR encoding, non-canonical changedPaths order, drop an uncommitted staged result on recovery, promote staged work before a checkpoint, accept a stale competing head update, permit lease takeover before expiry, accept a stale owner after takeover, resolve an object across scopes on a shared substrate, delete an object reachable through another live root, sweep inside the active-lease grace window, never sweep eligible objects, and fault seam never fires (instrumentation kind). Durable-only and shared-backend mutants belong to the durable lifecycle epic. Write the manifest with rule, claimIds, activation, profiles, and designated assertions against the current plans, and reference it from the kernel authority packet."
     acceptance:
       mode: contract_test
-      evidence: "Assert every manifest entry maps to a registered mutant with an authority rule reference and at least one designated assertion, and that the packet references the manifest."
+      evidence: "Assert every manifest entry maps to a registered mutant with an authority rule reference; implementation controls name at least one designated assertion, while observation and instrumentation controls name their expected runner rejection (for the fault-never-fires control, missing fault-activation evidence); assert the packet references the manifest."
     flows: [flow-multi-implementation-conformance-compatibility]
-    certainty: settled
+    certainty: assumed
     status: planned
   - id: KRT-CZ009
     title: Run negative controls and record the baseline
@@ -226,6 +227,7 @@ tickets:
       in:
         - tools/conformance/meta-conformance
         - tools/scripts/conformance
+        - tools/scripts/conformance.ts
     verification:
       command: bun run conformance
       expected: "Exit 0 in report mode; the negative-control report lists activated, killed, survived, equivalent, unsupported, and invalid outcomes for each kernel mutant against the current plans."
@@ -236,5 +238,26 @@ tickets:
       mode: contract_test
       evidence: "Assert a synthetic mutant that crashes at startup is classified invalid, a mutant whose designated assertion fails is killed, a non-activated mutant is not counted, and the baseline report for the current plans is captured in the evidence manifest."
     flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-CZ010
+    title: Execute explicit arguments, references, and captures in the runner
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ003]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/meta-conformance
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; steps with explicit arguments receive only their resolved projection, $ref and $literal resolve as pinned, captures are readable by later steps, and legacy plans keep their current behavior."
+    stop_conditions:
+      - "STOP if a legacy plan changes result under the new execution path; keep legacy whole-fixture forwarding for plans without arguments; do not improvise."
+    description: "ADR-0075 decision 5 and the pinned plan extensions. For steps that declare arguments, the runner sends only the resolved projection: literals verbatim, $ref values from input, fixture.input, or capture roots, and $literal escapes; it never forwards whole fixtures or expected sections. Execute capture entries after each step and expose them as capture.<name>. Expected values stay in the runner's evaluation context only. Plans without arguments keep the legacy path until their family migrates."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert a step's adapter input equals its resolved projection, a $ref into fixture.expected fails compilation, a capture from one step resolves in a later step, and an adapter-side probe never sees expected values."
+    flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     status: planned
