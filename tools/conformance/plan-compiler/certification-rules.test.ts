@@ -1001,6 +1001,31 @@ test.each(["root", "captured", "every", "some", "operand"])(
   }
 );
 
+test.each([{ steps: undefined }, { steps: [] }])(
+  "rejects check-level fault arming without trace steps: %j",
+  ({ steps }) => {
+    const operationId = "fixture.control.verdict";
+    const control = catalog.operations.get(operationId);
+    if (control === undefined) {
+      throw new Error("missing fixture control");
+    }
+    const faultCatalog = {
+      ...catalog,
+      operations: new Map(catalog.operations).set(operationId, {
+        ...control,
+        faultOutcome: { code: "interrupted", unsupportedCode: "unsupported" },
+      }),
+    };
+    const plan = planWith(hasCheck([], { operation: operationId, steps }));
+    expect(
+      evaluateCertificationRules(plan, faultCatalog).map(({ rule }) => rule)
+    ).toContain("fault-action");
+    expect(
+      evaluateCertificationRules(plan, catalog).map(({ rule }) => rule)
+    ).not.toContain("fault-action");
+  }
+);
+
 test("fault arming action and catalog metadata must agree in both directions", () => {
   const operationId = "fixture.control.verdict";
   const control = catalog.operations.get(operationId);

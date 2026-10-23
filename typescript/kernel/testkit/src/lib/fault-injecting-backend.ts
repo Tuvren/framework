@@ -407,7 +407,10 @@ const readOptionalFsckMethod = (
   };
 };
 
-/** Wraps transactions with before-commit or after-commit-before-ack faults; rejects other points at construction. */
+/**
+ * Wraps transactions with before-commit or after-commit-before-ack faults;
+ * rejects other points at construction.
+ */
 export const createFaultInjectingBackend = (
   inner: RuntimeBackend,
   requestedPlan: FaultPlan

@@ -383,6 +383,7 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/adapter-client.test.ts",
   "tools/conformance/harness/test/assertion-engine.test.ts",
   "tools/conformance/harness/test/assertion-operators.test.ts",
+  "tools/conformance/harness/test/fault-activation.test.ts",
   "tools/conformance/harness/test/step-arguments.test.ts",
   "tools/conformance/harness/test/kernel-integrity.test.ts",
   "tools/conformance/harness/test/integrity-plan-contract.test.ts",

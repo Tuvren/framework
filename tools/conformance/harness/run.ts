@@ -625,7 +625,7 @@ const validateTraceFaultOutcome = (
   if (faultOutcome !== undefined) {
     if (operation?.kind !== "control") {
       throw new ArgumentResolutionError(
-        "armFault requires catalogued fault outcome metadata"
+        "fault outcome metadata is only valid on control operations"
       );
     }
     if (

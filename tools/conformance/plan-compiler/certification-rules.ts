@@ -1249,6 +1249,17 @@ const checkCheck = (
     checkStep({ ...context, stepId: step.stepId }, check, step);
   }
 
+  if (
+    steps.length === 0 &&
+    catalog?.operations.get(check.operation)?.faultOutcome !== undefined
+  ) {
+    report(
+      context,
+      "fault-action",
+      `${subject(context)} must arm faults in trace steps with action armFault`
+    );
+  }
+
   if (steps.some((step) => step.arguments !== undefined)) {
     checkInstanceInputReferences(context, check);
   }

@@ -59,7 +59,11 @@
         "{workspaceRoot}/tools/conformance/harness/**/*",
         "{workspaceRoot}/tools/conformance/plan-compiler/**/*",
         "{workspaceRoot}/tools/conformance/meta-conformance/**/*",
+        "{workspaceRoot}/tools/scripts/authority-guardrails/**/*",
+        "{workspaceRoot}/tools/scripts/conformance/**/*",
         "{workspaceRoot}/tools/scripts/lib/conformance-contract.ts",
+        "{workspaceRoot}/tools/scripts/lib/verification-logs.ts",
+        "{workspaceRoot}/tools/scripts/lib/regenerate-command-argv.ts",
         "{workspaceRoot}/tools/schemas/**/*"
       ],
       "dependsOn": [

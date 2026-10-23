@@ -24,13 +24,8 @@ import type {
 } from "../../adapter-protocol/index.ts";
 import { handleStdioAdapterLine } from "../../adapter-protocol/stdio-host.ts";
 import type { StdioConformanceAdapter } from "../../adapter-protocol/stdio-host.ts";
-import {
-  controlConsumesInstance,
-  controlInputProblem,
-} from "../../plan-compiler/control-input.ts";
 import { JsonRpcAdapterClient, previewFrames } from "../adapter-client.ts";
 import { JsonRpcAdapterError } from "../adapter-error.ts";
-import { createFaultActivationTracker } from "../fault-activation.ts";
 
 const clients: JsonRpcAdapterClient[] = [];
 
@@ -555,58 +550,4 @@ describe("JsonRpcAdapterClient transcript", () => {
     expect(JSON.stringify(preview)).not.toContain("n".repeat(NOISE_CHARS));
     expect(frames[0]?.frame).toHaveLength(NOISE_CHARS);
   });
-});
-
-test("shared controls and fault activation use catalog metadata across ports", () => {
-  const operation = {
-    handles: { consumes: ["instance"] },
-    input: {
-      additionalProperties: false,
-      properties: { instance: { type: "string" } },
-      required: ["instance"],
-      type: "object",
-    },
-    kind: "control",
-    observation: {},
-    operationId: "storage.pause.arm",
-  } as const;
-  expect(controlConsumesInstance(operation)).toBe(true);
-  expect(
-    controlInputProblem(operation, { instance: "owned-instance" })
-  ).toBeUndefined();
-  expect(controlInputProblem(operation, {})).toContain("instance");
-  expect(controlConsumesInstance({ ...operation, kind: "syscall" })).toBe(
-    false
-  );
-  const faults = createFaultActivationTracker();
-  const token = "arming-1";
-  const point = "storage-boundary";
-  faults.arm(
-    { mode: "throw", occurrence: 1, point, selector: {} },
-    { kind: "result", value: { result: { token } } },
-    "storage_interrupted"
-  );
-  expect(faults.isFaultOutcome("storage_interrupted")).toBe(true);
-  expect(
-    faults.observe({
-      error: {
-        code: "another_error",
-        details: { point, token },
-        message: "other",
-      },
-      kind: "error",
-    })
-  ).toBe(false);
-  expect(faults.missing()).toEqual([token]);
-  expect(
-    faults.observe({
-      error: {
-        code: "storage_interrupted",
-        details: { point, token },
-        message: "injected",
-      },
-      kind: "error",
-    })
-  ).toBe(true);
-  expect(faults.missing()).toEqual([]);
 });
