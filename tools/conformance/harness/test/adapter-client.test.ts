@@ -24,7 +24,7 @@ import type {
 } from "../../adapter-protocol/index.ts";
 import { handleStdioAdapterLine } from "../../adapter-protocol/stdio-host.ts";
 import type { StdioConformanceAdapter } from "../../adapter-protocol/stdio-host.ts";
-import { JsonRpcAdapterClient } from "../adapter-client.ts";
+import { JsonRpcAdapterClient, previewFrames } from "../adapter-client.ts";
 import { JsonRpcAdapterError } from "../adapter-error.ts";
 
 const clients: JsonRpcAdapterClient[] = [];
@@ -501,5 +501,53 @@ describe("stdio host callback parity", () => {
     }
     expect(error.message).toBe("adapter request timed out: inspectState");
     await client.shutdown();
+  });
+});
+
+describe("JsonRpcAdapterClient transcript", () => {
+  const NOISE_FRAMES = 300;
+  const NOISE_CHARS = 5000;
+
+  test("keeps every frame of a check untruncated", async () => {
+    const client = createClient(`
+      for await (const line of console) {
+        const request = JSON.parse(line);
+        for (let index = 0; index < ${NOISE_FRAMES}; index += 1) {
+          process.stdout.write(JSON.stringify({
+            id: 900000 + index,
+            jsonrpc: "2.0",
+            result: "n".repeat(${NOISE_CHARS})
+          }) + "\\n");
+        }
+        process.stdout.write(JSON.stringify({ id: request.id, jsonrpc: "2.0", result: null }) + "\\n");
+      }
+    `);
+    const mark = client.markTranscript();
+    await client.inspectState("query");
+
+    const frames = client.framesSince(mark);
+    expect(frames).toHaveLength(NOISE_FRAMES + 2);
+    expect(frames[0]?.direction).toBe("send");
+    const noise = frames.slice(1, -1);
+    const texts = noise.map((entry) => entry.frame);
+    expect(texts.every((text) => !text.includes("more chars]"))).toBe(true);
+    expect(texts.every((text) => text.includes("n".repeat(NOISE_CHARS)))).toBe(
+      true
+    );
+  });
+
+  test("bounds only the preview of a transcript", () => {
+    const frames = Array.from({ length: NOISE_FRAMES }, (_entry, index) => ({
+      atMs: index,
+      direction: "receive" as const,
+      frame: "n".repeat(NOISE_CHARS),
+    }));
+    const preview = previewFrames(frames);
+
+    expect(preview.length).toBeLessThan(frames.length);
+    expect(preview[0]).toEqual({ omittedFrames: NOISE_FRAMES - 256 });
+    expect(preview.at(-1)).toMatchObject({ atMs: NOISE_FRAMES - 1 });
+    expect(JSON.stringify(preview)).not.toContain("n".repeat(NOISE_CHARS));
+    expect(frames[0]?.frame).toHaveLength(NOISE_CHARS);
   });
 });

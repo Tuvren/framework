@@ -45,7 +45,7 @@ import type {
   ConformancePlanCheck,
   ConformancePlanStep,
 } from "../plan-compiler/index.js";
-import { JsonRpcAdapterClient } from "./adapter-client.js";
+import { JsonRpcAdapterClient, previewFrames } from "./adapter-client.js";
 import type {
   AdapterManifest,
   AdapterTranscriptMark,
@@ -923,6 +923,20 @@ const retainFailureArtifacts = async (text: string): Promise<string> => {
   return file;
 };
 
+/** In-band failure blocks carry a bounded frame preview. */
+const previewFailure = (
+  checkResult: ConformanceCheckResult
+): ConformanceCheckResult =>
+  checkResult.failure?.frameLog === undefined
+    ? checkResult
+    : {
+        ...checkResult,
+        failure: {
+          ...checkResult.failure,
+          frameLog: previewFrames(checkResult.failure.frameLog),
+        },
+      };
+
 const runScheduledChecks = async (
   manifest: AdapterManifest,
   scheduled: readonly ScheduledCheck[],
@@ -1190,13 +1204,19 @@ const main = async (): Promise<void> => {
     suiteVersion: adapterManifest.suiteVersion,
     summary,
   };
-  const text = `${JSON.stringify(evidence, null, 2)}\n`;
-
   if (summary.failedChecks > 0) {
     process.stderr.write(
-      `conformance failure artifacts retained at ${await retainFailureArtifacts(text)}\n`
+      `conformance failure artifacts retained at ${await retainFailureArtifacts(
+        `${JSON.stringify(evidence, null, 2)}\n`
+      )}\n`
     );
   }
+
+  const text = `${JSON.stringify(
+    { ...evidence, checkResults: checkResults.map(previewFailure) },
+    null,
+    2
+  )}\n`;
 
   if (options.evidenceOut !== undefined) {
     const evidencePath = nodePath.resolve(REPO_ROOT, options.evidenceOut);

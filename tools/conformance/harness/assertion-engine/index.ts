@@ -830,12 +830,77 @@ const EXPECTATION_KEYS = [
   "present",
 ] as const;
 
+interface OperandSubject {
+  actual: unknown;
+  path: string;
+}
+
+const elementPath = (path: string, index: number): string =>
+  path.includes("[*]")
+    ? path.replace("[*]", `.${index}`)
+    : joinPath(path, `$.${index}`);
+
+const elementHolds = (
+  element: ConformancePlanElementAssertion,
+  value: unknown,
+  context: AssertionContext
+): boolean => {
+  try {
+    return elementSatisfies(element, value, context);
+  } catch {
+    return false;
+  }
+};
+
+// Quantifiers record the evaluated operands of each element that failed them.
+const describeValueOperands = (
+  operators: ConformancePlanValueOperators &
+    Pick<ConformancePlanAssertion, "eventType">,
+  subject: OperandSubject,
+  context: AssertionContext
+): AssertionOperand[] =>
+  EXPECTATION_KEYS.filter((key) =>
+    key === "present" || key === "eventType"
+      ? operators[key] !== undefined
+      : declaresOperator(operators, key)
+  ).flatMap((key) => {
+    if (key !== "every" && key !== "some") {
+      return [
+        { ...subject, ...describeExpected(key, operators[key], context) },
+      ];
+    }
+
+    const element = operators[key];
+    if (element === undefined || !Array.isArray(subject.actual)) {
+      return [{ ...subject, expectedSource: `${key}: plan element assertion` }];
+    }
+
+    const entries: unknown[] = subject.actual;
+    const holds = entries.map((entry) => elementHolds(element, entry, context));
+    if (key === "some" && holds.some(Boolean)) {
+      return [];
+    }
+
+    const field = element.field ?? "$";
+    return entries.flatMap((entry, index) =>
+      holds[index]
+        ? []
+        : describeValueOperands(
+            element,
+            {
+              actual: readPath(entry, field),
+              path: joinPath(elementPath(subject.path, index), field),
+            },
+            context
+          )
+    );
+  });
+
 const describeOperands = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
 ): AssertionOperand[] => {
-  const { actual, path } = readSubject(assertion, context);
-  const subject = { actual, path };
+  const subject = readSubject(assertion, context);
 
   if (assertion.kind === "secretAbsence") {
     // Configured secrets never leave the plan context.
@@ -860,14 +925,7 @@ const describeOperands = (
     ];
   }
 
-  const operands = EXPECTATION_KEYS.filter((key) =>
-    key === "present" || key === "eventType"
-      ? assertion[key] !== undefined
-      : declaresOperator(assertion, key)
-  ).map((key) => ({
-    ...subject,
-    ...describeExpected(key, assertion[key], context),
-  }));
+  const operands = describeValueOperands(assertion, subject, context);
 
   return operands.length > 0
     ? operands

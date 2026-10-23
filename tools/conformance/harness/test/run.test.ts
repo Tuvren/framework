@@ -1342,6 +1342,18 @@ describe("certification harness failure artifacts", () => {
           },
           {
             assertions: [
+              {
+                equals: "expected-status",
+                field: "$.status",
+                kind: "resultField",
+              },
+            ],
+            checkId: "failure.transcript",
+            input: { request: "transcript" },
+            operation: "transcript",
+          },
+          {
+            assertions: [
               { equals: "observed", field: "$.status", kind: "resultField" },
             ],
             checkId: "failure.provisioning",
@@ -1502,6 +1514,40 @@ describe("certification harness failure artifacts", () => {
       classification: "implementation",
       observation: [{ outcome: { kind: "result" } }],
     });
+  });
+
+  test("retains the complete frame transcript and bounds only the in-band preview", async () => {
+    const { adapterPath, planPath } = await writeFailureProbe();
+    const result = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+      "--plan",
+      planPath,
+      "--check",
+      "failure.transcript",
+    ]);
+
+    expect(result.code).toBe(1);
+    const noise = "n".repeat(5000);
+    const inBand = readSingleFailure(result, "in-band evidence").failure;
+    expect(inBand.frameLog?.length).toBeLessThanOrEqual(257);
+    expect(JSON.stringify(inBand.frameLog)).not.toContain(noise);
+
+    const notice = result.stderr
+      .split("\n")
+      .find((line) => line.startsWith(FAILURE_ARTIFACT_NOTICE));
+    const artifactPath = (notice ?? "").slice(FAILURE_ARTIFACT_NOTICE.length);
+    const retained: unknown = JSON.parse(await readFile(artifactPath, "utf-8"));
+    assertConformanceEvidence(retained, "retained evidence");
+    const frameLog = retained.checkResults[0]?.failure?.frameLog ?? [];
+    const noiseFrames = frameLog.filter((entry) =>
+      JSON.stringify(entry).includes(noise)
+    );
+    expect(noiseFrames).toHaveLength(300);
+    expect(JSON.stringify(frameLog)).not.toContain("more chars]");
+    expect(frameLog.at(-1)).toMatchObject({ direction: "receive" });
   });
 
   test("passing runs write no failure artifacts", async () => {
