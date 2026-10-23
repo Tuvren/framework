@@ -22,6 +22,7 @@ import type {
   RuntimeBackend,
   RuntimeBackendTx,
   StoredBranch,
+  StoredRun,
 } from "@tuvren/kernel-protocol";
 
 import {
@@ -437,15 +438,57 @@ const hasRunningRun = async (
   );
 };
 
-// The grace horizon is evaluated at a clock past every lease, so state the
-// oldest active run should pin is swept.
+// Persist runs without leases so reclamation ignores their horizon pins;
+// restore lease metadata on reads so native run operations retain ownership.
 const sweepInsideGraceWindow = (
   inner: RuntimeBackend,
   activate: KernelMutantActivate
 ): RuntimeBackend => {
+  const leases = new Map<
+    string,
+    Pick<
+      Required<StoredRun>,
+      "executionOwnerId" | "fencingToken" | "leaseExpiresAtMs"
+    >
+  >();
   const innerReclaim = inner.reclaim?.bind(inner);
-  return decorateBackend(
+  return decorateTransactions(
     inner,
+    (tx) => ({
+      ...tx,
+      runs: {
+        ...tx.runs,
+        async get(runId) {
+          const record = await tx.runs.get(runId);
+          return record === null ? null : { ...record, ...leases.get(runId) };
+        },
+        async listByBranch(branchId) {
+          const records = await tx.runs.listByBranch(branchId);
+          return records.map((record) => ({
+            ...record,
+            ...leases.get(record.runId),
+          }));
+        },
+        async set(record) {
+          const stored = { ...record };
+          delete stored.executionOwnerId;
+          delete stored.fencingToken;
+          delete stored.leaseExpiresAtMs;
+          await tx.runs.set(stored);
+          if (
+            record.executionOwnerId !== undefined &&
+            record.fencingToken !== undefined &&
+            record.leaseExpiresAtMs !== undefined
+          ) {
+            leases.set(record.runId, {
+              executionOwnerId: record.executionOwnerId,
+              fencingToken: record.fencingToken,
+              leaseExpiresAtMs: record.leaseExpiresAtMs,
+            });
+          }
+        },
+      },
+    }),
     innerReclaim === undefined
       ? {}
       : {
