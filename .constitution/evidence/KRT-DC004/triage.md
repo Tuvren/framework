@@ -18,7 +18,7 @@ No production implementation defect or specification STOP condition was observed
 
 All required gates pass. The compatibility refresh records 133 passing applicable memory checks, including both recovery traces. The release gate also passes PostgreSQL and SQLite proving-host scenarios.
 
-The complete negative-control report is retained at a local run log (not retained). The unmutated baseline passes 133/133 checks. Every listed mutant activates and is killed; none survives or becomes invalid.
+The complete negative-control report was produced in a local run log that is not retained. The unmutated baseline passes 133/133 checks. Every listed mutant activates and is killed; none survives or becomes invalid.
 
 Table 2. Per-mutant outcomes
 
