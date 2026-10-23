@@ -1,5 +1,6 @@
 import { expect, spyOn, test } from "bun:test";
 import { createHash } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { handleStdioAdapterLine } from "../../../../tools/conformance/adapter-protocol/stdio-host.ts";
 import type { StdioConformanceAdapter } from "../../../../tools/conformance/adapter-protocol/stdio-host.ts";
@@ -147,9 +148,14 @@ test("cancelling a handle before native entry prevents writes and retains the re
     const [cancelled] = await Promise.allSettled([
       bridge.awaitOperation(operationHandle),
     ]);
-    expect(cancelled).toMatchObject({
-      reason: new Error("cancel before native entry"),
-      status: "rejected",
+    expect(cancelled?.status).toBe("rejected");
+    if (cancelled?.status !== "rejected") {
+      throw new Error("expected cancellation");
+    }
+    const cancellation: unknown = cancelled.reason;
+    expect(cancellation).toMatchObject({
+      code: "operation_cancelled_before_entry",
+      message: "cancel before native entry",
     });
     const hash = createHash("sha256").update(Uint8Array.of(3)).digest("hex");
     expect(
@@ -169,3 +175,121 @@ test("cancelling a handle before native entry prevents writes and retains the re
     factory.mockRestore();
   }
 }, 3000);
+
+test("real host frames classify pre-entry cancellation separately and prevent writes", async () => {
+  const bridge = createSyscallBindings({
+    adapterId: "real-cancel",
+    backend: "memory",
+    capabilities: ["kernel.syscall"],
+  });
+  const adapter: StdioConformanceAdapter = {
+    ...bridge,
+    dispatch: async (operation, input, _controls, instance) =>
+      await bridge.dispatch(operation, input, instance),
+    initialize: (packetId, planVersion) => ({
+      adapterId: "real-cancel",
+      capabilities: [],
+      packetId,
+      planVersion,
+    }),
+  };
+  const instance = await bridge.createInstance();
+  const started = await bridge.startOperation(
+    "kernel.store.put",
+    { blob: { $bytes: "04" } },
+    instance
+  );
+  await bridge.cancelOperation(started.operationHandle, "before entry");
+  try {
+    const frame = JSON.stringify({
+      id: 7,
+      jsonrpc: "2.0",
+      method: "awaitOperation",
+      params: started,
+    });
+    expect(await handleStdioAdapterLine(adapter, frame)).toEqual({
+      error: {
+        code: "operation_cancelled_before_entry",
+        message: "before entry",
+      },
+      id: 7,
+      jsonrpc: "2.0",
+    });
+    expect(await handleStdioAdapterLine(adapter, frame)).toEqual({
+      error: {
+        code: "operation_cancelled_before_entry",
+        message: "before entry",
+      },
+      id: 7,
+      jsonrpc: "2.0",
+    });
+    const hash = createHash("sha256").update(Uint8Array.of(4)).digest("hex");
+    expect(
+      await bridge.dispatch("kernel.store.has", { hash }, instance)
+    ).toEqual({ kind: "result", value: { result: false } });
+  } finally {
+    await bridge.destroyInstance(instance);
+  }
+});
+
+test("destroy waits for a legacy dispatch before backend cleanup", async () => {
+  const entered = Promise.withResolvers<undefined>();
+  const release = Promise.withResolvers<undefined>();
+  const original = hostSupport.createConfiguredBackend;
+  let cleaned = false;
+  const factory = spyOn(
+    hostSupport,
+    "createConfiguredBackend"
+  ).mockImplementation(async (config, options) => {
+    const opened = await original(config, options);
+    const transact = opened.backend.transact.bind(opened.backend);
+    spyOn(opened.backend, "transact").mockImplementation(async (body) => {
+      entered.resolve();
+      await release.promise;
+      expect(cleaned).toBe(false);
+      return await transact(body);
+    });
+    return {
+      ...opened,
+      cleanup: async () => {
+        cleaned = true;
+        await opened.cleanup();
+      },
+    };
+  });
+  const bridge = createSyscallBindings({
+    adapterId: "legacy-destroy",
+    backend: "memory",
+    capabilities: ["kernel.syscall"],
+  });
+  const instance = await bridge.createInstance();
+  await bridge.dispatch(
+    "kernel.clock.set",
+    { domain: "worker", nowMs: 100 },
+    instance
+  );
+  const pending = bridge.dispatch(
+    "kernel.store.put",
+    { blob: { $bytes: "05" } },
+    instance
+  );
+  try {
+    await entered.promise;
+    let destroyed = false;
+    const destroy = bridge.destroyInstance(instance).then(() => {
+      destroyed = true;
+    });
+    await delay(10);
+    expect(destroyed).toBe(false);
+    expect(cleaned).toBe(false);
+    release.resolve();
+    expect(await pending).toMatchObject({ kind: "result" });
+    await destroy;
+    expect(cleaned).toBe(true);
+  } finally {
+    release.resolve();
+    await Promise.allSettled([pending]);
+    await bridge.destroyInstance(instance);
+    factory.mockRestore();
+  }
+});

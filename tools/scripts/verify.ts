@@ -389,10 +389,13 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/kernel-integrity.test.ts",
   "tools/conformance/harness/test/integrity-plan-contract.test.ts",
   "tools/conformance/harness/test/observation-encoding.test.ts",
+  "tools/conformance/harness/test/operation-handles.test.ts",
+  "tools/conformance/harness/test/operation-plan.test.ts",
   "tools/conformance/meta-conformance/negative-controls.test.ts",
   "tools/conformance/plan-compiler/barrier-rules.test.ts",
   "tools/conformance/plan-compiler/certification-rules.test.ts",
   "tools/conformance/plan-compiler/index.test.ts",
+  "tools/conformance/plan-compiler/handle-steps.test.ts",
   "tools/scripts/conformance/certification-schemas.test.ts",
   "tools/scripts/lib/conformance-contract.test.ts",
 ];

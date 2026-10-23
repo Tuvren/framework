@@ -68,8 +68,8 @@ test("promoted serial plan assertions keep their results when syscalls run throu
             {
               action: "start",
               arguments: step.arguments,
-              capture: [{ name: capture, path: "result" }],
               claimIds: step.claimIds,
+              handleCapture: capture,
               operation: step.operation,
               stepId: `${step.stepId}Start`,
             },
@@ -77,7 +77,7 @@ test("promoted serial plan assertions keep their results when syscalls run throu
               ...step,
               action: "await",
               arguments: {
-                operationHandle: { $ref: `capture.${capture}.operationHandle` },
+                operationHandle: { $ref: `capture.${capture}` },
               },
             },
           ];

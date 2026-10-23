@@ -446,7 +446,11 @@ const isBooleanLeaf = (nodes: readonly SchemaNode[]): boolean =>
 
 type AssertionScope =
   | { kind: "operation"; operationId: string }
-  | { kind: "trace"; stepOperations: ReadonlyMap<string, string> };
+  | {
+      kind: "trace";
+      stepOperations: ReadonlyMap<string, string>;
+      arrivalSteps?: ReadonlySet<string>;
+    };
 
 type PathTarget =
   | { kind: "external"; segments: readonly PathSegment[] }
@@ -1021,7 +1025,9 @@ const checkAssertion = (
         path === undefined ||
         !ARRIVAL_PATH_PATTERN.test(path) ||
         scope.kind !== "trace" ||
-        !scope.stepOperations.has(path.slice("$.arrivals.".length))
+        !(scope.arrivalSteps ?? scope.stepOperations).has(
+          path.slice("$.arrivals.".length)
+        )
       ) {
         report(
           context,
@@ -1313,8 +1319,13 @@ const checkCheck = (
       ? { kind: "operation", operationId: check.operation }
       : {
           kind: "trace",
+          arrivalSteps: new Set(steps.map((step) => step.stepId)),
           stepOperations: new Map(
-            steps.map((step) => [step.stepId, step.operation])
+            steps
+              .filter(
+                (step) => step.action !== "start" && step.action !== "cancel"
+              )
+              .map((step) => [step.stepId, step.operation])
           ),
         };
   const forwarded =

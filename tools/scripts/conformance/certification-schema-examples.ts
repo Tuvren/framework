@@ -192,7 +192,7 @@ export const PINNED_CONFORMANCE_PLAN = {
             branchId: { $ref: "input.branchId" },
             payload: { $ref: "fixture.input.payloads.0" },
           },
-          capture: [{ name: "opA", path: "result.operationHandle" }],
+          handleCapture: "opA",
           claimIds: ["kernel.head.single-winner"],
           operation: "kernel.run.commit",
           stepId: "start-a",
@@ -203,9 +203,27 @@ export const PINNED_CONFORMANCE_PLAN = {
             branchId: { $ref: "input.branchId" },
             payloads: [{ $ref: "fixture.input.payloads.1" }, "literal"],
           },
-          capture: [{ name: "opB", path: "result.operationHandle" }],
+          handleCapture: "opB",
           operation: "kernel.run.commit",
           stepId: "start-b",
+        },
+        {
+          operation: "kernel.barrier.wait",
+          arguments: {
+            barrierId: "head-cas",
+            operationHandle: { $ref: "capture.opB" },
+            timeoutMs: 1000,
+          },
+          stepId: "entry-b",
+        },
+        {
+          action: "cancel",
+          arguments: {
+            operationHandle: { $ref: "capture.opB" },
+            reason: "late",
+          },
+          operation: "kernel.run.commit",
+          stepId: "cancel-b",
         },
         {
           action: "release",
@@ -220,15 +238,6 @@ export const PINNED_CONFORMANCE_PLAN = {
           capture: [{ name: "headA", path: "state.head.hash" }],
           operation: "kernel.run.commit",
           stepId: "await-a",
-        },
-        {
-          action: "cancel",
-          arguments: {
-            operationHandle: { $ref: "capture.opB" },
-            reason: "late",
-          },
-          operation: "kernel.run.commit",
-          stepId: "cancel-b",
         },
         {
           action: "subscribe",

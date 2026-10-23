@@ -278,5 +278,13 @@ await serveStdioAdapter({
   destroyInstance: syscallBindings.destroyInstance,
   dispatch,
   initialize,
+  isLosslessRequest: (method, params) =>
+    method === "awaitOperation" ||
+    (typeof params === "object" &&
+      params !== null &&
+      "operation" in params &&
+      typeof params.operation === "string" &&
+      syscallBindings.has(params.operation)),
+  shutdown: syscallBindings.shutdown,
   startOperation: syscallBindings.startOperation,
 } satisfies StdioConformanceAdapter);

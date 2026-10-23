@@ -1,6 +1,7 @@
 import type { OperationOutcome } from "../adapter-protocol/index.js";
 import type { ConformancePlanStep } from "../plan-compiler/index.js";
 import type { JsonRpcAdapterClient } from "./adapter-client.js";
+import type { CaptureStore } from "./step-arguments.js";
 import { ArgumentResolutionError } from "./step-arguments.js";
 
 export const isOperationHandleStep = (step: ConformancePlanStep): boolean =>
@@ -26,7 +27,11 @@ export const runOperationHandleStep = async (
   instance: unknown,
   started: Map<string, string>,
   timeoutMs?: number
-): Promise<OperationOutcome> => {
+): Promise<
+  | OperationOutcome
+  | { kind: "started"; operationHandle: string }
+  | { kind: "cancelled" }
+> => {
   if (step.arguments === undefined) {
     throw new ArgumentResolutionError(
       "operation handle steps require explicit arguments"
@@ -43,7 +48,7 @@ export const runOperationHandleStep = async (
       throw new Error("adapter reused an operation handle");
     }
     started.set(receipt.operationHandle, step.operation);
-    return { kind: "result", value: { result: receipt } };
+    return { kind: "started", operationHandle: receipt.operationHandle };
   }
   const operationHandle = readStringArgument(input, "operationHandle");
   if (started.get(operationHandle) !== step.operation) {
@@ -60,7 +65,28 @@ export const runOperationHandleStep = async (
       readStringArgument(input, "reason"),
       timeoutMs
     );
-    return { kind: "result", value: { result: null } };
+    return { kind: "cancelled" };
   }
   throw new Error("unsupported operation handle step");
 };
+
+export const recordHandleCapture = (
+  name: string | undefined,
+  handle: string,
+  store: CaptureStore,
+  handles: Record<string, string>
+): void => {
+  if (name === undefined) {
+    return;
+  }
+  if (store.declared.has(name)) {
+    throw new ArgumentResolutionError(`capture ${name} is already defined`);
+  }
+  store.declared.add(name);
+  handles[name] = handle;
+};
+
+export const requiresHandleProtocolUpgrade = (
+  steps: readonly ConformancePlanStep[] | undefined,
+  version: string
+): boolean => version === "0.1.0" && (steps ?? []).some(isOperationHandleStep);

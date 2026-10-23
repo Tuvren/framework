@@ -13,6 +13,7 @@ const dispatch = async (_operation, input) => {
     if (input === "block") await new Promise(resolve => gates.set("block", resolve));
 
     if (input === "invalid") return { kind: "result", value: { result: 1n } };
+    if (input === "zero") return { kind: "result", value: { result: -0 } };
     if (input === "nan") return { kind: "result", value: { result: NaN } };
     return { kind: "result", value: { result: input } };
 };
@@ -28,40 +29,34 @@ await serveStdioAdapter({
   inspectState: async query => { if (query === "release") gates.get("block")?.(); return { live: true }; }
 });`;
 
-test("stdio answers inspectState while dispatch is blocked, once per id", async () => {
+test("legacy lifecycle reads and destruction wait for blocking dispatch", async () => {
+  const ordered = `
+    import { serveStdioAdapter } from ${JSON.stringify(host)};
+    let pending = false;
+    await serveStdioAdapter({
+      initialize: (packetId,planVersion) => ({adapterId:"ordering",capabilities:[],packetId,planVersion}),
+      dispatch: async () => { pending = true; await new Promise(resolve => setTimeout(resolve, 50)); pending = false; return {kind:"result",value:null}; },
+      inspectState: async () => ({pending}),
+      destroyInstance: async () => { if (pending) throw new Error("destroy overtook dispatch"); }
+    });`;
   const client = new JsonRpcAdapterClient({
-    command: ["bun", "--eval", script],
+    command: ["bun", "--eval", ordered],
     cwd: process.cwd(),
-    timeoutMs: 1000,
+    timeoutMs: 2000,
   });
-  const mark = client.markTranscript();
-  const blocked = client.dispatch("probe", "block", {});
   try {
-    expect(await client.inspectState({})).toEqual({ live: true });
-    expect(await client.inspectState("release")).toEqual({ live: true });
-    expect(await blocked).toEqual({
-      kind: "result",
-      value: { result: "block" },
+    const pending = client.dispatch("probe", {}, {}, "instance");
+    expect(await client.inspectState({}, "instance")).toEqual({
+      pending: false,
     });
-    const responses = client
-      .framesSince(mark)
-      .filter((frame) => frame.direction === "receive")
-      .map((frame): unknown => JSON.parse(frame.frame));
-    const ids = responses.map((frame) => {
-      if (
-        typeof frame !== "object" ||
-        frame === null ||
-        !("id" in frame) ||
-        typeof frame.id !== "number"
-      ) {
-        throw new Error("missing response id");
-      }
-      return frame.id;
-    });
-    expect(ids.toSorted((left, right) => left - right)).toEqual([1, 2, 3]);
+    await pending;
+    const timedOut = Promise.allSettled([
+      client.dispatch("probe", {}, {}, "instance", 10),
+    ]);
+    await timedOut;
+    await expect(client.destroyInstance("instance")).resolves.toBeUndefined();
   } finally {
     await client.shutdown();
-    await Promise.allSettled([blocked]);
   }
 });
 
@@ -165,6 +160,180 @@ test("client drives real catalogued operations through handles and keeps native 
     } finally {
       await client.destroyInstance(instance);
     }
+  } finally {
+    await client.shutdown();
+  }
+});
+
+test("legacy stdio responses preserve JSON serialization of negative zero", async () => {
+  const client = new JsonRpcAdapterClient({
+    command: ["bun", "--eval", script],
+    cwd: process.cwd(),
+    timeoutMs: 1000,
+  });
+  try {
+    expect(await client.dispatch("probe", "zero", {})).toEqual({
+      kind: "result",
+      value: { result: 0 },
+    });
+  } finally {
+    await client.shutdown();
+  }
+});
+
+test("real stdio host cancels a gated native operation after its entry receipt", async () => {
+  const client = new JsonRpcAdapterClient({
+    command: ["bun", "typescript/kernel/conformance-adapter/src/host.ts"],
+    cwd: process.cwd(),
+    timeoutMs: 3000,
+  });
+  try {
+    await client.initialize("tuvren.kernel.protocol", "0.1.0");
+    const instance = await client.createInstance({});
+    try {
+      for (const domain of ["backend", "worker"]) {
+        await client.dispatch(
+          "kernel.clock.set",
+          { domain, nowMs: 100 },
+          {},
+          instance
+        );
+      }
+      await client.dispatch(
+        "kernel.barrier.arm",
+        {
+          barrierId: "cancel",
+          seam: "kernel.persistence.before-transact",
+          participants: ["first", "second"],
+        },
+        {},
+        instance
+      );
+      const first = await client.startOperation(
+        "kernel.store.put",
+        { blob: { $bytes: "06" } },
+        instance
+      );
+      const second = await client.startOperation(
+        "kernel.store.put",
+        { blob: { $bytes: "07" } },
+        instance
+      );
+      for (const started of [first, second]) {
+        expect(
+          await client.dispatch(
+            "kernel.barrier.wait",
+            {
+              barrierId: "cancel",
+              operationHandle: started.operationHandle,
+              timeoutMs: 1000,
+            },
+            {},
+            instance
+          )
+        ).toMatchObject({
+          kind: "result",
+          value: { result: { operationHandle: started.operationHandle } },
+        });
+      }
+      await client.cancelOperation(first.operationHandle, "cancel at gate");
+      await client.dispatch(
+        "kernel.barrier.release",
+        {
+          barrierId: "cancel",
+          operationHandles: [first.operationHandle, second.operationHandle],
+        },
+        {},
+        instance
+      );
+      const outcome = await client.awaitOperation(first.operationHandle);
+      expect(outcome).toMatchObject({
+        kind: "error",
+        error: { message: "cancel at gate" },
+      });
+      expect(await client.awaitOperation(first.operationHandle)).toEqual(
+        outcome
+      );
+      expect(await client.awaitOperation(second.operationHandle)).toMatchObject(
+        { kind: "result" }
+      );
+    } finally {
+      await client.destroyInstance(instance);
+    }
+  } finally {
+    await client.shutdown();
+  }
+});
+
+test("catalogued stdio responses reject negative zero while legacy responses retain their behavior", async () => {
+  const client = new JsonRpcAdapterClient({
+    command: [
+      "bun",
+      "--eval",
+      script.replace(
+        "  dispatch,",
+        '  dispatch, isLosslessRequest: (_method, params) => params?.operation === "catalogued",'
+      ),
+    ],
+    cwd: process.cwd(),
+    timeoutMs: 1000,
+  });
+  try {
+    await expect(client.dispatch("catalogued", "zero", {})).rejects.toThrow(
+      "adapter_response_serialization_failed"
+    );
+  } finally {
+    await client.shutdown();
+  }
+});
+
+test("real stdio destruction releases a barrier-held operation before cleanup", async () => {
+  const client = new JsonRpcAdapterClient({
+    command: ["bun", "typescript/kernel/conformance-adapter/src/host.ts"],
+    cwd: process.cwd(),
+    timeoutMs: 3000,
+  });
+  try {
+    const instance = await client.createInstance({});
+    for (const domain of ["backend", "worker"]) {
+      await client.dispatch(
+        "kernel.clock.set",
+        { domain, nowMs: 100 },
+        {},
+        instance
+      );
+    }
+    await client.dispatch(
+      "kernel.barrier.arm",
+      {
+        barrierId: "destroy",
+        seam: "kernel.persistence.before-transact",
+        participants: ["first", "second"],
+      },
+      {},
+      instance
+    );
+    const first = await client.startOperation(
+      "kernel.store.put",
+      { blob: { $bytes: "08" } },
+      instance
+    );
+    await client.dispatch(
+      "kernel.barrier.wait",
+      {
+        barrierId: "destroy",
+        operationHandle: first.operationHandle,
+        timeoutMs: 1000,
+      },
+      {},
+      instance
+    );
+    const pending = client.awaitOperation(first.operationHandle);
+    await expect(client.destroyInstance(instance)).resolves.toBeUndefined();
+    expect(await pending).toMatchObject({
+      kind: "error",
+      error: { message: "adapter instance destroyed" },
+    });
   } finally {
     await client.shutdown();
   }

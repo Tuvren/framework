@@ -77,6 +77,8 @@ import {
 } from "./observation-encoding.js";
 import {
   isOperationHandleStep,
+  recordHandleCapture,
+  requiresHandleProtocolUpgrade,
   runOperationHandleStep,
 } from "./operation-steps.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
@@ -718,6 +720,9 @@ const observeTraceStep = async ({
         instance,
         timeoutMs
       );
+  if (outcome.kind === "started" || outcome.kind === "cancelled") {
+    throw new Error("orchestration receipt cannot become an observation");
+  }
   observed.outcome = outcome;
   if (nativeOutcome) {
     validateTraceFaultOutcome(
@@ -795,6 +800,7 @@ const runTraceCheck = async (
   const arrivals: Record<string, number> = {};
   const captureStore = createCaptureStore();
   const captures = captureStore.values;
+  const handleCaptures: Record<string, string> = Object.create(null);
   const argumentRoots: ArgumentRoots = {
     capture: captures,
     fixture:
@@ -810,6 +816,7 @@ const runTraceCheck = async (
       if (step === undefined) {
         return;
       }
+      argumentRoots.capture = { ...captures, ...handleCaptures };
       const {
         contextInput,
         input: projectedInput,
@@ -831,6 +838,29 @@ const runTraceCheck = async (
         operation: step.operation,
         stepId: step.stepId,
       });
+      if (step.action === "start" || step.action === "cancel") {
+        client.setLosslessObservations(catalogOperation !== undefined);
+        const receipt = await runOperationHandleStep(
+          client,
+          step,
+          input,
+          instance,
+          startedOperations,
+          controls.deadlineMs
+        );
+        arrivals[step.stepId] = client.latestArrivalSequence();
+        if (receipt.kind === "started") {
+          barriers.started(step.stepId, receipt.operationHandle);
+          recordHandleCapture(
+            step.handleCapture,
+            receipt.operationHandle,
+            captureStore,
+            handleCaptures
+          );
+        }
+        await visit(index + 1);
+        return;
+      }
       const observed: StepObservationRecord = {
         operation: step.operation,
         stepId: step.stepId,
@@ -852,15 +882,6 @@ const runTraceCheck = async (
       });
       barriers.observe(step, outcome);
       arrivals[step.stepId] = client.latestArrivalSequence();
-      if (
-        step.action === "start" &&
-        typeof context.result === "object" &&
-        context.result !== null &&
-        "operationHandle" in context.result &&
-        typeof context.result.operationHandle === "string"
-      ) {
-        barriers.started(step.stepId, context.result.operationHandle);
-      }
       if (outcome.kind === "error") {
         traceAdapterErrors[step.stepId] = outcome.error;
       }
@@ -1471,6 +1492,17 @@ const selectChecks = (
         adapterCapabilities,
         requestedCapabilities
       );
+      if (
+        requiresHandleProtocolUpgrade(check.steps, manifest.protocol.version)
+      ) {
+        entry.selected = false;
+        entry.reason = [
+          entry.reason,
+          "requires adapter protocol >= 0.2.0 for operation handle steps",
+        ]
+          .filter(Boolean)
+          .join("; ");
+      }
       selection.push(entry);
       if (!entry.selected) {
         continue;

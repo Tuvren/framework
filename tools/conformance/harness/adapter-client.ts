@@ -27,11 +27,9 @@ import type {
   AdapterErrorEnvelope,
   OperationOutcome,
 } from "../adapter-protocol/index.js";
+import { validateAdapterDefinition } from "../adapter-protocol/protocol-contract.js";
 import { JsonRpcAdapterError } from "./adapter-error.js";
-import {
-  assertLosslessFrame,
-  ObservationEncodingError,
-} from "./observation-encoding.js";
+import { assertLosslessFrame } from "./observation-encoding.js";
 
 export interface AdapterManifest {
   adapterId: string;
@@ -173,6 +171,7 @@ export class JsonRpcAdapterClient {
   private nextId = 1;
   private losslessObservations = false;
   private exited = false;
+  private sessionFailure: Error | undefined;
   private readonly pending = new Map<
     number,
     {
@@ -305,6 +304,7 @@ export class JsonRpcAdapterClient {
       timeoutMs
     );
     if (
+      validateAdapterDefinition("StartOperationResult", value).length > 0 ||
       !isRecord(value) ||
       typeof value.operationHandle !== "string" ||
       value.operationHandle.length === 0 ||
@@ -488,6 +488,9 @@ export class JsonRpcAdapterClient {
     params: unknown,
     timeoutMs = this.timeoutMs
   ): Promise<unknown> {
+    if (this.sessionFailure !== undefined) {
+      throw this.sessionFailure;
+    }
     const id = this.nextId;
     this.nextId += 1;
     const payload = `${JSON.stringify({ id, jsonrpc: "2.0", method, params })}\n`;
@@ -525,31 +528,34 @@ export class JsonRpcAdapterClient {
     let parsed: unknown;
 
     try {
-      if ([...this.pending.values()].some((entry) => entry.lossless)) {
-        assertLosslessFrame(line);
-      }
       parsed = JSON.parse(line) as unknown;
     } catch (error: unknown) {
-      this.rejectAll(
-        error instanceof ObservationEncodingError
-          ? error
-          : new Error(
-              `adapter stdout contained malformed JSON: ${
-                error instanceof Error ? error.message : String(error)
-              }`
-            )
+      this.failSession(
+        new Error(
+          `adapter stdout contained malformed JSON: ${error instanceof Error ? error.message : String(error)}`
+        )
       );
       return;
     }
-
-    if (!isJsonRpcResponse(parsed)) {
-      this.rejectAll(new Error("adapter stdout contained malformed JSON-RPC"));
+    const id =
+      isRecord(parsed) && typeof parsed.id === "number" ? parsed.id : undefined;
+    const pendingFrame = id === undefined ? undefined : this.pending.get(id);
+    try {
+      if (pendingFrame?.lossless === true) {
+        assertLosslessFrame(line);
+      }
+      if (!isJsonRpcResponse(parsed)) {
+        throw new Error("adapter stdout contained malformed JSON-RPC");
+      }
+    } catch (error: unknown) {
+      const failure = error instanceof Error ? error : new Error(String(error));
+      this.rejectFrame(id, failure);
       return;
     }
 
     if (typeof parsed.id !== "number") {
       if ("error" in parsed) {
-        this.rejectAll(new JsonRpcAdapterError(parsed.error));
+        this.failSession(new JsonRpcAdapterError(parsed.error));
       }
       return;
     }
@@ -571,7 +577,23 @@ export class JsonRpcAdapterClient {
     pending.resolve(parsed.result);
   }
 
-  private rejectAll(error: Error): void {
+  private rejectFrame(id: number | undefined, error: Error): void {
+    if (id === undefined) {
+      this.failSession(error);
+      return;
+    }
+    const pending = this.pending.get(id);
+    if (pending === undefined) {
+      return;
+    }
+    clearTimeout(pending.timer);
+    this.pending.delete(id);
+    pending.reject(error);
+  }
+
+  private failSession(error: Error): void {
+    this.sessionFailure = error;
+    this.child.kill();
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timer);
       pending.reject(error);

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { AdapterProtocolError } from "../../../../tools/conformance/adapter-protocol/index.js";
 import type { OperationOutcome } from "../../../../tools/conformance/adapter-protocol/index.js";
 
 export const createOperationHandles = (
@@ -75,15 +76,32 @@ export const createOperationHandles = (
   };
   const destroyOperations = async (handle: unknown): Promise<void> => {
     const pending: Promise<PromiseSettledResult<OperationOutcome>>[] = [];
-    for (const [operationHandle, operation] of operations) {
+    for (const operation of operations.values()) {
       if (operation.instance === handle) {
         operation.controller.abort(new Error("adapter instance destroyed"));
         pending.push(operation.outcome);
+      }
+    }
+    const expired = Promise.withResolvers<never>();
+    const timer = setTimeout(() => {
+      expired.reject(
+        new AdapterProtocolError(
+          "adapter_instance_busy",
+          "started operations did not stop before destruction deadline"
+        )
+      );
+    }, 1000);
+    try {
+      await Promise.race([Promise.all(pending), expired.promise]);
+    } finally {
+      clearTimeout(timer);
+    }
+    await destroy(handle);
+    for (const [operationHandle, operation] of operations) {
+      if (operation.instance === handle) {
         operations.delete(operationHandle);
       }
     }
-    await Promise.all(pending);
-    await destroy(handle);
   };
   return {
     awaitOperation,
