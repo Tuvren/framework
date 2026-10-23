@@ -1,0 +1,13 @@
+owner: KRT-CZ005
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: f35d1da
+  command: "bun tools/conformance/plan-compiler/certification-inventory.ts"
+result: pass
+pass_criteria: "Each rule fires on a violating fixture and stays silent on a compliant one; report mode leaves current lanes green; enforcing mode fails a migrated violating plan; the baseline inventory per port and rule is recorded."
+files:
+  - path: baseline-inventory.txt
+    sha256: 3156b224fe6854f94ee5af81031542ba94098ee3c34cd07a06dd02b8c6a12149
+    bytes: 5103
+    role: measurement

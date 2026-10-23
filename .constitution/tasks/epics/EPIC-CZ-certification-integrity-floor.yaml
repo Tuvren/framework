@@ -105,7 +105,7 @@ tickets:
       evidence: "Assert the four schemas validate the companion's example shapes, reject additional properties, reject expected-root references inside arguments, and keep every existing plan and packet valid."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CZ004
     title: Land adapter protocol 0.2.0, profile, control, and evidence schemas
     type: Feature
@@ -132,7 +132,7 @@ tickets:
     deviations:
       - files: [tools/scripts/lib/conformance-contract.test.ts]
         justification: "Contract tests for the evidence-contract change in tools/scripts/lib/conformance-contract.ts live in its sibling test file, which the ticket scope did not name."
-    status: planned
+    status: done
   - id: KRT-CZ005
     title: Enforce certification plan rules in report mode with a baseline inventory
     type: Feature
@@ -155,7 +155,7 @@ tickets:
       evidence: "Assert each rule fires on a minimal violating plan and stays silent on a compliant one; assert report mode does not fail current lanes; assert enforcing mode fails a migrated plan with a violation; record the baseline violation counts per port in this ticket's evidence manifest."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CZ006
     title: Emit failure artifacts with preliminary classification
     type: Feature
