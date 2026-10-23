@@ -331,6 +331,28 @@ describe("operation catalog schema", () => {
       type: "object",
     });
 
+    test.each([false, true])(
+      "patternProperties is permitted only on deprecated entries (deprecated=%s)",
+      (deprecated) => {
+        const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
+          at(draft, "operations", 1).deprecated = deprecated;
+          at(draft, "operations", 1, "observation").result = {
+            additionalProperties: false,
+            patternProperties: { ".*": { type: "string" } },
+            type: "object",
+          };
+        });
+        expectValid("operationCatalog", catalog);
+        expect(
+          collectCertificationIntegrityFailures("operationCatalog", catalog)
+        ).toEqual(
+          deprecated
+            ? []
+            : [expect.stringContaining("uses unsupported patternProperties")]
+        );
+      }
+    );
+
     test.each([
       [
         "a type-less closed payload that admits arrays of open objects",

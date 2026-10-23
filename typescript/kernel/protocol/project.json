@@ -43,7 +43,11 @@
         "^production",
         "{workspaceRoot}/docs/KrakenKernelSpecification.md",
         "{workspaceRoot}/spec/kernel/**/*",
-        "{workspaceRoot}/spec/conformance/kernel/fixtures/**/*"
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/tools/scripts/conformance/certification-schemas.ts",
+        "{workspaceRoot}/tools/schemas/*.json",
+        "{workspaceRoot}/tools/conformance/adapter-protocol/protocol.schema.json",
+        "{workspaceRoot}/typescript/kernel/testkit/src/lib/kernel-mutant-types.ts"
       ]
     },
     "typecheck": {

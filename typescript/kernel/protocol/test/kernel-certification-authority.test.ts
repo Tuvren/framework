@@ -261,6 +261,18 @@ describe("kernel certification catalog", () => {
     expect(codes.has("turn_head_lateral_move")).toBe(false);
   });
 
+  test("run creation errors match the specification's creation legality", () => {
+    for (const id of [
+      "kernel.run.create",
+      "kernel.runLiveness.createLeasedRun",
+    ]) {
+      const entry = operations().find(
+        (operation) => operation.operationId === id
+      );
+      expect(array(entry?.errors)).not.toContain("turn_node_thread_mismatch");
+    }
+  });
+
   test("compiles all invocation and observation schemas with their encoding references", () => {
     const ajv = new Ajv2020({ strict: false });
     ajv.addSchema(
@@ -447,6 +459,7 @@ describe("kernel identity recipes", () => {
         const types: Record<string, string> = {
           rawOpaqueBytes: "opaque-object",
           turnNodeIdentityRecord: "turn-node",
+          turnTreeIdentityRecord: "turn-tree",
           turnTreeSchemaRecord: "schema",
         };
         const type = types[field];
@@ -464,23 +477,29 @@ describe("kernel identity recipes", () => {
     }
   }
 
-  test("TurnTree projection agrees with the public identity operation", async () => {
+  test("TurnTree recipe and public identity operation reproduce the committed vector", async () => {
     const fixture = object(
-      readJson(`${fixtureDirectory}/kernel-protocol-logical.json`)
+      readJson(`${fixtureDirectory}/kernel-protocol-turn-tree.json`)
     );
     const schema = readJson(
       `${fixtureDirectory}/canonical-turn-tree-schema.json`
     );
-    const manifest = fixture.turnTreeChangeSet;
+    const record = object(fixture.turnTreeIdentityRecord);
+    const { manifest } = record;
     assertTurnTreeSchema(schema);
     assertTurnTreeManifest(manifest);
     const bytes = identityBytes("turn-tree", {
       hash: "excluded",
-      manifest,
-      schemaId: schema.schemaId,
+      ...record,
     });
-    expect(digest("turn-tree", bytes)).toBe(
-      await hashTurnTreeIdentity(schema.schemaId, manifest, schema)
+    expect(Buffer.from(bytes).toString("hex")).toBe(
+      string(fixture.turnTreeIdentityRecordCborHex)
     );
+    expect(digest("turn-tree", bytes)).toBe(
+      string(fixture.turnTreeIdentityRecordSha256Hex)
+    );
+    expect(
+      await hashTurnTreeIdentity(string(record.schemaId), manifest, schema)
+    ).toBe(string(fixture.turnTreeIdentityRecordSha256Hex));
   });
 });

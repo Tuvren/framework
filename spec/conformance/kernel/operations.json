@@ -1512,7 +1512,6 @@
       },
       "errors": [
         "kernel_runtime_branch_already_active",
-        "turn_node_thread_mismatch",
         "kernel_persistence_fault_injected"
       ],
       "handles": {
@@ -2461,7 +2460,6 @@
       },
       "errors": [
         "kernel_runtime_branch_already_active",
-        "turn_node_thread_mismatch",
         "kernel_persistence_fault_injected"
       ],
       "handles": {
