@@ -29,7 +29,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --summary-only"
+        "command": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --summary-only && bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter-syscall.json --capability kernel.syscall --summary-only"
       }
     },
     "lint": {
@@ -43,8 +43,22 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "cargo test -p tuvren-kernel-rust-certification -p tuvren-kernel-rust-conformance-adapter"
-      }
+        "command": "cargo test -p tuvren-kernel-rust-certification -p tuvren-kernel-rust-conformance-adapter && bun test tools/conformance/meta-conformance/disagreements.test.ts tools/conformance/meta-conformance/rust-memory.test.ts"
+      },
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/rust/kernel/**/*",
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/rust/kernel-certification/**/*",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml",
+        "{workspaceRoot}/spec/kernel/authority-packet.json",
+        "{workspaceRoot}/tools/schemas/**/*"
+      ]
     }
   }
 }

@@ -44,6 +44,8 @@ import type { VerificationLogs } from "../../scripts/lib/verification-logs.ts";
 /** One port's negative-control wiring (ADR-0079 decisions 1 to 3). */
 export interface NegativeControlPortConfig {
   activationOperation: string;
+  capabilities?: readonly string[];
+  mutants?: readonly string[];
   /** The certifying adapter whose unmutated run must pass first. */
   controlAdapter: string;
   mutantAdapter: string;
@@ -59,6 +61,21 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
     controlAdapter: "typescript/kernel/conformance-adapter/adapter.json",
     mutantAdapter: "typescript/kernel/conformance-adapter/adapter-mutant.json",
     mutantEnv: "TUVREN_KERNEL_MUTANT",
+    packet: "spec/kernel/authority-packet.json",
+    port: "kernel",
+    profile: "kernel.memory",
+  },
+  {
+    activationOperation: "kernel.mutant.activation",
+    capabilities: ["kernel.syscall"],
+    controlAdapter: "rust/kernel-conformance-adapter/adapter-syscall.json",
+    mutantAdapter: "rust/kernel-conformance-adapter/adapter-mutant.json",
+    mutantEnv: "TUVREN_KERNEL_MUTANT",
+    mutants: [
+      "kernel.wrong-opaque-object-hash",
+      "kernel.drop-uncommitted-staged-result-on-recovery",
+      "kernel.delete-object-reachable-through-live-root",
+    ],
     packet: "spec/kernel/authority-packet.json",
     port: "kernel",
     profile: "kernel.memory",
@@ -323,7 +340,7 @@ const replayCommand = (
   config: NegativeControlPortConfig,
   mutantId: string
 ): string =>
-  `${config.mutantEnv}=${mutantId} bun ${HARNESS} --adapter ${display(config.mutantAdapter)} --packet ${display(config.packet)} --allow-failing-evidence`;
+  `${config.mutantEnv}=${mutantId} bun ${HARNESS} --adapter ${display(config.mutantAdapter)} --packet ${display(config.packet)}${(config.capabilities ?? []).map((capability) => ` --capability ${capability}`).join("")} --allow-failing-evidence`;
 
 /** Points harness replays at the real manifest instead of the probe wrapper. */
 const rewriteReplays = (
@@ -440,6 +457,10 @@ const runHarness = async (
       "--concurrency",
       String(options.concurrency ?? 4),
       "--allow-failing-evidence",
+      ...(config.capabilities ?? []).flatMap((capability) => [
+        "--capability",
+        capability,
+      ]),
       "--evidence-out",
       evidencePath,
       "--summary-only",
@@ -690,9 +711,11 @@ export const runNegativeControls = async (
   const manifest = await readControlManifest(config.packet);
   const selected = manifest.controls.filter(
     (control) =>
-      options.mutants === undefined ||
-      options.mutants.length === 0 ||
-      options.mutants.includes(control.mutantId)
+      (config.mutants === undefined ||
+        config.mutants.includes(control.mutantId)) &&
+      (options.mutants === undefined ||
+        options.mutants.length === 0 ||
+        options.mutants.includes(control.mutantId))
   );
   const report: NegativeControlReport = {
     control: { adapter: display(config.controlAdapter), status: "error" },

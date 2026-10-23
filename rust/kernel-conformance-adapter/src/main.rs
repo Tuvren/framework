@@ -76,7 +76,10 @@ enum OperationOutcome {
 }
 
 fn main() {
-    let mut syscalls = host_syscalls::Syscalls::default();
+    let mut syscalls = host_syscalls::Syscalls::configured().unwrap_or_else(|message| {
+        eprintln!("{message}");
+        std::process::exit(2);
+    });
     for line in io::stdin().lock().lines() {
         let response = match line {
             Ok(text) => handle_line(&text, &mut syscalls),
@@ -125,15 +128,23 @@ fn dispatch_request(
     match request.method.as_str() {
         "initialize" => Ok(json!(AdapterCapabilities {
             adapter_id: "rust-kernel",
-            capabilities: vec![
-                "kernel.syscall",
-                "kernel.fault-injection",
-                "kernel.protocol",
-                "kernel.logical",
-                "kernel-protocol.thread.enumeration",
-                "kernel.run-liveness",
-                "kernel.reclamation",
-            ],
+            capabilities: [
+                vec![
+                    "kernel.syscall",
+                    "kernel.fault-injection",
+                    "kernel.protocol",
+                    "kernel.logical",
+                    "kernel-protocol.thread.enumeration",
+                    "kernel.run-liveness",
+                    "kernel.reclamation",
+                ],
+                if syscalls.syscall_families {
+                    vec!["kernel.scope-isolation", "kernel.restart-recovery"]
+                } else {
+                    vec![]
+                }
+            ]
+            .concat(),
             packet_id: read_param_string(&request.params, "packetId")?,
             plan_version: read_param_string(&request.params, "planVersion")?,
         })),
@@ -147,6 +158,13 @@ fn dispatch_request(
                     .or_else(|| input.get("instance"))
                     .unwrap_or(&Value::Null);
                 return Ok(json!(syscalls.dispatch(&operation, &input, handle)?));
+            }
+            if request.params.get("instance").is_some() || input.get("instance").is_some() {
+                return Err(adapter_error(
+                    "adapter_operation_not_implemented",
+                    "legacy composite cannot dispatch on a syscall instance",
+                    None,
+                ));
             }
             Ok(json!(dispatch_operation(&operation, &input)?))
         }

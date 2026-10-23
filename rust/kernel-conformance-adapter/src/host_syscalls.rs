@@ -6,6 +6,7 @@ use tuvren_kernel_rust::{
     ThreadListOptions,
 };
 
+use tuvren_kernel_rust::testkit::mutants::KernelMutant;
 use tuvren_kernel_rust::testkit::{ClockDomain, FaultRequest, KernelTestControls};
 
 use crate::observation_encoding::{self as encoding, EncodingResult, invalid};
@@ -313,8 +314,32 @@ struct Instance {
 pub(crate) struct Syscalls {
     instances: BTreeMap<String, Instance>,
     next_handle: u64,
+    mutant: Option<KernelMutant>,
+    pub(crate) syscall_families: bool,
 }
 impl Syscalls {
+    pub(crate) fn configured() -> Result<Self, String> {
+        let args: Vec<String> = std::env::args().skip(1).collect();
+        if args
+            .iter()
+            .any(|arg| arg != "--mutant-from-env" && arg != "--syscall-families")
+        {
+            return Err("unsupported Rust adapter argument".into());
+        }
+        let mutant = if args.iter().any(|arg| arg == "--mutant-from-env") {
+            let id = std::env::var("TUVREN_KERNEL_MUTANT")
+                .map_err(|_| "TUVREN_KERNEL_MUTANT required")?;
+            Some(KernelMutant::select(&id).map_err(|error| error.payload.message)?)
+        } else {
+            None
+        };
+        Ok(Self {
+            mutant,
+            syscall_families: args.iter().any(|arg| arg == "--syscall-families"),
+            ..Self::default()
+        })
+    }
+
     pub(crate) fn create(&mut self) -> String {
         self.next_handle += 1;
         let handle = format!("rust-kernel-{}", self.next_handle);
@@ -322,7 +347,7 @@ impl Syscalls {
             handle.clone(),
             Instance {
                 kernel: None,
-                controls: KernelTestControls::default(),
+                controls: KernelTestControls::with_mutant(self.mutant.clone()),
             },
         );
         handle
@@ -335,6 +360,7 @@ impl Syscalls {
     pub(crate) fn has(operation: &str) -> bool {
         BINDINGS.iter().any(|(name, _)| *name == operation)
             || CONTROLS.iter().any(|(name, _)| *name == operation)
+            || PROCESS_CONTROLS.iter().any(|(name, _)| *name == operation)
     }
     pub(crate) fn dispatch(
         &mut self,
@@ -342,6 +368,11 @@ impl Syscalls {
         input: &Value,
         handle: &Value,
     ) -> Result<OperationOutcome, AdapterErrorEnvelope> {
+        if let Some((_, binding)) = PROCESS_CONTROLS.iter().find(|(name, _)| *name == operation) {
+            return Ok(OperationOutcome::Result {
+                value: json!({"result":binding(self)}),
+            });
+        }
         let instance = handle
             .as_str()
             .and_then(|h| self.instances.get_mut(h))
@@ -411,5 +442,18 @@ const CONTROLS: &[(&str, ControlBinding)] = routing![
         let request: FaultRequest = serde_json::from_value(Value::Object(request))
             .map_err(|_| invalid("invalid fault request"))?;
         Ok(json!({"token":instance.controls.arm_fault(request)?}))
+    },
+];
+
+type ProcessBinding = fn(&Syscalls) -> Value;
+const PROCESS_CONTROLS: &[(&str, ProcessBinding)] = routing![
+    "kernel.mutant.activation" => |syscalls| {
+        let count = syscalls.mutant.as_ref().map_or(0, KernelMutant::activation_count);
+        json!({"activation":{
+            "mutantId":syscalls.mutant.as_ref().map(|mutant| mutant.kind().id()),
+            "signal":syscalls.mutant.as_ref().map(|mutant| mutant.kind().signal()),
+            "activated": count > 0,
+            "activationCount":count
+        }})
     },
 ];
