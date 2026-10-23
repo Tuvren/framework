@@ -1,0 +1,48 @@
+date: 2026-10-23
+commit: 9a10b5a
+epics: [DB]
+routed:
+  - stage: tech-spec
+    item: "OD-16: the operation catalog has no deterministic codec operation, so canonical rejection and arbitrary-record encode, decode, and identity-hash obligations (68 legacy assertions) cannot become syscall traces; they stay on the legacy plans until a ruling."
+    from: DB
+  - stage: tech-spec
+    item: "ADR-0075 decision 8 says migrated obligations keep stable claimIds, but the legacy kernel plans had none, so the syscall plans mint kernel.syscall.* claimIds and the obligation map carries continuity; confirm this reading before ADR-0081 profiles reference claimIds."
+    from: DB
+  - stage: tech-spec
+    item: "ADR-0080 compares changedPaths as UTF-8 bytes, which is undefined for paths with lone surrogates that schema registration accepts; either require well-formed paths at registration or accept the gap."
+    from: DB
+  - stage: tech-spec
+    item: "The kernel catalog carries TypeScript-only surface into cross-language authority: kernel.store.put accepts an optional mediaType that spec section 7 and the Python kernel do not have, and kernel.mutant.activation is gated on kernel.protocol although only the mutant adapter answers it."
+    from: DB
+  - stage: tech-spec
+    item: "code decision (contract_shape): The kernel catalog binds syscalls as projection-path#Symbol or projection-path#/json/pointer through packet bindingProjections, including non-language projections adapter-protocol and typescript-testkit; void results are closed empty records; deprecated legacy composites are kind control with permissive dialect-valid schemas. [spec/conformance/kernel/operations.json, spec/kernel/authority-packet.json] at a461859"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (contract_shape): Identity recipes use an envelope of recipeId, recipeVersion, and recipes with explicit CBOR profile descriptors, referenced from the packet's new identityRecipes field. [spec/conformance/kernel/identity-recipes.json, tools/schemas/authority-packet.schema.json] at a461859"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (convention): Lossless fixture copies use the .bytes.json suffix with input and expected sections and expose canonical bytes as *CborBytes beside *CborHex. [spec/conformance/kernel/fixtures] at 41f963f"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (contract_shape): Integrity assertions take recordType, and referenceWalk takes references with path, targetPath, recordType, optional hashPath, valuePath, length, and nullable; collection references require length. [tools/schemas/conformance-plan.schema.json, tools/conformance/harness/assertion-engine/integrity.ts] at 2a4bea0"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (pattern): The runner's verifier encoder lives in tools/conformance/harness/kernel-integrity.ts and follows identity-recipes.json without importing the production kernel encoder. [tools/conformance/harness/kernel-integrity.ts] at 41f963f"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (convention): Plans opt into enforcing certification rules with certificationRules: enforcing, and every plan gated on kernel.syscall is enforced regardless; an integrity-observation rule requires identity and digest operands to be kernel-reported observations. [tools/conformance/plan-compiler/certification-assessment.ts, tools/conformance/plan-compiler/certification-rules.ts] at 1af11c3"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (pattern): Catalogued native errors reach the runner as state.adapterError observations; an uncatalogued code or an unasserted native error on a trace step fails the check through a synthetic <checkId>.nativeError implementation assertion. [tools/conformance/harness/run.ts, typescript/kernel/conformance-adapter/src/host-syscalls.ts] at 1af11c3"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (pattern): The TypeScript kernel adapter dispatches syscalls through an argument-order registry derived from the catalog's input property names, with try scope limited to the native call. [typescript/kernel/conformance-adapter/src/host-syscalls.ts] at 1af11c3"
+    from: DB
+  - stage: tech-spec
+    item: "code decision (convention): For catalogued operations only, unprefixed required-evidence paths resolve inside validated result observations while explicit result.* requirements stay result-only, and adapters may not return their own evidence. [tools/conformance/harness/run.ts, tools/conformance/harness/assertion-engine/index.ts] at 4e6c4af"
+    from: DB
+proposed_decisions: [OD-16]
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-DB004/manifest.yaml: KRT-DB004"
+  - ".constitution/evidence/KRT-DB003/manifest.yaml: KRT-DB003"

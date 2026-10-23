@@ -1,4 +1,9 @@
 entries:
+  - version: v0.48.1
+    date: 2026-10-23
+    by: reconcile
+    changed:
+      - ".constitution/tech-spec/adrs/ADR-0078-lossless-observation-encoding-and-kernel-content-integrity.md: Safe-integer rule applies to every number in catalogued frames until the decoder is schema-aware; $map keys are unique text with no entry order; identity and digest compare against kernel-reported observations and referenceWalk nulls need nullable; record shapes are the catalogs' closed observation schemas and the CDDL-derived generator is deferred. (42916a9, EPIC-DB)"
   - version: v0.48.0
     date: 2026-10-22
     by: stage

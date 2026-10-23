@@ -1,4 +1,23 @@
 entries:
+  - version: v0.50.2
+    date: 2026-10-23
+    changed:
+      - "EPIC-DB Kernel catalog, lossless encoding, and protocol plans on the TypeScript memory kernel archived: 5 tickets, 29 points, 25896 diff lines, 0 review rounds"
+    added:
+      - "EPIC-DB landed the kernel operation catalog (35 syscalls, 3 controls, 21 deprecated composites) and identity recipes, lossless $bytes observation encoding with runner-side digest, canonicalCbor, identity, and referenceWalk assertions, canonical UTF-8 changedPaths order in the TypeScript kernel, syscall-trace protocol plans (51 checks) enforcing the certification rules on the TypeScript memory, SQLite, and PostgreSQL kernels, canonical kernel error codes, and Rust cross-validation of every committed kernel vector; the kernel negative-control baseline rose to 11 of 13 mutants killed."
+      - "Follow-up from EPIC-DB: The Rust kernel and kernel gRPC service still emit and map turn_head_lateral_move (rust/kernel/src/memory.rs, rust/kernel-grpc-service/src/lib.rs), which has no authority; align with the TypeScript kernel in the Rust kernel epic."
+      - "Follow-up from EPIC-DB: kernel.clock.set and kernel.fault.arm are catalogued but the TypeScript syscall bridge does not bind them; they need the runner-owned lifecycle and fault mechanisms (KRT-DC001)."
+      - "Follow-up from EPIC-DB: Harness-owned storageRef provisioning is deferred; persistent syscall instances reuse existing backend provisioning."
+      - "Follow-up from EPIC-DB: The runner does not validate step arguments against the catalog's closed input schemas, and the syscall bridge drops argument names the catalog does not declare."
+      - "Follow-up from EPIC-DB: Schema-aware float handling in the observation decoder is deferred; the stricter safe-integer rule applies to every number in catalogued frames."
+      - "Follow-up from EPIC-DB: In the TypeScript syscall bridge, a backend cleanup failure after kernel construction fails replaces the original construction error; preserve it as the cause."
+      - "Follow-up from EPIC-DB: Kernel negative-control survivors: kernel.fault-seam-never-fires (runner rejection channel, KRT-DC001) and kernel.lease-takeover-before-expiry (shared-lease clock, KRT-DF005)."
+    by: reconcile
+    fast_lane_through: 9a10b5aa34ebbf75f7f4c1e66f51aee153a151db
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.48.1
   - version: v0.50.1
     date: 2026-10-23
     changed:

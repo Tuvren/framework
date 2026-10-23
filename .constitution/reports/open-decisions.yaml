@@ -512,3 +512,33 @@ decisions:
         - KRT-CZ007
         - KRT-CZ009
         - KRT-DB001
+  - id: OD-16
+    question: "How do kernel certification plans express the deterministic codec obligations (arbitrary-record encoding and identity hashing, CBOR decoding, canonical rejection) that no catalogued syscall reaches?"
+    blocks: [KRT-DJ001]
+    options:
+      - name: Catalogue codec operations under a kernel.codec capability
+        pros:
+          - "Every kernel implementation already exposes a deterministic codec; catalogued encode, decode, and hash operations let the runner judge canonical rejection and record identity directly across languages."
+          - The legacy plans and the accept-noncanonical-cbor mutant can retire with no lost obligation.
+        cons:
+          - "Adds a codec surface to the operation catalog that the kernel specification's syscall section does not name; it needs a Stage 3 record."
+      - name: Retire codec obligations from kernel certification
+        pros:
+          - "Syscall read-back claims (schema_canonical_cbor, node_identity_walk, tree_manifest_identity) plus the Rust cross-validation check canonical encoding and identity for records a kernel produces and returns."
+        cons:
+          - "Canonical rejection of noncanonical input is no longer certified anywhere; it falls back to package-local tests per language."
+    recommendation: Catalogue codec operations under a kernel.codec capability
+    closure: ruling
+    ruler: "Owner, after the EPIC-DB merge"
+    status: proposed
+    asked:
+      date: 2026-10-23
+      in: EPIC-DB
+    proposed_by: EPIC-DB @ 9a10b5a
+    interim:
+      assumption: "The 68 codec assertions stay on the legacy kernel-protocol-core and kernel-protocol-extended plans and the accept-noncanonical-cbor mutant keeps its legacy designation; KRT-DJ001 must not delete them before this closes."
+      applied_by:
+        - spec/conformance/kernel/plans/kernel-protocol-core.json
+        - spec/conformance/kernel/plans/kernel-protocol-extended.json
+        - spec/conformance/kernel/negative-controls.json
+        - KRT-DB004
