@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-import { afterEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  test,
+} from "bun:test";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -22,11 +29,27 @@ import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
 import { assertConformanceEvidence } from "../../../scripts/lib/conformance-contract.ts";
+import type { ConformanceFailure } from "../../../scripts/lib/conformance-contract.ts";
 import {
   createProjectionProbeAdapterScript,
   errorStateAdapterScript,
+  failureProbeAdapterScript,
   statePrecedenceAdapterScript,
 } from "./run-adapters-fixture.ts";
+
+const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../../..");
+const FAILURE_ARTIFACT_NOTICE = "conformance failure artifacts retained at ";
+let verifyLogRoot = "";
+
+beforeAll(async () => {
+  verifyLogRoot = await mkdtemp(nodePath.join(tmpdir(), "tuvren-runner-logs-"));
+});
+
+afterAll(async () => {
+  if (verifyLogRoot.length > 0) {
+    await rm(verifyLogRoot, { force: true, recursive: true });
+  }
+});
 
 const runCommand = async (
   command: readonly string[]
@@ -38,7 +61,8 @@ const runCommand = async (
   }
 
   const child = spawn(executable, args, {
-    cwd: process.cwd(),
+    cwd: REPO_ROOT,
+    env: { ...process.env, VERIFY_LOG_DIR: verifyLogRoot },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -780,7 +804,11 @@ describe("certification harness trace lifecycle", () => {
         "--evidence-out",
         evidencePath,
       ]);
-      expect(result.stderr).toBe("");
+      if (failEvents) {
+        expect(result.stderr).toContain(FAILURE_ARTIFACT_NOTICE);
+      } else {
+        expect(result.stderr).toBe("");
+      }
       expect(result.code).toBe(failEvents ? 1 : 0);
       const evidence: unknown = JSON.parse(result.stdout);
       assertConformanceEvidence(evidence, "trace evidence");
@@ -829,6 +857,13 @@ describe("certification harness trace lifecycle", () => {
       if (failEvents) {
         expect(evidence.checkResults[0]?.details).toMatchObject({
           adapterError: { code: "native_transport", message: "events failed" },
+        });
+        expect(evidence.checkResults[0]?.failure).toMatchObject({
+          arguments: [
+            { input: { checkInput: { value: "seed" } }, operation: "first" },
+            { input: { checkInput: { value: "seed" } }, operation: "second" },
+          ],
+          classification: "adapter_protocol",
         });
       }
     }
@@ -1086,6 +1121,7 @@ describe("certification harness explicit arguments and captures", () => {
       expect(checkResult?.details).toMatchObject({
         verificationError: expect.stringContaining(reference),
       });
+      expect(checkResult?.failure?.classification).toBe("verification");
       expect(checkResult?.details).not.toHaveProperty("adapterError");
       const frames = await readFrames(logPath);
       expect(frames.map((frame) => frame.method)).not.toContain("dispatch");
@@ -1232,5 +1268,264 @@ describe("certification harness explicit arguments and captures", () => {
         )
         .map((frame) => frame.params.input)
     ).toEqual([legacyInput, legacyInput, legacyInput]);
+  });
+});
+
+describe("certification harness failure artifacts", () => {
+  const writeFailureProbe = async (): Promise<{
+    adapterPath: string;
+    planPath: string;
+  }> => {
+    const directory = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-failure-test-")
+    );
+    tempDirs.push(directory);
+    const adapterPath = nodePath.join(directory, "adapter.json");
+    const packetPath = nodePath.join(directory, "packet.json");
+    const planPath = nodePath.join(directory, "plan.json");
+    await writeFile(packetPath, JSON.stringify({ packetId: "failure" }));
+    await writeFile(
+      adapterPath,
+      JSON.stringify({
+        adapterId: "failure-probe",
+        authorityPackets: [packetPath],
+        boundary: "framework",
+        capabilities: ["failure"],
+        command: ["bun", "--eval", failureProbeAdapterScript],
+        implementationId: "failure-probe",
+        language: "typescript",
+        protocol: {
+          name: "tuvren.conformance-adapter",
+          transport: "json-rpc-2.0-stdio",
+          version: "0.1.0",
+        },
+        suiteId: "failure",
+        suiteVersion: "0.1.0",
+      })
+    );
+    await writeFile(
+      planPath,
+      JSON.stringify({
+        applicability: { capabilities: ["failure"] },
+        checks: [
+          {
+            assertions: [
+              { equals: "observed", field: "$.status", kind: "resultField" },
+            ],
+            checkId: "failure.malformed-frame",
+            input: { request: "malformed" },
+            operation: "malformed",
+          },
+          {
+            assertions: [
+              {
+                equalsPath: "$.input.expectedStatus",
+                field: "$.status",
+                kind: "resultField",
+              },
+            ],
+            checkId: "failure.unresolved-operand",
+            input: { request: "observe" },
+            operation: "observe",
+          },
+          {
+            assertions: [
+              {
+                equals: "expected-status",
+                field: "$.status",
+                kind: "resultField",
+              },
+            ],
+            checkId: "failure.assertion",
+            input: { request: "observe" },
+            operation: "observe",
+          },
+          {
+            assertions: [
+              { equals: "observed", field: "$.status", kind: "resultField" },
+            ],
+            checkId: "failure.provisioning",
+            input: { request: "provision" },
+            operation: "provision",
+          },
+        ],
+        packetId: "failure",
+        planId: "failure",
+        planVersion: "0.1.0",
+      })
+    );
+    return { adapterPath, planPath };
+  };
+
+  type FailureView = ConformanceFailure;
+
+  const readSingleFailure = (
+    result: CommandResult,
+    label: string
+  ): { checkId: string; failure: FailureView } => {
+    const evidence: unknown = JSON.parse(result.stdout);
+    assertConformanceEvidence(evidence, label);
+    expect(evidence.checkResults).toHaveLength(1);
+    const [checkResult] = evidence.checkResults;
+    expect(checkResult?.status).toBe("fail");
+    const failure = checkResult?.failure;
+    if (failure === undefined) {
+      throw new Error(`${label} carries no failure artifact`);
+    }
+    return { checkId: checkResult?.checkId ?? "", failure };
+  };
+
+  test.each([
+    {
+      checkId: "failure.malformed-frame",
+      classification: "adapter_protocol",
+      inspect: (failure: FailureView): void => {
+        expect(JSON.stringify(failure.frameLog)).toContain(
+          "{not a json-rpc frame"
+        );
+        expect(failure.frameLog?.[0]).toMatchObject({
+          direction: "send",
+        });
+      },
+    },
+    {
+      checkId: "failure.unresolved-operand",
+      classification: "verification",
+      inspect: (failure: FailureView): void => {
+        expect(failure.operands).toContainEqual({
+          actual: "observed",
+          expectedSource: "equalsPath: plan input $.input.expectedStatus",
+          path: "$.result.status",
+        });
+      },
+    },
+    {
+      checkId: "failure.assertion",
+      classification: "implementation",
+      inspect: (failure: FailureView): void => {
+        expect(failure.operands).toEqual([
+          {
+            actual: "observed",
+            expected: "expected-status",
+            expectedSource: "equals: plan literal",
+            path: "$.result.status",
+          },
+        ]);
+        expect(failure.arguments).toEqual([
+          {
+            input: { checkInput: { request: "observe" } },
+            operation: "observe",
+          },
+        ]);
+        expect(failure.observation).toMatchObject([
+          {
+            operation: "observe",
+            outcome: {
+              kind: "result",
+              value: { result: { status: "observed" } },
+            },
+          },
+        ]);
+        expect(failure.exit).toBeUndefined();
+      },
+    },
+    {
+      checkId: "failure.provisioning",
+      classification: "environment",
+      inspect: (failure: FailureView): void => {
+        expect(failure.exit).toEqual({ code: 3, signal: null });
+        expect(failure.stderrTail).toContain("ECONNREFUSED 127.0.0.1:5432");
+      },
+    },
+  ])(
+    "classifies $checkId as $classification with a replay that reproduces it",
+    async ({ checkId, classification, inspect }) => {
+      const { adapterPath, planPath } = await writeFailureProbe();
+      const result = await runCommand([
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapterPath,
+        "--plan",
+        planPath,
+        "--check",
+        checkId,
+      ]);
+
+      expect(result.code).toBe(1);
+      const first = readSingleFailure(result, "failure evidence");
+      expect(first.checkId).toBe(checkId);
+      expect(first.failure.classification).toBe(classification);
+      inspect(first.failure);
+      const { replay } = first.failure;
+      expect(replay).toContain(
+        "bun tools/conformance/harness/run.ts --adapter"
+      );
+      expect(replay).toContain(`--check ${checkId}`);
+
+      const replayed = await runCommand(["sh", "-c", replay ?? "false"]);
+      expect(replayed.code).toBe(1);
+      const second = readSingleFailure(replayed, "replayed evidence");
+      expect(second.checkId).toBe(checkId);
+      expect(second.failure.classification).toBe(classification);
+      expect(second.failure.replay).toBe(replay);
+    }
+  );
+
+  test("retains the full failing evidence in the run log directory", async () => {
+    const { adapterPath, planPath } = await writeFailureProbe();
+    const result = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+      "--plan",
+      planPath,
+      "--check",
+      "failure.assertion",
+      "--summary-only",
+    ]);
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).not.toContain('"classification"');
+    const notice = result.stderr
+      .split("\n")
+      .find((line) => line.startsWith(FAILURE_ARTIFACT_NOTICE));
+    expect(notice).toBeDefined();
+    const artifactPath = (notice ?? "").slice(FAILURE_ARTIFACT_NOTICE.length);
+    expect(artifactPath.startsWith(`${verifyLogRoot}${nodePath.sep}`)).toBe(
+      true
+    );
+    const retained: unknown = JSON.parse(await readFile(artifactPath, "utf-8"));
+    assertConformanceEvidence(retained, "retained evidence");
+    expect(retained.checkResults[0]?.failure).toMatchObject({
+      classification: "implementation",
+      observation: [{ outcome: { kind: "result" } }],
+    });
+  });
+
+  test("passing runs write no failure artifacts", async () => {
+    const { adapterPath, planPath } = await writeFailureProbe();
+    const planText = await readFile(planPath, "utf-8");
+    await writeFile(
+      planPath,
+      planText.replace('"expected-status"', '"observed"')
+    );
+    const result = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+      "--plan",
+      planPath,
+      "--check",
+      "failure.assertion",
+    ]);
+
+    expect(result.stderr).toBe("");
+    expect(result.code).toBe(0);
+    const evidence: unknown = JSON.parse(result.stdout);
+    assertConformanceEvidence(evidence, "passing evidence");
+    expect(evidence.checkResults[0]).not.toHaveProperty("failure");
   });
 });

@@ -703,14 +703,213 @@ const evaluateAssertion = (
   }
 };
 
-export const evaluateAssertions = (
+export interface AssertionOperand {
+  actual?: unknown;
+  expected?: unknown;
+  expectedSource: string;
+  path: string;
+}
+
+/** An evaluation plus the operands a failure artifact records for it. */
+export interface AssertionDiagnosis {
+  evaluation: AssertionEvaluation;
+  operands: AssertionOperand[];
+  unresolved: boolean;
+}
+
+const FIELD_ROOTS: Partial<Record<ConformancePlanAssertion["kind"], string>> = {
+  evidenceField: "$.evidence",
+  resultField: "$.result",
+  secretAbsence: "$.result",
+  secretPatternAbsence: "$.result",
+  stateField: "$.state",
+};
+
+const EVENT_PROJECTION_KINDS: ReadonlySet<ConformancePlanAssertion["kind"]> =
+  new Set(["eventSequence", "noEvent", "ordering"]);
+
+const joinPath = (root: string, path: string): string =>
+  path === "$" ? root : `${root}${path.slice(1)}`;
+
+const TRACE_PATH = /^\$\.(?:state|result|evidence)\.trace\./u;
+
+const describePathSource = (path: string): string => {
+  if (TRACE_PATH.test(path)) {
+    return "trace";
+  }
+
+  switch (path.split(".")[1]) {
+    case "fixture": {
+      return "fixture";
+    }
+    case "capture": {
+      return "capture";
+    }
+    case "input": {
+      return "plan input";
+    }
+    case "scenario": {
+      return "scenario";
+    }
+    default: {
+      return "observation";
+    }
+  }
+};
+
+const readSubject = (
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): { actual: unknown; path: string } => {
+  const fieldRoot = FIELD_ROOTS[assertion.kind];
+
+  if (fieldRoot !== undefined) {
+    const path = joinPath(fieldRoot, assertion.field ?? "$");
+    return { actual: readPath(context, path), path };
+  }
+
+  if (EVENT_PROJECTION_KINDS.has(assertion.kind)) {
+    const projection = assertion.path ?? "$.type";
+    return {
+      actual: context.events?.map((event) => readPath(event, projection)),
+      path: joinPath("$.events[*]", projection),
+    };
+  }
+
+  if (assertion.kind === "terminalEvent") {
+    const projection =
+      assertion.path ?? (assertion.eventType === undefined ? "$" : "$.type");
+    return {
+      actual: readPath(context.events?.at(-1), projection),
+      path: joinPath("$.events[-1]", projection),
+    };
+  }
+
+  const path =
+    assertion.path ??
+    (assertion.kind === "errorEnvelope" ? "$.result.error" : "$.result");
+  return { actual: readPath(context, path), path };
+};
+
+const PATH_OPERAND_KEYS: ReadonlySet<string> = new Set([
+  "containsPath",
+  "equalsPath",
+  "notEqualsPath",
+  "schema",
+]);
+
+const NUMERIC_OPERAND_KEYS: ReadonlySet<string> = new Set([
+  "greaterThan",
+  "greaterThanOrEqual",
+  "length",
+  "lessThan",
+  "lessThanOrEqual",
+]);
+
+const describeExpected = (
+  key: string,
+  operand: unknown,
+  context: AssertionContext
+): Pick<AssertionOperand, "expected" | "expectedSource"> => {
+  if (
+    typeof operand === "string" &&
+    (PATH_OPERAND_KEYS.has(key) || NUMERIC_OPERAND_KEYS.has(key))
+  ) {
+    return {
+      expected: readPath(context, operand),
+      expectedSource: `${key}: ${describePathSource(operand)} ${operand}`,
+    };
+  }
+
+  return { expected: operand, expectedSource: `${key}: plan literal` };
+};
+
+const EXPECTATION_KEYS = [
+  ...VALUE_OPERATOR_KEYS,
+  "eventType",
+  "present",
+] as const;
+
+const describeOperands = (
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): AssertionOperand[] => {
+  const { actual, path } = readSubject(assertion, context);
+  const subject = { actual, path };
+
+  if (assertion.kind === "secretAbsence") {
+    // Configured secrets never leave the plan context.
+    return [
+      {
+        ...subject,
+        expectedSource: `secretsPath: ${describePathSource(assertion.secretsPath ?? "$")} ${assertion.secretsPath ?? ""}`,
+      },
+    ];
+  }
+
+  if (assertion.kind === "secretPatternAbsence") {
+    return [{ ...subject, expectedSource: "secretPatternAbsence: harness" }];
+  }
+
+  if (assertion.kind === "schemaValid") {
+    return [
+      {
+        ...subject,
+        ...describeExpected("schema", assertion.schema, context),
+      },
+    ];
+  }
+
+  const operands = EXPECTATION_KEYS.filter((key) =>
+    key === "present" || key === "eventType"
+      ? assertion[key] !== undefined
+      : declaresOperator(assertion, key)
+  ).map((key) => ({
+    ...subject,
+    ...describeExpected(key, assertion[key], context),
+  }));
+
+  return operands.length > 0
+    ? operands
+    : [{ ...subject, expectedSource: `${assertion.kind}: plan` }];
+};
+
+const describeOperandsSafely = (
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): AssertionOperand[] => {
+  try {
+    return describeOperands(assertion, context);
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Evaluates like evaluateAssertions and, for failed assertions, records the
+ * operands read and whether an unresolved operand caused the failure.
+ */
+export const diagnoseAssertions = (
   check: ConformancePlanCheck,
   context: AssertionContext
-): AssertionEvaluation[] =>
+): AssertionDiagnosis[] =>
   check.assertions.map((assertion, index) => {
     const assertionId = `${check.checkId}.${index + 1}.${assertion.kind}`;
     const { when } = assertion;
     let branch: Pick<AssertionEvaluation, "when"> = {};
+    const failed = (
+      message: string | undefined,
+      unresolved: boolean
+    ): AssertionDiagnosis => ({
+      evaluation: {
+        assertionId,
+        ...(message === undefined ? {} : { message }),
+        status: "fail",
+        ...branch,
+      },
+      operands: describeOperandsSafely(assertion, context),
+      unresolved,
+    });
 
     try {
       if (when !== undefined) {
@@ -718,31 +917,40 @@ export const evaluateAssertions = (
 
         if (!valuesAreEqual(condition, when.equals)) {
           return {
-            assertionId,
-            message: `when branch not applied: ${when.path} did not equal ${JSON.stringify(when.equals)}`,
-            status: "pass",
-            when: "not_applied",
+            evaluation: {
+              assertionId,
+              message: `when branch not applied: ${when.path} did not equal ${JSON.stringify(when.equals)}`,
+              status: "pass",
+              when: "not_applied",
+            },
+            operands: [],
+            unresolved: false,
           };
         }
 
         branch = { when: "applied" };
       }
 
-      const passed = evaluateAssertion(assertion, context);
-      return {
-        assertionId,
-        status: passed ? "pass" : "fail",
-        ...branch,
-      };
+      return evaluateAssertion(assertion, context)
+        ? {
+            evaluation: { assertionId, status: "pass", ...branch },
+            operands: [],
+            unresolved: false,
+          }
+        : failed(undefined, false);
     } catch (error: unknown) {
-      return {
-        assertionId,
-        message: error instanceof Error ? error.message : String(error),
-        status: "fail",
-        ...branch,
-      };
+      return failed(
+        error instanceof Error ? error.message : String(error),
+        error instanceof UnresolvedOperandError
+      );
     }
   });
+
+export const evaluateAssertions = (
+  check: ConformancePlanCheck,
+  context: AssertionContext
+): AssertionEvaluation[] =>
+  diagnoseAssertions(check, context).map(({ evaluation }) => evaluation);
 
 const hasRequiredEvidence = (
   context: AssertionContext,
@@ -803,3 +1011,22 @@ export const evaluateRequiredEvidence = (
       status: present ? "pass" : "fail",
     };
   });
+
+export const diagnoseRequiredEvidence = (
+  compiledCheck: CompiledConformancePlanCheck,
+  context: AssertionContext
+): AssertionDiagnosis[] =>
+  evaluateRequiredEvidence(compiledCheck, context).map((evaluation, index) => ({
+    evaluation,
+    operands:
+      evaluation.status === "pass"
+        ? []
+        : [
+            {
+              expected: true,
+              expectedSource: "evidence: plan literal",
+              path: `$.${compiledCheck.requiredEvidence[index] ?? ""}`,
+            },
+          ],
+    unresolved: false,
+  }));

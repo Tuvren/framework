@@ -40,6 +40,8 @@ import {
   createCheckResult,
   createConformanceEvidenceSummary,
   deriveConformanceRunStatus,
+  findCheckedInFailureViolations,
+  toCheckedInCheckResult,
 } from "./lib/conformance-contract.js";
 import type {
   ConformanceCheckResult,
@@ -1200,6 +1202,11 @@ const checkImplementationEvidenceFile = async (
     result.checkIds,
     failures
   );
+  failures.push(
+    ...findCheckedInFailureViolations(evidence.checkResults).map(
+      (violation) => `${evidencePath} ${violation}`
+    )
+  );
   compareCheckSummary(
     evidencePath,
     evidence.summary,
@@ -1941,7 +1948,7 @@ const runConformanceTarget = async (
     adapterId: evidencePayload.adapterId,
     boundary: evidencePayload.boundary,
     capabilities: evidencePayload.capabilities,
-    checkResults: evidencePayload.checkResults,
+    checkResults: evidencePayload.checkResults.map(toCheckedInCheckResult),
     command: sanitizeEvidenceCommand(command),
     exitCode: commandResult.code,
     implementationId: runner.implementationId,
