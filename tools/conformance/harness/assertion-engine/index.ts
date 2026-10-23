@@ -57,6 +57,8 @@ export interface AssertionEvaluation {
 // typescript/runtime/src/lib/tool-execution-helpers.ts.
 const schemaValidatorCache = new Map<string, ValidateFunction>();
 
+class UnresolvedOperandError extends Error {}
+
 const readEvents = (context: AssertionContext): readonly unknown[] => {
   if (context.events === undefined) {
     throw new Error("assertion requires events");
@@ -195,7 +197,7 @@ const resolveOperandPath = (
   const value = readPath(context, path);
 
   if (value === undefined) {
-    throw new Error(`unresolved ${operator} operand ${path}`);
+    throw new UnresolvedOperandError(`unresolved ${operator} operand ${path}`);
   }
 
   return value;
@@ -255,7 +257,11 @@ const elementSatisfies = (
 ): boolean => {
   try {
     return assertValue(element, readPath(value, element.field ?? "$"), context);
-  } catch {
+  } catch (error: unknown) {
+    // Another element's match must not conceal an unresolved operand.
+    if (error instanceof UnresolvedOperandError) {
+      throw error;
+    }
     return false;
   }
 };
@@ -365,22 +371,33 @@ const assertValue = (
   }
 
   if (value === undefined) {
-    throw new Error("unresolved actual operand");
+    throw new UnresolvedOperandError("unresolved actual operand");
   }
 
   return declared.every((key) => applyOperator(operators, key, value, context));
 };
 
+const projectEvents = (
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): unknown[] => {
+  const path = assertion.path ?? "$.type";
+  return readEvents(context).map((event, index) => {
+    const value = readPath(event, path);
+    if (value === undefined) {
+      throw new UnresolvedOperandError(
+        `unresolved event projection ${path} at event ${index}`
+      );
+    }
+    return value;
+  });
+};
+
 const assertEventSequence = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean => {
-  const events = readEvents(context);
-  const actual = events.map((event) =>
-    readPath(event, assertion.path ?? "$.type")
-  );
-  return assertValue(assertion, actual, context);
-};
+): boolean =>
+  assertValue(assertion, projectEvents(assertion, context), context);
 
 const assertTerminalEvent = (
   assertion: ConformancePlanAssertion,
@@ -532,7 +549,6 @@ const assertOrdering = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
 ): boolean => {
-  const events = readEvents(context);
   const contains = resolveExpectedPair(assertion, context);
   const [first, second] = contains;
 
@@ -540,9 +556,7 @@ const assertOrdering = (
     throw new TypeError("ordering assertion event types must be strings");
   }
 
-  const eventTypes = events.map((event) =>
-    readPath(event, assertion.path ?? "$.type")
-  );
+  const eventTypes = projectEvents(assertion, context);
   const firstIndex = eventTypes.indexOf(first);
   const secondIndex = eventTypes.indexOf(second);
   return firstIndex !== -1 && secondIndex !== -1 && firstIndex < secondIndex;
@@ -556,10 +570,8 @@ const assertNoEvent = (
     throw new Error("noEvent assertion requires eventType");
   }
 
-  const events = readEvents(context);
-  return events.every(
-    (event) =>
-      readPath(event, assertion.path ?? "$.type") !== assertion.eventType
+  return projectEvents(assertion, context).every(
+    (value) => value !== assertion.eventType
   );
 };
 
