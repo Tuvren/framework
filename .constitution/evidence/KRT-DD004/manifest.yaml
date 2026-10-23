@@ -2,14 +2,14 @@ owner: KRT-DD004
 mode: contract_test
 produced:
   date: 2026-10-23
-  commit: "4367a5b"
-  command: "bun run conformance; bun run verify"
+  commit: "ede74b6"
+  command: "bun run conformance; bun run verify; bun tools/conformance/meta-conformance/disagreements.ts --adapter typescript/kernel/conformance-adapter/adapter.json --adapter rust/kernel-conformance-adapter/adapter.json --capability kernel.syscall"
 result: pass
 pass_criteria: "Rust passes all four memory-profile syscall families with every exclusion reasoned, three Rust mutants are killed with activation proof and the rest report unsupported with reasons, and the TypeScript and Rust comparison shows no disagreement beyond authority-sanctioned variation."
 files:
   - path: triage.md
-    sha256: 5b085f49f0b76253f91a65e3bc61136dab8b7ad78c8db8d4626605954526ad3d
-    bytes: 7670
+    sha256: 4b3d5874266c1278bfd1421d1050a019dbce4a3a5d961d2b51d63e461cf9faab
+    bytes: 7697
     role: transcript
   - path: obligation-map.md
     sha256: 252f86066840bd2eff62e8e5f8435821ac5adbcde813f1cbd480aed1c534ed85
