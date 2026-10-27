@@ -61,6 +61,25 @@ const createClient = (script: string): JsonRpcAdapterClient => {
 };
 
 describe("JsonRpcAdapterClient response correlation", () => {
+  test("preserves the protocol profile and storage handshake", async () => {
+    const client = createClient(`
+      for await (const line of console) {
+        const request = JSON.parse(line);
+        const result = request.method === "initialize" ? {
+          adapterId: "test-adapter", capabilities: [],
+          packetId: request.params.packetId, planVersion: request.params.planVersion,
+          protocolVersion: "0.2.0", profiles: ["kernel.memory"], storageKinds: ["none"]
+        } : null;
+        process.stdout.write(JSON.stringify({ id: request.id, jsonrpc: "2.0", result }) + "\\n");
+      }
+    `);
+    expect(await client.initialize("packet", "0.1.0")).toMatchObject({
+      protocolVersion: "0.2.0",
+      profiles: ["kernel.memory"],
+      storageKinds: ["none"],
+    });
+  });
+
   test("ignores non-numeric success responses as uncorrelatable noise", async () => {
     const client = createClient(`
       for await (const line of console) {

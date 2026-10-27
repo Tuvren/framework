@@ -47,7 +47,7 @@
     {
       "project": "kernel-rust-certification",
       "adapter": "rust/kernel-conformance-adapter/adapter.json",
-      "state": "fail"
+      "state": "pass"
     },
     {
       "project": "kernel-typescript-certification",

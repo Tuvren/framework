@@ -735,6 +735,7 @@
             "kernel-protocol.thread.enumeration",
             "kernel.barrier",
             "kernel.edge-validation",
+            "kernel.edge-validation.composite",
             "kernel.fault-injection",
             "kernel.logical",
             "kernel.protocol",
@@ -903,6 +904,7 @@
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
+            "kernel.edge-validation.composite",
             "kernel.logical",
             "kernel.persistence.durable",
             "kernel.protocol",
@@ -1072,6 +1074,7 @@
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
+            "kernel.edge-validation.composite",
             "kernel.logical",
             "kernel.persistence.durable",
             "kernel.protocol",
@@ -1249,6 +1252,13 @@
             "kernel.protocol.schema_roundtrip.f-with-event-hash",
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
             "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+            "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+            "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
             "kernel.syscall.logical.thread_list",
             "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
             "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
@@ -1308,26 +1318,19 @@
             "kernel.syscall.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.stale_preemption",
             "kernel.syscall.scope-isolation.own_content",
-            "kernel.syscall.scope-isolation.own_enumeration",
-            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
-            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
-            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
-            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
-            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
-            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
-            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
-            "profile.kernel.memory.capability.kernel.edge-validation"
+            "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
-            "failedChecks": 8,
-            "passedChecks": 116,
-            "totalChecks": 147,
-            "applicableChecks": 124,
-            "nonApplicableChecks": 23
+            "failedChecks": 0,
+            "passedChecks": 123,
+            "totalChecks": 139,
+            "applicableChecks": 123,
+            "nonApplicableChecks": 16
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.barrier",
+            "kernel.edge-validation",
             "kernel.fault-injection",
             "kernel.logical",
             "kernel.protocol",
@@ -1337,8 +1340,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
           "reportLabel": "Rust process-local kernel baseline",
-          "reportStatus": "unexpected_fail",
-          "status": "fail",
+          "reportStatus": "capability_subset_pass",
+          "status": "pass",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
         }
@@ -1430,6 +1433,7 @@
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
+            "kernel.edge-validation.composite",
             "kernel.logical",
             "kernel.protocol",
             "kernel.reclamation",
@@ -1532,6 +1536,7 @@
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
+            "kernel.edge-validation.composite",
             "kernel.logical",
             "kernel.protocol",
             "kernel.reclamation",
@@ -1634,6 +1639,7 @@
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
+            "kernel.edge-validation.composite",
             "kernel.logical",
             "kernel.protocol",
             "kernel.reclamation",

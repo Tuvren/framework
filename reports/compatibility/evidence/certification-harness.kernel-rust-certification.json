@@ -4,6 +4,7 @@
   "capabilities": [
     "kernel-protocol.thread.enumeration",
     "kernel.barrier",
+    "kernel.edge-validation",
     "kernel.fault-injection",
     "kernel.logical",
     "kernel.protocol",
@@ -2922,6 +2923,434 @@
       "details": {
         "adapterId": "rust-kernel",
         "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch head can only move along one lineage"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "bootstrap",
+          "finishBootstrap",
+          "mainTurn",
+          "mainRun",
+          "mainEvent",
+          "mainCheckpoint",
+          "finish",
+          "fork",
+          "forkTurn",
+          "forkRun",
+          "forkEvent",
+          "forkCheckpoint",
+          "finishFork",
+          "reject"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_unexpected_step",
+            "message": "requested step id must match the current run step"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "reject"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_missing_event_object",
+            "message": "event hash must reference an existing object"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "reject"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_branch_already_active",
+            "message": "branch already has a running or paused run"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "reject"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "duplicate_schema_path",
+            "message": "schema paths must be unique"
+          }
+        },
+        "traceStepIds": ["backendClock", "workerClock", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_missing_required_tree_path",
+            "message": "tree create without a base must provide every schema path"
+          }
+        },
+        "traceStepIds": ["backendClock", "workerClock", "schema", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_tree_schema_mismatch_diff",
+            "message": "turn trees with different schemas cannot be diffed"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "otherSchema",
+          "a",
+          "b",
+          "reject"
+        ]
       },
       "status": "pass"
     },
@@ -6333,166 +6762,6 @@
         "traceStepIds": ["backend0", "worker0", "schema", "thread", "list"]
       },
       "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path, which is not applicable: missing capabilities: kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
-      "details": {
-        "profileId": "kernel.memory",
-        "requiredCheckId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
-        "reason": "missing capabilities: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
-      }
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path, which is not applicable: missing capabilities: kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
-      "details": {
-        "profileId": "kernel.memory",
-        "requiredCheckId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
-        "reason": "missing capabilities: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
-      }
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch, which is not applicable: missing capabilities: kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
-      "details": {
-        "profileId": "kernel.memory",
-        "requiredCheckId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
-        "reason": "missing capabilities: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
-      }
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch, which is not applicable: missing capabilities: kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
-      "details": {
-        "profileId": "kernel.memory",
-        "requiredCheckId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
-        "reason": "missing capabilities: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
-      }
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step, which is not applicable: missing capabilities: kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
-      "details": {
-        "profileId": "kernel.memory",
-        "requiredCheckId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
-        "reason": "missing capabilities: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
-      }
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object, which is not applicable: missing capabilities: kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
-      "details": {
-        "profileId": "kernel.memory",
-        "requiredCheckId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
-        "reason": "missing capabilities: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
-      }
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage, which is not applicable: missing capabilities: kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
-      "details": {
-        "profileId": "kernel.memory",
-        "requiredCheckId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
-        "reason": "missing capabilities: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
-      }
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "profile.kernel.memory.capability.kernel.edge-validation.applicability",
-          "status": "fail",
-          "message": "claimed profile kernel.memory requires capability kernel.edge-validation"
-        }
-      ],
-      "checkId": "profile.kernel.memory.capability.kernel.edge-validation",
-      "details": {
-        "profileId": "kernel.memory",
-        "missingCapability": "kernel.edge-validation",
-        "reason": "missing capability: kernel.edge-validation"
-      },
-      "status": "fail",
-      "failure": {
-        "classification": "verification",
-        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification"
-      }
     }
   ],
   "command": [
@@ -6501,7 +6770,7 @@
     "--adapter",
     "[adapter-manifest]"
   ],
-  "exitCode": 1,
+  "exitCode": 0,
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
@@ -6511,13 +6780,6 @@
     "kernel-protocol-af.schema-register-rejects-duplicate-path",
     "kernel-protocol-af.tree-create-rejects-missing-required-path",
     "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
-    "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
-    "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
-    "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
-    "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
-    "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
-    "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
-    "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
     "kernel-restart-af.invalid-staged-result-reexecutes",
     "kernel.crash-recovery.concurrent_writer",
     "kernel.crash-recovery.durable_fault_points",
@@ -6530,14 +6792,14 @@
   ],
   "project": "kernel-rust-certification",
   "reportLabel": "Rust process-local kernel baseline",
-  "reportStatus": "unexpected_fail",
-  "status": "fail",
+  "reportStatus": "capability_subset_pass",
+  "status": "pass",
   "summary": {
-    "failedChecks": 8,
-    "passedChecks": 116,
-    "totalChecks": 147,
-    "applicableChecks": 124,
-    "nonApplicableChecks": 23
+    "failedChecks": 0,
+    "passedChecks": 123,
+    "totalChecks": 139,
+    "applicableChecks": 123,
+    "nonApplicableChecks": 16
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

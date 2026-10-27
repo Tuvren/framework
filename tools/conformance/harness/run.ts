@@ -518,6 +518,23 @@ const validateAdapterHandshake = (
       `adapter initialize capabilities ${actual.join(", ")} do not match manifest ${expected.join(", ")}`
     );
   }
+
+  const missingProfiles = (manifest.profiles ?? []).filter(
+    (profile) => !capabilities.profiles?.includes(profile)
+  );
+  if (missingProfiles.length > 0) {
+    throw new Error(
+      `adapter initialize profiles do not include manifest claims: ${missingProfiles.join(", ")}`
+    );
+  }
+  if (
+    manifest.storage !== undefined &&
+    !capabilities.storageKinds?.includes(manifest.storage)
+  ) {
+    throw new Error(
+      `adapter initialize storageKinds do not include manifest storage ${manifest.storage}`
+    );
+  }
 };
 
 interface TraceStepRequest {

@@ -2035,6 +2035,44 @@ test.each(["explicit", "syscall", "arguments"])(
   }
 );
 
+test("rejects an adapter that omits its claimed profile from initialize", async () => {
+  const directory = await mkdtemp(
+    nodePath.join(tmpdir(), "tuvren-handshake-profile-")
+  );
+  tempDirs.push(directory);
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const script = `
+    for await (const line of console) {
+      const request = JSON.parse(line);
+      const result = request.method === "initialize" ? {
+        adapterId: ${JSON.stringify(adapter.adapterId)},
+        capabilities: ${JSON.stringify(adapter.capabilities)},
+        packetId: request.params.packetId, planVersion: request.params.planVersion,
+        protocolVersion: "0.2.0", profiles: [], storageKinds: ["none"]
+      } : null;
+      process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: request.id, result }) + "\\n");
+    }
+  `;
+  const path = nodePath.join(directory, "adapter.json");
+  await writeFile(
+    path,
+    JSON.stringify({ ...adapter, command: ["bun", "--eval", script] })
+  );
+  const result = await runCommand([
+    "bun",
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    path,
+    "--check",
+    "kernel.syscall.concurrent_writer.a_first",
+  ]);
+  expect(result.code).toBe(1);
+  expect(result.stdout).toContain("adapter initialize profiles");
+  expect(result.stdout).toContain("kernel.memory");
+});
+
 test("rejects a claimed profile when a required writer check is not applicable", async () => {
   const tempDir = await mkdtemp(
     nodePath.join(tmpdir(), "tuvren-profile-test-")
@@ -2153,7 +2191,7 @@ test("an unfiltered profile run without a matching control run is uncertified", 
   });
 }, 30_000);
 
-test("profile failure replay resolves the adapter from the certification inventory", async () => {
+test("profile replay resolves the adapter from the certification inventory", async () => {
   const result = await runCommand([
     "bun",
     "tools/conformance/certification/replay.ts",
@@ -2162,16 +2200,12 @@ test("profile failure replay resolves the adapter from the certification invento
     "--check",
     "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
   ]);
-  expect(result.code).toBe(1);
+  expect(result.code).toBe(0);
   const evidence: unknown = JSON.parse(result.stdout);
-  assertConformanceEvidence(evidence, "replayed profile failure");
-  expect(evidence.status).toBe("fail");
-  expect(
-    evidence.checkResults.some(
-      ({ failure }) => failure?.classification === "verification"
-    )
-  ).toBe(true);
-  expect(evidence.checkResults[0]?.failure?.replay).toContain(
-    "tools/conformance/certification/replay.ts"
+  assertConformanceEvidence(evidence, "replayed profile evidence");
+  expect(evidence.implementationId).toBe("rust-kernel");
+  expect(evidence.status).toBe("pass");
+  expect(evidence.checkResults[0]?.checkId).toBe(
+    "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
   );
 });

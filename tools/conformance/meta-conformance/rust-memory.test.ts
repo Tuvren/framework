@@ -37,7 +37,7 @@ const exploratoryAdapter = async (directory: string): Promise<string> => {
   return path;
 };
 
-test("Rust memory controls are diagnostic when its claimed profile is incomplete", async () => {
+test("Rust memory controls count supported mutations and report unsupported ones", async () => {
   const config = NEGATIVE_CONTROL_PORTS.find(
     ({ controlAdapter }) =>
       controlAdapter === "rust/kernel-conformance-adapter/adapter.json"
@@ -46,13 +46,13 @@ test("Rust memory controls are diagnostic when its claimed profile is incomplete
     throw new Error("missing Rust memory negative-control configuration");
   }
   const claimed = await runNegativeControls(config);
-  expect(claimed.counted).toBe(false);
-  expect(claimed.control.status).toBe("fail");
-  expect(claimed.control.failedChecks?.length).toBe(7);
+  expect(claimed.counted).toBe(true);
+  expect(claimed.control.status).toBe("pass");
+  expect(claimed.control.failedChecks).toEqual([]);
   expect(claimed.mutants).toHaveLength(13);
   expect(claimed.totals.killed).toBe(3);
   expect(claimed.totals.unsupported).toBe(10);
-  expect(claimed.findings.join(" ")).toContain("diagnostic");
+  expect(claimed.findings).toEqual([]);
   const report = claimed;
   const manifest: unknown = JSON.parse(
     await readFile("spec/conformance/kernel/negative-controls.json", "utf-8")

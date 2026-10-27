@@ -5,6 +5,7 @@
     "kernel-protocol.thread.enumeration",
     "kernel.barrier",
     "kernel.edge-validation",
+    "kernel.edge-validation.composite",
     "kernel.fault-injection",
     "kernel.logical",
     "kernel.protocol",
