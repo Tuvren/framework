@@ -115,6 +115,20 @@ export const PINNED_OPERATION_CATALOG = {
       observation: {},
       operationId: "providers.double.scripted-generate",
     },
+    {
+      barrierReleaseOrder: {
+        event: "reach-implementation-serialization-point",
+        excluded: "durable-backend-races-from-two-processes",
+        order: "list-order",
+        participants: "operationHandles",
+        scope: "in-process-seams",
+      },
+      capability: "kernel.barrier",
+      input: { type: "object" },
+      kind: "control",
+      observation: {},
+      operationId: "kernel.barrier.release",
+    },
   ],
   packetId: "tuvren.kernel.protocol",
   seams: [

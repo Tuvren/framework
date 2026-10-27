@@ -5737,6 +5737,13 @@
       "kind": "control",
       "binding": "typescript/kernel/testkit#createKernelBarrierControl.release",
       "capability": "kernel.barrier",
+      "barrierReleaseOrder": {
+        "event": "reach-implementation-serialization-point",
+        "excluded": "durable-backend-races-from-two-processes",
+        "order": "list-order",
+        "participants": "operationHandles",
+        "scope": "in-process-seams"
+      },
       "input": {
         "type": "object",
         "additionalProperties": false,

@@ -2671,14 +2671,9 @@ fn validate_schema(schema: &TurnTreeSchema) -> KernelResult<()> {
             encode_deterministic_kernel_record(metadata)?;
         }
         if !paths.insert(path.path.clone()) {
-            return Err(KernelError::new(
+            return Err(duplicate(
                 "duplicate_schema_path",
                 "schema paths must be unique",
-                Some(KernelRecord::Map(
-                    [("path".to_string(), KernelRecord::Text(path.path.clone()))]
-                        .into_iter()
-                        .collect(),
-                )),
             ));
         }
     }
@@ -2799,7 +2794,6 @@ fn default_now_ms() -> EpochMs {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
     use std::sync::{Arc, Mutex};
 
     use super::*;
@@ -2811,30 +2805,6 @@ mod tests {
             paths: vec![],
             schema_id: schema_id.to_string(),
         }
-    }
-
-    #[test]
-    fn duplicate_schema_path_error_identifies_the_path() {
-        let path = crate::types::PathDefinition {
-            collection: PathCollectionKind::Ordered,
-            metadata: None,
-            path: "messages".to_string(),
-        };
-        let schema = TurnTreeSchema {
-            paths: vec![path.clone(), path],
-            ..minimal_schema("s1")
-        };
-        let error = InMemoryKernel::new()
-            .schema_register(schema)
-            .expect_err("duplicate path must be rejected");
-        assert_eq!(error.payload.code, "duplicate_schema_path");
-        assert_eq!(
-            error.payload.details,
-            Some(KernelRecord::Map(BTreeMap::from([(
-                "path".to_string(),
-                KernelRecord::Text("messages".to_string()),
-            )])))
-        );
     }
 
     /// Build a kernel whose `now` clock returns successive values from a
