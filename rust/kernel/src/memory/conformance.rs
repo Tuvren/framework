@@ -35,7 +35,15 @@ impl InMemoryKernel {
             worker_clock: Some(Arc::new(move || worker.worker_now())),
             mutant: controls.mutant.clone(),
             test_controls: Some(controls),
+            operation: None,
         })
+    }
+
+    pub fn for_operation(&self, operation: crate::testkit::barrier::OperationContext) -> Self {
+        Self {
+            operation: Some(operation),
+            ..self.clone()
+        }
     }
 }
 

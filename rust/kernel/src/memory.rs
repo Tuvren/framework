@@ -52,6 +52,8 @@ pub struct InMemoryKernel {
     #[cfg(feature = "conformance")]
     test_controls: Option<crate::testkit::KernelTestControls>,
     #[cfg(feature = "conformance")]
+    operation: Option<crate::testkit::barrier::OperationContext>,
+    #[cfg(feature = "conformance")]
     mutant: Option<crate::testkit::mutants::KernelMutant>,
     #[cfg(feature = "conformance")]
     worker_clock: Option<Arc<dyn Fn() -> EpochMs + Send + Sync>>,
@@ -151,6 +153,8 @@ impl InMemoryKernel {
             now: options.now.unwrap_or_else(|| Arc::new(default_now_ms)),
             #[cfg(feature = "conformance")]
             test_controls: None,
+            #[cfg(feature = "conformance")]
+            operation: None,
             #[cfg(feature = "conformance")]
             mutant: None,
             #[cfg(feature = "conformance")]

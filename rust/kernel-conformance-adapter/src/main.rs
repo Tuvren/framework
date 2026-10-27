@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use std::collections::BTreeMap;
-use std::io::{self, BufRead};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -32,6 +31,7 @@ use tuvren_kernel_rust::{
     hash_turn_node_identity, kernel_record_from_json,
 };
 
+mod host_stdio;
 mod host_syscalls;
 mod observation_encoding;
 mod syscall_values;
@@ -57,7 +57,7 @@ struct AdapterCapabilities {
     plan_version: String,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AdapterErrorEnvelope {
     code: String,
@@ -66,7 +66,7 @@ struct AdapterErrorEnvelope {
     details: Option<Value>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(tag = "kind")]
 enum OperationOutcome {
     #[serde(rename = "result")]
@@ -76,46 +76,57 @@ enum OperationOutcome {
 }
 
 fn main() {
-    let mut syscalls = host_syscalls::Syscalls::configured().unwrap_or_else(|message| {
-        eprintln!("{message}");
-        std::process::exit(2);
-    });
-    for line in io::stdin().lock().lines() {
-        let response = match line {
-            Ok(text) => handle_line(&text, &mut syscalls),
-            Err(source) => error_response(
-                Value::Null,
-                "adapter_stdin_failed",
-                &format!("failed to read adapter stdin: {source}"),
-            ),
-        };
-        println!("{}", response);
-    }
+    let syscalls = Arc::new(
+        host_syscalls::Syscalls::configured().unwrap_or_else(|message| {
+            eprintln!("{message}");
+            std::process::exit(2);
+        }),
+    );
+    host_stdio::serve(syscalls);
 }
 
-fn handle_line(line: &str, syscalls: &mut host_syscalls::Syscalls) -> Value {
+#[derive(Deserialize)]
+struct CorrelatedId {
+    id: Value,
+}
+
+fn correlated_id(line: &str) -> Value {
+    serde_json::from_str::<CorrelatedId>(line)
+        .ok()
+        .map(|request| request.id)
+        .filter(|id| id.is_string() || id.is_number())
+        .unwrap_or(Value::Null)
+}
+
+type PreparedOperation = Option<Result<Arc<host_syscalls::Operation>, AdapterErrorEnvelope>>;
+
+fn handle_line(
+    line: &str,
+    syscalls: &Arc<host_syscalls::Syscalls>,
+    prepared: PreparedOperation,
+) -> Value {
     let request = match observation_encoding::parse_frame(line)
         .and_then(serde_json::from_value::<JsonRpcRequest>)
     {
         Ok(request) => request,
         Err(source) => {
             return error_response(
-                Value::Null,
+                correlated_id(line),
                 "invalid_json_rpc_request",
                 &format!("failed to parse JSON-RPC request: {source}"),
             );
         }
     };
-    if request.jsonrpc != "2.0" {
+    if request.jsonrpc != "2.0" || !(request.id.is_string() || request.id.is_number()) {
         return error_response(
-            request.id,
+            correlated_id(line),
             "invalid_json_rpc_request",
             "request jsonrpc must be 2.0",
         );
     }
     let id = request.id.clone();
 
-    match dispatch_request(request, syscalls) {
+    match dispatch_request(request, syscalls, prepared) {
         Ok(result) => json!({ "jsonrpc": "2.0", "id": id, "result": result }),
         Err(error) => json!({ "jsonrpc": "2.0", "id": id, "error": error }),
     }
@@ -123,7 +134,8 @@ fn handle_line(line: &str, syscalls: &mut host_syscalls::Syscalls) -> Value {
 
 fn dispatch_request(
     request: JsonRpcRequest,
-    syscalls: &mut host_syscalls::Syscalls,
+    syscalls: &Arc<host_syscalls::Syscalls>,
+    prepared: PreparedOperation,
 ) -> Result<Value, AdapterErrorEnvelope> {
     match request.method.as_str() {
         "initialize" => Ok(json!(AdapterCapabilities {
@@ -161,17 +173,48 @@ fn dispatch_request(
             Ok(json!(dispatch_operation(&operation, &input)?))
         }
         "events" => Ok(json!([])),
-        "createInstance" => Ok(json!(syscalls.create())),
-        "destroyInstance" => {
-            syscalls.destroy(request.params.get("instance").unwrap_or(&Value::Null));
+        "createInstance" => Ok(json!(syscalls.create()?)),
+        "startOperation" => {
+            let operation = read_param_string(&request.params, "operation")?;
+            let input = request.params.get("arguments").cloned().ok_or_else(|| {
+                adapter_error("invalid_adapter_request", "arguments required", None)
+            })?;
+            let instance = request
+                .params
+                .get("instance")
+                .cloned()
+                .unwrap_or(Value::Null);
+            syscalls.start(operation, input, instance)
+        }
+        "awaitOperation" => Ok(json!(syscalls.await_operation(
+            &read_param_string(&request.params, "operationHandle")?,
+            prepared
+        )?)),
+        "cancelOperation" => {
+            syscalls.cancel(
+                &read_param_string(&request.params, "operationHandle")?,
+                &read_param_string(&request.params, "reason")?,
+            )?;
             Ok(Value::Null)
         }
-        "inspectState" | "shutdown" => Ok(Value::Null),
-        method => Err(adapter_error(
-            "adapter_method_not_implemented",
-            &format!("unsupported adapter method {method}"),
-            None,
-        )),
+        "destroyInstance" => {
+            syscalls.destroy(request.params.get("instance").unwrap_or(&Value::Null))?;
+            Ok(Value::Null)
+        }
+        "shutdown" => {
+            syscalls.shutdown()?;
+            Ok(Value::Null)
+        }
+        "inspectState" => Ok(Value::Null),
+        method => syscalls
+            .protocol_control(method, &request.params)
+            .unwrap_or_else(|| {
+                Err(adapter_error(
+                    "adapter_method_not_implemented",
+                    &format!("unsupported adapter method {method}"),
+                    None,
+                ))
+            }),
     }
 }
 
@@ -1713,6 +1756,7 @@ fn read_param_string(params: &Value, key: &str) -> Result<String, AdapterErrorEn
     params
         .get(key)
         .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
         .map(ToString::to_string)
         .ok_or_else(|| {
             adapter_error(
