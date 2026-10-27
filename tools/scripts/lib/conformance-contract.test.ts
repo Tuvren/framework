@@ -19,7 +19,10 @@ import { readFile } from "node:fs/promises";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { classifyConformanceReportStatus } from "../compatibility-report.ts";
+import {
+  classifyConformanceReportStatus,
+  readLivePlanChecks,
+} from "../compatibility-report.ts";
 import { PINNED_CERTIFICATION_EVIDENCE } from "../conformance/certification-schema-examples.ts";
 import {
   assertConformanceEvidence,
@@ -56,6 +59,25 @@ const runnerEvidence = () => ({
     passedChecks: 1,
     totalChecks: 1,
   },
+});
+
+test("topology excludes handle checks for protocol 0.1 while retaining compatible checks", () => {
+  const plan = JSON.stringify({
+    applicability: { capabilities: ["kernel.barrier"] },
+    checks: [
+      { checkId: "plain", steps: [{ operation: "kernel.store.get" }] },
+      { checkId: "handles", steps: [{ action: "start" }] },
+      { checkId: "missing", capabilities: ["kernel.unavailable"] },
+    ],
+  });
+  const capabilities = new Set(["kernel.barrier"]);
+  expect(readLivePlanChecks(plan, capabilities, "0.1.0")).toEqual({
+    allCheckIds: ["plain", "handles", "missing"],
+    applicableCheckIds: ["plain"],
+  });
+  expect(
+    readLivePlanChecks(plan, capabilities, "0.2.0").applicableCheckIds
+  ).toEqual(["plain", "handles"]);
 });
 
 describe("conformance evidence contract", () => {

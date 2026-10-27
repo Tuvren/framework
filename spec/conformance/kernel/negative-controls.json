@@ -24,7 +24,7 @@
         "kernel.syscall.concurrent_writer.b_first"
       ],
       "activation": {
-        "precondition": "a backend transaction sets a branch head from a stale read and the reference backend rejects it as a lateral move; or a barrier-entered public branch.setHead syscall rejects the lateral move before the backend write",
+        "precondition": "a public branch.setHead validation reads the current head in one transaction and the mutant commits the captured pointer write in a separate transaction without revalidating direction; the backend mutant also accepts a stale pointer update",
         "signal": "mutant.accept-stale-head-update.entered"
       },
       "profiles": ["kernel.memory"],
@@ -32,14 +32,14 @@
         "kernel.crash-recovery.concurrent_writer.1.resultField",
         "kernel.crash-recovery.concurrent_writer.3.resultField",
         "kernel.crash-recovery.concurrent_writer.4.resultField",
-        "kernel.syscall.concurrent_writer.a_first.13.schemaValid",
-        "kernel.syscall.concurrent_writer.a_first.14.resultField",
-        "kernel.syscall.concurrent_writer.a_first.17.schemaValid",
-        "kernel.syscall.concurrent_writer.a_first.18.resultField",
-        "kernel.syscall.concurrent_writer.b_first.13.schemaValid",
-        "kernel.syscall.concurrent_writer.b_first.14.resultField",
-        "kernel.syscall.concurrent_writer.b_first.17.schemaValid",
-        "kernel.syscall.concurrent_writer.b_first.18.resultField"
+        "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+        "kernel.syscall.concurrent_writer.a_first.7.resultField",
+        "kernel.syscall.concurrent_writer.a_first.10.schemaValid",
+        "kernel.syscall.concurrent_writer.a_first.11.resultField",
+        "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+        "kernel.syscall.concurrent_writer.b_first.7.resultField",
+        "kernel.syscall.concurrent_writer.b_first.10.schemaValid",
+        "kernel.syscall.concurrent_writer.b_first.11.resultField"
       ]
     },
     {

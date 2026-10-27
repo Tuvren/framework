@@ -14,7 +14,6 @@ const root = path.resolve(import.meta.dirname, "../../../..");
 const runRace = async (serialized: boolean) => {
   const directory = await mkdtemp(path.join(tmpdir(), "de003-race-"));
   try {
-    const { plan } = await loadConformancePlan(planPath);
     const evidence = path.join(directory, "evidence.json");
     let adapter = "typescript/kernel/conformance-adapter/adapter.json";
     if (serialized) {
@@ -108,12 +107,12 @@ const runRace = async (serialized: boolean) => {
         );
       } else {
         expect(check.details?.traceStepIds).toContain("secondReceipt");
-        const planned = plan.checks.find(
-          (entry) => entry.checkId === check.checkId
-        );
+        const expected = check.checkId.endsWith("a_first") ? 6 : 10;
         expect(
-          planned?.assertions.some((assertion) => assertion.when !== undefined)
-        ).toBe(true);
+          check.assertionResults.find((assertion) =>
+            assertion.assertionId.endsWith(`.${expected}.schemaValid`)
+          )
+        ).toMatchObject({ status: "pass", when: "applied" });
       }
     }
   } finally {
@@ -161,7 +160,11 @@ test("both contenders are released together after a held-head read", async () =>
     const steps = check.steps ?? [];
     const releases = steps.filter((step) => step.action === "release");
     expect(releases).toHaveLength(1);
-    expect(releases[0]?.participants).toEqual(["firstStart", "secondStart"]);
+    expect(releases[0]?.participants).toEqual(
+      check.checkId.endsWith("a_first")
+        ? ["firstStart", "secondStart"]
+        : ["secondStart", "firstStart"]
+    );
     const held = steps.findIndex((step) => step.stepId === "heldHead");
     expect(held).toBeGreaterThan(
       steps.findIndex((step) => step.stepId === "secondReceipt")
@@ -175,7 +178,7 @@ test("both contenders are released together after a held-head read", async () =>
   }
 });
 
-test("barrier holds only named participants and clears after their release", async () => {
+test("barrier holds all started operations entering the seam and clears after release", async () => {
   const { createMemoryBackend } = await import("@tuvren/backend-memory");
   const { createKernelBarrierControl } =
     await import("../../testkit/src/lib/kernel-barrier-control.ts");
@@ -185,15 +188,13 @@ test("barrier holds only named participants and clears after their release", asy
     "handle-a",
     undefined,
     async () =>
-      await barrier.backend.transact(async () => await Promise.resolve(1)),
-    "a"
+      await barrier.backend.transact(async () => await Promise.resolve(1))
   );
   const b = barrier.run(
     "handle-b",
     undefined,
     async () =>
-      await barrier.backend.transact(async () => await Promise.resolve(2)),
-    "b"
+      await barrier.backend.transact(async () => await Promise.resolve(2))
   );
   try {
     await barrier.wait("writers", "handle-a", 100);
@@ -202,20 +203,11 @@ test("barrier holds only named participants and clears after their release", asy
       "handle-third",
       undefined,
       async () =>
-        await barrier.backend.transact(async () => await Promise.resolve(3)),
-      "third"
+        await barrier.backend.transact(async () => await Promise.resolve(3))
     );
-    const expired = Promise.withResolvers<never>();
-    const timer = setTimeout(() => {
-      expired.reject(new Error("third operation held"));
-    }, 100);
-    try {
-      expect(await Promise.race([third, expired.promise])).toBe(3);
-    } finally {
-      clearTimeout(timer);
-    }
-    barrier.release("writers", ["handle-a", "handle-b"]);
-    expect(await Promise.all([a, b])).toEqual([1, 2]);
+    await barrier.wait("writers", "handle-third", 100);
+    barrier.release("writers", ["handle-a", "handle-b", "handle-third"]);
+    expect(await Promise.all([a, b, third])).toEqual([1, 2, 3]);
     expect(() =>
       barrier.arm("next", "kernel.persistence.before-transact", ["c", "d"])
     ).not.toThrow();
@@ -232,17 +224,12 @@ test("closing a barrier rejects held writers before they enter storage", async (
   const barrier = createKernelBarrierControl(createMemoryBackend());
   barrier.arm("writers", "kernel.persistence.before-transact", ["a", "b"]);
   let entered = false;
-  const writer = barrier.run(
-    "a",
-    undefined,
-    async () => {
-      await barrier.backend.transact(async () => {
-        entered = true;
-        await Promise.resolve();
-      });
-    },
-    "a"
-  );
+  const writer = barrier.run("a", undefined, async () => {
+    await barrier.backend.transact(async () => {
+      entered = true;
+      await Promise.resolve();
+    });
+  });
   await barrier.wait("writers", "a", 100);
   const outcome = Promise.allSettled([writer]);
   barrier.close();
@@ -304,7 +291,7 @@ test("race assertions accept either winner and reject double success, double con
           },
         },
       };
-      const evaluate = (value: typeof trace) =>
+      const evaluate = (value: unknown) =>
         evaluateAssertions(check, {
           fixture,
           result: { trace: value },
@@ -331,6 +318,10 @@ test("race assertions accept either winner and reject double success, double con
           )
         ).toBe(true);
       }
+      const missing = evaluate({ ...trace, firstOutcome: undefined });
+      expect(
+        missing.filter((entry) => entry.status === "fail").length
+      ).toBeGreaterThan(0);
     }
   }
 });

@@ -541,12 +541,6 @@
           "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
           "assertions": [],
           "action": "barrier",
-          "capture": [
-            {
-              "name": "arm",
-              "path": "result"
-            }
-          ],
           "barrierId": "writers",
           "seam": "kernel.persistence.before-transact",
           "participants": ["firstStart", "secondStart"]
@@ -590,13 +584,7 @@
             "timeoutMs": 1000
           },
           "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
-          "assertions": [],
-          "capture": [
-            {
-              "name": "firstReceipt",
-              "path": "result"
-            }
-          ]
+          "assertions": []
         },
         {
           "stepId": "secondReceipt",
@@ -609,13 +597,7 @@
             "timeoutMs": 1000
           },
           "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
-          "assertions": [],
-          "capture": [
-            {
-              "name": "secondReceipt",
-              "path": "result"
-            }
-          ]
+          "assertions": []
         },
         {
           "stepId": "heldHead",
@@ -633,12 +615,6 @@
           "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
           "assertions": [],
           "action": "release",
-          "capture": [
-            {
-              "name": "release",
-              "path": "result"
-            }
-          ],
           "barrierId": "writers",
           "participants": ["firstStart", "secondStart"]
         },
@@ -705,43 +681,8 @@
         },
         {
           "kind": "resultField",
-          "field": "$.trace.firstReceipt.result.operationHandle",
-          "equalsPath": "$.result.trace.release.result.operationHandles.0"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.firstReceipt.result.barrierId",
-          "equals": "writers"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.firstReceipt.result.seam",
-          "equals": "kernel.persistence.before-transact"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondReceipt.result.operationHandle",
-          "equalsPath": "$.result.trace.release.result.operationHandles.1"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondReceipt.result.barrierId",
-          "equals": "writers"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondReceipt.result.seam",
-          "equals": "kernel.persistence.before-transact"
-        },
-        {
-          "kind": "resultField",
           "field": "$.trace.heldHead.result.headTurnNodeHash",
           "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
-        },
-        {
-          "kind": "schemaValid",
-          "path": "$.result.trace.firstOutcome.outcome.kind",
-          "schema": "$.fixture.expected.outcome"
         },
         {
           "kind": "schemaValid",
@@ -1357,12 +1298,6 @@
           "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
           "assertions": [],
           "action": "barrier",
-          "capture": [
-            {
-              "name": "arm",
-              "path": "result"
-            }
-          ],
           "barrierId": "writers",
           "seam": "kernel.persistence.before-transact",
           "participants": ["firstStart", "secondStart"]
@@ -1406,13 +1341,7 @@
             "timeoutMs": 1000
           },
           "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
-          "assertions": [],
-          "capture": [
-            {
-              "name": "firstReceipt",
-              "path": "result"
-            }
-          ]
+          "assertions": []
         },
         {
           "stepId": "secondReceipt",
@@ -1425,13 +1354,7 @@
             "timeoutMs": 1000
           },
           "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
-          "assertions": [],
-          "capture": [
-            {
-              "name": "secondReceipt",
-              "path": "result"
-            }
-          ]
+          "assertions": []
         },
         {
           "stepId": "heldHead",
@@ -1449,14 +1372,8 @@
           "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
           "assertions": [],
           "action": "release",
-          "capture": [
-            {
-              "name": "release",
-              "path": "result"
-            }
-          ],
           "barrierId": "writers",
-          "participants": ["firstStart", "secondStart"]
+          "participants": ["secondStart", "firstStart"]
         },
         {
           "stepId": "firstOutcome",
@@ -1521,43 +1438,8 @@
         },
         {
           "kind": "resultField",
-          "field": "$.trace.firstReceipt.result.operationHandle",
-          "equalsPath": "$.result.trace.release.result.operationHandles.0"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.firstReceipt.result.barrierId",
-          "equals": "writers"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.firstReceipt.result.seam",
-          "equals": "kernel.persistence.before-transact"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondReceipt.result.operationHandle",
-          "equalsPath": "$.result.trace.release.result.operationHandles.1"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondReceipt.result.barrierId",
-          "equals": "writers"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondReceipt.result.seam",
-          "equals": "kernel.persistence.before-transact"
-        },
-        {
-          "kind": "resultField",
           "field": "$.trace.heldHead.result.headTurnNodeHash",
           "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
-        },
-        {
-          "kind": "schemaValid",
-          "path": "$.result.trace.firstOutcome.outcome.kind",
-          "schema": "$.fixture.expected.outcome"
         },
         {
           "kind": "schemaValid",

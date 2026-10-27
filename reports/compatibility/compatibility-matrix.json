@@ -1193,6 +1193,8 @@
       "results": [
         {
           "checkIds": [
+            "kernel.syscall.concurrent_writer.a_first",
+            "kernel.syscall.concurrent_writer.b_first",
             "kernel.lineage.cross_thread_rejection",
             "kernel.logical.branch_list",
             "kernel.logical.diff_paths",
@@ -1310,13 +1312,14 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 114,
+            "passedChecks": 116,
             "totalChecks": 139,
-            "applicableChecks": 114,
-            "nonApplicableChecks": 25
+            "applicableChecks": 116,
+            "nonApplicableChecks": 23
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
+            "kernel.barrier",
             "kernel.fault-injection",
             "kernel.logical",
             "kernel.protocol",

@@ -45,6 +45,7 @@ import type { CatalogOperation } from "../plan-compiler/certification-rules.js";
 import {
   controlConsumesInstance,
   controlInputProblem,
+  operationInputProblem,
 } from "../plan-compiler/control-input.js";
 import type {
   CompiledConformancePlan,
@@ -68,6 +69,7 @@ import type {
 } from "./assertion-engine/index.js";
 import { readPath } from "./assertion-engine/path.js";
 import { createBarrierSteps } from "./barrier-steps.js";
+import { selectCheck } from "./check-selection.js";
 import {
   createFaultActivationTracker,
   MissingFaultActivationError,
@@ -79,7 +81,6 @@ import {
 import {
   isOperationHandleStep,
   recordHandleCapture,
-  requiresHandleProtocolUpgrade,
   runOperationHandleStep,
 } from "./operation-steps.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
@@ -681,6 +682,20 @@ interface TraceStepExecution {
   step: ConformancePlanStep;
 }
 
+const validateStartedInput = (
+  step: ConformancePlanStep,
+  operation: CatalogOperation | undefined,
+  input: unknown
+): void => {
+  if (step.action !== "start") {
+    return;
+  }
+  const problem = operationInputProblem(operation, input);
+  if (problem !== undefined) {
+    throw new ArgumentResolutionError(problem);
+  }
+};
+
 const observeTraceStep = async ({
   catalogOperation,
   check,
@@ -800,11 +815,11 @@ const runTraceCheck = async (
   > = {};
   const traceAdapterErrors: Record<string, unknown> = {};
   const startedOperations = new Map<string, string>();
-  const barriers = createBarrierSteps();
   const arrivals: Record<string, number> = {};
   const captureStore = createCaptureStore();
   const captures = captureStore.values;
   const handleCaptures: Record<string, string> = Object.create(null);
+  const barriers = createBarrierSteps(handleCaptures);
   const argumentRoots: ArgumentRoots = {
     capture: captures,
     fixture:
@@ -842,6 +857,7 @@ const runTraceCheck = async (
         operation: step.operation,
         stepId: step.stepId,
       });
+      validateStartedInput(step, catalogOperation, input);
       if (step.action === "start" || step.action === "cancel") {
         client.setLosslessObservations(catalogOperation !== undefined);
         const receipt = await runOperationHandleStep(
@@ -854,13 +870,13 @@ const runTraceCheck = async (
         );
         arrivals[step.stepId] = client.latestArrivalSequence();
         if (receipt.kind === "started") {
-          barriers.started(step.stepId, receipt.operationHandle);
           recordHandleCapture(
             step.handleCapture,
             receipt.operationHandle,
             captureStore,
             handleCaptures
           );
+          barriers.started(step.stepId, step.handleCapture);
         }
         await visit(index + 1);
         return;
@@ -1419,32 +1435,6 @@ const validateHandshakeForSelectedPlans = async (
   }
 };
 
-const capabilitySelection = (
-  checkId: string,
-  required: readonly string[],
-  adapter: ReadonlySet<string>,
-  requested: ReadonlySet<string>
-): NonNullable<ConformanceEvidence["selection"]>[number] => {
-  const missing = required.filter((capability) => !adapter.has(capability));
-  const matches =
-    requested.size === 0 ||
-    required.some((capability) => requested.has(capability));
-  const reasons: string[] = [];
-  if (missing.length > 0) {
-    reasons.push(`missing capabilities: ${missing.join(", ")}`);
-  }
-  if (!matches) {
-    reasons.push(
-      `outside requested capabilities: ${[...requested].join(", ")}`
-    );
-  }
-  return {
-    checkId,
-    selected: reasons.length === 0,
-    ...(reasons.length === 0 ? {} : { reason: reasons.join("; ") }),
-  };
-};
-
 const selectChecks = (
   plans: readonly CompiledConformancePlan[],
   manifest: AdapterManifest,
@@ -1490,23 +1480,14 @@ const selectChecks = (
         availableCapabilities.add(capability);
       }
 
-      const entry = capabilitySelection(
-        check.checkId,
-        requiredCapabilities,
-        adapterCapabilities,
-        requestedCapabilities
-      );
-      if (
-        requiresHandleProtocolUpgrade(check.steps, manifest.protocol.version)
-      ) {
-        entry.selected = false;
-        entry.reason = [
-          entry.reason,
-          "requires adapter protocol >= 0.2.0 for operation handle steps",
-        ]
-          .filter(Boolean)
-          .join("; ");
-      }
+      const entry = selectCheck({
+        adapter: adapterCapabilities,
+        checkId: check.checkId,
+        protocolVersion: manifest.protocol.version,
+        requested: requestedCapabilities,
+        required: requiredCapabilities,
+        steps: check.steps,
+      });
       selection.push(entry);
       if (!entry.selected) {
         continue;

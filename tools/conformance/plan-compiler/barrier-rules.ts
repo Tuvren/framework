@@ -31,12 +31,13 @@ export const checkBarrierSchedule = (
                 (candidate) =>
                   candidate.stepId === id &&
                   candidate.action === "start" &&
+                  candidate.handleCapture !== undefined &&
                   operations.includes(candidate.operation)
               )
         )
       ) {
         problem =
-          "barrier requires a catalogued seam and distinct later start participants on its native path";
+          "barrier requires a catalogued seam and distinct later start participants with handle captures on its native path";
       } else {
         barriers.set(step.barrierId, participants);
       }

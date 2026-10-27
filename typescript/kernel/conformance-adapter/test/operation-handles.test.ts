@@ -7,6 +7,97 @@ import type { StdioConformanceAdapter } from "../../../../tools/conformance/adap
 import * as hostSupport from "../src/host-support.ts";
 import { createSyscallBindings } from "../src/host-syscalls.ts";
 
+test("unsupported 0.2 method families return typed protocol errors", async () => {
+  const bridge = createSyscallBindings({
+    adapterId: "unsupported-methods",
+    backend: "memory",
+    capabilities: ["kernel.syscall"],
+  });
+  const adapter: StdioConformanceAdapter = {
+    ...bridge,
+    dispatch: async (operation, input, _controls, instance) =>
+      await bridge.dispatch(operation, input, instance),
+    initialize: (packetId, planVersion) => ({
+      adapterId: "unsupported-methods",
+      capabilities: [],
+      packetId,
+      planVersion,
+    }),
+  };
+  const requests = [
+    {
+      method: "subscribe",
+      params: { channel: "events", instance: "instance" },
+    },
+    { method: "pull", params: { credit: 1, subscription: "subscription" } },
+    { method: "openInstance", params: { storageRef: "storage" } },
+  ];
+  const responses = await Promise.all(
+    requests.map(
+      async (request) =>
+        await handleStdioAdapterLine(
+          adapter,
+          JSON.stringify({ id: 1, jsonrpc: "2.0", ...request })
+        )
+    )
+  );
+  expect(responses).toHaveLength(requests.length);
+  for (const response of responses) {
+    expect(response).toMatchObject({
+      error: { code: "adapter_method_not_implemented" },
+      id: 1,
+    });
+  }
+});
+
+test("started operations use distinct kernel instances on one shared backend", async () => {
+  const factory = spyOn(hostSupport, "createConformanceRuntimeKernel");
+  const bridge = createSyscallBindings({
+    adapterId: "per-operation",
+    backend: "memory",
+    capabilities: ["kernel.syscall"],
+  });
+  const instance = await bridge.createInstance();
+  try {
+    await bridge.dispatch(
+      "kernel.clock.set",
+      { domain: "backend", nowMs: 0 },
+      instance
+    );
+    await bridge.dispatch(
+      "kernel.clock.set",
+      { domain: "worker", nowMs: 0 },
+      instance
+    );
+    const first = await bridge.startOperation(
+      "kernel.store.put",
+      { blob: { $bytes: "01" } },
+      instance
+    );
+    const second = await bridge.startOperation(
+      "kernel.store.put",
+      { blob: { $bytes: "02" } },
+      instance
+    );
+    expect(await bridge.awaitOperation(first.operationHandle)).toMatchObject({
+      kind: "result",
+    });
+    expect(await bridge.awaitOperation(second.operationHandle)).toMatchObject({
+      kind: "result",
+    });
+    expect(factory.mock.results.length).toBeGreaterThanOrEqual(3);
+    const kernels = factory.mock.results.map((result) => result.value);
+    expect(new Set(kernels).size).toBe(kernels.length);
+    const hash = createHash("sha256").update(Uint8Array.of(1)).digest("hex");
+    expect(
+      await bridge.dispatch("kernel.store.has", { hash }, instance)
+    ).toEqual({ kind: "result", value: { result: true } });
+  } finally {
+    await bridge.destroyInstance(instance);
+    factory.mockRestore();
+  }
+});
+
 test("two started native syscalls progress independently while one dependency is held", async () => {
   const entered = Promise.withResolvers<undefined>();
   const release = Promise.withResolvers<undefined>();

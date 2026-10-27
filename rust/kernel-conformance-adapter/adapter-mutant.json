@@ -5,7 +5,7 @@
   "boundary": "kernel",
   "protocol": {
     "name": "tuvren.conformance-adapter",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "transport": "json-rpc-2.0-stdio"
   },
   "command": [
@@ -18,6 +18,7 @@
   ],
   "capabilities": [
     "kernel.syscall",
+    "kernel.barrier",
     "kernel.fault-injection",
     "kernel.protocol",
     "kernel.logical",

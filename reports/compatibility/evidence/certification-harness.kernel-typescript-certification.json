@@ -38,73 +38,45 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.6.resultField",
-          "status": "pass"
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+          "status": "pass",
+          "when": "applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.7.resultField",
-          "status": "pass"
+          "status": "pass",
+          "when": "applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.8.resultField",
-          "status": "pass"
+          "status": "pass",
+          "when": "applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.9.resultField",
-          "status": "pass"
+          "status": "pass",
+          "when": "applied"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.10.resultField",
-          "status": "pass"
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.10.schemaValid",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
+          "status": "pass",
+          "when": "not_applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.11.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.12.schemaValid",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.13.schemaValid",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.14.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.15.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.16.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.17.schemaValid",
           "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
           "status": "pass",
           "when": "not_applied"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.18.resultField",
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.12.resultField",
           "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
           "status": "pass",
           "when": "not_applied"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.19.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.20.resultField",
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.13.resultField",
           "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
           "status": "pass",
           "when": "not_applied"
@@ -126,31 +98,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstReceipt.result.barrierId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstReceipt.result.operationHandle",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstReceipt.result.seam",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.secondReceipt.result.barrierId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.secondReceipt.result.operationHandle",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.secondReceipt.result.seam",
           "status": "pass"
         },
         {
@@ -239,76 +187,48 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.6.resultField",
-          "status": "pass"
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.7.resultField",
-          "status": "pass"
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.8.resultField",
-          "status": "pass"
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.9.resultField",
-          "status": "pass"
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.10.resultField",
-          "status": "pass"
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.10.schemaValid",
+          "status": "pass",
+          "when": "applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.11.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.12.schemaValid",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.13.schemaValid",
           "status": "pass",
           "when": "applied"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.14.resultField",
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.12.resultField",
           "status": "pass",
           "when": "applied"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.15.resultField",
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.13.resultField",
           "status": "pass",
           "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.16.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.17.schemaValid",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.18.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.19.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.20.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
@@ -327,31 +247,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.firstReceipt.result.barrierId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.firstReceipt.result.operationHandle",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.firstReceipt.result.seam",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondReceipt.result.barrierId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondReceipt.result.operationHandle",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondReceipt.result.seam",
           "status": "pass"
         },
         {
@@ -372,9 +268,9 @@
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.concurrent-writer.syscall",
         "adapterErrors": {
-          "secondOutcome": {
+          "firstOutcome": {
             "code": "kernel_runtime_lateral_head_movement",
-            "message": "branch.setHead cannot move laterally: \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" and \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" share no lineage"
+            "message": "branch.setHead cannot move laterally: \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" and \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" share no lineage"
           }
         },
         "traceStepIds": [

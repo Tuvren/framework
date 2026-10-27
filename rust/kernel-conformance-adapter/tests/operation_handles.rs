@@ -95,8 +95,8 @@ impl Adapter {
         instance
     }
 
-    fn start(&mut self, instance: &Value, participant: &str, byte: &str) -> Value {
-        let response = self.request("startOperation", json!({"instance":instance,"operation":"kernel.store.put","arguments":{"barrierParticipant":participant,"blob":{"$bytes":byte}}}));
+    fn start(&mut self, instance: &Value, byte: &str) -> Value {
+        let response = self.request("startOperation", json!({"instance":instance,"operation":"kernel.store.put","arguments":{"blob":{"$bytes":byte}}}));
         assert!(
             response["result"]["operationHandle"].is_string(),
             "{response}"
@@ -133,8 +133,8 @@ fn both_writers_reach_the_native_seam_and_the_host_answers_while_awaiting() {
     let mut adapter = Adapter::new();
     let instance = adapter.instance();
     adapter.arm(&instance);
-    let first = adapter.start(&instance, "first", "01");
-    let second = adapter.start(&instance, "second", "02");
+    let first = adapter.start(&instance, "01");
+    let second = adapter.start(&instance, "02");
     assert_ne!(first, second);
     adapter.wait(&instance, &first);
     adapter.wait(&instance, &second);
@@ -146,11 +146,8 @@ fn both_writers_reach_the_native_seam_and_the_host_answers_while_awaiting() {
         ),
         false
     );
-    let third = adapter.start(&instance, "unrelated", "03");
-    assert_eq!(
-        adapter.request("awaitOperation", json!({"operationHandle":third}))["result"]["kind"],
-        "result"
-    );
+    let third = adapter.start(&instance, "03");
+    adapter.wait(&instance, &third);
 
     let pending = adapter.send("awaitOperation", json!({"operationHandle":first}));
     let inspection = adapter.request("inspectState", json!({"instance":instance,"query":{}}));
@@ -158,14 +155,37 @@ fn both_writers_reach_the_native_seam_and_the_host_answers_while_awaiting() {
     adapter.dispatch(
         &instance,
         "kernel.barrier.release",
-        json!({"barrierId":"writers","operationHandles":[first,second]}),
+        json!({"barrierId":"writers","operationHandles":[first,second,third]}),
     );
     let completed = adapter.receive_for(pending);
     assert_eq!(completed["id"], pending, "{completed}");
     assert_eq!(completed["result"]["kind"], "result");
     let second_outcome = adapter.request("awaitOperation", json!({"operationHandle":second}));
     assert_eq!(second_outcome["result"]["kind"], "result");
+    assert_eq!(
+        adapter.request("awaitOperation", json!({"operationHandle":third}))["result"]["kind"],
+        "result"
+    );
     adapter.dispatch(&instance, "kernel.barrier.arm", json!({"barrierId":"next","seam":"kernel.persistence.before-transact","participants":["a","b"]}));
+}
+
+#[test]
+fn unsupported_protocol_families_return_typed_errors() {
+    let mut adapter = Adapter::new();
+    for (method, params) in [
+        (
+            "subscribe",
+            json!({"instance":"instance","channel":"events"}),
+        ),
+        ("pull", json!({"subscription":"subscription","credit":1})),
+        ("openInstance", json!({"storageRef":"storage"})),
+    ] {
+        let response = adapter.request(method, params);
+        assert_eq!(
+            response["error"]["code"], "adapter_method_not_implemented",
+            "{response}"
+        );
+    }
 }
 
 #[test]
@@ -173,8 +193,8 @@ fn cancellation_at_the_seam_prevents_the_write_and_outcomes_are_repeatable() {
     let mut adapter = Adapter::new();
     let instance = adapter.instance();
     adapter.arm(&instance);
-    let first = adapter.start(&instance, "first", "06");
-    let second = adapter.start(&instance, "second", "07");
+    let first = adapter.start(&instance, "06");
+    let second = adapter.start(&instance, "07");
     adapter.wait(&instance, &first);
     adapter.wait(&instance, &second);
     assert_eq!(
@@ -208,7 +228,7 @@ fn destroy_cancels_and_drains_held_work() {
     let mut adapter = Adapter::new();
     let instance = adapter.instance();
     adapter.arm(&instance);
-    let first = adapter.start(&instance, "first", "08");
+    let first = adapter.start(&instance, "08");
     adapter.wait(&instance, &first);
     let pending = adapter.send("awaitOperation", json!({"operationHandle":first}));
     let destroy = adapter.send("destroyInstance", json!({"instance":instance}));
@@ -233,8 +253,8 @@ fn shutdown_cancels_held_work_in_every_instance() {
     let second_instance = adapter.instance();
     adapter.arm(&first_instance);
     adapter.arm(&second_instance);
-    let first = adapter.start(&first_instance, "first", "08");
-    let second = adapter.start(&second_instance, "first", "09");
+    let first = adapter.start(&first_instance, "08");
+    let second = adapter.start(&second_instance, "09");
     adapter.wait(&first_instance, &first);
     adapter.wait(&second_instance, &second);
     let first_await = adapter.send("awaitOperation", json!({"operationHandle":first}));
@@ -305,7 +325,7 @@ fn protocol_clock_and_fault_controls_use_the_instance_test_seams() {
 fn cancellation_after_completion_preserves_the_outcome() {
     let mut adapter = Adapter::new();
     let instance = adapter.instance();
-    let handle = adapter.start(&instance, "other", "0a");
+    let handle = adapter.start(&instance, "0a");
     let outcome =
         adapter.request("awaitOperation", json!({"operationHandle":handle}))["result"].clone();
     assert_eq!(outcome["kind"], "result");

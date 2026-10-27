@@ -24,7 +24,6 @@ interface Barrier {
 interface OperationContext {
   operationHandle: string;
   signal?: AbortSignal;
-  participant?: string;
 }
 
 const requireString = (value: unknown): string => {
@@ -51,13 +50,7 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
     transact: async (work) => {
       const operation = context.getStore();
       const barrier = active;
-      if (
-        operation !== undefined &&
-        barrier !== undefined &&
-        barrier.participants.has(
-          operation.participant ?? operation.operationHandle
-        )
-      ) {
+      if (operation !== undefined && barrier !== undefined) {
         let entry = barrier.entries.get(operation.operationHandle);
         if (entry === undefined) {
           entry = {
@@ -147,7 +140,7 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
         entry.gate.resolve(null);
       }
       if (
-        barrier.entries.size === barrier.participants.size &&
+        barrier.entries.size >= barrier.participants.size &&
         [...barrier.entries.values()].every((entry) => entry.released)
       ) {
         active = undefined;
@@ -157,10 +150,8 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
     run: async <T>(
       operationHandle: string,
       signal: AbortSignal | undefined,
-      work: () => Promise<T>,
-      participant?: string
-    ): Promise<T> =>
-      await context.run({ operationHandle, participant, signal }, work),
+      work: () => Promise<T>
+    ): Promise<T> => await context.run({ operationHandle, signal }, work),
     wait: async (id: unknown, handle: unknown, timeout: unknown) => {
       const barrier = read(id);
       const operationHandle = requireString(handle);

@@ -7,9 +7,11 @@ interface Barrier {
   participants: readonly string[];
 }
 
-export const createBarrierSteps = () => {
+export const createBarrierSteps = (
+  captures: Readonly<Record<string, string>>
+) => {
   const barriers = new Map<string, Barrier>();
-  const handles = new Map<string, string>();
+  const participantCaptures = new Map<string, string>();
   const receipts = new Map<string, { barrierId: string; seam: string }>();
   const armInput = (step: ConformancePlanStep): unknown => {
     if (
@@ -30,55 +32,47 @@ export const createBarrierSteps = () => {
       participants: step.participants,
     };
   };
-  const startInput = (step: ConformancePlanStep, input: unknown): unknown => {
-    if (
-      ![...barriers.values()].some((barrier) =>
-        barrier.participants.includes(step.stepId)
-      )
-    ) {
-      return input;
-    }
-    if (typeof input !== "object" || input === null || Array.isArray(input)) {
+  const participantHandle = (
+    participant: string,
+    barrier: Barrier,
+    barrierId: string
+  ): string => {
+    const capture = participantCaptures.get(participant);
+    const handle = capture === undefined ? undefined : captures[capture];
+    if (handle === undefined) {
       throw new ArgumentResolutionError(
-        "barrier participant requires an arguments object"
+        "release before all participants started"
       );
     }
-    return { ...input, barrierParticipant: step.stepId };
+    const receipt = receipts.get(handle);
+    if (receipt?.barrierId !== barrierId || receipt.seam !== barrier.seam) {
+      throw new ArgumentResolutionError(
+        "release requires every implementation entry receipt"
+      );
+    }
+    return handle;
   };
   return {
     input: (step: ConformancePlanStep, input: unknown): unknown => {
       if (step.action === "barrier") {
         return armInput(step);
       }
-      if (step.action === "start") {
-        return startInput(step, input);
-      }
       if (step.action !== "release") {
         return input;
       }
-      const barrier =
-        step.barrierId === undefined ? undefined : barriers.get(step.barrierId);
+      if (step.barrierId === undefined) {
+        throw new ArgumentResolutionError("release requires an armed barrier");
+      }
+      const barrier = barriers.get(step.barrierId);
       if (barrier === undefined) {
         throw new ArgumentResolutionError("release requires an armed barrier");
       }
       const participantHandles = new Map<string, string>();
       for (const participant of barrier.participants) {
-        const operationHandle = handles.get(participant);
-        if (operationHandle === undefined) {
-          throw new ArgumentResolutionError(
-            "release before all participants started"
-          );
-        }
-        const receipt = receipts.get(operationHandle);
-        if (
-          receipt?.barrierId !== step.barrierId ||
-          receipt.seam !== barrier.seam
-        ) {
-          throw new ArgumentResolutionError(
-            "release requires every implementation entry receipt"
-          );
-        }
-        participantHandles.set(participant, operationHandle);
+        participantHandles.set(
+          participant,
+          participantHandle(participant, barrier, step.barrierId)
+        );
       }
       const operationHandles = (step.participants ?? barrier.participants).map(
         (participant) => {
@@ -130,8 +124,10 @@ export const createBarrierSteps = () => {
         });
       }
     },
-    started: (stepId: string, handle: string): void => {
-      handles.set(stepId, handle);
+    started: (stepId: string, capture: string | undefined): void => {
+      if (capture !== undefined) {
+        participantCaptures.set(stepId, capture);
+      }
     },
   };
 };

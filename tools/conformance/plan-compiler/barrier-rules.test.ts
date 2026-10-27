@@ -16,6 +16,20 @@ const catalog = parseOperationCatalog(
 const planPath =
   "spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json";
 
+test("start arguments must satisfy the catalogued syscall input", async () => {
+  const { plan } = await loadConformancePlan(planPath);
+  const start = plan.checks[0]?.steps?.find((step) => step.action === "start");
+  if (start?.arguments === undefined) {
+    throw new Error("missing start arguments");
+  }
+  start.arguments.barrierParticipant = "firstStart";
+  expect(
+    evaluateCertificationRules(plan, catalog).some((violation) =>
+      violation.message.includes("additional properties")
+    )
+  ).toBe(true);
+});
+
 test("writer barriers require later start participants on the catalogued native seam", async () => {
   const { plan } = await loadConformancePlan(planPath);
   expect(evaluateCertificationRules(plan, catalog)).toEqual([]);
@@ -23,6 +37,7 @@ test("writer barriers require later start participants on the catalogued native 
     "late-arm",
     "wrong-seam",
     "missing-participant",
+    "missing-handle-capture",
     "early-release",
     "wrong-operation",
   ] as const) {
@@ -46,6 +61,14 @@ test("writer barriers require later start participants on the catalogued native 
       }
       case "missing-participant": {
         arm.participants = ["firstStart", "absent"];
+        break;
+      }
+      case "missing-handle-capture": {
+        const start = steps.find((step) => step.stepId === "firstStart");
+        if (start === undefined) {
+          throw new Error("missing start");
+        }
+        start.handleCapture = undefined;
         break;
       }
       case "early-release": {

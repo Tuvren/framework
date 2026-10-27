@@ -578,13 +578,7 @@ impl Syscalls {
         let guard = instance.begin(true)?;
         registry.next_operation += 1;
         let operation_handle = format!("rust-operation-{}", registry.next_operation);
-        let context = instance.barrier.operation(
-            operation_handle.clone(),
-            input
-                .get("barrierParticipant")
-                .and_then(Value::as_str)
-                .map(str::to_owned),
-        );
+        let context = instance.barrier.operation(operation_handle.clone());
         let task = Arc::new(Operation {
             instance: handle.as_str().unwrap_or_default().to_owned(),
             context,
