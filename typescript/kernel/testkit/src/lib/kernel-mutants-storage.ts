@@ -254,7 +254,6 @@ const createNonAtomicHeadUpdateSeams = () => {
                 },
               })
           );
-          // Validation used the old head; commit the pointer in a separate transaction.
           if (writes.length > 0) {
             activate();
             await staleWrites.transact(async (tx) => {

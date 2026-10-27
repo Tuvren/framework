@@ -23,8 +23,23 @@ const receipt: ConformancePlanStep = {
   stepId: "receipt",
 };
 
+test("a barrier participant's start arguments pass through unchanged", () => {
+  const barriers = createBarrierSteps({});
+  barriers.input(arm, {});
+  const argumentsValue = { branchId: "main", turnNodeHash: "head" };
+  expect(
+    barriers.input(
+      { action: "start", operation: "kernel.branch.setHead", stepId: "a" },
+      argumentsValue
+    )
+  ).toEqual(argumentsValue);
+});
+
 test("barrier release requires every native receipt and preserves the plan's release ordering", () => {
-  const barriers = createBarrierSteps();
+  const barriers = createBarrierSteps({
+    first: "handle-a",
+    second: "handle-b",
+  });
   expect(barriers.input(arm, {})).toEqual({
     barrierId: "writers",
     participants: ["a", "b"],
@@ -34,8 +49,8 @@ test("barrier release requires every native receipt and preserves the plan's rel
     kind: "result",
     value: { result: { barrierId: "writers", seam: "persistence" } },
   });
-  barriers.started("a", "handle-a");
-  barriers.started("b", "handle-b");
+  barriers.started("a", "first");
+  barriers.started("b", "second");
   barriers.observe(receipt, {
     kind: "result",
     value: {
@@ -83,7 +98,7 @@ test("barrier release requires every native receipt and preserves the plan's rel
 });
 
 test("barrier requires its arming acknowledgement to match before starting participants", () => {
-  const barriers = createBarrierSteps();
+  const barriers = createBarrierSteps({});
   barriers.input(arm, {});
   expect(() => {
     barriers.observe(arm, {

@@ -52,8 +52,12 @@
       "required": ["adapterId", "capabilities", "packetId", "planVersion"]
     },
     "ProtocolErrorCode": {
-      "enum": ["operation_cancelled_before_entry", "adapter_instance_busy"],
-      "description": "Protocol failures outside OperationOutcome: cancellation before native entry, or refusal to destroy an instance with in-flight work past its deadline."
+      "enum": [
+        "operation_cancelled_before_entry",
+        "adapter_instance_busy",
+        "adapter_method_not_implemented"
+      ],
+      "description": "Protocol failures outside OperationOutcome: cancellation before native entry, a busy instance, or an unsupported method."
     },
     "ProtocolVersion": { "enum": ["0.1.0", "0.2.0"] },
     "StorageKind": {

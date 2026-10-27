@@ -29,6 +29,7 @@ import {
 import {
   controlConsumesInstance,
   controlInputProblem,
+  operationInputProblem,
 } from "./control-input.js";
 import type {
   ConformancePlan,
@@ -1249,6 +1250,13 @@ const checkStep = (
       ? { ...argumentsValue, instance: "runner-instance" }
       : argumentsValue;
     const problem = controlInputProblem(operation, input, true);
+    if (problem !== undefined) {
+      report(context, "control-input", `${subject(context)} ${problem}`);
+    }
+  }
+
+  if (step.action === "start" && step.arguments !== undefined) {
+    const problem = operationInputProblem(operation, step.arguments, true);
     if (problem !== undefined) {
       report(context, "control-input", `${subject(context)} ${problem}`);
     }

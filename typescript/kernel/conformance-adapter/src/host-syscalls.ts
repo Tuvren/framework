@@ -388,6 +388,7 @@ const requireOperationEntry = (signal: AbortSignal | undefined): void => {
 interface Instance {
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
+  createKernel: () => ReturnType<typeof createConformanceRuntimeKernel>;
   clock: ReturnType<typeof createKernelTestClock>;
   fault: ReturnType<typeof createKernelFaultControl>;
   barrier: ReturnType<typeof createKernelBarrierControl>;
@@ -501,6 +502,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
             barrier,
             cleanup: backend.cleanup,
             clock,
+            createKernel,
             fault,
             kernel: createKernel(),
           };
@@ -521,22 +523,17 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       throw error;
     }
     requireOperationEntry(signal);
+    const kernel =
+      operationHandle === undefined ? opened.kernel : opened.createKernel();
     const target: unknown =
       typeof binding.target === "string"
         ? Reflect.get(opened, binding.target)
-        : Reflect.get(opened.kernel, group);
+        : Reflect.get(kernel, group);
     const invoke = async () =>
       await invokeBinding(target, binding, input, method);
     return operationHandle === undefined
       ? await invoke()
-      : await opened.barrier.run(
-          operationHandle,
-          signal,
-          invoke,
-          isRecord(input) && typeof input.barrierParticipant === "string"
-            ? input.barrierParticipant
-            : undefined
-        );
+      : await opened.barrier.run(operationHandle, signal, invoke);
   };
   const trackedDispatch = async (
     operation: string,

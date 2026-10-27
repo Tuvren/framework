@@ -95,7 +95,7 @@
           "type": "string",
           "minLength": 1,
           "pattern": "^[^.]+$",
-          "description": "StartOperationResult.operationHandle; available only to later argument projections as capture.<name>."
+          "description": "StartOperationResult.operationHandle; available to later argument projections as capture.<name>. Barrier participant starts must declare this field."
         },
         "capture": {
           "type": "array",
@@ -110,7 +110,8 @@
           "type": "array",
           "minItems": 1,
           "items": { "type": "string", "minLength": 1 },
-          "uniqueItems": true
+          "uniqueItems": true,
+          "description": "Step IDs of started operations. The runner resolves their handles from handleCapture before release."
         },
         "assertions": {
           "type": "array",
@@ -151,7 +152,10 @@
             "required": ["action"],
             "properties": { "action": { "const": "barrier" } }
           },
-          "then": { "required": ["barrierId", "seam", "participants"] }
+          "then": {
+            "required": ["barrierId", "seam", "participants"],
+            "properties": { "participants": { "minItems": 2 } }
+          }
         },
         {
           "if": {

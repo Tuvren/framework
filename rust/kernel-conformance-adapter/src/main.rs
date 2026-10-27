@@ -55,6 +55,9 @@ struct AdapterCapabilities {
     capabilities: Vec<&'static str>,
     packet_id: String,
     plan_version: String,
+    protocol_version: &'static str,
+    profiles: Vec<&'static str>,
+    storage_kinds: Vec<&'static str>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -142,6 +145,7 @@ fn dispatch_request(
             adapter_id: "rust-kernel",
             capabilities: vec![
                 "kernel.syscall",
+                "kernel.barrier",
                 "kernel.fault-injection",
                 "kernel.protocol",
                 "kernel.logical",
@@ -151,6 +155,9 @@ fn dispatch_request(
             ],
             packet_id: read_param_string(&request.params, "packetId")?,
             plan_version: read_param_string(&request.params, "planVersion")?,
+            protocol_version: "0.2.0",
+            profiles: vec![],
+            storage_kinds: vec!["none"],
         })),
         "dispatch" => {
             let operation = read_param_string(&request.params, "operation")?;

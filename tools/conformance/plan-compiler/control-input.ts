@@ -66,12 +66,12 @@ const unwrapLiterals = (value: unknown): unknown => {
   );
 };
 
-export const controlInputProblem = (
+export const operationInputProblem = (
   operation: CatalogOperation | undefined,
   input: unknown,
   projected = false
 ): string | undefined => {
-  if (operation?.kind !== "control" || operation.input === undefined) {
+  if (operation?.input === undefined) {
     return undefined;
   }
   const value = projected ? unwrapLiterals(input) : input;
@@ -88,3 +88,12 @@ export const controlInputProblem = (
     ? undefined
     : `${operation.operationId} arguments: ${ajv.errorsText(validate.errors)}`;
 };
+
+export const controlInputProblem = (
+  operation: CatalogOperation | undefined,
+  input: unknown,
+  projected = false
+): string | undefined =>
+  operation?.kind === "control"
+    ? operationInputProblem(operation, input, projected)
+    : undefined;

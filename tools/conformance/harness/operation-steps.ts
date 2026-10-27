@@ -4,7 +4,7 @@ import type { JsonRpcAdapterClient } from "./adapter-client.js";
 import type { CaptureStore } from "./step-arguments.js";
 import { ArgumentResolutionError } from "./step-arguments.js";
 
-export const isOperationHandleStep = (step: ConformancePlanStep): boolean =>
+export const isOperationHandleStep = (step: { action?: string }): boolean =>
   step.action === "start" ||
   step.action === "await" ||
   step.action === "cancel";
@@ -87,6 +87,6 @@ export const recordHandleCapture = (
 };
 
 export const requiresHandleProtocolUpgrade = (
-  steps: readonly ConformancePlanStep[] | undefined,
+  steps: readonly { action?: string }[] | undefined,
   version: string
 ): boolean => version === "0.1.0" && (steps ?? []).some(isOperationHandleStep);

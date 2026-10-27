@@ -119,10 +119,16 @@ export const assertOperationOutcome: (
 };
 
 export class AdapterProtocolError extends Error {
-  readonly code: "operation_cancelled_before_entry" | "adapter_instance_busy";
+  readonly code:
+    | "operation_cancelled_before_entry"
+    | "adapter_instance_busy"
+    | "adapter_method_not_implemented";
 
   constructor(
-    code: "operation_cancelled_before_entry" | "adapter_instance_busy",
+    code:
+      | "operation_cancelled_before_entry"
+      | "adapter_instance_busy"
+      | "adapter_method_not_implemented",
     message: string
   ) {
     super(message);

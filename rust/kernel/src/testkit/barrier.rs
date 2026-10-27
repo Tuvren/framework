@@ -42,15 +42,13 @@ pub struct BarrierControl(Arc<Shared>);
 #[derive(Clone)]
 pub struct OperationContext {
     handle: String,
-    participant: Option<String>,
     control: BarrierControl,
 }
 
 impl BarrierControl {
-    pub fn operation(&self, handle: String, participant: Option<String>) -> OperationContext {
+    pub fn operation(&self, handle: String) -> OperationContext {
         OperationContext {
             handle,
-            participant,
             control: self.clone(),
         }
     }
@@ -132,7 +130,7 @@ impl BarrierControl {
                 *released = true;
             }
         }
-        if barrier.entries.len() == barrier.participants.len()
+        if barrier.entries.len() >= barrier.participants.len()
             && barrier.entries.values().all(|released| *released)
         {
             state.active = None;
@@ -186,12 +184,6 @@ impl OperationContext {
         let Some(barrier) = state.barriers.get_mut(&id) else {
             return Ok(());
         };
-        if !barrier
-            .participants
-            .contains(self.participant.as_deref().unwrap_or(&self.handle))
-        {
-            return Ok(());
-        }
         barrier.entries.entry(self.handle.clone()).or_insert(false);
         shared.changed.notify_all();
         loop {

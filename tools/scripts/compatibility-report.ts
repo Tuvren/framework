@@ -33,6 +33,7 @@ import {
   CERTIFICATION_MANIFEST_PATH,
   parseCertificationManifest,
 } from "../conformance/certification/certification-manifest.js";
+import { selectCheck } from "../conformance/harness/check-selection.js";
 import { runCommand } from "./lib/command-runner.js";
 import {
   assertConformanceEvidence,
@@ -900,17 +901,10 @@ const checkLiveSuiteTopology = async (
   }
 };
 
-const hasRequiredCapabilities = (
-  requiredCapabilities: unknown,
-  capabilities: ReadonlySet<string>
-): boolean =>
-  readStringArray(requiredCapabilities).every((capability) =>
-    capabilities.has(capability)
-  );
-
-const readLivePlanChecks = (
+export const readLivePlanChecks = (
   planJson: string,
-  capabilities: ReadonlySet<string>
+  capabilities: ReadonlySet<string>,
+  protocolVersion: string
 ): { allCheckIds: string[]; applicableCheckIds: string[] } => {
   const plan: unknown = JSON.parse(planJson);
   if (!isRecord(plan)) {
@@ -925,18 +919,29 @@ const readLivePlanChecks = (
     .map((check) => check.checkId)
     .filter((checkId): checkId is string => typeof checkId === "string");
 
-  if (!hasRequiredCapabilities(applicability?.capabilities, capabilities)) {
-    return { allCheckIds, applicableCheckIds: [] };
-  }
-
   const applicableCheckIds: string[] = [];
+  const required = readStringArray(applicability?.capabilities);
+  const requested = new Set<string>();
 
   for (const check of checks) {
     if (typeof check.checkId !== "string") {
       continue;
     }
 
-    if (hasRequiredCapabilities(check.capabilities, capabilities)) {
+    const steps = Array.isArray(check.steps)
+      ? check.steps.filter(isRecord).map((step) => ({
+          action: typeof step.action === "string" ? step.action : undefined,
+        }))
+      : undefined;
+    const selection = selectCheck({
+      adapter: capabilities,
+      checkId: check.checkId,
+      protocolVersion,
+      requested,
+      required: [...required, ...readStringArray(check.capabilities)],
+      steps,
+    });
+    if (selection.selected) {
       applicableCheckIds.push(check.checkId);
     }
   }
@@ -953,6 +958,15 @@ const readLiveConformanceRunner = async (
   const manifest = await readAdapterManifest(runner.adapterManifestPath);
   const suite = readAdapterSuite(manifest, runner.adapterManifestPath);
   const capabilities = new Set(readStringArray(manifest.capabilities));
+  if (
+    !isRecord(manifest.protocol) ||
+    typeof manifest.protocol.version !== "string"
+  ) {
+    throw new Error(
+      `${runner.adapterManifestPath} must declare a protocol version`
+    );
+  }
+  const protocolVersion = manifest.protocol.version;
   const packetPaths = readStringArray(manifest.authorityPackets);
   const applicableCheckIds: string[] = [];
   const allCheckIds: string[] = [];
@@ -985,7 +999,11 @@ const readLiveConformanceRunner = async (
       seenPlanPaths.add(planPath);
 
       const planJson = await readFile(planPath, "utf-8");
-      const planChecks = readLivePlanChecks(planJson, capabilities);
+      const planChecks = readLivePlanChecks(
+        planJson,
+        capabilities,
+        protocolVersion
+      );
       applicableCheckIds.push(...planChecks.applicableCheckIds);
       allCheckIds.push(...planChecks.allCheckIds);
     });

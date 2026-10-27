@@ -15,6 +15,7 @@ const dispatch = async (_operation, input) => {
     if (input === "invalid") return { kind: "result", value: { result: 1n } };
     if (input === "zero") return { kind: "result", value: { result: -0 } };
     if (input === "nan") return { kind: "result", value: { result: NaN } };
+    if (input === "badOutcome") return { kind: "unexpected" };
     return { kind: "result", value: { result: input } };
 };
 await serveStdioAdapter({
@@ -55,6 +56,28 @@ test("legacy lifecycle reads and destruction wait for blocking dispatch", async 
     ]);
     await timedOut;
     await expect(client.destroyInstance("instance")).resolves.toBeUndefined();
+  } finally {
+    await client.shutdown();
+  }
+});
+
+test("a malformed await outcome is rejected before assertion evaluation", async () => {
+  const client = new JsonRpcAdapterClient({
+    command: ["bun", "--eval", script],
+    cwd: process.cwd(),
+    timeoutMs: 1000,
+  });
+  try {
+    const started = await client.startOperation(
+      "probe",
+      "badOutcome",
+      "instance"
+    );
+    await expect(
+      client.awaitOperation(started.operationHandle)
+    ).rejects.toThrow(
+      "adapter awaitOperation returned invalid OperationOutcome"
+    );
   } finally {
     await client.shutdown();
   }
@@ -211,12 +234,12 @@ test("real stdio host cancels a gated native operation after its entry receipt",
       );
       const first = await client.startOperation(
         "kernel.store.put",
-        { barrierParticipant: "first", blob: { $bytes: "06" } },
+        { blob: { $bytes: "06" } },
         instance
       );
       const second = await client.startOperation(
         "kernel.store.put",
-        { barrierParticipant: "second", blob: { $bytes: "07" } },
+        { blob: { $bytes: "07" } },
         instance
       );
       for (const started of [first, second]) {
@@ -315,7 +338,7 @@ test("real stdio destruction cancels a named barrier-held operation before clean
     );
     const first = await client.startOperation(
       "kernel.store.put",
-      { barrierParticipant: "first", blob: { $bytes: "08" } },
+      { blob: { $bytes: "08" } },
       instance
     );
     await client.dispatch(

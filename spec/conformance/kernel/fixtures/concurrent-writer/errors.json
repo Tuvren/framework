@@ -13,10 +13,6 @@
           "minLength": 1
         }
       }
-    },
-    "outcome": {
-      "type": "string",
-      "enum": ["result", "error"]
     }
   }
 }

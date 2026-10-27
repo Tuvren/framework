@@ -256,7 +256,10 @@ const dispatchMethod = async (
       return null;
     }
     default: {
-      throw new Error(`unsupported adapter method ${method}`);
+      throw new AdapterProtocolError(
+        "adapter_method_not_implemented",
+        `unsupported adapter method ${method}`
+      );
     }
   }
 };

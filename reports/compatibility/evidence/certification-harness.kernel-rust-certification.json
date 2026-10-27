@@ -3,6 +3,7 @@
   "boundary": "kernel",
   "capabilities": [
     "kernel-protocol.thread.enumeration",
+    "kernel.barrier",
     "kernel.fault-injection",
     "kernel.logical",
     "kernel.protocol",
@@ -11,6 +12,304 @@
     "kernel.syscall"
   ],
   "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.7.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.8.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.9.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.10.schemaValid",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.11.resultField",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.12.resultField",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.13.resultField",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.concurrent_writer.a_first",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.concurrent-writer.syscall",
+        "adapterErrors": {
+          "secondOutcome": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch head can only move along one lineage"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "head"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.7.resultField",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.8.resultField",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.9.resultField",
+          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.10.schemaValid",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.11.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.12.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.13.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.concurrent_writer.b_first",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.concurrent-writer.syscall",
+        "adapterErrors": {
+          "firstOutcome": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch head can only move along one lineage"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "head"
+        ]
+      },
+      "status": "pass"
+    },
     {
       "assertionResults": [
         {
@@ -6045,8 +6344,6 @@
   "exitCode": 0,
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
-    "kernel.syscall.concurrent_writer.a_first",
-    "kernel.syscall.concurrent_writer.b_first",
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
     "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
     "kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -6077,10 +6374,10 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 114,
+    "passedChecks": 116,
     "totalChecks": 139,
-    "applicableChecks": 114,
-    "nonApplicableChecks": 25
+    "applicableChecks": 116,
+    "nonApplicableChecks": 23
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
