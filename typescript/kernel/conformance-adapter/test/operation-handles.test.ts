@@ -323,6 +323,87 @@ test("real host frames classify pre-entry cancellation separately and prevent wr
   }
 });
 
+test.each(["cancel", "destroy"] as const)(
+  "%s of held work produces a protocol error",
+  async (action) => {
+    const bridge = createSyscallBindings({
+      adapterId: "held-cancel",
+      backend: "memory",
+      capabilities: ["kernel.syscall", "kernel.barrier"],
+    });
+    const adapter: StdioConformanceAdapter = {
+      ...bridge,
+      dispatch: async (operation, input, _controls, instance) =>
+        await bridge.dispatch(operation, input, instance),
+      initialize: (packetId, planVersion) => ({
+        adapterId: "held-cancel",
+        capabilities: [],
+        packetId,
+        planVersion,
+      }),
+    };
+    const instance = await bridge.createInstance();
+    try {
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "backend", nowMs: 0 },
+        instance
+      );
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "worker", nowMs: 0 },
+        instance
+      );
+      await bridge.dispatch(
+        "kernel.barrier.arm",
+        {
+          barrierId: "writers",
+          participants: ["a", "b"],
+          seam: "kernel.persistence.before-transact",
+        },
+        instance
+      );
+      const { operationHandle } = await bridge.startOperation(
+        "kernel.store.put",
+        { blob: { $bytes: "06" } },
+        instance
+      );
+      await bridge.dispatch(
+        "kernel.barrier.wait",
+        {
+          barrierId: "writers",
+          operationHandle,
+          timeoutMs: 1000,
+        },
+        instance
+      );
+      const frame = JSON.stringify({
+        id: 7,
+        jsonrpc: "2.0",
+        method: "awaitOperation",
+        params: { operationHandle },
+      });
+      const pending = handleStdioAdapterLine(adapter, frame);
+      await (action === "cancel"
+        ? bridge.cancelOperation(operationHandle, "cancel at gate")
+        : bridge.destroyInstance(instance));
+      expect(await pending).toEqual({
+        error: {
+          code: "adapter_host_error",
+          message:
+            action === "cancel"
+              ? "cancel at gate"
+              : "adapter instance destroyed",
+        },
+        id: 7,
+        jsonrpc: "2.0",
+      });
+    } finally {
+      await bridge.destroyInstance(instance);
+    }
+  }
+);
+
 test("destroy waits for a legacy dispatch before backend cleanup", async () => {
   const entered = Promise.withResolvers<undefined>();
   const release = Promise.withResolvers<undefined>();

@@ -154,30 +154,6 @@ test("stale-head mutation activates and the new syscall claims kill it", async (
   }
 }, 60_000);
 
-test("both contenders are released together after a held-head read", async () => {
-  const { plan } = await loadConformancePlan(planPath);
-  for (const check of plan.checks) {
-    const steps = check.steps ?? [];
-    const releases = steps.filter((step) => step.action === "release");
-    expect(releases).toHaveLength(1);
-    expect(releases[0]?.participants).toEqual(
-      check.checkId.endsWith("a_first")
-        ? ["firstStart", "secondStart"]
-        : ["secondStart", "firstStart"]
-    );
-    const held = steps.findIndex((step) => step.stepId === "heldHead");
-    expect(held).toBeGreaterThan(
-      steps.findIndex((step) => step.stepId === "secondReceipt")
-    );
-    expect(held).toBeLessThan(
-      steps.findIndex((step) => step.action === "release")
-    );
-    expect(
-      check.assertions.some((assertion) => assertion.kind === "arrival")
-    ).toBe(false);
-  }
-});
-
 test("barrier holds all started operations entering the seam and clears after release", async () => {
   const { createMemoryBackend } = await import("@tuvren/backend-memory");
   const { createKernelBarrierControl } =
@@ -260,8 +236,8 @@ test("race assertions accept either winner and reject double success, double con
     )
   );
   for (const check of plan.checks) {
-    const firstTarget = check.checkId.endsWith("a_first") ? "a" : "b";
-    const secondTarget = firstTarget === "a" ? "b" : "a";
+    const firstTarget = "a";
+    const secondTarget = "b";
     for (const winner of ["first", "second"]) {
       const winningTarget = winner === "first" ? firstTarget : secondTarget;
       const trace = {

@@ -270,7 +270,7 @@
         "adapterErrors": {
           "firstOutcome": {
             "code": "kernel_runtime_lateral_head_movement",
-            "message": "branch.setHead cannot move laterally: \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" and \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" share no lineage"
+            "message": "branch.setHead cannot move laterally: \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" and \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" share no lineage"
           }
         },
         "traceStepIds": [

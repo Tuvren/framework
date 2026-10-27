@@ -24,6 +24,7 @@ interface Barrier {
 interface OperationContext {
   operationHandle: string;
   signal?: AbortSignal;
+  interruption?: Error;
 }
 
 const requireString = (value: unknown): string => {
@@ -70,11 +71,15 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
         const abort = (): void => {
           entry?.gate.reject(operation.signal?.reason);
         };
-        operation.signal?.throwIfAborted();
-        operation.signal?.addEventListener("abort", abort, { once: true });
         try {
+          operation.signal?.throwIfAborted();
+          operation.signal?.addEventListener("abort", abort, { once: true });
           await entry.gate.promise;
           operation.signal?.throwIfAborted();
+        } catch (error: unknown) {
+          operation.interruption =
+            error instanceof Error ? error : new Error(String(error));
+          throw error;
         } finally {
           operation.signal?.removeEventListener("abort", abort);
         }
@@ -151,7 +156,14 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
       operationHandle: string,
       signal: AbortSignal | undefined,
       work: () => Promise<T>
-    ): Promise<T> => await context.run({ operationHandle, signal }, work),
+    ): Promise<T> => {
+      const operation: OperationContext = { operationHandle, signal };
+      const result = await context.run(operation, work);
+      if (operation.interruption !== undefined) {
+        throw operation.interruption;
+      }
+      return result;
+    },
     wait: async (id: unknown, handle: unknown, timeout: unknown) => {
       const barrier = read(id);
       const operationHandle = requireString(handle);

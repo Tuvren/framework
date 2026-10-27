@@ -1308,7 +1308,7 @@
           "arguments": {
             "branchId": "common",
             "turnNodeHash": {
-              "$ref": "capture.bCheckpoint.turnNodeHash"
+              "$ref": "capture.aCheckpoint.turnNodeHash"
             }
           },
           "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
@@ -1322,7 +1322,7 @@
           "arguments": {
             "branchId": "common",
             "turnNodeHash": {
-              "$ref": "capture.aCheckpoint.turnNodeHash"
+              "$ref": "capture.bCheckpoint.turnNodeHash"
             }
           },
           "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
@@ -1462,7 +1462,7 @@
         {
           "kind": "resultField",
           "field": "$.trace.firstOutcome.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash",
+          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash",
           "when": {
             "path": "$.result.trace.firstOutcome.outcome.kind",
             "equals": "result"
@@ -1498,7 +1498,7 @@
         {
           "kind": "resultField",
           "field": "$.trace.secondOutcome.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash",
+          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash",
           "when": {
             "path": "$.result.trace.firstOutcome.outcome.kind",
             "equals": "error"

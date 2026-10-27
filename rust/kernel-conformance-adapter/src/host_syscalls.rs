@@ -733,7 +733,7 @@ impl Syscalls {
                 .ok_or_else(|| invalid("kernel initialization failed"))?
                 .clone();
             drop(kernel_guard);
-            let kernel = match context {
+            let kernel = match &context {
                 Some(context) => {
                     if let Some(reason) = context.cancellation() {
                         return Err(adapter_error(
@@ -742,11 +742,15 @@ impl Syscalls {
                             None,
                         ));
                     }
-                    kernel.for_operation(context)
+                    kernel.for_operation(context.clone())
                 }
                 None => kernel,
             };
-            binding(&kernel, input)
+            let result = binding(&kernel, input);
+            if let Some(reason) = context.as_ref().and_then(OperationContext::interruption) {
+                return Err(host_error(&reason));
+            }
+            result
         } else if let Some((_, binding)) = CONTROLS.iter().find(|(name, _)| *name == operation) {
             binding(instance, input)
         } else {

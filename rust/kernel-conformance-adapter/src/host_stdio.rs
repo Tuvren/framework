@@ -73,6 +73,10 @@ pub(crate) fn serve(syscalls: Arc<Syscalls>) {
                 );
                 if let Ok(mut output) = output.lock() {
                     let _ = writeln!(output, "{response}");
+                    let _ = output.flush();
+                }
+                if error.kind() == io::ErrorKind::InvalidData {
+                    continue;
                 }
                 break;
             }
@@ -150,6 +154,7 @@ pub(crate) fn serve(syscalls: Arc<Syscalls>) {
             }
         }));
     }
+    let _ = syscalls.shutdown();
     for task in tasks {
         let _ = task.join();
     }
