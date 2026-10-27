@@ -69,6 +69,25 @@ tickets:
       evidence: "Assert the check fails when contenders run sequentially (no second receipt before release), passes on the TypeScript memory kernel in both orderings, and kills the stale-head mutant."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
+    deviations:
+      - files:
+          - tools/conformance/plan-compiler/barrier-rules.ts
+          - tools/conformance/plan-compiler/barrier-rules.test.ts
+          - tools/conformance/plan-compiler/certification-rules.ts
+          - tools/conformance/plan-compiler/index.ts
+          - tools/schemas/conformance-plan.schema.json
+        justification: "Barrier steps (arm, wait, release) are new plan step kinds; the plan compiler and plan schema must admit and validate them, or the syscall concurrent-writer plan cannot compile."
+      - files:
+          - spec/conformance/kernel/operations.json
+          - spec/conformance/kernel/fixtures/concurrent-writer
+          - spec/kernel/authority-packet.json
+        justification: "The barrier control operations need catalog entries with closed observation schemas, the race needs its fixtures, and the new syscall plan must be registered in the kernel authority packet beside the unchanged legacy plan."
+      - files:
+          - tools/scripts/verify.ts
+          - typescript/kernel/protocol/test/kernel-certification-authority.test.ts
+        justification: "The verify gate and the kernel authority test enumerate registered certification plans and acceptance suites; both must include the new plan and its regression suites."
+      - files: [reports/compatibility]
+        justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
     status: planned
   - id: KRT-DE005
     title: Bring the Rust kernel adapter to protocol 0.2 and the writer race
@@ -120,3 +139,33 @@ tickets:
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
+decisions:
+  - id: OD-17
+    question: "The memory kernels apply a branch-head compare-and-set under a per-scope exclusive lock, so a barrier seam at the compare-and-set would serialize the contenders. What does the syscall concurrent-writer check certify?"
+    blocks: [KRT-DE003, KRT-DE005, KRT-DE006]
+    options:
+      - name: Certify transaction-entry overlap and prove sensitivity with the stale-read mutant
+        pros:
+          - "Both contenders are held at transaction entry and released together, so each reads the common base head before either commits; a kernel that validates and commits in separate transactions is caught, as the harness-independent stale-read mutant shows."
+          - "No product change to the kernels' locking; the barrier stays a test-only seam."
+        cons:
+          - "The check does not prove the compare-and-set itself runs concurrently; on today's memory kernels execution after release is equivalent to two serialized writes that both started from the base head."
+      - name: Move the seam to the compare-and-set by changing kernel locking
+        pros:
+          - "The check would prove overlap at the exact commit point."
+        cons:
+          - "Requires a product change to the memory kernels' concurrency model, outside this epic's certification scope, and an architecture record."
+    recommendation: Certify transaction-entry overlap and prove sensitivity with the stale-read mutant
+    closure: ruling
+    ruler: "Owner, after the EPIC-DE merge"
+    status: proposed
+    asked:
+      date: 2026-10-27
+      in: EPIC-DE
+    proposed_by: EPIC-DE @ 2f3d11b
+    interim:
+      assumption: "The barrier seam sits at transaction entry; the concurrent-writer certificate claims overlapping transaction entry, not overlapping compare-and-set."
+      applied_by:
+        - typescript/kernel/testkit/src/lib/kernel-barrier-control.ts
+        - spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json
+        - KRT-DE003
