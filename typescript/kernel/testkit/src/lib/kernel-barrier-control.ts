@@ -17,14 +17,14 @@ interface Entry {
 interface Barrier {
   barrierId: string;
   seam: string;
-  participantCount: number;
+  participants: ReadonlySet<string>;
   entries: Map<string, Entry>;
   arrivals: Map<string, PromiseWithResolvers<EntryReceipt>>;
 }
 interface OperationContext {
   operationHandle: string;
   signal?: AbortSignal;
-  entered?: boolean;
+  participant?: string;
 }
 
 const requireString = (value: unknown): string => {
@@ -35,9 +35,6 @@ const requireString = (value: unknown): string => {
 };
 
 const context = new AsyncLocalStorage<OperationContext>();
-
-export const hasKernelBarrierEntry = (): boolean =>
-  context.getStore()?.entered === true;
 
 export const createKernelBarrierControl = (inner: RuntimeBackend) => {
   const barriers = new Map<string, Barrier>();
@@ -54,8 +51,13 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
     transact: async (work) => {
       const operation = context.getStore();
       const barrier = active;
-      if (operation !== undefined && barrier !== undefined) {
-        operation.entered = true;
+      if (
+        operation !== undefined &&
+        barrier !== undefined &&
+        barrier.participants.has(
+          operation.participant ?? operation.operationHandle
+        )
+      ) {
         let entry = barrier.entries.get(operation.operationHandle);
         if (entry === undefined) {
           entry = {
@@ -94,7 +96,10 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
         seam !== "kernel.persistence.before-transact" ||
         !Array.isArray(participants) ||
         participants.length < 2 ||
-        participants.some((value) => typeof value !== "string")
+        participants.some(
+          (value) => typeof value !== "string" || value.length === 0
+        ) ||
+        new Set(participants).size !== participants.length
       ) {
         throw new TypeError("unsupported barrier seam or participants");
       }
@@ -105,7 +110,7 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
         arrivals: new Map(),
         barrierId,
         entries: new Map(),
-        participantCount: participants.length,
+        participants: new Set(participants.map(requireString)),
         seam,
       };
       barriers.set(barrierId, active);
@@ -116,7 +121,7 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
       active = undefined;
       for (const barrier of barriers.values()) {
         for (const entry of barrier.entries.values()) {
-          entry.gate.resolve(null);
+          entry.gate.reject(new Error("barrier closed before release"));
         }
         for (const arrival of barrier.arrivals.values()) {
           arrival.reject(
@@ -142,7 +147,7 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
         entry.gate.resolve(null);
       }
       if (
-        barrier.entries.size === barrier.participantCount &&
+        barrier.entries.size === barrier.participants.size &&
         [...barrier.entries.values()].every((entry) => entry.released)
       ) {
         active = undefined;
@@ -152,8 +157,10 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
     run: async <T>(
       operationHandle: string,
       signal: AbortSignal | undefined,
-      work: () => Promise<T>
-    ): Promise<T> => await context.run({ operationHandle, signal }, work),
+      work: () => Promise<T>,
+      participant?: string
+    ): Promise<T> =>
+      await context.run({ operationHandle, participant, signal }, work),
     wait: async (id: unknown, handle: unknown, timeout: unknown) => {
       const barrier = read(id);
       const operationHandle = requireString(handle);

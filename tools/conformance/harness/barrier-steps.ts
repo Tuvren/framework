@@ -30,10 +30,28 @@ export const createBarrierSteps = () => {
       participants: step.participants,
     };
   };
+  const startInput = (step: ConformancePlanStep, input: unknown): unknown => {
+    if (
+      ![...barriers.values()].some((barrier) =>
+        barrier.participants.includes(step.stepId)
+      )
+    ) {
+      return input;
+    }
+    if (typeof input !== "object" || input === null || Array.isArray(input)) {
+      throw new ArgumentResolutionError(
+        "barrier participant requires an arguments object"
+      );
+    }
+    return { ...input, barrierParticipant: step.stepId };
+  };
   return {
     input: (step: ConformancePlanStep, input: unknown): unknown => {
       if (step.action === "barrier") {
         return armInput(step);
+      }
+      if (step.action === "start") {
+        return startInput(step, input);
       }
       if (step.action !== "release") {
         return input;

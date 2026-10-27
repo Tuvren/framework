@@ -453,6 +453,7 @@ type AssertionScope =
     };
 
 type PathTarget =
+  | { kind: "outcomeKind"; operationId: string }
   | { kind: "external"; segments: readonly PathSegment[] }
   | { kind: "invalid"; reason: string }
   | {
@@ -491,6 +492,10 @@ const locatePath = (
       kind: "invalid",
       reason: `reads $.${renderPath(segments)}, which is not inside a trace step observation`,
     };
+  }
+
+  if (root === "outcome" && rest.length === 1 && rest[0] === "kind") {
+    return { kind: "outcomeKind", operationId: scope.operationId };
   }
 
   if (root === "result" || root === "state" || root === "events") {
@@ -814,6 +819,10 @@ const checkObservationPath = (
     problem = allowExternal
       ? undefined
       : `reads $.${renderPath(segments)}, which is not an observation`;
+  } else if (target.kind === "outcomeKind") {
+    problem = context.catalog.operations.has(target.operationId)
+      ? undefined
+      : `reads outcome kind of uncatalogued operation ${target.operationId}`;
   } else {
     problem =
       observationProblem(context.catalog, target) ??

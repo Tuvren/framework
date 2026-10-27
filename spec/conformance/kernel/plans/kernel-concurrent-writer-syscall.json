@@ -618,6 +618,15 @@
           ]
         },
         {
+          "stepId": "heldHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": []
+        },
+        {
           "stepId": "release",
           "operation": "kernel.barrier.release",
           "arguments": {},
@@ -631,10 +640,10 @@
             }
           ],
           "barrierId": "writers",
-          "participants": ["firstStart"]
+          "participants": ["firstStart", "secondStart"]
         },
         {
-          "stepId": "winner",
+          "stepId": "firstOutcome",
           "operation": "kernel.branch.setHead",
           "arguments": {
             "operationHandle": {
@@ -643,32 +652,10 @@
           },
           "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
           "assertions": [],
-          "action": "await",
-          "capture": [
-            {
-              "name": "winner",
-              "path": "result"
-            }
-          ]
+          "action": "await"
         },
         {
-          "stepId": "releaseSecond",
-          "operation": "kernel.barrier.release",
-          "arguments": {},
-          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
-          "assertions": [],
-          "action": "release",
-          "capture": [
-            {
-              "name": "releaseSecond",
-              "path": "result"
-            }
-          ],
-          "barrierId": "writers",
-          "participants": ["secondStart"]
-        },
-        {
-          "stepId": "loser",
+          "stepId": "secondOutcome",
           "operation": "kernel.branch.setHead",
           "arguments": {
             "operationHandle": {
@@ -732,14 +719,9 @@
           "equals": "kernel.persistence.before-transact"
         },
         {
-          "kind": "arrival",
-          "path": "$.arrivals.firstReceipt",
-          "lessThan": "$.arrivals.release"
-        },
-        {
           "kind": "resultField",
           "field": "$.trace.secondReceipt.result.operationHandle",
-          "equalsPath": "$.result.trace.releaseSecond.result.operationHandles.0"
+          "equalsPath": "$.result.trace.release.result.operationHandles.1"
         },
         {
           "kind": "resultField",
@@ -752,29 +734,86 @@
           "equals": "kernel.persistence.before-transact"
         },
         {
-          "kind": "arrival",
-          "path": "$.arrivals.secondReceipt",
-          "lessThan": "$.arrivals.release"
-        },
-        {
           "kind": "resultField",
-          "field": "$.trace.winner.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash"
+          "field": "$.trace.heldHead.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
         },
         {
           "kind": "schemaValid",
-          "path": "$.state.trace.loser.state.adapterError",
-          "schema": "$.fixture.expected.lateralConflict"
+          "path": "$.result.trace.firstOutcome.outcome.kind",
+          "schema": "$.fixture.expected.outcome"
+        },
+        {
+          "kind": "schemaValid",
+          "path": "$.state.trace.secondOutcome.state.adapterError",
+          "schema": "$.fixture.expected.lateralConflict",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondOutcome.outcome.kind",
+          "equals": "error",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstOutcome.result.branch.headTurnNodeHash",
+          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
         },
         {
           "kind": "resultField",
           "field": "$.trace.head.result.headTurnNodeHash",
-          "equalsPath": "$.result.trace.winner.result.branch.headTurnNodeHash"
+          "equalsPath": "$.result.trace.firstOutcome.result.branch.headTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
         },
         {
-          "kind": "arrival",
-          "path": "$.arrivals.release",
-          "lessThan": "$.arrivals.winner"
+          "kind": "schemaValid",
+          "path": "$.state.trace.firstOutcome.state.adapterError",
+          "schema": "$.fixture.expected.lateralConflict",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondOutcome.outcome.kind",
+          "equals": "result",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondOutcome.result.branch.headTurnNodeHash",
+          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.head.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.secondOutcome.result.branch.headTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
         }
       ],
       "evidence": [
@@ -1395,6 +1434,15 @@
           ]
         },
         {
+          "stepId": "heldHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": []
+        },
+        {
           "stepId": "release",
           "operation": "kernel.barrier.release",
           "arguments": {},
@@ -1408,10 +1456,10 @@
             }
           ],
           "barrierId": "writers",
-          "participants": ["firstStart"]
+          "participants": ["firstStart", "secondStart"]
         },
         {
-          "stepId": "winner",
+          "stepId": "firstOutcome",
           "operation": "kernel.branch.setHead",
           "arguments": {
             "operationHandle": {
@@ -1420,32 +1468,10 @@
           },
           "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
           "assertions": [],
-          "action": "await",
-          "capture": [
-            {
-              "name": "winner",
-              "path": "result"
-            }
-          ]
+          "action": "await"
         },
         {
-          "stepId": "releaseSecond",
-          "operation": "kernel.barrier.release",
-          "arguments": {},
-          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
-          "assertions": [],
-          "action": "release",
-          "capture": [
-            {
-              "name": "releaseSecond",
-              "path": "result"
-            }
-          ],
-          "barrierId": "writers",
-          "participants": ["secondStart"]
-        },
-        {
-          "stepId": "loser",
+          "stepId": "secondOutcome",
           "operation": "kernel.branch.setHead",
           "arguments": {
             "operationHandle": {
@@ -1509,14 +1535,9 @@
           "equals": "kernel.persistence.before-transact"
         },
         {
-          "kind": "arrival",
-          "path": "$.arrivals.firstReceipt",
-          "lessThan": "$.arrivals.release"
-        },
-        {
           "kind": "resultField",
           "field": "$.trace.secondReceipt.result.operationHandle",
-          "equalsPath": "$.result.trace.releaseSecond.result.operationHandles.0"
+          "equalsPath": "$.result.trace.release.result.operationHandles.1"
         },
         {
           "kind": "resultField",
@@ -1529,29 +1550,86 @@
           "equals": "kernel.persistence.before-transact"
         },
         {
-          "kind": "arrival",
-          "path": "$.arrivals.secondReceipt",
-          "lessThan": "$.arrivals.release"
-        },
-        {
           "kind": "resultField",
-          "field": "$.trace.winner.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash"
+          "field": "$.trace.heldHead.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
         },
         {
           "kind": "schemaValid",
-          "path": "$.state.trace.loser.state.adapterError",
-          "schema": "$.fixture.expected.lateralConflict"
+          "path": "$.result.trace.firstOutcome.outcome.kind",
+          "schema": "$.fixture.expected.outcome"
+        },
+        {
+          "kind": "schemaValid",
+          "path": "$.state.trace.secondOutcome.state.adapterError",
+          "schema": "$.fixture.expected.lateralConflict",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondOutcome.outcome.kind",
+          "equals": "error",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstOutcome.result.branch.headTurnNodeHash",
+          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
         },
         {
           "kind": "resultField",
           "field": "$.trace.head.result.headTurnNodeHash",
-          "equalsPath": "$.result.trace.winner.result.branch.headTurnNodeHash"
+          "equalsPath": "$.result.trace.firstOutcome.result.branch.headTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "result"
+          }
         },
         {
-          "kind": "arrival",
-          "path": "$.arrivals.release",
-          "lessThan": "$.arrivals.winner"
+          "kind": "schemaValid",
+          "path": "$.state.trace.firstOutcome.state.adapterError",
+          "schema": "$.fixture.expected.lateralConflict",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondOutcome.outcome.kind",
+          "equals": "result",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondOutcome.result.branch.headTurnNodeHash",
+          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.head.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.secondOutcome.result.branch.headTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.firstOutcome.outcome.kind",
+            "equals": "error"
+          }
         }
       ],
       "evidence": [

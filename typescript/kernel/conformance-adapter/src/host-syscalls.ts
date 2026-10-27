@@ -34,7 +34,6 @@ interface SyscallBinding {
   arguments: readonly unknown[];
   method?: string;
   recordResult?: boolean;
-  perOperationKernel?: boolean;
   protocolErrors?: boolean;
   target?: string;
 }
@@ -65,7 +64,6 @@ const parameters = {
   "kernel.branch.list": { arguments: ["threadId"] },
   "kernel.branch.setHead": {
     arguments: ["branchId", "turnNodeHash"],
-    perOperationKernel: true,
   },
   "kernel.clock.set": {
     arguments: ["domain", "nowMs"],
@@ -164,9 +162,7 @@ const isSyscallBinding = (value: unknown): value is SyscallBinding =>
   (value.recordResult === undefined ||
     typeof value.recordResult === "boolean") &&
   (value.protocolErrors === undefined ||
-    typeof value.protocolErrors === "boolean") &&
-  (value.perOperationKernel === undefined ||
-    typeof value.perOperationKernel === "boolean");
+    typeof value.protocolErrors === "boolean");
 
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   isRecord(value) &&
@@ -395,7 +391,6 @@ interface Instance {
   clock: ReturnType<typeof createKernelTestClock>;
   fault: ReturnType<typeof createKernelFaultControl>;
   barrier: ReturnType<typeof createKernelBarrierControl>;
-  createKernel: () => ReturnType<typeof createConformanceRuntimeKernel>;
 }
 
 interface InstanceState {
@@ -506,7 +501,6 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
             barrier,
             cleanup: backend.cleanup,
             clock,
-            createKernel,
             fault,
             kernel: createKernel(),
           };
@@ -530,17 +524,19 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     const target: unknown =
       typeof binding.target === "string"
         ? Reflect.get(opened, binding.target)
-        : Reflect.get(
-            binding.perOperationKernel === true
-              ? opened.createKernel()
-              : opened.kernel,
-            group
-          );
+        : Reflect.get(opened.kernel, group);
     const invoke = async () =>
       await invokeBinding(target, binding, input, method);
     return operationHandle === undefined
       ? await invoke()
-      : await opened.barrier.run(operationHandle, signal, invoke);
+      : await opened.barrier.run(
+          operationHandle,
+          signal,
+          invoke,
+          isRecord(input) && typeof input.barrierParticipant === "string"
+            ? input.barrierParticipant
+            : undefined
+        );
   };
   const trackedDispatch = async (
     operation: string,

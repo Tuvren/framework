@@ -32,10 +32,14 @@
         "kernel.crash-recovery.concurrent_writer.1.resultField",
         "kernel.crash-recovery.concurrent_writer.3.resultField",
         "kernel.crash-recovery.concurrent_writer.4.resultField",
-        "kernel.syscall.concurrent_writer.a_first.14.schemaValid",
-        "kernel.syscall.concurrent_writer.a_first.15.resultField",
-        "kernel.syscall.concurrent_writer.b_first.14.schemaValid",
-        "kernel.syscall.concurrent_writer.b_first.15.resultField"
+        "kernel.syscall.concurrent_writer.a_first.13.schemaValid",
+        "kernel.syscall.concurrent_writer.a_first.14.resultField",
+        "kernel.syscall.concurrent_writer.a_first.17.schemaValid",
+        "kernel.syscall.concurrent_writer.a_first.18.resultField",
+        "kernel.syscall.concurrent_writer.b_first.13.schemaValid",
+        "kernel.syscall.concurrent_writer.b_first.14.resultField",
+        "kernel.syscall.concurrent_writer.b_first.17.schemaValid",
+        "kernel.syscall.concurrent_writer.b_first.18.resultField"
       ]
     },
     {
