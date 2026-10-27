@@ -26,6 +26,10 @@ impl InMemoryKernel {
         _run_id: Option<&str>,
         work: impl FnOnce(&Self) -> KernelResult<T>,
     ) -> KernelResult<T> {
+        #[cfg(feature = "conformance")]
+        if let Some(operation) = &self.operation {
+            operation.enter()?;
+        }
         let mut state = self.lock_state()?;
         let snapshot = state.begin_journal();
         let working = Self {

@@ -8,6 +8,7 @@ use serde::{Deserialize, Deserializer};
 
 use crate::{EpochMs, KernelError, KernelRecord, KernelResult};
 
+pub mod barrier;
 pub mod mutants;
 
 const MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
