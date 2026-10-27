@@ -216,3 +216,37 @@ decisions:
         - tools/conformance/adapter-protocol/index.ts
         - tools/conformance/adapter-protocol/stdio-host.ts
         - KRT-DE005
+  - id: OD-19
+    question: "kernel.edge-validation selects both the observable syscall edge checks and the legacy composite edge-validation handler, so an adapter whose kernel passes the syscall checks cannot claim it without also owing composites it never bound. How should kernel.memory's edge-validation obligations select?"
+    blocks: [KRT-DE006]
+    options:
+      - name: Split the capability; legacy composites require kernel.edge-validation.composite
+        pros:
+          - "Each capability names one surface; the syscall checks select on observable rejection, and the bespoke handler surface retires mechanically in DJ."
+          - "Every adapter that binds the composite today claims the new capability, so no adapter loses legacy coverage, and the Rust kernel.memory run has no non-applicable required check."
+        cons:
+          - "Touches the legacy plan's capability metadata and the Go, Python, Dart, and TypeScript manifests before DJ."
+      - name: Profile-scoped selection for certificate runs
+        pros:
+          - "Leaves the legacy plans untouched."
+        cons:
+          - "Redefines an unfiltered certificate run, and the fleet run still fails for Rust once it claims the capability."
+      - name: Rust stays uncertified for kernel.memory until DJ
+        pros:
+          - "No selection change."
+        cons:
+          - "The second kernel language is not certified in the epic that exists to certify it, though its kernel already passes the checks."
+    recommendation: Split the capability; legacy composites require kernel.edge-validation.composite
+    closure: ruling
+    ruler: "Owner, after the EPIC-DE merge"
+    status: proposed
+    asked:
+      date: 2026-10-27
+      in: EPIC-DE
+    proposed_by: EPIC-DE @ 9a23bc6
+    interim:
+      assumption: "The kernel.protocol.edge-validation composite operation and its seven legacy kernel-protocol-af checks require kernel.edge-validation.composite; every adapter that binds the composite claims it; the Rust adapter claims kernel.edge-validation only. This resolves github#205."
+      applied_by:
+        - spec/conformance/kernel/operations.json
+        - spec/conformance/kernel/plans/kernel-protocol-extended.json
+        - KRT-DE006
