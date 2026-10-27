@@ -205,10 +205,6 @@ export const computeVerifierDigests = async (
     ...(await filesUnder(path.join(ROOT, "spec"))),
     ...(await filesUnder(path.join(ROOT, "tools/schemas"))),
     path.join(ROOT, "tools/conformance/certification/certified-projects.json"),
-    path.join(
-      ROOT,
-      "tools/conformance/meta-conformance/kernel-memory-undetected.json"
-    ),
     ...(
       await filesUnder(path.join(ROOT, "tools/conformance/adapter-protocol"))
     ).filter((file) => file.endsWith(".schema.json")),

@@ -39,7 +39,7 @@ esac
   }
 });
 
-test("the conformance lane fails when a required profile certificate is uncertified", async () => {
+test("the conformance lane propagates a required profile harness failure", async () => {
   const directory = await mkdtemp(
     path.join(tmpdir(), "tuvren-certificate-exit-")
   );

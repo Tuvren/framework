@@ -170,7 +170,7 @@ export const createKernelVerificationPhases = (options: {
               "--parallel=3",
               ...cacheModeArgs,
             ],
-            id: "kernel memory, SQLite, and PostgreSQL conformance",
+            id: "TypeScript and Rust kernel conformance (memory, SQLite, and PostgreSQL)",
           },
           {
             command: [

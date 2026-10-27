@@ -976,7 +976,7 @@ const runTraceCheck = async (
         startedOperations,
         step,
       });
-      barriers.observe(step, outcome);
+      barriers.observe(step, input, outcome);
       const arrivalSequence = client.latestArrivalSequence();
       arrivals[step.stepId] = arrivalSequence;
       recordSchedule(recorder, step, arrivalSequence, input);

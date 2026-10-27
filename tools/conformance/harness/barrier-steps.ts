@@ -85,7 +85,11 @@ export const createBarrierSteps = (
       );
       return { barrierId: step.barrierId, operationHandles };
     },
-    observe: (step: ConformancePlanStep, outcome: OperationOutcome): void => {
+    observe: (
+      step: ConformancePlanStep,
+      input: unknown,
+      outcome: OperationOutcome
+    ): void => {
       if (
         outcome.kind !== "result" ||
         typeof outcome.value !== "object" ||
@@ -109,10 +113,15 @@ export const createBarrierSteps = (
         );
       }
       if (
+        step.operation === "kernel.barrier.wait" &&
+        typeof input === "object" &&
+        input !== null &&
+        "operationHandle" in input &&
         typeof receipt === "object" &&
         receipt !== null &&
         "operationHandle" in receipt &&
         typeof receipt.operationHandle === "string" &&
+        receipt.operationHandle === input.operationHandle &&
         "barrierId" in receipt &&
         typeof receipt.barrierId === "string" &&
         "seam" in receipt &&

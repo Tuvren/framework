@@ -63,6 +63,118 @@ const run = async (
   return { code, stdout, stderr };
 };
 
+test("certificate environment identifies the adapter storage backend", async () => {
+  const adapter = adapters[0];
+  const manifest = await readAdapterManifest(adapter);
+  const [profile] = await readClaimedProfiles(
+    manifest,
+    manifest.authorityPackets
+  );
+  if (profile === undefined) {
+    throw new Error("missing memory profile");
+  }
+  const before = await computeCertificateDigests(manifest, adapter);
+  for (const [storage, kind] of [
+    ["none", "memory"],
+    ["sqlite-directory", "sqlite"],
+    ["postgres-database", "postgres"],
+  ] as const) {
+    const bundle = await finishCertificate(
+      { adapter, capabilities: [], checks: [], packets: [], plans: [] },
+      { ...manifest, storage },
+      profile,
+      [],
+      [],
+      "pass",
+      before
+    );
+    const packageValue = record(
+      JSON.parse(
+        await readFile(
+          path.join(root, `typescript/kernel/backends/${kind}/package.json`),
+          "utf8"
+        )
+      )
+    );
+    expect(record(bundle.environment).backend).toEqual({
+      kind,
+      version: packageValue.version,
+    });
+  }
+}, 120_000);
+
+test("certificate matching enforces required controls and permits legacy fleet outcomes", () => {
+  const digest = "a".repeat(64);
+  const verifierDigests: VerifierDigests = {
+    harness: digest,
+    packet: digest,
+    plans: digest,
+    catalogs: digest,
+    fixtures: digest,
+    profiles: digest,
+    controls: digest,
+    verifierAuthority: digest,
+  };
+  const adapterIdentity = {
+    adapter: "adapter.json",
+    adapterManifest: digest,
+    implementation: digest,
+  };
+  const adapters = [adapterIdentity];
+  const makeReport = (requiredOutcome: string, legacyOutcome: string) => {
+    const reports = [
+      {
+        control: {
+          adapter: "adapter.json",
+          status: "pass",
+          conditionalAssertions: [],
+        },
+        counted: true,
+        findings: [],
+        mode: "enforcing",
+        notRun: [],
+        profile: "profile",
+        mutants: [
+          {
+            mutantId: "required",
+            kind: "implementation",
+            outcome: requiredOutcome,
+            activated: true,
+            designatedFailures: ["assertion"],
+          },
+          {
+            mutantId: "legacy",
+            kind: "implementation",
+            outcome: legacyOutcome,
+            activated: true,
+            designatedFailures: [],
+          },
+        ],
+      },
+    ];
+    const identity = {
+      profile: "profile",
+      status: "pass" as const,
+      verifierDigests,
+      adapters,
+      outcomes: controlOutcomes(reports),
+    };
+    return { reports, controlRun: { ...identity, id: controlRunId(identity) } };
+  };
+  const expected = {
+    ...adapterIdentity,
+    profile: "profile",
+    verifierDigests,
+    negativeControls: ["required"],
+    conditionalAssertions: [],
+  };
+  const passing = makeReport("killed", "survived");
+  expect(matchesControlRun(passing, expected)).toBe(passing.controlRun.id);
+  expect(
+    matchesControlRun(makeReport("survived", "killed"), expected)
+  ).toBeUndefined();
+});
+
 const checkDesignatedFailures = (report: unknown, manifest: unknown): void => {
   const reports = record(report).reports;
   const controls = record(manifest).controls;
@@ -342,9 +454,15 @@ test("real fleet controls certify both complete bundles and reject changed verif
       if (!Array.isArray(first.mutants)) {
         throw new TypeError("missing mutants");
       }
-      const mutant = record(first.mutants[0]);
+      const index = first.mutants.findIndex((value: unknown) =>
+        negativeControls.includes(string(record(value).mutantId))
+      );
+      if (index < 0) {
+        throw new Error("missing required control");
+      }
+      const mutant = record(first.mutants[index]);
       mutant.outcome = "survived";
-      first.mutants = [mutant, ...first.mutants.slice(1)];
+      first.mutants[index] = mutant;
       altered.reports[0] = first;
       const alteredRun = record(altered.controlRun);
       alteredRun.outcomes = controlOutcomes(altered.reports);

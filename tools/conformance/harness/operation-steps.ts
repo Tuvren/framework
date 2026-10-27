@@ -1,3 +1,5 @@
+import { semver } from "bun";
+
 import type { OperationOutcome } from "../adapter-protocol/index.js";
 import type { ConformancePlanStep } from "../plan-compiler/index.js";
 import type { JsonRpcAdapterClient } from "./adapter-client.js";
@@ -89,4 +91,6 @@ export const recordHandleCapture = (
 export const requiresHandleProtocolUpgrade = (
   steps: readonly { action?: string }[] | undefined,
   version: string
-): boolean => version === "0.1.0" && (steps ?? []).some(isOperationHandleStep);
+): boolean =>
+  semver.order(version, "0.2.0") < 0 &&
+  (steps ?? []).some(isOperationHandleStep);

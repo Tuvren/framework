@@ -63,13 +63,33 @@ export const beginCertificate = async (
     : undefined;
 };
 
+const backendKindForStorage = (storage: AdapterManifest["storage"]) => {
+  switch (storage) {
+    case "none":
+      return "memory";
+    case "sqlite-directory":
+      return "sqlite";
+    case "postgres-database":
+      return "postgres";
+    default:
+      throw new Error("certificate adapter must declare its storage kind");
+  }
+};
+
 const certificationEnvironment = async (manifest: AdapterManifest) => {
+  const backendKind = backendKindForStorage(manifest.storage);
+  if (manifest.language === "rust" && backendKind !== "memory") {
+    throw new Error(`unsupported Rust certificate backend ${backendKind}`);
+  }
   const packageValue: unknown =
     manifest.language === "rust"
       ? undefined
       : JSON.parse(
           await readFile(
-            path.join(ROOT, "typescript/kernel/backends/memory/package.json"),
+            path.join(
+              ROOT,
+              `typescript/kernel/backends/${backendKind}/package.json`
+            ),
             "utf8"
           )
         );
@@ -83,7 +103,7 @@ const certificationEnvironment = async (manifest: AdapterManifest) => {
         )?.[1]
       : typescriptVersion;
   if (typeof backendVersion !== "string") {
-    throw new Error("cannot determine the memory backend version");
+    throw new Error(`cannot determine the ${backendKind} backend version`);
   }
   let implementationToolchain: Record<string, string>;
   if (manifest.language === "rust") {
@@ -114,7 +134,7 @@ const certificationEnvironment = async (manifest: AdapterManifest) => {
   }
   const values = {
     architecture: arch(),
-    backend: { kind: "memory", version: backendVersion },
+    backend: { kind: backendKind, version: backendVersion },
     operatingSystem: { platform: platform(), release: release() },
     toolchains: {
       bun: bunVersion,
