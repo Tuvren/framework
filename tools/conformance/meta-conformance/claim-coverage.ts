@@ -12,7 +12,9 @@ export const assertClaimCoverage = (
   claims: readonly string[],
   controls: readonly CoverageControl[],
   undetected: Readonly<Record<string, string>>,
-  checks: readonly { checkId: string; claimIds: readonly string[] }[]
+  checks: readonly {
+    assertions: readonly { assertionId: string; claimIds: readonly string[] }[];
+  }[]
 ): void => {
   const missing = claims.filter(
     (claim) =>
@@ -24,10 +26,12 @@ export const assertClaimCoverage = (
             control.claimIds.includes(claim) &&
             (control.kind === "implementation"
               ? (control.designatedAssertions ?? []).some((assertion) =>
-                  checks.some(
-                    (check) =>
-                      check.claimIds.includes(claim) &&
-                      assertion.startsWith(`${check.checkId}.`)
+                  checks.some((check) =>
+                    check.assertions.some(
+                      (candidate) =>
+                        candidate.assertionId === assertion &&
+                        candidate.claimIds.includes(claim)
+                    )
                   )
                 )
               : (control.expectedRejection?.length ?? 0) > 0)
@@ -45,6 +49,32 @@ interface GateReport {
   counted: boolean;
   mutants: readonly { mutantId: string; outcome: string }[];
 }
+
+export const assertConditionalBranchCoverage = (
+  required: readonly string[],
+  fleet: readonly (readonly {
+    assertionId: string;
+    status: string;
+    when?: string;
+  }[])[]
+): void => {
+  const exercised = new Set(
+    fleet.flatMap((assertions) =>
+      assertions
+        .filter(
+          (assertion) =>
+            assertion.when === "applied" && assertion.status === "pass"
+        )
+        .map((assertion) => assertion.assertionId)
+    )
+  );
+  const missing = required.filter((assertion) => !exercised.has(assertion));
+  if (missing.length > 0) {
+    throw new Error(
+      `conditional assertions not exercised by a passing fleet run: ${missing.join(", ")}`
+    );
+  }
+};
 
 export const assertNegativeControlGate = (
   profile: string,

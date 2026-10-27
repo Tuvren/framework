@@ -26,7 +26,7 @@ const runRace = async (serialized: boolean) => {
         const outcomes = new Map();
         await serveStdioAdapter({
           ...bridge,
-          initialize: (packetId, planVersion) => ({adapterId: "sequential-writers", capabilities: ${JSON.stringify(manifest.capabilities)}, packetId, planVersion, protocolVersion: "0.2.0"}),
+          initialize: (packetId, planVersion) => ({adapterId: "sequential-writers", capabilities: ${JSON.stringify(manifest.capabilities)}, packetId, planVersion, protocolVersion: "0.2.0", profiles: ["kernel.memory"], storageKinds: ["none"]}),
           dispatch: (operation, input, controls, instance) => bridge.dispatch(operation, input, instance),
           startOperation: async (operation, input, instance) => {
             const operationHandle = "sequential-" + outcomes.size;

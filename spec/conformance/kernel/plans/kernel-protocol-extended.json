@@ -827,7 +827,7 @@
           "kind": "resultField"
         }
       ],
-      "capabilities": ["kernel.edge-validation"],
+      "capabilities": ["kernel.edge-validation.composite"],
       "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
       "evidence": ["protocolEdgeValidation.schema.duplicatePathCode"],
       "operation": "kernel.protocol.edge-validation"
@@ -840,7 +840,7 @@
           "kind": "resultField"
         }
       ],
-      "capabilities": ["kernel.edge-validation"],
+      "capabilities": ["kernel.edge-validation.composite"],
       "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
       "evidence": ["protocolEdgeValidation.tree.missingRequiredPathCode"],
       "operation": "kernel.protocol.edge-validation"
@@ -853,7 +853,7 @@
           "kind": "resultField"
         }
       ],
-      "capabilities": ["kernel.edge-validation"],
+      "capabilities": ["kernel.edge-validation.composite"],
       "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
       "evidence": ["protocolEdgeValidation.tree.schemaMismatchCode"],
       "operation": "kernel.protocol.edge-validation"
@@ -866,7 +866,7 @@
           "kind": "resultField"
         }
       ],
-      "capabilities": ["kernel.edge-validation"],
+      "capabilities": ["kernel.edge-validation.composite"],
       "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
       "evidence": ["protocolEdgeValidation.run.busyBranchCode"],
       "operation": "kernel.protocol.edge-validation"
@@ -879,7 +879,7 @@
           "kind": "resultField"
         }
       ],
-      "capabilities": ["kernel.edge-validation"],
+      "capabilities": ["kernel.edge-validation.composite"],
       "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
       "evidence": ["protocolEdgeValidation.run.outOfOrderStepCode"],
       "operation": "kernel.protocol.edge-validation"
@@ -892,7 +892,7 @@
           "kind": "resultField"
         }
       ],
-      "capabilities": ["kernel.edge-validation"],
+      "capabilities": ["kernel.edge-validation.composite"],
       "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
       "evidence": ["protocolEdgeValidation.run.missingEventObjectCode"],
       "operation": "kernel.protocol.edge-validation"
@@ -905,7 +905,7 @@
           "kind": "resultField"
         }
       ],
-      "capabilities": ["kernel.edge-validation"],
+      "capabilities": ["kernel.edge-validation.composite"],
       "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
       "evidence": ["protocolEdgeValidation.branch.lateralHeadCode"],
       "operation": "kernel.protocol.edge-validation"

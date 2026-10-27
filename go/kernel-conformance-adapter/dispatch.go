@@ -61,6 +61,7 @@ func capabilities() []string {
 	return []string{
 		"kernel.protocol",
 		"kernel.edge-validation",
+		"kernel.edge-validation.composite",
 		"kernel.logical",
 		"kernel-protocol.thread.enumeration",
 		"kernel.run-liveness",

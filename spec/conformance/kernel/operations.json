@@ -3932,7 +3932,7 @@
     {
       "operationId": "kernel.protocol.edge-validation",
       "kind": "control",
-      "capability": "kernel.edge-validation",
+      "capability": "kernel.edge-validation.composite",
       "deprecated": true,
       "input": true,
       "observation": {

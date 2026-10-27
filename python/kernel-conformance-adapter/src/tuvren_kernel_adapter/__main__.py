@@ -49,6 +49,7 @@ ADAPTER_ID = "python-kernel"
 CAPABILITIES: list[str] = [
     "kernel.protocol",
     "kernel.edge-validation",
+    "kernel.edge-validation.composite",
     "kernel.logical",
     "kernel-protocol.thread.enumeration",
     "kernel.run-liveness",

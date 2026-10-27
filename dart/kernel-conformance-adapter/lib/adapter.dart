@@ -46,6 +46,7 @@ const String adapterId = 'dart-kernel';
 List<String> capabilities() => const <String>[
   'kernel.protocol',
   'kernel.edge-validation',
+  'kernel.edge-validation.composite',
   'kernel.logical',
   'kernel-protocol.thread.enumeration',
   'kernel.run-liveness',

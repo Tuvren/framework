@@ -14,6 +14,7 @@
     "kernel.barrier",
     "kernel.fault-injection",
     "kernel.protocol",
+    "kernel.edge-validation",
     "kernel.logical",
     "kernel-protocol.thread.enumeration",
     "kernel.run-liveness",

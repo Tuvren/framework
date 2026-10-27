@@ -46,6 +46,7 @@ import {
 } from "../harness/run-plans.ts";
 import {
   assertClaimCoverage,
+  assertConditionalBranchCoverage,
   assertNegativeControlGate,
 } from "./claim-coverage.ts";
 
@@ -79,7 +80,6 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
   },
   {
     activationOperation: "kernel.mutant.activation",
-    capabilities: ["kernel.syscall"],
     controlAdapter: "rust/kernel-conformance-adapter/adapter.json",
     mutantAdapter: "rust/kernel-conformance-adapter/adapter-mutant.json",
     mutantEnv: "TUVREN_KERNEL_MUTANT",
@@ -151,6 +151,11 @@ export interface NegativeControlReport {
     reason?: string;
     status: ConformanceRunStatus | "error";
     summary?: ConformanceEvidenceSummary;
+    conditionalAssertions?: readonly {
+      assertionId: string;
+      status: string;
+      when?: string;
+    }[];
   };
   counted: boolean;
   findings: string[];
@@ -278,7 +283,9 @@ const readControlManifest = async (
 const readProfileObligations = async (
   config: NegativeControlPortConfig,
   controls: readonly ControlEntry[]
-): Promise<{ negativeControls: string[] } | undefined> => {
+): Promise<
+  { negativeControls: string[]; conditionalAssertions: string[] } | undefined
+> => {
   const packet = await readJson(config.packet);
   if (!isRecord(packet) || typeof packet.certificationProfiles !== "string") {
     return undefined;
@@ -340,10 +347,17 @@ const readProfileObligations = async (
   });
   const checks = plans.flatMap((plan) =>
     plan.checks.map(({ check }) => ({
-      checkId: check.checkId,
-      claimIds: [
-        ...(check.claimIds ?? []),
-        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
+      assertions: [
+        ...check.assertions.map((assertion, index) => ({
+          assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
+          claimIds: check.claimIds ?? [],
+        })),
+        ...(check.steps ?? []).flatMap((step) =>
+          (step.assertions ?? []).map((assertion, index) => ({
+            assertionId: `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
+            claimIds: step.claimIds ?? [],
+          }))
+        ),
       ],
     }))
   );
@@ -354,7 +368,30 @@ const readProfileObligations = async (
     reasons,
     checks
   );
-  return { negativeControls };
+  const profileClaims = new Set(readStrings(profile.claimIds));
+  const conditionalAssertions = plans.flatMap((plan) =>
+    plan.checks.flatMap(({ check }) => [
+      ...((check.claimIds ?? []).some((claim) => profileClaims.has(claim))
+        ? check.assertions.flatMap((assertion, index) =>
+            assertion.when === undefined
+              ? []
+              : [`${check.checkId}.${index + 1}.${assertion.kind}`]
+          )
+        : []),
+      ...(check.steps ?? []).flatMap((step) =>
+        (step.claimIds ?? []).some((claim) => profileClaims.has(claim))
+          ? (step.assertions ?? []).flatMap((assertion, index) =>
+              assertion.when === undefined
+                ? []
+                : [
+                    `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
+                  ]
+            )
+          : []
+      ),
+    ])
+  );
+  return { negativeControls, conditionalAssertions };
 };
 
 const readAdapterManifest = async (
@@ -941,6 +978,11 @@ export const runNegativeControls = async (
               .filter(({ status }) => status === "fail")
               .map(({ checkId }) => checkId),
             summary: evidence.summary,
+            conditionalAssertions: evidence.checkResults.flatMap((check) =>
+              check.assertionResults.filter(
+                (assertion) => assertion.when !== undefined
+              )
+            ),
           }),
       ...(controlRun.failure === undefined
         ? {}
@@ -1176,6 +1218,17 @@ const main = async (): Promise<void> => {
             (report) =>
               report.profile === config.profile && report.mode === "enforcing"
           )
+        );
+        assertConditionalBranchCoverage(
+          obligations.conditionalAssertions,
+          reports
+            .filter(
+              (report) =>
+                report.profile === config.profile &&
+                report.mode === "enforcing" &&
+                report.counted
+            )
+            .map((report) => report.control.conditionalAssertions ?? [])
         );
       }
     }

@@ -148,6 +148,7 @@ fn dispatch_request(
                 "kernel.barrier",
                 "kernel.fault-injection",
                 "kernel.protocol",
+                "kernel.edge-validation",
                 "kernel.logical",
                 "kernel-protocol.thread.enumeration",
                 "kernel.run-liveness",
@@ -156,7 +157,11 @@ fn dispatch_request(
             packet_id: read_param_string(&request.params, "packetId")?,
             plan_version: read_param_string(&request.params, "planVersion")?,
             protocol_version: "0.2.0",
-            profiles: vec![],
+            profiles: if std::env::args().any(|arg| arg == "--mutant-from-env") {
+                vec![]
+            } else {
+                vec!["kernel.memory"]
+            },
             storage_kinds: vec!["none"],
         })),
         "dispatch" => {

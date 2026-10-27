@@ -20,6 +20,8 @@
     "--capability",
     "kernel.edge-validation",
     "--capability",
+    "kernel.edge-validation.composite",
+    "--capability",
     "kernel.logical",
     "--capability",
     "kernel.run-liveness",
@@ -41,6 +43,7 @@
   "capabilities": [
     "kernel.protocol",
     "kernel.edge-validation",
+    "kernel.edge-validation.composite",
     "kernel.logical",
     "kernel.run-liveness",
     "kernel.shared-lease-clock",

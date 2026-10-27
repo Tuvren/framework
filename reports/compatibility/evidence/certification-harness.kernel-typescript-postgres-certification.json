@@ -4,6 +4,7 @@
   "capabilities": [
     "kernel-protocol.thread.enumeration",
     "kernel.edge-validation",
+    "kernel.edge-validation.composite",
     "kernel.logical",
     "kernel.persistence.durable",
     "kernel.protocol",

@@ -5,6 +5,7 @@ import { readClaimedProfiles } from "../certification/profile.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import {
   assertClaimCoverage,
+  assertConditionalBranchCoverage,
   assertNegativeControlGate,
 } from "./claim-coverage.ts";
 import type { CoverageControl } from "./claim-coverage.ts";
@@ -21,8 +22,19 @@ test("requires each profile claim to have a designated detector or a recorded re
   ];
   const claims = ["claim.detected", "claim.undetected"];
   const checks = [
-    { checkId: "check", claimIds: ["claim.detected"] },
-    { checkId: "uncovered", claimIds: ["claim.undetected"] },
+    {
+      assertions: [
+        { assertionId: "check.1.resultField", claimIds: ["claim.detected"] },
+      ],
+    },
+    {
+      assertions: [
+        {
+          assertionId: "uncovered.1.resultField",
+          claimIds: ["claim.undetected"],
+        },
+      ],
+    },
   ];
   expect(() =>
     assertClaimCoverage("example.profile", claims, controls, {}, checks)
@@ -64,6 +76,54 @@ test("requires each profile claim to have a designated detector or a recorded re
       ],
       {},
       checks
+    )
+  ).toThrow("claim.detected");
+});
+
+test("every conditional assertion must apply in a passing fleet run", () => {
+  const required = ["check.a.1.resultField", "check.b.1.resultField"];
+  const first = [
+    { assertionId: required[0] ?? "", status: "pass", when: "applied" },
+  ];
+  const second = [
+    { assertionId: required[1] ?? "", status: "pass", when: "not_applied" },
+  ];
+  expect(() =>
+    assertConditionalBranchCoverage(required, [first, second])
+  ).toThrow("check.b.1.resultField");
+  expect(() =>
+    assertConditionalBranchCoverage(required, [
+      first,
+      [{ ...second[0], when: "applied", status: "pass" }],
+    ])
+  ).not.toThrow();
+});
+
+test("a nonexistent assertion with a matching check prefix is not a detector", () => {
+  expect(() =>
+    assertClaimCoverage(
+      "example.profile",
+      ["claim.detected"],
+      [
+        {
+          claimIds: ["claim.detected"],
+          designatedAssertions: ["check.999.resultField"],
+          kind: "implementation",
+          mutantId: "mutant.a",
+          profiles: ["example.profile"],
+        },
+      ],
+      {},
+      [
+        {
+          assertions: [
+            {
+              assertionId: "check.1.resultField",
+              claimIds: ["claim.detected"],
+            },
+          ],
+        },
+      ]
     )
   ).toThrow("claim.detected");
 });
@@ -132,10 +192,17 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
   const plans = await readPlans(adapter, { packets: [], plans: [] });
   const checks = plans.flatMap((plan) =>
     plan.checks.map(({ check }) => ({
-      checkId: check.checkId,
-      claimIds: [
-        ...(check.claimIds ?? []),
-        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
+      assertions: [
+        ...check.assertions.map((assertion, index) => ({
+          assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
+          claimIds: check.claimIds ?? [],
+        })),
+        ...(check.steps ?? []).flatMap((step) =>
+          (step.assertions ?? []).map((assertion, index) => ({
+            assertionId: `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
+            claimIds: step.claimIds ?? [],
+          }))
+        ),
       ],
     }))
   );

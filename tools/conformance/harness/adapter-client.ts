@@ -37,9 +37,11 @@ export interface AdapterManifest {
   boundary: string;
   capabilities: string[];
   command: string[];
+  executable?: string;
   implementationId: string;
   language: string;
   profiles?: string[];
+  storage?: "none" | "postgres-database" | "sqlite-directory";
   protocol: {
     name: "tuvren.conformance-adapter";
     transport: "json-rpc-2.0-stdio";
@@ -251,7 +253,27 @@ export class JsonRpcAdapterClient {
       typeof value.packetId !== "string" ||
       typeof value.planVersion !== "string" ||
       !Array.isArray(value.capabilities) ||
-      !value.capabilities.every((entry: unknown) => typeof entry === "string")
+      !value.capabilities.every(
+        (entry: unknown) => typeof entry === "string"
+      ) ||
+      (value.protocolVersion !== undefined &&
+        value.protocolVersion !== "0.1.0" &&
+        value.protocolVersion !== "0.2.0") ||
+      (value.profiles !== undefined &&
+        !(
+          Array.isArray(value.profiles) &&
+          value.profiles.every((entry: unknown) => typeof entry === "string")
+        )) ||
+      (value.storageKinds !== undefined &&
+        !(
+          Array.isArray(value.storageKinds) &&
+          value.storageKinds.every(
+            (entry: unknown) =>
+              entry === "none" ||
+              entry === "postgres-database" ||
+              entry === "sqlite-directory"
+          )
+        ))
     ) {
       throw new Error("adapter initialize returned invalid capabilities");
     }
@@ -261,6 +283,13 @@ export class JsonRpcAdapterClient {
       capabilities: value.capabilities,
       packetId: value.packetId,
       planVersion: value.planVersion,
+      ...(value.protocolVersion === undefined
+        ? {}
+        : { protocolVersion: value.protocolVersion }),
+      ...(value.profiles === undefined ? {} : { profiles: value.profiles }),
+      ...(value.storageKinds === undefined
+        ? {}
+        : { storageKinds: value.storageKinds }),
     };
   }
 

@@ -39,6 +39,11 @@ import { createSyscallBindings } from "./host-syscalls.js";
 
 const MUTANT_ENV = "TUVREN_KERNEL_MUTANT";
 const MUTANT_ACTIVATION_OPERATION = "kernel.mutant.activation";
+const STORAGE_KIND = {
+  memory: "none",
+  postgres: "postgres-database",
+  sqlite: "sqlite-directory",
+} as const;
 
 const defaultCapabilities = (
   backend: KernelAdapterConfig["backend"]
@@ -48,6 +53,7 @@ const defaultCapabilities = (
       "kernel.syscall",
       "kernel.protocol",
       "kernel.edge-validation",
+      "kernel.edge-validation.composite",
       "kernel.logical",
       "kernel.run-liveness",
       // Shared multi-owner rendezvous: PostgreSQL is the only backend that
@@ -69,6 +75,7 @@ const defaultCapabilities = (
       "kernel.syscall",
       "kernel.protocol",
       "kernel.edge-validation",
+      "kernel.edge-validation.composite",
       "kernel.logical",
       "kernel.run-liveness",
       "kernel.persistence.durable",
@@ -84,6 +91,7 @@ const defaultCapabilities = (
     "kernel.syscall",
     "kernel.protocol",
     "kernel.edge-validation",
+    "kernel.edge-validation.composite",
     "kernel.logical",
     "kernel.run-liveness",
     "kernel.restart-recovery",
@@ -237,7 +245,12 @@ const initialize = (
   capabilities: ADAPTER_CONFIG.capabilities,
   packetId,
   planVersion,
+  profiles:
+    ADAPTER_CONFIG.backend === "memory" && ADAPTER_CONFIG.mutant === undefined
+      ? ["kernel.memory"]
+      : [],
   protocolVersion: "0.2.0",
+  storageKinds: [STORAGE_KIND[ADAPTER_CONFIG.backend]],
 });
 
 const dispatch = async (
