@@ -687,74 +687,27 @@
         {
           "kind": "schemaValid",
           "path": "$.state.trace.secondOutcome.state.adapterError",
-          "schema": "$.fixture.expected.lateralConflict",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
+          "schema": "$.fixture.expected.lateralConflict"
         },
         {
           "kind": "resultField",
           "field": "$.trace.secondOutcome.outcome.kind",
-          "equals": "error",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
+          "equals": "error"
         },
         {
           "kind": "resultField",
           "field": "$.trace.firstOutcome.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
+          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash"
         },
         {
           "kind": "resultField",
           "field": "$.trace.head.result.headTurnNodeHash",
-          "equalsPath": "$.result.trace.firstOutcome.result.branch.headTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
-        },
-        {
-          "kind": "schemaValid",
-          "path": "$.state.trace.firstOutcome.state.adapterError",
-          "schema": "$.fixture.expected.lateralConflict",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
+          "equalsPath": "$.result.trace.firstOutcome.result.branch.headTurnNodeHash"
         },
         {
           "kind": "resultField",
-          "field": "$.trace.secondOutcome.outcome.kind",
-          "equals": "result",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondOutcome.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.head.result.headTurnNodeHash",
-          "equalsPath": "$.result.trace.secondOutcome.result.branch.headTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
+          "field": "$.trace.firstOutcome.outcome.kind",
+          "equals": "result"
         }
       ],
       "evidence": [
@@ -1443,75 +1396,28 @@
         },
         {
           "kind": "schemaValid",
-          "path": "$.state.trace.secondOutcome.state.adapterError",
-          "schema": "$.fixture.expected.lateralConflict",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.secondOutcome.outcome.kind",
-          "equals": "error",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.firstOutcome.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.head.result.headTurnNodeHash",
-          "equalsPath": "$.result.trace.firstOutcome.result.branch.headTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "result"
-          }
-        },
-        {
-          "kind": "schemaValid",
           "path": "$.state.trace.firstOutcome.state.adapterError",
-          "schema": "$.fixture.expected.lateralConflict",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
+          "schema": "$.fixture.expected.lateralConflict"
         },
         {
           "kind": "resultField",
           "field": "$.trace.secondOutcome.outcome.kind",
-          "equals": "result",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
+          "equals": "result"
         },
         {
           "kind": "resultField",
           "field": "$.trace.secondOutcome.result.branch.headTurnNodeHash",
-          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
+          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash"
         },
         {
           "kind": "resultField",
           "field": "$.trace.head.result.headTurnNodeHash",
-          "equalsPath": "$.result.trace.secondOutcome.result.branch.headTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.firstOutcome.outcome.kind",
-            "equals": "error"
-          }
+          "equalsPath": "$.result.trace.secondOutcome.result.branch.headTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstOutcome.outcome.kind",
+          "equals": "error"
         }
       ],
       "evidence": [

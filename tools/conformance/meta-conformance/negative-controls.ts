@@ -41,6 +41,15 @@ import type {
 import { createVerificationLogs } from "../../scripts/lib/verification-logs.ts";
 import type { VerificationLogs } from "../../scripts/lib/verification-logs.ts";
 import {
+  controlOutcomes,
+  controlRunId,
+} from "../certification/control-link.ts";
+import {
+  computeImplementationDigest,
+  computeVerifierDigests,
+  digestAdapterManifest,
+} from "../certification/provenance.ts";
+import {
   readAdapterManifest as readValidatedAdapterManifest,
   readPlans,
 } from "../harness/run-plans.ts";
@@ -48,6 +57,7 @@ import {
   assertClaimCoverage,
   assertConditionalBranchCoverage,
   assertNegativeControlGate,
+  profileConditionalAssertions,
 } from "./claim-coverage.ts";
 
 /** One port's negative-control wiring (ADR-0079 decisions 1 to 3). */
@@ -368,28 +378,9 @@ const readProfileObligations = async (
     reasons,
     checks
   );
-  const profileClaims = new Set(readStrings(profile.claimIds));
-  const conditionalAssertions = plans.flatMap((plan) =>
-    plan.checks.flatMap(({ check }) => [
-      ...((check.claimIds ?? []).some((claim) => profileClaims.has(claim))
-        ? check.assertions.flatMap((assertion, index) =>
-            assertion.when === undefined
-              ? []
-              : [`${check.checkId}.${index + 1}.${assertion.kind}`]
-          )
-        : []),
-      ...(check.steps ?? []).flatMap((step) =>
-        (step.claimIds ?? []).some((claim) => profileClaims.has(claim))
-          ? (step.assertions ?? []).flatMap((assertion, index) =>
-              assertion.when === undefined
-                ? []
-                : [
-                    `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
-                  ]
-            )
-          : []
-      ),
-    ])
+  const conditionalAssertions = profileConditionalAssertions(
+    readStrings(profile.claimIds),
+    plans
   );
   return { negativeControls, conditionalAssertions };
 };
@@ -579,6 +570,7 @@ const runHarness = async (
     wrappedPath,
     `${JSON.stringify({
       ...manifest,
+      executable: "bun",
       command: [
         "bun",
         PROBE,
@@ -587,7 +579,9 @@ const runHarness = async (
         "--operation",
         config.activationOperation,
         "--",
-        ...readStrings(manifest.command),
+        ...(typeof manifest.executable === "string"
+          ? [manifest.executable, ...readStrings(manifest.command).slice(1)]
+          : readStrings(manifest.command)),
       ],
     })}\n`
   );
@@ -605,8 +599,6 @@ const runHarness = async (
       HARNESS,
       "--adapter",
       wrappedPath,
-      "--packet",
-      config.packet,
       "--concurrency",
       String(options.concurrency ?? 4),
       "--allow-failing-evidence",
@@ -1170,6 +1162,70 @@ const parseCli = (
   return parsed;
 };
 
+const snapshotControls = async (
+  configs: readonly NegativeControlPortConfig[]
+) => {
+  const packet = configs[0]?.packet;
+  if (packet === undefined) {
+    throw new Error("no control packet selected");
+  }
+  const verifierDigests = await computeVerifierDigests([packet]);
+  const adapters = await inSequence(configs, async (config) => {
+    const manifest = await readValidatedAdapterManifest(config.controlAdapter);
+    if (
+      manifest.authorityPackets.length !== 1 ||
+      manifest.authorityPackets[0] !== config.packet
+    ) {
+      throw new Error(
+        `${config.controlAdapter} must run its full packet inventory`
+      );
+    }
+    return {
+      adapter: display(config.controlAdapter),
+      adapterManifest: await digestAdapterManifest(config.controlAdapter),
+      implementation: await computeImplementationDigest(manifest),
+    };
+  });
+  return { verifierDigests, adapters };
+};
+
+const checkFleetGate = async (
+  configs: readonly NegativeControlPortConfig[],
+  reports: readonly NegativeControlReport[]
+): Promise<string[]> => {
+  const failures: string[] = [];
+  for (const config of configs) {
+    try {
+      const manifest = await readControlManifest(config.packet);
+      const obligations = await readProfileObligations(
+        config,
+        manifest.controls
+      );
+      if (obligations === undefined) {
+        continue;
+      }
+      const fleet = reports.filter(
+        (report) =>
+          report.profile === config.profile && report.mode === "enforcing"
+      );
+      assertNegativeControlGate(
+        config.profile,
+        obligations.negativeControls,
+        fleet
+      );
+      assertConditionalBranchCoverage(
+        obligations.conditionalAssertions,
+        fleet
+          .filter((report) => report.counted)
+          .map((report) => report.control.conditionalAssertions ?? [])
+      );
+    } catch (error: unknown) {
+      failures.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+  return failures;
+};
+
 const main = async (): Promise<void> => {
   const options = parseCli(process.argv.slice(2));
   const unknown = options.ports.filter(
@@ -1178,17 +1234,60 @@ const main = async (): Promise<void> => {
   if (unknown.length > 0) {
     throw new Error(`unknown negative-control port(s) ${unknown.join(", ")}`);
   }
-  const reports = await inSequence(
-    NEGATIVE_CONTROL_PORTS.filter(
-      ({ port }) => options.ports.length === 0 || options.ports.includes(port)
-    ),
-    async (config) => {
-      const report = await runNegativeControls(config, options);
-      process.stdout.write(formatNegativeControlSummary(report));
-      return report;
-    }
+  const configs = NEGATIVE_CONTROL_PORTS.filter(
+    ({ port }) => options.ports.length === 0 || options.ports.includes(port)
   );
-  const text = `${JSON.stringify({ reports }, null, 2)}\n`;
+  const recordProvenance =
+    options.reportOut !== undefined && (options.mutants?.length ?? 0) === 0;
+  if (
+    recordProvenance &&
+    new Set(configs.map(({ packet, profile }) => `${packet}\n${profile}`))
+      .size !== 1
+  ) {
+    throw new Error(
+      "a control provenance report must cover one packet and profile"
+    );
+  }
+  const profile = configs[0]?.profile;
+  const before = recordProvenance ? await snapshotControls(configs) : undefined;
+  const reports = await inSequence(configs, async (config) => {
+    const report = await runNegativeControls(config, options);
+    process.stdout.write(formatNegativeControlSummary(report));
+    return report;
+  });
+  const gateFailures =
+    (options.mutants?.length ?? 0) === 0
+      ? await checkFleetGate(configs, reports)
+      : [];
+  const after = recordProvenance ? await snapshotControls(configs) : undefined;
+  if (
+    before !== undefined &&
+    JSON.stringify(before) !== JSON.stringify(after)
+  ) {
+    gateFailures.push(
+      "verifier or implementation inputs changed during the control run"
+    );
+  }
+  const controlRun =
+    before === undefined || profile === undefined
+      ? undefined
+      : (() => {
+          const identity = {
+            profile,
+            status:
+              gateFailures.length === 0 &&
+              reports.every(
+                (report) => report.counted && report.mode === "enforcing"
+              )
+                ? ("pass" as const)
+                : ("fail" as const),
+            verifierDigests: before.verifierDigests,
+            adapters: before.adapters,
+            outcomes: controlOutcomes(reports),
+          };
+          return { ...identity, id: controlRunId(identity) };
+        })();
+  const text = `${JSON.stringify({ reports, ...(controlRun === undefined ? {} : { controlRun }) }, null, 2)}\n`;
   const logs = await createVerificationLogs(
     fromRoot(process.env.VERIFY_LOG_DIR ?? ".cache/verification")
   );
@@ -1201,37 +1300,8 @@ const main = async (): Promise<void> => {
     });
     await writeFile(fromRoot(options.reportOut), text);
   }
-  if ((options.mutants?.length ?? 0) === 0) {
-    for (const config of NEGATIVE_CONTROL_PORTS.filter(
-      ({ port }) => options.ports.length === 0 || options.ports.includes(port)
-    )) {
-      const manifest = await readControlManifest(config.packet);
-      const obligations = await readProfileObligations(
-        config,
-        manifest.controls
-      );
-      if (obligations !== undefined) {
-        assertNegativeControlGate(
-          config.profile,
-          obligations.negativeControls,
-          reports.filter(
-            (report) =>
-              report.profile === config.profile && report.mode === "enforcing"
-          )
-        );
-        assertConditionalBranchCoverage(
-          obligations.conditionalAssertions,
-          reports
-            .filter(
-              (report) =>
-                report.profile === config.profile &&
-                report.mode === "enforcing" &&
-                report.counted
-            )
-            .map((report) => report.control.conditionalAssertions ?? [])
-        );
-      }
-    }
+  if (gateFailures.length > 0) {
+    throw new Error(gateFailures.join("; "));
   }
 };
 

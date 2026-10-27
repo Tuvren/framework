@@ -33,7 +33,15 @@ import {
   CERTIFICATION_MANIFEST_PATH,
   parseCertificationManifest,
 } from "../conformance/certification/certification-manifest.js";
+import {
+  findProfileSelectionFailures,
+  readClaimedProfiles,
+} from "../conformance/certification/profile.js";
 import { selectCheck } from "../conformance/harness/check-selection.js";
+import {
+  readAdapterManifest as readValidatedAdapterManifest,
+  readPlans,
+} from "../conformance/harness/run-plans.js";
 import { runCommand } from "./lib/command-runner.js";
 import {
   assertConformanceEvidence,
@@ -952,19 +960,17 @@ export const readLivePlanChecks = (
   };
 };
 
-const readLiveConformanceRunner = async (
-  runner: ConformanceRunner
+export const readLiveConformanceTopology = async (
+  adapterManifestPath: string
 ): Promise<LiveConformanceRunner> => {
-  const manifest = await readAdapterManifest(runner.adapterManifestPath);
-  const suite = readAdapterSuite(manifest, runner.adapterManifestPath);
+  const manifest = await readAdapterManifest(adapterManifestPath);
+  const suite = readAdapterSuite(manifest, adapterManifestPath);
   const capabilities = new Set(readStringArray(manifest.capabilities));
   if (
     !isRecord(manifest.protocol) ||
     typeof manifest.protocol.version !== "string"
   ) {
-    throw new Error(
-      `${runner.adapterManifestPath} must declare a protocol version`
-    );
+    throw new Error(`${adapterManifestPath} must declare a protocol version`);
   }
   const protocolVersion = manifest.protocol.version;
   const packetPaths = readStringArray(manifest.authorityPackets);
@@ -1010,6 +1016,29 @@ const readLiveConformanceRunner = async (
   });
 
   const applicableCheckIdSet = new Set(applicableCheckIds);
+  if (readStringArray(manifest.profiles).length > 0) {
+    const validated = await readValidatedAdapterManifest(adapterManifestPath);
+    const profiles = await readClaimedProfiles(validated, packetPaths);
+    const plans = await readPlans(validated, { packets: [], plans: [] });
+    const selection = allCheckIds.map((checkId) => ({
+      checkId,
+      selected: applicableCheckIdSet.has(checkId),
+    }));
+    applicableCheckIds.push(
+      ...findProfileSelectionFailures(profiles, plans, selection).map(
+        ({ profileId, requiredCheckId }) =>
+          `profile.${profileId}.required.${requiredCheckId}`
+      ),
+      ...profiles.flatMap((profile) =>
+        profile.requiredCapabilities
+          .filter((capability) => !capabilities.has(capability))
+          .map(
+            (capability) =>
+              `profile.${profile.profileId}.capability.${capability}`
+          )
+      )
+    );
+  }
 
   return {
     applicableCheckIds,
@@ -1020,6 +1049,11 @@ const readLiveConformanceRunner = async (
     suite,
   };
 };
+
+const readLiveConformanceRunner = async (
+  runner: ConformanceRunner
+): Promise<LiveConformanceRunner> =>
+  await readLiveConformanceTopology(runner.adapterManifestPath);
 
 const compareEvidenceField = (
   evidencePath: string,

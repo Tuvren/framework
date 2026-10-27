@@ -92,6 +92,14 @@
       "profile": "tuvren.kernel.protocol"
     },
     {
+      "project": "kernel-rust-certification",
+      "profile": "kernel.memory"
+    },
+    {
+      "project": "kernel-typescript-certification",
+      "profile": "kernel.memory"
+    },
+    {
       "project": "kernel-typescript-postgres-certification",
       "profile": "tuvren.kernel.protocol"
     },

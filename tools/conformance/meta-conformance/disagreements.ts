@@ -29,6 +29,7 @@ import nodePath from "node:path";
 import { spawn } from "bun";
 
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
+import { adapterCommand } from "../harness/adapter-client.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import {
   compareObservations,
@@ -103,13 +104,14 @@ const captureImplementation = async (adapter: string, options: Options) => {
       wrapped,
       json({
         ...manifest,
+        executable: "bun",
         profiles: [],
         command: [
           "bun",
           "tools/conformance/meta-conformance/observation-probe.ts",
           probes,
           "--",
-          ...manifest.command,
+          ...adapterCommand(manifest),
         ],
       })
     );

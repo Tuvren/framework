@@ -35,7 +35,7 @@
         "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
         "kernel.syscall.concurrent_writer.a_first.7.resultField",
         "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
-        "kernel.syscall.concurrent_writer.b_first.7.resultField"
+        "kernel.syscall.concurrent_writer.b_first.10.resultField"
       ]
     },
     {

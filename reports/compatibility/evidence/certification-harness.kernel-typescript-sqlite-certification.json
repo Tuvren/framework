@@ -2675,6 +2675,22 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.rootNode.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.bootstrapNode.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.mainNode.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.forkNode.1.identity",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.stateField",
           "status": "pass"
         },
@@ -2733,7 +2749,11 @@
           "forkEvent",
           "forkCheckpoint",
           "finishFork",
-          "reject"
+          "reject",
+          "rootNode",
+          "bootstrapNode",
+          "mainNode",
+          "forkNode"
         ]
       },
       "status": "pass"

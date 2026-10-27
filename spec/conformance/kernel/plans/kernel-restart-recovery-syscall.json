@@ -661,173 +661,42 @@
         {
           "kind": "resultField",
           "field": "$.trace.recover.result.lastTurnNodeHash",
-          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
+          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash"
         },
         {
           "kind": "resultField",
           "field": "$.trace.recover.result.consumedStagedResults",
-          "equalsPath": "$.capture.baselineStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
+          "equalsPath": "$.capture.baselineStaging"
         },
         {
           "kind": "resultField",
           "field": "$.trace.recover.result.uncommittedStagedResults",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
+          "equalsPath": "$.capture.pendingStaging"
         },
         {
           "kind": "resultField",
           "field": "$.trace.staging.result",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
+          "equalsPath": "$.capture.pendingStaging"
         },
         {
           "kind": "resultField",
           "field": "$.trace.durableNode.result",
-          "equalsPath": "$.capture.baselineNode",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
+          "equalsPath": "$.capture.baselineNode"
         },
         {
           "kind": "resultField",
           "field": "$.trace.visibleMessages.result",
-          "equalsPath": "$.capture.baselineMessages",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
+          "equalsPath": "$.capture.baselineMessages"
         },
         {
           "kind": "resultField",
           "field": "$.trace.lineage.result",
-          "length": 2,
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
+          "length": 2
         },
         {
           "kind": "resultField",
           "field": "$.trace.lineage.result.1.hash",
-          "equalsPath": "$.capture.thread.rootTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.recover.result.lastTurnNodeHash",
-          "notEqualsPath": "$.capture.baselineCheckpoint.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.durableNode.result.previousTurnNodeHash",
-          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.durableNode.result.turnTreeHash",
-          "equalsPath": "$.capture.pendingTree",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.durableNode.result.consumedStagedResults",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.recover.result.consumedStagedResults",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.recover.result.uncommittedStagedResults",
-          "equals": [],
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.staging.result",
-          "equals": [],
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.visibleMessages.result",
-          "equalsPath": "$.capture.pendingMessages",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.lineage.result",
-          "length": 3,
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.lineage.result.1",
-          "equalsPath": "$.capture.baselineNode",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.lineage.result.2.hash",
-          "equalsPath": "$.capture.thread.rootTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.thread.rootTurnNodeHash"
         }
       ],
       "evidence": [
@@ -1493,173 +1362,57 @@
         {
           "kind": "resultField",
           "field": "$.trace.recover.result.lastTurnNodeHash",
-          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.recover.result.consumedStagedResults",
-          "equalsPath": "$.capture.baselineStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.recover.result.uncommittedStagedResults",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.staging.result",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.durableNode.result",
-          "equalsPath": "$.capture.baselineNode",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.visibleMessages.result",
-          "equalsPath": "$.capture.baselineMessages",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.lineage.result",
-          "length": 2,
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.lineage.result.1.hash",
-          "equalsPath": "$.capture.thread.rootTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "baseline"
-          }
-        },
-        {
-          "kind": "resultField",
-          "field": "$.trace.recover.result.lastTurnNodeHash",
-          "notEqualsPath": "$.capture.baselineCheckpoint.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "notEqualsPath": "$.capture.baselineCheckpoint.turnNodeHash"
         },
         {
           "kind": "resultField",
           "field": "$.trace.durableNode.result.previousTurnNodeHash",
-          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash"
         },
         {
           "kind": "resultField",
           "field": "$.trace.durableNode.result.turnTreeHash",
-          "equalsPath": "$.capture.pendingTree",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.pendingTree"
         },
         {
           "kind": "resultField",
           "field": "$.trace.durableNode.result.consumedStagedResults",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.pendingStaging"
         },
         {
           "kind": "resultField",
           "field": "$.trace.recover.result.consumedStagedResults",
-          "equalsPath": "$.capture.pendingStaging",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.pendingStaging"
         },
         {
           "kind": "resultField",
           "field": "$.trace.recover.result.uncommittedStagedResults",
-          "equals": [],
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equals": []
         },
         {
           "kind": "resultField",
           "field": "$.trace.staging.result",
-          "equals": [],
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equals": []
         },
         {
           "kind": "resultField",
           "field": "$.trace.visibleMessages.result",
-          "equalsPath": "$.capture.pendingMessages",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.pendingMessages"
         },
         {
           "kind": "resultField",
           "field": "$.trace.lineage.result",
-          "length": 3,
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "length": 3
         },
         {
           "kind": "resultField",
           "field": "$.trace.lineage.result.1",
-          "equalsPath": "$.capture.baselineNode",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.baselineNode"
         },
         {
           "kind": "resultField",
           "field": "$.trace.lineage.result.2.hash",
-          "equalsPath": "$.capture.thread.rootTurnNodeHash",
-          "when": {
-            "path": "$.result.trace.recover.result.lastCompletedStepId",
-            "equals": "pending"
-          }
+          "equalsPath": "$.capture.thread.rootTurnNodeHash"
         }
       ],
       "evidence": [

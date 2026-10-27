@@ -51,6 +51,13 @@ export interface AdapterManifest {
   suiteVersion: string;
 }
 
+export const adapterCommand = (
+  manifest: Pick<AdapterManifest, "command" | "executable">
+): string[] =>
+  manifest.executable === undefined
+    ? manifest.command
+    : [manifest.executable, ...manifest.command.slice(1)];
+
 export interface JsonRpcClientOptions {
   command: readonly string[];
   cwd: string;
@@ -189,6 +196,7 @@ export class JsonRpcAdapterClient {
   private readonly frames: RecordedFrame[] = [];
   private frameSequence = 0;
   private exit: AdapterExit | undefined;
+  private supervisorTerminated = false;
   private readonly closed: Promise<void>;
   private readonly timeoutMs: number;
 
@@ -435,7 +443,7 @@ export class JsonRpcAdapterClient {
       this.writer.releaseLock();
       this.child.stdin.end();
       if (this.child.exitCode === null) {
-        this.child.kill();
+        this.supervisorTerminated = this.child.kill();
       }
     }
   }
@@ -498,6 +506,26 @@ export class JsonRpcAdapterClient {
     ]);
     clearTimeout(timer);
     return this.exit;
+  }
+
+  async terminationStatus(): Promise<AdapterExit | undefined> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      this.closed,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, 2000);
+      }),
+    ]);
+    clearTimeout(timer);
+    return this.exit;
+  }
+
+  processId(): number | undefined {
+    return this.child.pid;
+  }
+
+  wasTerminatedBySupervisor(): boolean {
+    return this.supervisorTerminated;
   }
 
   private recordFrame(

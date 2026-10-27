@@ -287,13 +287,17 @@ for (const entry of manifest.certified) {
   const adapter = manifest.inventory.find(
     (candidate) => candidate.project === entry.project
   )?.adapter;
-  const suiteId =
+  const adapterManifest =
     adapter === undefined
       ? undefined
-      : readJsonRecord(nodePath.join(ROOT, adapter))?.suiteId;
-  if (suiteId !== entry.profile) {
+      : readJsonRecord(nodePath.join(ROOT, adapter));
+  const suiteId = adapterManifest?.suiteId;
+  const claimedProfiles = Array.isArray(adapterManifest?.profiles)
+    ? adapterManifest.profiles
+    : [];
+  if (suiteId !== entry.profile && !claimedProfiles.includes(entry.profile)) {
     problems.push(
-      `certified profile ${entry.profile} for ${entry.project} must equal its adapter manifest suiteId (${String(suiteId)}) until certification profiles exist`
+      `certified profile ${entry.profile} for ${entry.project} must be claimed by its adapter or equal its suiteId (${String(suiteId)})`
     );
   }
 }

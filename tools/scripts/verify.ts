@@ -380,6 +380,7 @@ export const FOLLOWUP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
 export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/adapter-protocol/protocol-contract.test.ts",
   "tools/conformance/certification/certification-manifest.test.ts",
+  "tools/conformance/certification/conformance-gate.test.ts",
   "tools/conformance/harness/test/adapter-client.test.ts",
   "tools/conformance/harness/test/assertion-engine.test.ts",
   "tools/conformance/harness/test/assertion-operators.test.ts",
@@ -392,6 +393,7 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/operation-handles.test.ts",
   "tools/conformance/harness/test/operation-plan.test.ts",
   "tools/conformance/meta-conformance/negative-controls.test.ts",
+  "tools/conformance/meta-conformance/claim-coverage.test.ts",
   "tools/conformance/plan-compiler/barrier-rules.test.ts",
   "tools/conformance/plan-compiler/certification-rules.test.ts",
   "tools/conformance/plan-compiler/index.test.ts",

@@ -7,7 +7,9 @@
   "targets": {
     "build": {
       "executor": "nx:run-commands",
-      "outputs": [],
+      "outputs": [
+        "{workspaceRoot}/target/debug/tuvren-kernel-rust-conformance-adapter"
+      ],
       "options": {
         "cwd": ".",
         "command": "cargo build -p tuvren-kernel-rust-certification -p tuvren-kernel-rust-conformance-adapter"
@@ -15,6 +17,7 @@
     },
     "conformance": {
       "executor": "nx:run-commands",
+      "dependsOn": ["build"],
       "outputs": [],
       "inputs": [
         "default",
@@ -42,6 +45,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": ["build"],
       "options": {
         "cwd": ".",
         "command": "cargo test -p tuvren-kernel-rust-certification -p tuvren-kernel-rust-conformance-adapter && bun test tools/conformance/meta-conformance/disagreements.test.ts tools/conformance/meta-conformance/rust-memory.test.ts"
@@ -60,6 +64,25 @@
         "{workspaceRoot}/spec/kernel/authority-packet.json",
         "{workspaceRoot}/tools/schemas/**/*"
       ]
+    },
+    "certificate-contract": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "build",
+        {
+          "projects": [
+            "backend-memory",
+            "kernel-runtime",
+            "kernel-typescript-conformance-adapter"
+          ],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun test tools/conformance/certification/bundle-contract.test.ts tools/conformance/meta-conformance/claim-coverage.test.ts"
+      }
     }
   }
 }

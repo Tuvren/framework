@@ -1,3 +1,34 @@
+import type { CompiledConformancePlan } from "../plan-compiler/index.js";
+
+export const profileConditionalAssertions = (
+  claimIds: readonly string[],
+  plans: readonly CompiledConformancePlan[]
+): string[] => {
+  const claims = new Set(claimIds);
+  return plans.flatMap(({ checks }) =>
+    checks.flatMap(({ check }) => [
+      ...((check.claimIds ?? []).some((claim) => claims.has(claim))
+        ? check.assertions.flatMap((assertion, index) =>
+            assertion.when === undefined
+              ? []
+              : [`${check.checkId}.${index + 1}.${assertion.kind}`]
+          )
+        : []),
+      ...(check.steps ?? []).flatMap((step) =>
+        (step.claimIds ?? []).some((claim) => claims.has(claim))
+          ? (step.assertions ?? []).flatMap((assertion, index) =>
+              assertion.when === undefined
+                ? []
+                : [
+                    `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
+                  ]
+            )
+          : []
+      ),
+    ])
+  );
+};
+
 export interface CoverageControl {
   claimIds: readonly string[];
   designatedAssertions?: readonly string[];

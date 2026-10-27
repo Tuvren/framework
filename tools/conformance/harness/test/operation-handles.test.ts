@@ -269,14 +269,13 @@ test("real stdio host cancels a gated native operation after its entry receipt",
         {},
         instance
       );
-      const outcome = await client.awaitOperation(first.operationHandle);
-      expect(outcome).toMatchObject({
-        kind: "error",
-        error: { message: "cancel at gate" },
-      });
-      expect(await client.awaitOperation(first.operationHandle)).toEqual(
-        outcome
-      );
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        await expect(
+          client.awaitOperation(first.operationHandle)
+        ).rejects.toMatchObject({
+          envelope: { code: "adapter_host_error", message: "cancel at gate" },
+        });
+      }
       expect(await client.awaitOperation(second.operationHandle)).toMatchObject(
         { kind: "result" }
       );
@@ -351,11 +350,19 @@ test("real stdio destruction cancels a named barrier-held operation before clean
       {},
       instance
     );
-    const pending = client.awaitOperation(first.operationHandle);
+    const pending = client.awaitOperation(first.operationHandle).then(
+      (value) => ({ status: "fulfilled", value }),
+      (error: unknown) => ({ status: "rejected", error })
+    );
     await expect(client.destroyInstance(instance)).resolves.toBeUndefined();
     expect(await pending).toMatchObject({
-      kind: "error",
-      error: { message: "adapter instance destroyed" },
+      status: "rejected",
+      error: {
+        envelope: {
+          code: "adapter_host_error",
+          message: "adapter instance destroyed",
+        },
+      },
     });
   } finally {
     await client.shutdown();
