@@ -28,8 +28,8 @@ files:
     bytes: 48474
     role: measurement
   - path: certification-triage.yaml
-    sha256: 87a52b4656c921941657b24bd04fe24f8fdc37cadc5f44a3363f2d214302530f
-    bytes: 10587
+    sha256: 344041626f8f0965ab2bbc6d2e29ef04c7d87125621039f0c5290e13d397599d
+    bytes: 10245
     role: transcript
   - path: rust-edge-capability-probe.json
     sha256: d0ae3217e79b8774e3ad3522cca5a13686091f32b9a47a45d5ed2ce5df8269c2

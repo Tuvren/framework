@@ -11,3 +11,7 @@ files:
     sha256: 90c91b56b2511ac5bc4c26423b8762bcd19347e47b00a221b160029cce57aefd
     bytes: 16493
     role: transcript
+  - path: final-run.md
+    sha256: baf980ae8b8e3bce6500c79d0529789d7461f55df6c88908e051c910f5dcd82e
+    bytes: 751
+    role: measurement
