@@ -3261,9 +3261,6 @@
         "adapterErrors": {
           "reject": {
             "code": "duplicate_schema_path",
-            "details": {
-              "path": "messages"
-            },
             "message": "schema paths must be unique"
           }
         },

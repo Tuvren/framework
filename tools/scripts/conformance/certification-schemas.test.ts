@@ -113,6 +113,62 @@ describe("operation catalog schema", () => {
     ).toEqual([]);
   });
 
+  test("pins the barrier release order in the kernel catalog", async () => {
+    const catalog = await readJson("spec/conformance/kernel/operations.json");
+    const operations = at(catalog, "operations") as unknown as Json[];
+    const release = operations.find(
+      (operation) => operation.operationId === "kernel.barrier.release"
+    );
+    expect(release?.barrierReleaseOrder).toEqual({
+      event: "reach-implementation-serialization-point",
+      excluded: "durable-backend-races-from-two-processes",
+      order: "list-order",
+      participants: "operationHandles",
+      scope: "in-process-seams",
+    });
+    expectValid("operationCatalog", catalog);
+  });
+
+  test("accepts only a closed barrier release order guarantee", () => {
+    expectValid("operationCatalog", PINNED_OPERATION_CATALOG);
+    for (const mutate of [
+      (guarantee: Json) => {
+        guarantee.event = "completion";
+      },
+      (guarantee: Json) => {
+        guarantee.excluded = "none";
+      },
+      (guarantee: Json) => {
+        guarantee.order = "arbitrary";
+      },
+      (guarantee: Json) => {
+        guarantee.participants = "otherHandles";
+      },
+      (guarantee: Json) => {
+        guarantee.scope = "cross-process";
+      },
+      (guarantee: Json) => {
+        remove(guarantee, "scope");
+      },
+      (guarantee: Json) => {
+        guarantee.extra = true;
+      },
+    ]) {
+      expectInvalid(
+        "operationCatalog",
+        mutated(PINNED_OPERATION_CATALOG, (draft) => {
+          mutate(at(draft, "operations", 5, "barrierReleaseOrder"));
+        })
+      );
+    }
+    expectInvalid(
+      "operationCatalog",
+      mutated(PINNED_OPERATION_CATALOG, (draft) => {
+        at(draft, "operations", 5).kind = "double";
+      })
+    );
+  });
+
   test.each([
     ["root", []],
     ["operation", ["operations", 0]],

@@ -81,6 +81,19 @@
             "consumes": { "$ref": "#/$defs/handleTypes" }
           }
         },
+        "barrierReleaseOrder": {
+          "description": "Released participants reach the implementation's serialization point in operationHandles list order at in-process seams; durable backend races from two processes are excluded.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["event", "excluded", "order", "participants", "scope"],
+          "properties": {
+            "event": { "const": "reach-implementation-serialization-point" },
+            "excluded": { "const": "durable-backend-races-from-two-processes" },
+            "order": { "const": "list-order" },
+            "participants": { "const": "operationHandles" },
+            "scope": { "const": "in-process-seams" }
+          }
+        },
         "faultOutcome": {
           "type": "object",
           "additionalProperties": false,
@@ -96,7 +109,13 @@
         "required": ["kind"],
         "properties": { "kind": { "const": "syscall" } }
       },
-      "then": { "required": ["binding"] }
+      "then": { "required": ["binding"] },
+      "allOf": [
+        {
+          "if": { "required": ["barrierReleaseOrder"] },
+          "then": { "properties": { "kind": { "const": "control" } } }
+        }
+      ]
     },
     "seam": {
       "type": "object",
