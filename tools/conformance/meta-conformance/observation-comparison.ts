@@ -267,6 +267,62 @@ const sanctionedValues = (observations: unknown): Map<string, string> => {
   return values;
 };
 
+const canonicalNodeHashes = (
+  observations: unknown
+): Map<string, Set<string>> => {
+  const hashes = new Map<string, Set<string>>();
+  visit(observations, (record) => {
+    const fields = [
+      "previousTurnNodeHash",
+      "eventHash",
+      "schemaId",
+      "turnTreeHash",
+      "consumedStagedResults",
+    ];
+    if (
+      typeof record.hash !== "string" ||
+      !fields.every((field) => field in record)
+    ) {
+      return;
+    }
+    const identity = JSON.stringify(
+      normalizeObservation(
+        Object.fromEntries(fields.map((field) => [field, record[field]]))
+      )
+    );
+    const values = hashes.get(identity) ?? new Set<string>();
+    values.add(record.hash);
+    hashes.set(identity, values);
+  });
+  return hashes;
+};
+
+const removeContradictoryCanonicalHashes = (
+  left: unknown,
+  right: unknown,
+  aValues: Map<string, string>,
+  bValues: Map<string, string>
+): void => {
+  const a = canonicalNodeHashes(left);
+  const b = canonicalNodeHashes(right);
+  for (const [identity, aHashes] of a) {
+    const bHashes = b.get(identity);
+    if (bHashes === undefined) {
+      continue;
+    }
+    for (const hash of aHashes) {
+      if ([...bHashes].some((other) => other !== hash)) {
+        aValues.delete(hash);
+      }
+    }
+    for (const hash of bHashes) {
+      if ([...aHashes].some((other) => other !== hash)) {
+        bValues.delete(hash);
+      }
+    }
+  }
+};
+
 const citationFor = (
   left: unknown,
   right: unknown,
@@ -405,9 +461,17 @@ const comparePair = (
         values: [l.check, r.check],
       });
     }
+    const aValues = sanctionedValues(l.observations);
+    const bValues = sanctionedValues(r.observations);
+    removeContradictoryCanonicalHashes(
+      l.observations,
+      r.observations,
+      aValues,
+      bValues
+    );
     walkDifferences(l.observations, r.observations, {
-      aValues: sanctionedValues(l.observations),
-      bValues: sanctionedValues(r.observations),
+      aValues,
+      bValues,
       checkId,
       differences,
       implementations: pair,

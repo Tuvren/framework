@@ -8,7 +8,8 @@
     "version": "0.2.0",
     "transport": "json-rpc-2.0-stdio"
   },
-  "command": ["cargo", "run", "-p", "tuvren-kernel-rust-conformance-adapter"],
+  "command": ["./target/debug/tuvren-kernel-rust-conformance-adapter"],
+  "executable": "./target/debug/tuvren-kernel-rust-conformance-adapter",
   "capabilities": [
     "kernel.syscall",
     "kernel.barrier",

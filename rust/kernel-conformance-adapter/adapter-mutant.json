@@ -9,13 +9,10 @@
     "transport": "json-rpc-2.0-stdio"
   },
   "command": [
-    "cargo",
-    "run",
-    "-p",
-    "tuvren-kernel-rust-conformance-adapter",
-    "--",
+    "./target/debug/tuvren-kernel-rust-conformance-adapter",
     "--mutant-from-env"
   ],
+  "executable": "./target/debug/tuvren-kernel-rust-conformance-adapter",
   "capabilities": [
     "kernel.syscall",
     "kernel.barrier",

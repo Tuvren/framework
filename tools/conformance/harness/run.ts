@@ -36,6 +36,10 @@ import type {
   OperationOutcome,
 } from "../adapter-protocol/index.js";
 import {
+  beginCertificate,
+  finishCertificate,
+} from "../certification/bundle.js";
+import {
   CERTIFICATION_MANIFEST_PATH,
   findCertifiedEntriesForAdapter,
   readCertificationManifest,
@@ -59,7 +63,11 @@ import type {
   ConformancePlanCheck,
   ConformancePlanStep,
 } from "../plan-compiler/index.js";
-import { JsonRpcAdapterClient, previewFrames } from "./adapter-client.js";
+import {
+  adapterCommand,
+  JsonRpcAdapterClient,
+  previewFrames,
+} from "./adapter-client.js";
 import type {
   AdapterManifest,
   AdapterTranscriptMark,
@@ -105,9 +113,11 @@ interface CliOptions {
   certificationManifest: string;
   checks: string[];
   concurrency: number;
+  controlReport?: string;
   evidenceOut?: string;
   packets: string[];
   plans: string[];
+  requireCertified: boolean;
   shard?: {
     count: number;
     index: number;
@@ -150,6 +160,15 @@ interface CheckRecorder {
   diagnoses: AssertionDiagnosis[];
   observation: StepObservationRecord[];
   operationErrors: unknown[];
+  recordCertification: boolean;
+  schedule: {
+    action: string;
+    arrivalSequence: number;
+    input?: unknown;
+    operation: string;
+    stepId: string;
+  }[];
+  storageIdentity?: unknown;
   thrown?: unknown;
 }
 
@@ -202,6 +221,7 @@ const parseArgs = (args: readonly string[]): CliOptions => {
     concurrency: 1,
     packets: [],
     plans: [],
+    requireCertified: false,
     summaryOnly: false,
   };
 
@@ -250,6 +270,11 @@ const parseArgs = (args: readonly string[]): CliOptions => {
         index += 1;
         break;
       }
+      case "--control-report": {
+        options.controlReport = requireValue(next, arg);
+        index += 1;
+        break;
+      }
       case "--evidence-out": {
         options.evidenceOut = requireValue(next, arg);
         index += 1;
@@ -257,6 +282,10 @@ const parseArgs = (args: readonly string[]): CliOptions => {
       }
       case "--allow-failing-evidence": {
         options.allowFailingEvidence = true;
+        break;
+      }
+      case "--require-certified": {
+        options.requireCertified = true;
         break;
       }
       case "--summary-only": {
@@ -815,6 +844,24 @@ const observeTraceStep = async ({
   return { context, extraEvents, outcome };
 };
 
+const recordSchedule = (
+  recorder: CheckRecorder,
+  step: ConformancePlanStep,
+  arrivalSequence: number,
+  input: unknown
+): void => {
+  if (!recorder.recordCertification) {
+    return;
+  }
+  recorder.schedule.push({
+    action: step.action ?? "dispatch",
+    arrivalSequence,
+    ...(step.action === "release" ? { input } : {}),
+    operation: step.operation,
+    stepId: step.stepId,
+  });
+};
+
 const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -832,6 +879,9 @@ const runTraceCheck = async (
   const instance = await client.createInstance(
     projected ? { checkInput: check.input } : baseInput
   );
+  if (recorder.recordCertification) {
+    recorder.storageIdentity = { kind: manifest.storage ?? "none", instance };
+  }
   const trace: Record<
     string,
     AssertionContext & { outcome: OperationOutcome }
@@ -891,7 +941,9 @@ const runTraceCheck = async (
           startedOperations,
           controls.deadlineMs
         );
-        arrivals[step.stepId] = client.latestArrivalSequence();
+        const arrivalSequence = client.latestArrivalSequence();
+        arrivals[step.stepId] = arrivalSequence;
+        recordSchedule(recorder, step, arrivalSequence, input);
         if (receipt.kind === "started") {
           recordHandleCapture(
             step.handleCapture,
@@ -924,7 +976,9 @@ const runTraceCheck = async (
         step,
       });
       barriers.observe(step, outcome);
-      arrivals[step.stepId] = client.latestArrivalSequence();
+      const arrivalSequence = client.latestArrivalSequence();
+      arrivals[step.stepId] = arrivalSequence;
+      recordSchedule(recorder, step, arrivalSequence, input);
       if (outcome.kind === "error") {
         traceAdapterErrors[step.stepId] = outcome.error;
       }
@@ -1240,7 +1294,8 @@ const runCheck = async (
   manifest: AdapterManifest,
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck,
-  replay: string
+  replay: string,
+  recordCertification: boolean
 ): Promise<ConformanceCheckResult> => {
   const mark = client.markTranscript();
   const recorder: CheckRecorder = {
@@ -1249,6 +1304,8 @@ const runCheck = async (
     faults: createFaultActivationTracker(),
     observation: [],
     operationErrors: [],
+    recordCertification,
+    schedule: [],
   };
   let checkResult = await executeCheck(
     client,
@@ -1293,6 +1350,30 @@ const runCheck = async (
         fault: {
           activations: recorder.faults.activations,
           armed: recorder.faults.armed,
+        },
+      },
+    };
+  }
+  if (recordCertification) {
+    if (
+      recorder.schedule.length === 0 &&
+      (compiledCheck.check.steps?.length ?? 0) === 0 &&
+      checkResult.status === "pass"
+    ) {
+      recorder.schedule.push({
+        action: "dispatch",
+        arrivalSequence: client.latestArrivalSequence(),
+        operation: compiledCheck.check.operation,
+        stepId: "dispatch",
+      });
+    }
+    checkResult = {
+      ...checkResult,
+      details: {
+        ...checkResult.details,
+        schedule: recorder.schedule,
+        storageIdentity: recorder.storageIdentity ?? {
+          kind: manifest.storage ?? "none",
         },
       },
     };
@@ -1355,17 +1436,19 @@ const runScheduledChecks = async (
   manifest: AdapterManifest,
   scheduled: readonly ScheduledCheck[],
   concurrency: number,
-  replayFor: (checkId: string) => string
+  replayFor: (checkId: string) => string,
+  recordCertification: boolean
 ): Promise<RunResult[]> => {
   const results: RunResult[] = [];
   let nextIndex = 0;
   const workerCount = Math.min(concurrency, scheduled.length);
   const workers = Array.from({ length: workerCount }, async () => {
     const client = new JsonRpcAdapterClient({
-      command: manifest.command,
+      command: adapterCommand(manifest),
       cwd: REPO_ROOT,
     });
 
+    const owned: RunResult[] = [];
     try {
       const visit = async (): Promise<void> => {
         if (nextIndex >= scheduled.length) {
@@ -1380,21 +1463,40 @@ const runScheduledChecks = async (
           return;
         }
 
-        results.push({
+        const result = {
           checkResult: await runCheck(
             client,
             manifest,
             scheduledCheck.plan,
             scheduledCheck.compiledCheck,
-            replayFor(scheduledCheck.compiledCheck.check.checkId)
+            replayFor(scheduledCheck.compiledCheck.check.checkId),
+            recordCertification
           ),
           index: scheduledCheck.index,
-        });
+        };
+        results.push(result);
+        owned.push(result);
         await visit();
       };
       await visit();
     } finally {
       await client.shutdown();
+      if (recordCertification) {
+        const exit = await client.terminationStatus();
+        for (const result of owned) {
+          result.checkResult = {
+            ...result.checkResult,
+            details: {
+              ...result.checkResult.details,
+              process: {
+                pid: client.processId(),
+                exit: exit ?? null,
+                supervisorTerminated: client.wasTerminatedBySupervisor(),
+              },
+            },
+          };
+        }
+      }
     }
   });
 
@@ -1428,7 +1530,7 @@ const validateHandshakeForSelectedPlans = async (
   }
 
   const client = new JsonRpcAdapterClient({
-    command: manifest.command,
+    command: adapterCommand(manifest),
     cwd: REPO_ROOT,
   });
 
@@ -1710,11 +1812,18 @@ const main = async (): Promise<void> => {
       selected: true,
     }))
   );
+  const digestsBefore = await beginCertificate(
+    options,
+    adapterManifest,
+    profiles
+  );
+  const recordCertification = digestsBefore !== undefined;
   const results = await runScheduledChecks(
     adapterManifest,
     scheduled,
     options.concurrency,
-    (checkId) => createReplayCommand(options, checkId)
+    (checkId) => createReplayCommand(options, checkId),
+    recordCertification
   );
 
   const checkResults = results
@@ -1765,14 +1874,16 @@ const main = async (): Promise<void> => {
     suiteVersion: adapterManifest.suiteVersion,
     summary,
   };
-  const certificate =
-    profiles[0] === undefined
-      ? undefined
-      : {
-          complete: false,
-          profile: profiles[0].profileId,
-          status: "uncertified" as const,
-        };
+  const bundle = await finishCertificate(
+    options,
+    adapterManifest,
+    profiles[0],
+    plans,
+    checkResults,
+    evidence.status,
+    digestsBefore
+  );
+  const certificate = bundle.certificate;
   if (summary.failedChecks > 0) {
     process.stderr.write(
       `conformance failure artifacts retained at ${await retainFailureArtifacts(
@@ -1784,7 +1895,7 @@ const main = async (): Promise<void> => {
   const text = `${JSON.stringify(
     {
       ...evidence,
-      ...(certificate === undefined ? {} : { certificate }),
+      ...bundle,
       checkResults: checkResults.map(previewFailure),
     },
     null,
@@ -1818,6 +1929,13 @@ const main = async (): Promise<void> => {
   }
 
   if (evidence.status === "fail" && !options.allowFailingEvidence) {
+    process.exitCode = 1;
+  }
+
+  if (options.requireCertified && certificate?.status !== "certified") {
+    process.stderr.write(
+      "the requested certificate is incomplete or lacks a matching passing control run\n"
+    );
     process.exitCode = 1;
   }
 

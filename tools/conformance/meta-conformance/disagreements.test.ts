@@ -390,3 +390,28 @@ test("requires observed bootstrap ancestry before sanctioning node hashes", () =
     ])[0]?.classification
   ).toBe("disagreement");
 });
+
+test("does not sanction different canonical node hashes for identical records", () => {
+  const stream = (hash: string) => [
+    frame({ rootTurnNodeHash: hash }, "kernel.thread.create"),
+    frame(
+      {
+        hash,
+        previousTurnNodeHash: null,
+        eventHash: "same-event",
+        schemaId: "schema",
+        turnTreeHash: "same-tree",
+        consumedStagedResults: [],
+      },
+      "kernel.node.get"
+    ),
+  ];
+  const report = compareObservations([
+    implementation("a", [stream("hash-a")]),
+    implementation("b", [stream("hash-b")]),
+  ]);
+  expect(report).toHaveLength(2);
+  expect(
+    report.every(({ classification }) => classification === "disagreement")
+  ).toBe(true);
+});

@@ -37,47 +37,23 @@
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.7.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.8.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.9.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.10.schemaValid",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.11.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.12.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.a_first.13.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"error\"",
-          "status": "pass",
-          "when": "not_applied"
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.10.resultField",
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
@@ -96,7 +72,23 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstOutcome.result.branch.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.secondOutcome.outcome.kind",
           "status": "pass"
         },
         {
@@ -186,47 +178,23 @@
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.7.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.8.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.9.resultField",
-          "message": "when branch not applied: $.result.trace.firstOutcome.outcome.kind did not equal \"result\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.10.schemaValid",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.11.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.12.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.concurrent_writer.b_first.13.resultField",
-          "status": "pass",
-          "when": "applied"
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.10.resultField",
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
@@ -245,7 +213,23 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.firstOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondOutcome.result.branch.headTurnNodeHash",
           "status": "pass"
         },
         {
@@ -2949,6 +2933,22 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.rootNode.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.bootstrapNode.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.mainNode.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.forkNode.1.identity",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.stateField",
           "status": "pass"
         },
@@ -3007,7 +3007,11 @@
           "forkEvent",
           "forkCheckpoint",
           "finishFork",
-          "reject"
+          "reject",
+          "rootNode",
+          "bootstrapNode",
+          "mainNode",
+          "forkNode"
         ]
       },
       "status": "pass"
@@ -3257,6 +3261,9 @@
         "adapterErrors": {
           "reject": {
             "code": "duplicate_schema_path",
+            "details": {
+              "path": "messages"
+            },
             "message": "schema paths must be unique"
           }
         },
@@ -5436,106 +5443,47 @@
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.10.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.11.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.12.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.13.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.14.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.15.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.16.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.17.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.18.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.19.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.20.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.21.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.22.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.23.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.24.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.25.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.26.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.27.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.28.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
@@ -5554,7 +5502,31 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.turnTreeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.lineage.result.1",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.lineage.result.2.hash",
           "status": "pass"
         },
         {
@@ -5578,6 +5550,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
           "status": "pass"
         },
@@ -5590,11 +5566,19 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
           "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.visibleMessages.result",
           "status": "pass"
         },
         {
@@ -5767,109 +5751,35 @@
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.10.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.11.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.12.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.13.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.14.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.15.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.16.resultField",
-          "status": "pass",
-          "when": "applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.17.resultField",
-          "status": "pass",
-          "when": "applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.18.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.19.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.20.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.21.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.22.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.23.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.24.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.25.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.26.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.27.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
-        },
-        {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.28.resultField",
-          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
-          "status": "pass",
-          "when": "not_applied"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
@@ -5888,7 +5798,19 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.lineage.result.1.hash",
           "status": "pass"
         },
         {
@@ -5912,6 +5834,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
           "status": "pass"
         },
@@ -5924,11 +5850,19 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
           "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.visibleMessages.result",
           "status": "pass"
         },
         {

@@ -23,7 +23,7 @@
 // tag-based discovery the gate has just enforced.
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
@@ -73,11 +73,84 @@ const run = spawnSync(
   { cwd: ROOT, stdio: "inherit" }
 );
 
-const negativeControls = spawnSync(
-  "bun",
-  ["tools/conformance/meta-conformance/negative-controls.ts"],
-  { cwd: ROOT, stdio: "inherit" }
-);
-process.exit(
-  run.status === 0 ? (negativeControls.status ?? 1) : (run.status ?? 1)
-);
+const cacheRoot = path.join(ROOT, ".cache");
+mkdirSync(cacheRoot, { recursive: true });
+const directory = mkdtempSync(path.join(cacheRoot, "conformance-controls-"));
+let exitCode = run.status ?? 1;
+try {
+  const report = path.join(directory, "negative-controls.json");
+  const negativeControls = spawnSync(
+    "bun",
+    [
+      "tools/conformance/meta-conformance/negative-controls.ts",
+      "--report-out",
+      report,
+    ],
+    { cwd: ROOT, stdio: "inherit" }
+  );
+  if (exitCode === 0) {
+    exitCode = negativeControls.status ?? 1;
+  }
+  const certified =
+    "certified" in parsedManifest && Array.isArray(parsedManifest.certified)
+      ? parsedManifest.certified
+      : [];
+  const inventory =
+    "inventory" in parsedManifest && Array.isArray(parsedManifest.inventory)
+      ? parsedManifest.inventory
+      : [];
+  if (exitCode === 0) {
+    for (const entry of certified) {
+      if (
+        typeof entry !== "object" ||
+        entry === null ||
+        !("profile" in entry) ||
+        entry.profile !== "kernel.memory" ||
+        !("project" in entry)
+      ) {
+        continue;
+      }
+      const match = inventory.find(
+        (candidate: unknown) =>
+          typeof candidate === "object" &&
+          candidate !== null &&
+          "project" in candidate &&
+          candidate.project === entry.project
+      );
+      if (
+        !(
+          typeof match === "object" &&
+          match !== null &&
+          "adapter" in match &&
+          typeof match.adapter === "string"
+        )
+      ) {
+        throw new Error(
+          `missing adapter for certified project ${String(entry.project)}`
+        );
+      }
+      const certificate = spawnSync(
+        "bun",
+        [
+          "tools/conformance/harness/run.ts",
+          "--adapter",
+          match.adapter,
+          "--control-report",
+          report,
+          "--require-certified",
+          "--concurrency",
+          "4",
+          "--summary-only",
+        ],
+        { cwd: ROOT, stdio: "inherit" }
+      );
+      if (certificate.status !== 0) {
+        exitCode = certificate.status ?? 1;
+        break;
+      }
+    }
+  }
+} finally {
+  rmSync(directory, { recursive: true, force: true });
+}
+process.exit(exitCode);

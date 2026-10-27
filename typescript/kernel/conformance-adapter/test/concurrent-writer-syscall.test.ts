@@ -107,12 +107,11 @@ const runRace = async (serialized: boolean) => {
         );
       } else {
         expect(check.details?.traceStepIds).toContain("secondReceipt");
-        const expected = check.checkId.endsWith("a_first") ? 6 : 10;
         expect(
           check.assertionResults.find((assertion) =>
-            assertion.assertionId.endsWith(`.${expected}.schemaValid`)
+            assertion.assertionId.endsWith(".6.schemaValid")
           )
-        ).toMatchObject({ status: "pass", when: "applied" });
+        ).toMatchObject({ status: "pass" });
       }
     }
   } finally {
@@ -222,7 +221,7 @@ const failure = (code = "kernel_runtime_lateral_head_movement") => ({
   state: { adapterError: { code, message: "lateral" } },
 });
 
-test("race assertions accept either winner and reject double success, double conflict, wrong errors, escaped gates, and overwritten heads", async () => {
+test("race assertions require the scheduled winner and reject inconsistent outcomes", async () => {
   const { evaluateAssertions } =
     await import("../../../../tools/conformance/harness/assertion-engine/index.ts");
   const { plan } = await loadConformancePlan(planPath);
@@ -273,6 +272,15 @@ test("race assertions accept either winner and reject double success, double con
           result: { trace: value },
           state: { trace: value },
         });
+      const scheduledWinner = check.checkId.endsWith("a_first")
+        ? "first"
+        : "second";
+      if (winner !== scheduledWinner) {
+        expect(
+          evaluate(trace).some((evaluation) => evaluation.status === "fail")
+        ).toBe(true);
+        continue;
+      }
       expect(
         evaluate(trace).every((evaluation) => evaluation.status === "pass")
       ).toBe(true);

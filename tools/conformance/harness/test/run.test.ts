@@ -28,6 +28,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
+import { readLiveConformanceTopology } from "../../../scripts/compatibility-report.ts";
 import { assertConformanceEvidence } from "../../../scripts/lib/conformance-contract.ts";
 import type { ConformanceFailure } from "../../../scripts/lib/conformance-contract.ts";
 import type { ConformancePlanStep } from "../../plan-compiler/index.ts";
@@ -158,7 +159,8 @@ describe("certification harness arguments and readers", () => {
         authorityPackets: [packetPath],
         boundary: "framework",
         capabilities: ["runner.state"],
-        command: ["bun", "--eval", statePrecedenceAdapterScript],
+        command: ["unusable-launcher", "--eval", statePrecedenceAdapterScript],
+        executable: process.execPath,
         implementationId: "state-precedence-adapter",
         language: "typescript",
         protocol: {
@@ -229,6 +231,12 @@ describe("certification harness arguments and readers", () => {
 
     for (const entry of evidence) {
       expect(entry.selection).toHaveLength(4);
+      if (
+        entry.summary.applicableChecks === undefined ||
+        entry.summary.nonApplicableChecks === undefined
+      ) {
+        throw new Error("runner summary is missing selection counts");
+      }
       expect(
         entry.summary.applicableChecks + entry.summary.nonApplicableChecks
       ).toBe(entry.summary.totalChecks);
@@ -2124,6 +2132,25 @@ test("rejects a claimed profile when a required writer check is not applicable",
         requiredCheckId: "kernel.syscall.concurrent_writer.a_first",
       }),
     })
+  );
+
+  const unfiltered = await runCommand([
+    "bun",
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    adapterPath,
+    "--concurrency",
+    "4",
+  ]);
+  expect(unfiltered.code).toBe(1);
+  const fullEvidence: unknown = JSON.parse(unfiltered.stdout);
+  assertConformanceEvidence(fullEvidence, "unfiltered profile failure");
+  const topology = await readLiveConformanceTopology(adapterPath);
+  expect(
+    fullEvidence.checkResults.map(({ checkId }) => checkId).toSorted()
+  ).toEqual([...topology.applicableCheckIds].toSorted());
+  expect([...(fullEvidence.nonApplicableCheckIds ?? [])].toSorted()).toEqual(
+    [...topology.nonApplicableCheckIds].toSorted()
   );
 });
 

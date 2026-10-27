@@ -4573,6 +4573,86 @@
               "equals": "kernel_runtime_lateral_head_movement"
             }
           ]
+        },
+        {
+          "stepId": "rootNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ]
+        },
+        {
+          "stepId": "bootstrapNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.bootstrap.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ]
+        },
+        {
+          "stepId": "mainNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.mainCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ]
+        },
+        {
+          "stepId": "forkNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.forkCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ]
         }
       ],
       "assertions": [

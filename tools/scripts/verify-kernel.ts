@@ -34,6 +34,7 @@ const KERNEL_TYPECHECK_PROJECTS = [
 const KERNEL_CONFORMANCE_PROJECTS = [
   "kernel-testkit",
   "kernel-typescript-certification",
+  "kernel-rust-certification",
   "kernel-typescript-sqlite-certification",
   "kernel-typescript-postgres-certification",
   // Go, Python, and Dart kernel ports run the same shared harness against
@@ -170,6 +171,15 @@ export const createKernelVerificationPhases = (options: {
               ...cacheModeArgs,
             ],
             id: "kernel memory, SQLite, and PostgreSQL conformance",
+          },
+          {
+            command: [
+              "bun",
+              "test",
+              "tools/conformance/certification/bundle-contract.test.ts",
+              "tools/conformance/meta-conformance/claim-coverage.test.ts",
+            ],
+            id: "kernel memory certificate and negative-control contracts",
           },
         ],
       },
