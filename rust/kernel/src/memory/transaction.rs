@@ -30,7 +30,16 @@ impl InMemoryKernel {
         if let Some(operation) = &self.operation {
             operation.enter()?;
         }
-        let mut state = self.lock_state()?;
+        let mut state = self.lock_state().inspect_err(|_| {
+            #[cfg(feature = "conformance")]
+            if let Some(operation) = &self.operation {
+                operation.abandoned();
+            }
+        })?;
+        #[cfg(feature = "conformance")]
+        if let Some(operation) = &self.operation {
+            operation.acquired();
+        }
         let snapshot = state.begin_journal();
         let working = Self {
             state: Arc::new(Mutex::new(std::mem::take(&mut *state))),

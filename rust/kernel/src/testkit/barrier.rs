@@ -17,9 +17,17 @@ pub struct EntryReceipt {
 }
 
 #[derive(Default)]
+struct Entry {
+    released: bool,
+    acquired: bool,
+    finished: bool,
+}
+
+#[derive(Default)]
 struct Barrier {
     participants: BTreeSet<String>,
-    entries: BTreeMap<String, bool>,
+    entries: BTreeMap<String, Entry>,
+    last_released: Option<String>,
     closed: bool,
 }
 
@@ -28,11 +36,13 @@ struct State {
     barriers: BTreeMap<String, Barrier>,
     active: Option<String>,
     cancellations: BTreeMap<String, String>,
+    interruptions: BTreeMap<String, String>,
 }
 
 #[derive(Default)]
 struct Shared {
     state: Mutex<State>,
+    release_order: Mutex<()>,
     changed: Condvar,
 }
 
@@ -72,6 +82,7 @@ impl BarrierControl {
             Barrier {
                 participants: distinct,
                 entries: BTreeMap::new(),
+                last_released: None,
                 closed: false,
             },
         );
@@ -117,8 +128,13 @@ impl BarrierControl {
         if handles.is_empty() || handles.iter().any(String::is_empty) {
             return Err("release requires operation handles".into());
         }
+        let _order = self
+            .0
+            .release_order
+            .lock()
+            .map_err(|_| "barrier release lock poisoned")?;
         let mut state = self.0.state.lock().map_err(|_| "barrier lock poisoned")?;
-        let barrier = state.barriers.get_mut(id).ok_or("unknown barrier")?;
+        let barrier = state.barriers.get(id).ok_or("unknown barrier")?;
         if handles
             .iter()
             .any(|handle| !barrier.entries.contains_key(handle))
@@ -126,12 +142,34 @@ impl BarrierControl {
             return Err("release before implementation entry receipt".into());
         }
         for handle in handles {
-            if let Some(released) = barrier.entries.get_mut(handle) {
-                *released = true;
+            state = self
+                .0
+                .changed
+                .wait_while(state, |state| {
+                    state.barriers.get(id).is_some_and(|barrier| {
+                        !barrier.closed
+                            && barrier.last_released.as_ref().is_some_and(|previous| {
+                                barrier
+                                    .entries
+                                    .get(previous)
+                                    .is_some_and(|entry| !entry.acquired && !entry.finished)
+                            })
+                    })
+                })
+                .map_err(|_| "barrier lock poisoned")?;
+            let barrier = state.barriers.get_mut(id).ok_or("unknown barrier")?;
+            if barrier.closed {
+                return Err("barrier closed before release".into());
             }
+            if let Some(entry) = barrier.entries.get_mut(handle) {
+                entry.released = true;
+            }
+            barrier.last_released = Some(handle.clone());
+            self.0.changed.notify_all();
         }
+        let barrier = state.barriers.get(id).ok_or("unknown barrier")?;
         if barrier.entries.len() >= barrier.participants.len()
-            && barrier.entries.values().all(|released| *released)
+            && barrier.entries.values().all(|entry| entry.released)
         {
             state.active = None;
         }
@@ -172,6 +210,37 @@ impl OperationContext {
             .cloned()
     }
 
+    pub fn interruption(&self) -> Option<String> {
+        self.control
+            .0
+            .state
+            .lock()
+            .ok()?
+            .interruptions
+            .get(&self.handle)
+            .cloned()
+    }
+
+    pub(crate) fn acquired(&self) {
+        self.finish_entry(true);
+    }
+
+    pub(crate) fn abandoned(&self) {
+        self.finish_entry(false);
+    }
+
+    fn finish_entry(&self, acquired: bool) {
+        if let Ok(mut state) = self.control.0.state.lock() {
+            for barrier in state.barriers.values_mut() {
+                if let Some(entry) = barrier.entries.get_mut(&self.handle) {
+                    entry.acquired |= acquired;
+                    entry.finished |= !acquired;
+                }
+            }
+            self.control.0.changed.notify_all();
+        }
+    }
+
     pub(crate) fn enter(&self) -> KernelResult<()> {
         let shared = &self.control.0;
         let mut state = shared
@@ -184,29 +253,35 @@ impl OperationContext {
         let Some(barrier) = state.barriers.get_mut(&id) else {
             return Ok(());
         };
-        barrier.entries.entry(self.handle.clone()).or_insert(false);
+        barrier.entries.entry(self.handle.clone()).or_default();
         shared.changed.notify_all();
         loop {
-            if let Some(reason) = state.cancellations.get(&self.handle) {
-                return Err(KernelError::new("Error", reason, None));
-            }
-            if state
-                .barriers
-                .get(&id)
-                .is_some_and(|barrier| barrier.closed)
-            {
-                return Err(KernelError::new(
-                    "Error",
-                    "barrier closed before release",
-                    None,
-                ));
+            let reason = state.cancellations.get(&self.handle).cloned().or_else(|| {
+                state
+                    .barriers
+                    .get(&id)
+                    .is_some_and(|barrier| barrier.closed)
+                    .then(|| "barrier closed before release".to_string())
+            });
+            if let Some(reason) = reason {
+                state
+                    .interruptions
+                    .insert(self.handle.clone(), reason.clone());
+                if let Some(entry) = state
+                    .barriers
+                    .get_mut(&id)
+                    .and_then(|barrier| barrier.entries.get_mut(&self.handle))
+                {
+                    entry.finished = true;
+                }
+                shared.changed.notify_all();
+                return Err(KernelError::new("Error", &reason, None));
             }
             if state
                 .barriers
                 .get(&id)
                 .and_then(|barrier| barrier.entries.get(&self.handle))
-                .copied()
-                .unwrap_or(false)
+                .is_some_and(|entry| entry.released)
             {
                 return Ok(());
             }

@@ -93,6 +93,49 @@ test("writer barriers require later start participants on the catalogued native 
   }
 });
 
+test("barriers reject extra starts until every participant is released", async () => {
+  const { plan } = await loadConformancePlan(planPath);
+  for (const extra of ["outsider", "firstStart"]) {
+    const altered = structuredClone(plan);
+    const steps = altered.checks[0]?.steps;
+    const start = steps?.find((step) => step.stepId === "firstStart");
+    const release = steps?.find((step) => step.action === "release");
+    if (steps === undefined || start === undefined || release === undefined) {
+      throw new Error("missing barrier trace");
+    }
+    steps.splice(steps.indexOf(release), 0, {
+      ...structuredClone(start),
+      stepId: extra,
+      handleCapture: `extra_${extra}`,
+    });
+    expect(
+      evaluateCertificationRules(altered, catalog).some(
+        (violation) => violation.rule === "barrier-schedule"
+      ),
+      extra
+    ).toBe(true);
+  }
+  const partial = structuredClone(plan);
+  const steps = partial.checks[0]?.steps;
+  const start = steps?.find((step) => step.stepId === "firstStart");
+  const release = steps?.find((step) => step.action === "release");
+  if (steps === undefined || start === undefined || release === undefined) {
+    throw new Error("missing barrier trace");
+  }
+  release.participants = ["firstStart"];
+  steps.splice(steps.indexOf(release) + 1, 0, {
+    ...structuredClone(start),
+    stepId: "outsider",
+    handleCapture: "outsider",
+  });
+  expect(
+    evaluateCertificationRules(partial, catalog).some(
+      (violation) =>
+        violation.rule === "barrier-schedule" && violation.stepId === "outsider"
+    )
+  ).toBe(true);
+});
+
 test("arrival assertions can read only existing runner-recorded step arrivals", async () => {
   const { plan } = await loadConformancePlan(planPath);
   const check = plan.checks[0];

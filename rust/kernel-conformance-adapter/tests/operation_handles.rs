@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 
 struct Adapter {
     child: Child,
-    input: ChildStdin,
+    input: Option<ChildStdin>,
     responses: Receiver<Value>,
     next_id: u64,
     pending: BTreeMap<u64, Value>,
@@ -34,7 +34,7 @@ impl Adapter {
         });
         Self {
             child,
-            input,
+            input: Some(input),
             responses,
             next_id: 0,
             pending: BTreeMap::new(),
@@ -44,8 +44,9 @@ impl Adapter {
     fn send(&mut self, method: &str, params: Value) -> u64 {
         self.next_id += 1;
         let frame = json!({"jsonrpc":"2.0", "id":self.next_id, "method":method, "params":params});
-        writeln!(self.input, "{frame}").unwrap();
-        self.input.flush().unwrap();
+        let input = self.input.as_mut().unwrap();
+        writeln!(input, "{frame}").unwrap();
+        input.flush().unwrap();
         self.next_id
     }
 
@@ -210,11 +211,11 @@ fn cancellation_at_the_seam_prevents_the_write_and_outcomes_are_repeatable() {
         json!({"barrierId":"writers","operationHandles":[first,second]}),
     );
     let result = adapter.request("awaitOperation", json!({"operationHandle":first}));
-    assert_eq!(result["result"]["kind"], "error", "{result}");
-    assert_eq!(result["result"]["error"]["message"], "cancel at gate");
+    assert_eq!(result["error"]["code"], "adapter_host_error", "{result}");
+    assert_eq!(result["error"]["message"], "cancel at gate");
     assert_eq!(
-        adapter.request("awaitOperation", json!({"operationHandle":first}))["result"],
-        result["result"]
+        adapter.request("awaitOperation", json!({"operationHandle":first}))["error"],
+        result["error"]
     );
     let hash = tuvren_kernel_rust::hash_bytes_to_hex(&[6]);
     assert_eq!(
@@ -234,11 +235,11 @@ fn destroy_cancels_and_drains_held_work() {
     let destroy = adapter.send("destroyInstance", json!({"instance":instance}));
     let responses = [adapter.receive(), adapter.receive()];
     let completed = responses.iter().find(|v| v["id"] == pending).unwrap();
-    assert_eq!(completed["result"]["kind"], "error", "{completed}");
     assert_eq!(
-        completed["result"]["error"]["message"],
-        "adapter instance destroyed"
+        completed["error"]["code"], "adapter_host_error",
+        "{completed}"
     );
+    assert_eq!(completed["error"]["message"], "adapter instance destroyed");
     let destroyed = responses.iter().find(|v| v["id"] == destroy).unwrap();
     assert_eq!(destroyed["result"], Value::Null, "{destroyed}");
     assert!(
@@ -262,11 +263,11 @@ fn shutdown_cancels_held_work_in_every_instance() {
     let shutdown = adapter.send("shutdown", json!({}));
     for id in [first_await, second_await] {
         let response = adapter.receive_for(id);
-        assert_eq!(response["result"]["kind"], "error", "{response}");
         assert_eq!(
-            response["result"]["error"]["message"],
-            "adapter instance destroyed"
+            response["error"]["code"], "adapter_host_error",
+            "{response}"
         );
+        assert_eq!(response["error"]["message"], "adapter instance destroyed");
     }
     assert_eq!(adapter.receive_for(shutdown)["result"], Value::Null);
     for handle in [first, second] {
@@ -281,11 +282,11 @@ fn shutdown_cancels_held_work_in_every_instance() {
 fn malformed_correlated_requests_do_not_poison_the_session() {
     let mut adapter = Adapter::new();
     writeln!(
-        adapter.input,
+        adapter.input.as_mut().unwrap(),
         "{{\"jsonrpc\":\"2.0\",\"id\":41,\"method\":\"events\",\"params\":{{\"x\":1,\"x\":2}}}}"
     )
     .unwrap();
-    adapter.input.flush().unwrap();
+    adapter.input.as_mut().unwrap().flush().unwrap();
     let malformed = adapter.receive();
     assert_eq!(malformed["id"], 41, "{malformed}");
     assert!(malformed["error"].is_object());
@@ -294,6 +295,47 @@ fn malformed_correlated_requests_do_not_poison_the_session() {
         json!({"packetId":"test","planVersion":"0.1.0"}),
     );
     assert_eq!(valid["result"]["adapterId"], "rust-kernel");
+}
+
+#[test]
+fn invalid_utf8_frame_does_not_end_the_session() {
+    let mut adapter = Adapter::new();
+    adapter
+        .input
+        .as_mut()
+        .unwrap()
+        .write_all(b"\xff\n")
+        .unwrap();
+    adapter.input.as_mut().unwrap().flush().unwrap();
+    let malformed = adapter.receive();
+    assert_eq!(malformed["error"]["code"], "adapter_stdin_failed");
+    let valid = adapter.request(
+        "initialize",
+        json!({"packetId":"test","planVersion":"0.1.0"}),
+    );
+    assert_eq!(valid["result"]["adapterId"], "rust-kernel");
+}
+
+#[test]
+fn eof_cancels_held_operations_before_joining_awaits() {
+    let mut adapter = Adapter::new();
+    let instance = adapter.instance();
+    adapter.arm(&instance);
+    let handle = adapter.start(&instance, "0b");
+    adapter.wait(&instance, &handle);
+    let pending = adapter.send("awaitOperation", json!({"operationHandle":handle}));
+    drop(adapter.input.take());
+    let response = adapter.receive_for(pending);
+    assert_eq!(
+        response["error"]["code"], "adapter_host_error",
+        "{response}"
+    );
+    assert_eq!(response["error"]["message"], "adapter instance destroyed");
+    let deadline = std::time::Instant::now() + Duration::from_secs(4);
+    while adapter.child.try_wait().unwrap().is_none() {
+        assert!(std::time::Instant::now() < deadline, "adapter hung on EOF");
+        std::thread::sleep(Duration::from_millis(10));
+    }
 }
 
 #[test]
