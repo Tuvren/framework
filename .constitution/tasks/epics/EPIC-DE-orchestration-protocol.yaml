@@ -169,3 +169,32 @@ decisions:
         - typescript/kernel/testkit/src/lib/kernel-barrier-control.ts
         - spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json
         - KRT-DE003
+  - id: OD-18
+    question: "Does a manifest declaring adapter protocol 0.2.0 claim every 0.2.0 method family (handles, subscriptions and pull, storage reattachment, faults, clocks), or does each family apply only through the capabilities and storage kind the manifest declares?"
+    blocks: [KRT-DE005, KRT-DE006]
+    options:
+      - name: Version admits the wire surface; capabilities and storage kind bind each method family
+        pros:
+          - "Matches the repository rule that checks are selected by capability or surface requirement, and the manifest's storage field already states whether reattachment applies."
+          - "TypeScript and Rust declare 0.2.0 on the same footing; a kernel without live event channels or durable storage is certified for what it claims, and checks needing the rest are excluded with a recorded reason."
+        cons:
+          - "Live subscriptions need their own capability claim before any plan uses subscribe or pull."
+      - name: Version claims the complete 0.2.0 surface
+        pros:
+          - "A single version number tells a reader everything the adapter serves."
+        cons:
+          - "Neither the TypeScript nor the Rust host serves subscriptions or reattachment, so both would have to drop back to 0.1.0 and lose the handle-based race, or fabricate stream observations."
+    recommendation: Version admits the wire surface; capabilities and storage kind bind each method family
+    closure: ruling
+    ruler: "Owner, after the EPIC-DE merge"
+    status: proposed
+    asked:
+      date: 2026-10-27
+      in: EPIC-DE
+    proposed_by: EPIC-DE @ 6064c1e
+    interim:
+      assumption: "Both kernel adapters declare protocol 0.2.0 and claim kernel.barrier; subscribe, pull, and openInstance are bound by capability and storage kind, and no plan step uses them before a live-event capability exists."
+      applied_by:
+        - typescript/kernel/conformance-adapter/adapter.json
+        - rust/kernel-conformance-adapter/adapter.json
+        - KRT-DE005
