@@ -1,0 +1,490 @@
+{
+  "controlRun": {
+    "id": "538f5d9b173f013b65f2b5717f1f78b107332fa0e918c115d449e311716abf54",
+    "profile": "kernel.memory",
+    "status": "pass",
+    "outcomes": [
+      {
+        "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+        "baseline": "pass",
+        "conditionalAssertions": [],
+        "counted": true,
+        "findings": [],
+        "mode": "enforcing",
+        "mutants": [
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.protocol.canonical_rejection.1.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.accept-noncanonical-cbor",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+              "kernel.syscall.concurrent_writer.a_first.7.resultField",
+              "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+              "kernel.syscall.concurrent_writer.b_first.10.resultField",
+              "kernel.crash-recovery.concurrent_writer.1.resultField",
+              "kernel.crash-recovery.concurrent_writer.3.resultField",
+              "kernel.crash-recovery.concurrent_writer.4.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.accept-stale-head-update",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+              "kernel.syscall.run-liveness.lease_renewal.4.schemaValid"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.accept-stale-owner-after-takeover",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.reclamation.reachability.8.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.delete-object-reachable-through-live-root",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.logical.recovery_state.3.resultField",
+              "kernel.crash-recovery.in_process_fault_points.5.resultField",
+              "kernel.syscall.crash-recovery.before_commit.6.resultField",
+              "kernel.syscall.crash-recovery.before_commit.12.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [],
+            "expectedRejection": "missing_fault_activation",
+            "kind": "instrumentation",
+            "mutantId": "kernel.fault-seam-never-fires",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.run-liveness.expired_listing.2.resultField",
+              "kernel.syscall.run-liveness.lease_renewal.8.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.lease-takeover-before-expiry",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+              "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+              "kernel.syscall.reclamation.reachability.1.resultField",
+              "kernel.syscall.reclamation.reachability.2.resultField",
+              "kernel.syscall.reclamation.reachability.4.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.never-sweep-eligible-objects",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.logical.diff_paths.1.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.noncanonical-changed-paths-order",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.crash-recovery.in_process_fault_points.2.resultField",
+              "kernel.crash-recovery.in_process_fault_points.3.resultField",
+              "kernel.crash-recovery.in_process_fault_points.4.resultField",
+              "kernel.crash-recovery.in_process_fault_points.5.resultField",
+              "kernel.crash-recovery.in_process_fault_points.6.resultField",
+              "kernel.syscall.crash-recovery.before_commit.8.resultField",
+              "kernel.syscall.crash-recovery.before_commit.9.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.promote-staged-before-checkpoint",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.scope-isolation.store_get_is_scope_confined.2.resultField",
+              "kernel.scope-isolation.store_has_is_scope_confined.2.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.resolve-object-across-scopes",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+              "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.sweep-inside-grace-window",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.wrong-opaque-object-hash",
+            "outcome": "killed"
+          }
+        ],
+        "notRun": [],
+        "profile": "kernel.memory"
+      },
+      {
+        "adapter": "rust/kernel-conformance-adapter/adapter.json",
+        "baseline": "pass",
+        "conditionalAssertions": [],
+        "counted": true,
+        "findings": [],
+        "mode": "enforcing",
+        "mutants": [
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.accept-noncanonical-cbor",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.accept-stale-head-update",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.accept-stale-owner-after-takeover",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.reclamation.reachability.8.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.delete-object-reachable-through-live-root",
+            "outcome": "killed"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.logical.recovery_state.3.resultField",
+              "kernel.syscall.crash-recovery.before_commit.6.resultField",
+              "kernel.syscall.crash-recovery.before_commit.12.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+            "outcome": "killed"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "expectedRejection": "missing_fault_activation",
+            "kind": "instrumentation",
+            "mutantId": "kernel.fault-seam-never-fires",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.lease-takeover-before-expiry",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.never-sweep-eligible-objects",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.noncanonical-changed-paths-order",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.promote-staged-before-checkpoint",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.resolve-object-across-scopes",
+            "outcome": "unsupported",
+            "reason": "no shared-substrate construction seam in the Rust kernel; not run"
+          },
+          {
+            "activated": false,
+            "designatedFailures": [],
+            "kind": "implementation",
+            "mutantId": "kernel.sweep-inside-grace-window",
+            "outcome": "unsupported",
+            "reason": "no Rust reproduction yet; not run"
+          },
+          {
+            "activated": true,
+            "designatedFailures": [
+              "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+              "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+            ],
+            "kind": "implementation",
+            "mutantId": "kernel.wrong-opaque-object-hash",
+            "outcome": "killed"
+          }
+        ],
+        "notRun": [],
+        "profile": "kernel.memory"
+      }
+    ],
+    "verifierDigests": {
+      "harness": "7560661882f21ed17f2347d8debb90015ab82ededce08bb663ff8834cbbbdc6f",
+      "packet": "279a8f4e38fa9d2af35b8ba5b8b8e21cc692b4e8335d3cd582767ea9f83f0956",
+      "plans": "4f3615903c6f23afd0ca396ca80956c048e6be7e9dddd7c60bed86805f8ebef9",
+      "catalogs": "cdc0b7b14ea921623531e1918e57fab2093b2155971a4aece62bb3cc92d341ea",
+      "fixtures": "a2a1f9956e932cfe3fb04dc5a3244798b681986c3050c70d9884c96b187ea21b",
+      "profiles": "83c1195ede84a389ba3227cd1f0f6d88bb09f15528c440ff6b378ec50e0cd512",
+      "controls": "27d4c02d6f40c8439431eb6326d8e94cd0a13f3df7c1f27a072257e8cc73945c",
+      "verifierAuthority": "7caf9bc7c6bfabe16e5a995e2118e45f4138890a8c7a18c9bcac36f3c28ee2da"
+    }
+  },
+  "reports": [
+    {
+      "port": "kernel",
+      "profile": "kernel.memory",
+      "counted": true,
+      "mode": "enforcing",
+      "totals": {
+        "activated": 13,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 13,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "mutants": [
+        {
+          "id": "kernel.accept-noncanonical-cbor",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.accept-stale-head-update",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.accept-stale-owner-after-takeover",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.delete-object-reachable-through-live-root",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.drop-uncommitted-staged-result-on-recovery",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.fault-seam-never-fires",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.lease-takeover-before-expiry",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.never-sweep-eligible-objects",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.noncanonical-changed-paths-order",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.promote-staged-before-checkpoint",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.resolve-object-across-scopes",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.sweep-inside-grace-window",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.wrong-opaque-object-hash",
+          "outcome": "killed",
+          "reason": null
+        }
+      ]
+    },
+    {
+      "port": "kernel",
+      "profile": "kernel.memory",
+      "counted": true,
+      "mode": "enforcing",
+      "totals": {
+        "activated": 3,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 3,
+        "survived": 0,
+        "unsupported": 10
+      },
+      "mutants": [
+        {
+          "id": "kernel.accept-noncanonical-cbor",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.accept-stale-head-update",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.accept-stale-owner-after-takeover",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.delete-object-reachable-through-live-root",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.drop-uncommitted-staged-result-on-recovery",
+          "outcome": "killed",
+          "reason": null
+        },
+        {
+          "id": "kernel.fault-seam-never-fires",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.lease-takeover-before-expiry",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.never-sweep-eligible-objects",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.noncanonical-changed-paths-order",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.promote-staged-before-checkpoint",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.resolve-object-across-scopes",
+          "outcome": "unsupported",
+          "reason": "no shared-substrate construction seam in the Rust kernel; not run"
+        },
+        {
+          "id": "kernel.sweep-inside-grace-window",
+          "outcome": "unsupported",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "id": "kernel.wrong-opaque-object-hash",
+          "outcome": "killed",
+          "reason": null
+        }
+      ]
+    }
+  ]
+}

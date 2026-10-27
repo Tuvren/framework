@@ -1,0 +1,69 @@
+{
+  "interpretation": "Exploratory run with a temporary Rust capability declaration; it is not a certificate run. Seven syscall checks pass and seven legacy composite checks fail.",
+  "status": "fail",
+  "checks": [
+    {
+      "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "status": "fail",
+      "classification": "adapter_protocol"
+    },
+    {
+      "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "status": "fail",
+      "classification": "adapter_protocol"
+    },
+    {
+      "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "status": "fail",
+      "classification": "adapter_protocol"
+    },
+    {
+      "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
+      "status": "fail",
+      "classification": "adapter_protocol"
+    },
+    {
+      "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "status": "fail",
+      "classification": "adapter_protocol"
+    },
+    {
+      "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "status": "fail",
+      "classification": "adapter_protocol"
+    },
+    {
+      "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "status": "fail",
+      "classification": "adapter_protocol"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "status": "pass"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "status": "pass"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "status": "pass"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+      "status": "pass"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "status": "pass"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "status": "pass"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "status": "pass"
+    }
+  ]
+}

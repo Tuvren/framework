@@ -1,0 +1,123 @@
+[
+  {
+    "implementationId": "typescript-kernel-memory",
+    "language": "typescript",
+    "adapterId": "typescript-kernel-memory",
+    "status": "pass",
+    "certificate": {
+      "complete": true,
+      "profile": "kernel.memory",
+      "status": "certified"
+    },
+    "summary": {
+      "failedChecks": 0,
+      "passedChecks": 135,
+      "totalChecks": 139,
+      "applicableChecks": 135,
+      "nonApplicableChecks": 4
+    },
+    "negativeControlRunId": "538f5d9b173f013b65f2b5717f1f78b107332fa0e918c115d449e311716abf54",
+    "nonApplicableCheckIds": [
+      "kernel-restart-af.invalid-staged-result-reexecutes",
+      "kernel.crash-recovery.durable_fault_points",
+      "kernel.restart-recovery.close_reopen_checkpoint",
+      "kernel.run-liveness.clock_skew_preemption"
+    ],
+    "digests": {
+      "harness": "7560661882f21ed17f2347d8debb90015ab82ededce08bb663ff8834cbbbdc6f",
+      "packet": "279a8f4e38fa9d2af35b8ba5b8b8e21cc692b4e8335d3cd582767ea9f83f0956",
+      "plans": "4f3615903c6f23afd0ca396ca80956c048e6be7e9dddd7c60bed86805f8ebef9",
+      "catalogs": "cdc0b7b14ea921623531e1918e57fab2093b2155971a4aece62bb3cc92d341ea",
+      "fixtures": "a2a1f9956e932cfe3fb04dc5a3244798b681986c3050c70d9884c96b187ea21b",
+      "profiles": "83c1195ede84a389ba3227cd1f0f6d88bb09f15528c440ff6b378ec50e0cd512",
+      "controls": "27d4c02d6f40c8439431eb6326d8e94cd0a13f3df7c1f27a072257e8cc73945c",
+      "verifierAuthority": "7caf9bc7c6bfabe16e5a995e2118e45f4138890a8c7a18c9bcac36f3c28ee2da",
+      "implementation": "7ef047db3e1a9aec8908ef91c0504c7c96e2633ad1f0cd99cd3055d1ed829610",
+      "adapterManifest": "4acfae5c3310713181146242d75c2cb2a15b5090aa5ea64f744f9745fefbfe0e"
+    },
+    "environment": {
+      "architecture": "x64",
+      "backend": {
+        "kind": "memory",
+        "version": "0.3.0"
+      },
+      "operatingSystem": {
+        "platform": "linux",
+        "release": "7.3.0"
+      },
+      "toolchains": {
+        "bun": "1.4.2",
+        "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+        "typescript": "6.0.2"
+      },
+      "fingerprint": "7ebf00db99cd1c5fa269eb1ad639eca0d73c9d0578e415524a0b8affae3a65a7"
+    }
+  },
+  {
+    "implementationId": "rust-kernel",
+    "language": "rust",
+    "adapterId": "rust-kernel",
+    "status": "pass",
+    "certificate": {
+      "complete": true,
+      "profile": "kernel.memory",
+      "status": "certified"
+    },
+    "summary": {
+      "failedChecks": 0,
+      "passedChecks": 123,
+      "totalChecks": 139,
+      "applicableChecks": 123,
+      "nonApplicableChecks": 16
+    },
+    "negativeControlRunId": "538f5d9b173f013b65f2b5717f1f78b107332fa0e918c115d449e311716abf54",
+    "nonApplicableCheckIds": [
+      "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "kernel-protocol-af.run-create-rejects-busy-branch",
+      "kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "kernel-restart-af.invalid-staged-result-reexecutes",
+      "kernel.crash-recovery.concurrent_writer",
+      "kernel.crash-recovery.durable_fault_points",
+      "kernel.crash-recovery.in_process_fault_points",
+      "kernel.restart-recovery.close_reopen_checkpoint",
+      "kernel.run-liveness.clock_skew_preemption",
+      "kernel.scope-isolation.enumeration_is_scope_confined",
+      "kernel.scope-isolation.store_get_is_scope_confined",
+      "kernel.scope-isolation.store_has_is_scope_confined"
+    ],
+    "digests": {
+      "harness": "7560661882f21ed17f2347d8debb90015ab82ededce08bb663ff8834cbbbdc6f",
+      "packet": "279a8f4e38fa9d2af35b8ba5b8b8e21cc692b4e8335d3cd582767ea9f83f0956",
+      "plans": "4f3615903c6f23afd0ca396ca80956c048e6be7e9dddd7c60bed86805f8ebef9",
+      "catalogs": "cdc0b7b14ea921623531e1918e57fab2093b2155971a4aece62bb3cc92d341ea",
+      "fixtures": "a2a1f9956e932cfe3fb04dc5a3244798b681986c3050c70d9884c96b187ea21b",
+      "profiles": "83c1195ede84a389ba3227cd1f0f6d88bb09f15528c440ff6b378ec50e0cd512",
+      "controls": "27d4c02d6f40c8439431eb6326d8e94cd0a13f3df7c1f27a072257e8cc73945c",
+      "verifierAuthority": "7caf9bc7c6bfabe16e5a995e2118e45f4138890a8c7a18c9bcac36f3c28ee2da",
+      "implementation": "904b2f4cc58acac243751a72e6abdeea5962adde8e4670660a28468a569b4ec4",
+      "adapterManifest": "b241fe9b6fef765e3631434a6954db6a1fbb3aef423e8d4f3bae32054160e4bd"
+    },
+    "environment": {
+      "architecture": "x64",
+      "backend": {
+        "kind": "memory",
+        "version": "0.1.0"
+      },
+      "operatingSystem": {
+        "platform": "linux",
+        "release": "7.3.0"
+      },
+      "toolchains": {
+        "bun": "1.4.2",
+        "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+        "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+        "rustc": "rustc 1.95.0 (59807616e 2026-04-14)"
+      },
+      "fingerprint": "caec537c0c96fa3b273955fceb23f035cb959de0d6b0301866f0e06648deb26e"
+    }
+  }
+]
