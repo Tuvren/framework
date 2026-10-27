@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import { createBackendInvariantRecordUtils } from "@tuvren/backend-shared";
 import type { HashString } from "@tuvren/core";
 import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
@@ -26,7 +28,6 @@ import type {
   StoredRun,
 } from "@tuvren/kernel-protocol";
 
-import { hasKernelBarrierEntry } from "./kernel-barrier-control.js";
 import {
   decorateBackend,
   decorateTransactions,
@@ -221,39 +222,62 @@ const acceptStaleHeadUpdate = (
     },
   }));
 
-const acceptStaleKernelHeadUpdate = (
-  kernel: KernelMutantKernel,
-  backend: RuntimeBackend
-): KernelMutantKernel => ({
-  ...kernel,
-  branch: {
-    ...kernel.branch,
-    setHead: async (branchId, turnNodeHash) => {
-      try {
-        return await kernel.branch.setHead(branchId, turnNodeHash);
-      } catch (error: unknown) {
-        if (
-          !hasKernelBarrierEntry() ||
-          readErrorCode(error) !== "kernel_runtime_lateral_head_movement"
-        ) {
-          throw error;
-        }
-        await backend.transact(async (tx) => {
-          const branch = await tx.branches.get(branchId);
-          if (branch === null) {
-            throw error;
+const createNonAtomicHeadUpdateSeams = () => {
+  const headUpdate = new AsyncLocalStorage<boolean>();
+  return {
+    backend: (
+      backend: RuntimeBackend,
+      _context: unknown,
+      activate: KernelMutantActivate
+    ): RuntimeBackend => {
+      const staleWrites = acceptStaleHeadUpdate(backend, activate);
+      return decorateBackend(staleWrites, {
+        transact: async <T>(
+          work: (tx: RuntimeBackendTx) => Promise<T>
+        ): Promise<T> => {
+          if (headUpdate.getStore() !== true) {
+            return await staleWrites.transact(work);
           }
-          await tx.branches.set({ ...branch, headTurnNodeHash: turnNodeHash });
-        });
-        const branch = await kernel.branch.get(branchId);
-        if (branch === null) {
-          throw error;
-        }
-        return { branch };
-      }
+          const writes: RecordedWrite[] = [];
+          const result = await backend.transact(
+            async (tx) =>
+              await work({
+                ...tx,
+                branches: {
+                  ...tx.branches,
+                  set: async (record) => {
+                    writes.push(async (next) => {
+                      await next.branches.set(record);
+                    });
+                    await Promise.resolve();
+                  },
+                },
+              })
+          );
+          // Validation used the old head; commit the pointer in a separate transaction.
+          if (writes.length > 0) {
+            activate();
+            await staleWrites.transact(async (tx) => {
+              await applyWrites(tx, writes);
+            });
+          }
+          return result;
+        },
+      });
     },
-  },
-});
+    kernel: (kernel: KernelMutantKernel): KernelMutantKernel => ({
+      ...kernel,
+      branch: {
+        ...kernel.branch,
+        setHead: async (branchId, turnNodeHash) =>
+          await headUpdate.run(
+            true,
+            async () => await kernel.branch.setHead(branchId, turnNodeHash)
+          ),
+      },
+    }),
+  };
+};
 
 const substrateBackends = (
   registry: WeakMap<object, Set<RuntimeBackend>>,
@@ -631,11 +655,7 @@ const neverSweepEligibleObjects = (
 
 export const STORAGE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   {
-    createSeams: () => ({
-      backend: (backend, _context, activate) =>
-        acceptStaleHeadUpdate(backend, activate),
-      kernel: (kernel, backend) => acceptStaleKernelHeadUpdate(kernel, backend),
-    }),
+    createSeams: createNonAtomicHeadUpdateSeams,
     kind: "implementation",
     mutantId: "kernel.accept-stale-head-update",
     signal: "mutant.accept-stale-head-update.entered",

@@ -211,12 +211,12 @@ test("real stdio host cancels a gated native operation after its entry receipt",
       );
       const first = await client.startOperation(
         "kernel.store.put",
-        { blob: { $bytes: "06" } },
+        { barrierParticipant: "first", blob: { $bytes: "06" } },
         instance
       );
       const second = await client.startOperation(
         "kernel.store.put",
-        { blob: { $bytes: "07" } },
+        { barrierParticipant: "second", blob: { $bytes: "07" } },
         instance
       );
       for (const started of [first, second]) {
@@ -287,7 +287,7 @@ test("catalogued stdio responses reject negative zero while legacy responses ret
   }
 });
 
-test("real stdio destruction releases a barrier-held operation before cleanup", async () => {
+test("real stdio destruction cancels a named barrier-held operation before cleanup", async () => {
   const client = new JsonRpcAdapterClient({
     command: ["bun", "typescript/kernel/conformance-adapter/src/host.ts"],
     cwd: process.cwd(),
@@ -315,7 +315,7 @@ test("real stdio destruction releases a barrier-held operation before cleanup", 
     );
     const first = await client.startOperation(
       "kernel.store.put",
-      { blob: { $bytes: "08" } },
+      { barrierParticipant: "first", blob: { $bytes: "08" } },
       instance
     );
     await client.dispatch(

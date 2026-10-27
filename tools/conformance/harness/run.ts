@@ -33,6 +33,7 @@ import { createVerificationLogs } from "../../scripts/lib/verification-logs.js";
 import type {
   AdapterCapabilities,
   AdapterControls,
+  OperationOutcome,
 } from "../adapter-protocol/index.js";
 import {
   CERTIFICATION_MANIFEST_PATH,
@@ -793,7 +794,10 @@ const runTraceCheck = async (
   const instance = await client.createInstance(
     projected ? { checkInput: check.input } : baseInput
   );
-  const trace: Record<string, AssertionContext> = {};
+  const trace: Record<
+    string,
+    AssertionContext & { outcome: OperationOutcome }
+  > = {};
   const traceAdapterErrors: Record<string, unknown> = {};
   const startedOperations = new Map<string, string>();
   const barriers = createBarrierSteps();
@@ -886,7 +890,7 @@ const runTraceCheck = async (
         traceAdapterErrors[step.stepId] = outcome.error;
       }
 
-      trace[step.stepId] = context;
+      trace[step.stepId] = { ...context, outcome };
       recordStepCaptures(
         step.capture,
         { ...context, events: context.events ?? extraEvents },

@@ -72,16 +72,43 @@ test("writer barriers require later start participants on the catalogued native 
 
 test("arrival assertions can read only existing runner-recorded step arrivals", async () => {
   const { plan } = await loadConformancePlan(planPath);
-  const arrival = plan.checks[0]?.assertions.find(
-    (assertion) => assertion.kind === "arrival"
-  );
-  if (arrival === undefined) {
-    throw new Error("missing arrival assertion");
+  const check = plan.checks[0];
+  if (check === undefined) {
+    throw new Error("missing race check");
   }
-  arrival.path = "$.arrivals.absent";
+  check.assertions.push({
+    kind: "arrival",
+    path: "$.arrivals.absent",
+    lessThan: "$.arrivals.release",
+  });
   expect(
     evaluateCertificationRules(plan, catalog).some(
       (violation) => violation.rule === "observation-path"
     )
   ).toBe(true);
+});
+
+test("outcome branches expose only the runner's protocol kind", async () => {
+  const { plan } = await loadConformancePlan(planPath);
+  const check = plan.checks[0];
+  if (check === undefined) {
+    throw new Error("missing race check");
+  }
+  for (const field of ["value", "error", "invented"]) {
+    const altered = structuredClone(plan);
+    const changed = altered.checks[0];
+    if (changed === undefined) {
+      throw new Error("missing race check");
+    }
+    changed.assertions.push({
+      kind: "resultField",
+      field: `$.trace.firstOutcome.outcome.${field}`,
+      equals: "result",
+    });
+    expect(
+      evaluateCertificationRules(altered, catalog).some(
+        (violation) => violation.rule === "observation-path"
+      )
+    ).toBe(true);
+  }
 });
