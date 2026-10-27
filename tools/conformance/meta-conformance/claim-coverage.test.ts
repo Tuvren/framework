@@ -7,6 +7,7 @@ import {
   assertClaimCoverage,
   assertConditionalBranchCoverage,
   assertNegativeControlGate,
+  claimAssertions,
 } from "./claim-coverage.ts";
 import type { CoverageControl } from "./claim-coverage.ts";
 
@@ -192,18 +193,7 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
   const plans = await readPlans(adapter, { packets: [], plans: [] });
   const checks = plans.flatMap((plan) =>
     plan.checks.map(({ check }) => ({
-      assertions: [
-        ...check.assertions.map((assertion, index) => ({
-          assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
-          claimIds: check.claimIds ?? [],
-        })),
-        ...(check.steps ?? []).flatMap((step) =>
-          (step.assertions ?? []).map((assertion, index) => ({
-            assertionId: `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
-            claimIds: step.claimIds ?? [],
-          }))
-        ),
-      ],
+      assertions: claimAssertions(check),
     }))
   );
   expect(() =>

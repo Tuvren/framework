@@ -1,5 +1,12 @@
 import { createHash } from "node:crypto";
-import { lstat, readdir, readFile, readlink, realpath } from "node:fs/promises";
+import {
+  lstat,
+  readdir,
+  readFile,
+  readlink,
+  realpath,
+  stat,
+} from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -49,9 +56,44 @@ const filesUnder = async (
   return files;
 };
 
-const digestFiles = async (files: readonly string[]): Promise<string> => {
+const expandWorkspaceInputs = async (
+  files: readonly string[]
+): Promise<Set<string>> => {
+  const expanded = new Set(files);
+  const targets = new Set<string>();
+  for (const file of expanded) {
+    if (!(await lstat(file)).isSymbolicLink()) {
+      continue;
+    }
+    const target = await realpath(file);
+    if (!target.startsWith(`${ROOT}${path.sep}`)) {
+      throw new Error(
+        `certificate input link leaves the worktree: ${path.relative(ROOT, file)}`
+      );
+    }
+    if (!target.split(path.sep).includes("node_modules")) {
+      if (targets.has(target)) {
+        continue;
+      }
+      targets.add(target);
+      if ((await stat(target)).isDirectory()) {
+        for (const child of await filesUnder(target)) {
+          expanded.add(child);
+        }
+      } else {
+        expanded.add(target);
+      }
+    }
+  }
+  return expanded;
+};
+
+export const digestWorkspaceInputs = async (
+  files: readonly string[]
+): Promise<string> => {
+  const expanded = await expandWorkspaceInputs(files);
   const hash = createHash("sha256");
-  for (const file of [...new Set(files)].toSorted()) {
+  for (const file of [...expanded].toSorted()) {
     const stat = await lstat(file);
     let bytes: Buffer;
     if (stat.isSymbolicLink()) {
@@ -71,6 +113,38 @@ const digestFiles = async (files: readonly string[]): Promise<string> => {
   }
   return hash.digest("hex");
 };
+
+export const createDependencyDigestCache = (directory: string) => {
+  let cached: Promise<{ digest: string; links: string[] }> | undefined;
+  const initialize = async () => {
+    const files = await filesUnder(directory, true);
+    const links: string[] = [];
+    for (const file of files) {
+      if ((await lstat(file)).isSymbolicLink()) {
+        links.push(file);
+      }
+    }
+    return { digest: await digestWorkspaceInputs(files), links };
+  };
+  return async (): Promise<string> => {
+    cached ??= initialize();
+    let value: { digest: string; links: string[] };
+    try {
+      value = await cached;
+    } catch (error: unknown) {
+      cached = undefined;
+      throw error;
+    }
+    return createHash("sha256")
+      .update(value.digest)
+      .update(await digestWorkspaceInputs(value.links))
+      .digest("hex");
+  };
+};
+
+const nodeModulesDigest = createDependencyDigestCache(
+  path.join(ROOT, "node_modules")
+);
 
 const object = (value: unknown, label: string): Record<string, unknown> => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -148,20 +222,23 @@ export const computeVerifierDigests = async (
     ),
     path.join(ROOT, "package.json"),
     path.join(ROOT, "bun.lock"),
-    ...(await filesUnder(path.join(ROOT, "node_modules"), true)),
+    path.join(ROOT, "tsconfig.base.json"),
+    path.join(ROOT, "tsconfig.json"),
+    ...(await filesUnder(path.join(ROOT, "typescript"))),
   ];
   return {
     harness: createHash("sha256")
-      .update(await digestFiles(harness))
+      .update(await digestWorkspaceInputs(harness))
+      .update(await nodeModulesDigest())
       .update(await readFile(process.execPath))
       .digest("hex"),
-    packet: await digestFiles(packets),
-    plans: await digestFiles(plans),
-    catalogs: await digestFiles(catalogs),
-    fixtures: await digestFiles(fixtures),
-    profiles: await digestFiles(profiles),
-    controls: await digestFiles(controls),
-    verifierAuthority: await digestFiles([
+    packet: await digestWorkspaceInputs(packets),
+    plans: await digestWorkspaceInputs(plans),
+    catalogs: await digestWorkspaceInputs(catalogs),
+    fixtures: await digestWorkspaceInputs(fixtures),
+    profiles: await digestWorkspaceInputs(profiles),
+    controls: await digestWorkspaceInputs(controls),
+    verifierAuthority: await digestWorkspaceInputs([
       ...authority,
       ...packets,
       ...plans,
@@ -187,11 +264,15 @@ export const computeImplementationDigest = async (
       .digest("hex");
   }
   if (manifest.language === "typescript") {
-    return await digestFiles([
-      ...(await filesUnder(path.join(ROOT, "typescript"), true)),
-      ...(await filesUnder(path.join(ROOT, "node_modules"), true)),
-      path.join(ROOT, "bun.lock"),
-    ]);
+    return createHash("sha256")
+      .update(
+        await digestWorkspaceInputs([
+          ...(await filesUnder(path.join(ROOT, "typescript"), true)),
+          path.join(ROOT, "bun.lock"),
+        ])
+      )
+      .update(await nodeModulesDigest())
+      .digest("hex");
   }
   throw new Error(
     `unsupported certificate implementation ${manifest.language}`

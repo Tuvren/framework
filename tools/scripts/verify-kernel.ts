@@ -177,6 +177,7 @@ export const createKernelVerificationPhases = (options: {
               "bun",
               "test",
               "tools/conformance/certification/bundle-contract.test.ts",
+              "tools/conformance/certification/provenance.test.ts",
               "tools/conformance/meta-conformance/claim-coverage.test.ts",
             ],
             id: "kernel memory certificate and negative-control contracts",

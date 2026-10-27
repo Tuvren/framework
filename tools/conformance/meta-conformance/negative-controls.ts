@@ -57,6 +57,7 @@ import {
   assertClaimCoverage,
   assertConditionalBranchCoverage,
   assertNegativeControlGate,
+  claimAssertions,
   profileConditionalAssertions,
 } from "./claim-coverage.ts";
 
@@ -357,18 +358,7 @@ const readProfileObligations = async (
   });
   const checks = plans.flatMap((plan) =>
     plan.checks.map(({ check }) => ({
-      assertions: [
-        ...check.assertions.map((assertion, index) => ({
-          assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
-          claimIds: check.claimIds ?? [],
-        })),
-        ...(check.steps ?? []).flatMap((step) =>
-          (step.assertions ?? []).map((assertion, index) => ({
-            assertionId: `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
-            claimIds: step.claimIds ?? [],
-          }))
-        ),
-      ],
+      assertions: claimAssertions(check),
     }))
   );
   assertClaimCoverage(

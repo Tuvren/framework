@@ -26,6 +26,9 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 
+import { readClaimedProfiles } from "../conformance/certification/profile.js";
+import { readAdapterManifest } from "../conformance/harness/run-plans.js";
+
 const ROOT = process.cwd();
 
 const gate = spawnSync(
@@ -105,7 +108,7 @@ try {
         typeof entry !== "object" ||
         entry === null ||
         !("profile" in entry) ||
-        entry.profile !== "kernel.memory" ||
+        typeof entry.profile !== "string" ||
         !("project" in entry)
       ) {
         continue;
@@ -127,6 +130,68 @@ try {
       ) {
         throw new Error(
           `missing adapter for certified project ${String(entry.project)}`
+        );
+      }
+      const adapterManifest = await readAdapterManifest(
+        path.resolve(ROOT, match.adapter)
+      );
+      const declared = new Set<string>();
+      for (const packetPath of adapterManifest.authorityPackets) {
+        const packet: unknown = JSON.parse(
+          readFileSync(path.resolve(ROOT, packetPath), "utf8")
+        );
+        if (
+          !(
+            typeof packet === "object" &&
+            packet !== null &&
+            "certificationProfiles" in packet &&
+            typeof packet.certificationProfiles === "string"
+          )
+        ) {
+          continue;
+        }
+        const document: unknown = JSON.parse(
+          readFileSync(path.resolve(ROOT, packet.certificationProfiles), "utf8")
+        );
+        if (
+          !(
+            typeof document === "object" &&
+            document !== null &&
+            "profiles" in document &&
+            Array.isArray(document.profiles)
+          )
+        ) {
+          throw new Error(`${packet.certificationProfiles}: invalid profiles`);
+        }
+        for (const profile of document.profiles) {
+          if (
+            !(
+              typeof profile === "object" &&
+              profile !== null &&
+              "profileId" in profile &&
+              typeof profile.profileId === "string"
+            )
+          ) {
+            throw new Error(`${packet.certificationProfiles}: invalid profile`);
+          }
+          declared.add(profile.profileId);
+        }
+      }
+      if (!declared.has(entry.profile)) {
+        if (entry.profile !== adapterManifest.suiteId) {
+          throw new Error(
+            `${entry.profile} is not declared by ${match.adapter}'s authority packets`
+          );
+        }
+        continue;
+      }
+      const claimed = await readClaimedProfiles(
+        adapterManifest,
+        adapterManifest.authorityPackets
+      );
+      if (!claimed.some((profile) => profile.profileId === entry.profile)) {
+        throw new Error(
+          `${match.adapter} does not claim required profile ${entry.profile}`
         );
       }
       const certificate = spawnSync(

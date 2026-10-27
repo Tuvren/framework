@@ -33,14 +33,52 @@ import { adapterCommand } from "../harness/adapter-client.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import {
   compareObservations,
+  isRecord,
   stabilizeObservations,
   validateObservationSteps,
 } from "./observation-comparison.ts";
+import type { ComparisonOperation } from "./observation-comparison.ts";
 
 const ROOT = nodePath.resolve(import.meta.dirname, "../../..");
 const digest = (text: string): string =>
   createHash("sha256").update(text).digest("hex");
 const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
+const readCatalogs = async (
+  packetPaths: readonly string[]
+): Promise<ComparisonOperation[]> => {
+  const operations: ComparisonOperation[] = [];
+  for (const packetPath of packetPaths) {
+    const packet: unknown = JSON.parse(
+      await readFile(nodePath.resolve(ROOT, packetPath), "utf8")
+    );
+    if (!isRecord(packet) || typeof packet.operationCatalog !== "string") {
+      continue;
+    }
+    const catalogPath = packet.operationCatalog;
+    const catalog: unknown = JSON.parse(
+      await readFile(nodePath.resolve(ROOT, catalogPath), "utf8")
+    );
+    if (!(isRecord(catalog) && Array.isArray(catalog.operations))) {
+      throw new Error(`${catalogPath}: invalid operation catalog`);
+    }
+    for (const entry of catalog.operations) {
+      if (
+        !isRecord(entry) ||
+        typeof entry.operationId !== "string" ||
+        !Array.isArray(entry.errors) ||
+        !entry.errors.every((code: unknown) => typeof code === "string")
+      ) {
+        continue;
+      }
+      operations.push({
+        operationId: entry.operationId,
+        errors: entry.errors,
+        catalogPath,
+      });
+    }
+  }
+  return operations;
+};
 interface Options {
   adapters: string[];
   capabilities: string[];
@@ -207,6 +245,7 @@ const captureImplementation = async (adapter: string, options: Options) => {
     await writeFile(observationPath, observationText);
     return {
       adapter,
+      catalog: await readCatalogs(manifest.authorityPackets),
       checks: evidence.checkResults.map(
         ({ checkId, status, assertionResults }) => ({
           assertionResults,
@@ -251,7 +290,18 @@ const main = async (): Promise<void> => {
     await captureNext(index + 1);
   };
   await captureNext(0);
-  const differences = compareObservations(implementations);
+  const catalog = (implementations[0]?.catalog ?? []).filter((entry) =>
+    implementations.every(({ catalog: other }) =>
+      other.some(
+        (candidate) =>
+          candidate.operationId === entry.operationId &&
+          candidate.catalogPath === entry.catalogPath &&
+          JSON.stringify(candidate.errors.toSorted()) ===
+            JSON.stringify(entry.errors.toSorted())
+      )
+    )
+  );
+  const differences = compareObservations(implementations, catalog);
   const classifications = ["sanctioned", "disagreement", "coverage"] as const;
   const counts = Object.fromEntries(
     classifications.map((classification) => [

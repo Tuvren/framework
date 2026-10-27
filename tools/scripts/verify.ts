@@ -381,6 +381,7 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/adapter-protocol/protocol-contract.test.ts",
   "tools/conformance/certification/certification-manifest.test.ts",
   "tools/conformance/certification/conformance-gate.test.ts",
+  "tools/conformance/certification/provenance.test.ts",
   "tools/conformance/harness/test/adapter-client.test.ts",
   "tools/conformance/harness/test/assertion-engine.test.ts",
   "tools/conformance/harness/test/assertion-operators.test.ts",

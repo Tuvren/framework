@@ -137,6 +137,11 @@ export interface ComparedImplementation {
   checks: readonly ComparedCheck[];
   observations: readonly unknown[];
 }
+export interface ComparisonOperation {
+  operationId: string;
+  errors: readonly string[];
+  catalogPath: string;
+}
 export interface ObservationDifference {
   checkId: string;
   kind: "applicability" | "outcome" | "observations";
@@ -360,7 +365,33 @@ interface ComparisonContext {
   aValues: Map<string, string>;
   bValues: Map<string, string>;
   differences: ObservationDifference[];
+  operations: ReadonlyMap<string, ComparisonOperation>;
 }
+
+const unspecifiedErrorDetailsCitation = (
+  key: string,
+  path: string,
+  left: unknown,
+  right: unknown,
+  operation: string | undefined,
+  operations: ReadonlyMap<string, ComparisonOperation>
+): string | undefined => {
+  if (
+    key !== "details" ||
+    !path.endsWith(".outcome.error.details") ||
+    !isRecord(left) ||
+    !isRecord(right) ||
+    typeof left.code !== "string" ||
+    left.code !== right.code ||
+    operation === undefined
+  ) {
+    return undefined;
+  }
+  const entry = operations.get(operation);
+  return entry?.errors.includes(left.code)
+    ? `${entry.catalogPath} ${operation} errors (code declared; no details shape)`
+    : undefined;
+};
 
 const walkDifferences = (
   x: unknown,
@@ -369,12 +400,37 @@ const walkDifferences = (
   path = "$",
   key = "",
   xParent?: unknown,
-  yParent?: unknown
+  yParent?: unknown,
+  operation?: string
 ): void => {
   if (isDeepStrictEqual(x, y)) {
     return;
   }
+  const detailsCitation = unspecifiedErrorDetailsCitation(
+    key,
+    path,
+    xParent,
+    yParent,
+    operation,
+    context.operations
+  );
+  if (detailsCitation !== undefined) {
+    context.differences.push({
+      checkId: context.checkId,
+      citation: detailsCitation,
+      classification: "sanctioned",
+      implementations: context.implementations,
+      kind: "observations",
+      path,
+      values: [x ?? null, y ?? null],
+    });
+    return;
+  }
   if (isRecord(x) && isRecord(y)) {
+    const frameOperation =
+      typeof x.operation === "string" && x.operation === y.operation
+        ? x.operation
+        : operation;
     for (const field of [
       ...new Set([...Object.keys(x), ...Object.keys(y)]),
     ].toSorted()) {
@@ -385,14 +441,24 @@ const walkDifferences = (
         `${path}.${field}`,
         field,
         x,
-        y
+        y,
+        frameOperation
       );
     }
     return;
   }
   if (Array.isArray(x) && Array.isArray(y) && x.length === y.length) {
     for (const [i, entry] of x.entries()) {
-      walkDifferences(entry, y[i], context, `${path}[${i}]`, String(i), x, y);
+      walkDifferences(
+        entry,
+        y[i],
+        context,
+        `${path}[${i}]`,
+        String(i),
+        x,
+        y,
+        operation
+      );
     }
     return;
   }
@@ -427,7 +493,8 @@ const indexChecks = (input: ComparedImplementation) =>
 
 const comparePair = (
   left: ComparedImplementation,
-  right: ComparedImplementation
+  right: ComparedImplementation,
+  operations: ReadonlyMap<string, ComparisonOperation>
 ): ObservationDifference[] => {
   const differences: ObservationDifference[] = [];
   const a = indexChecks(left);
@@ -475,19 +542,25 @@ const comparePair = (
       checkId,
       differences,
       implementations: pair,
+      operations,
     });
   }
   return differences;
 };
 
 export const compareObservations = (
-  implementations: readonly ComparedImplementation[]
-): ObservationDifference[] =>
-  implementations.flatMap((left, index) =>
+  implementations: readonly ComparedImplementation[],
+  catalog: readonly ComparisonOperation[] = []
+): ObservationDifference[] => {
+  const operations = new Map(
+    catalog.map((entry) => [entry.operationId, entry])
+  );
+  return implementations.flatMap((left, index) =>
     implementations
       .slice(index + 1)
-      .flatMap((right) => comparePair(left, right))
+      .flatMap((right) => comparePair(left, right, operations))
   );
+};
 
 interface ObservationStep {
   action?: string;
