@@ -86,6 +86,19 @@ tickets:
           - tools/scripts/verify.ts
           - typescript/kernel/protocol/test/kernel-certification-authority.test.ts
         justification: "The verify gate and the kernel authority test enumerate registered certification plans and acceptance suites; both must include the new plan and its regression suites."
+      - files:
+          - tools/conformance/plan-compiler/control-input.ts
+          - tools/conformance/adapter-protocol/index.ts
+          - tools/conformance/adapter-protocol/protocol.md
+          - tools/conformance/adapter-protocol/protocol.schema.json
+          - tools/conformance/adapter-protocol/stdio-host.ts
+        justification: "Review of the race found that runner-injected barrier participant names broke the pinned startOperation contract because catalogued input validation skipped handle steps; the fix validates start inputs in the compiler and gives the shared stdio host a typed adapter_method_not_implemented answer for 0.2.0 method families an adapter does not claim (OD-18)."
+      - files:
+          - tools/scripts/compatibility-report.ts
+          - tools/scripts/lib/conformance-contract.test.ts
+        justification: "The compatibility topology reader ignored the protocol-version exclusion the runner applies, so once Rust claimed kernel.barrier the freshness check and the certified run disagreed; both now share the runner's check selection."
+      - files: [.changeset]
+        justification: "The private TypeScript testkit barrier API changed; the changeset records it for CI's changeset check."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
     status: planned
@@ -193,8 +206,13 @@ decisions:
       in: EPIC-DE
     proposed_by: EPIC-DE @ 6064c1e
     interim:
-      assumption: "Both kernel adapters declare protocol 0.2.0 and claim kernel.barrier; subscribe, pull, and openInstance are bound by capability and storage kind, and no plan step uses them before a live-event capability exists."
+      assumption: "Both kernel adapters declare protocol 0.2.0 and claim kernel.barrier; subscribe, pull, and openInstance are bound by capability and storage kind, and no plan step uses them before a live-event capability exists. The pinned protocol schema gains the additive ProtocolErrorCode adapter_method_not_implemented (already used by the Go, Python, and Dart adapters) so hosts answer unclaimed method families with a typed error."
       applied_by:
         - typescript/kernel/conformance-adapter/adapter.json
         - rust/kernel-conformance-adapter/adapter.json
+        - rust/kernel-conformance-adapter/adapter-mutant.json
+        - rust/kernel-conformance-adapter/src/main.rs
+        - tools/conformance/adapter-protocol/protocol.schema.json
+        - tools/conformance/adapter-protocol/index.ts
+        - tools/conformance/adapter-protocol/stdio-host.ts
         - KRT-DE005
