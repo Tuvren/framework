@@ -1,9 +1,84 @@
 import { expect, test } from "bun:test";
 
+import { spawn } from "bun";
+
+import { handleStdioAdapterLine } from "../../adapter-protocol/stdio-host.ts";
 import { JsonRpcAdapterClient } from "../adapter-client.ts";
+import { requiresHandleProtocolUpgrade } from "../operation-steps.ts";
 
 const host = new URL("../../adapter-protocol/stdio-host.ts", import.meta.url)
   .pathname;
+
+test("handle steps require protocol version 0.2.0 or newer", () => {
+  const steps = [{ action: "start" }];
+  for (const version of ["0.0.9", "0.1.0", "0.1.9", "0.2.0-rc.1"]) {
+    expect(requiresHandleProtocolUpgrade(steps, version), version).toBe(true);
+  }
+  for (const version of ["0.2.0", "0.2.1", "1.0.0"]) {
+    expect(requiresHandleProtocolUpgrade(steps, version), version).toBe(false);
+  }
+  expect(requiresHandleProtocolUpgrade([{ action: "dispatch" }], "0.1.9")).toBe(
+    false
+  );
+});
+
+test.each(["startOperation", "awaitOperation", "cancelOperation"])(
+  "missing %s binding returns the protocol method error",
+  async (method) => {
+    const response = await handleStdioAdapterLine(
+      {
+        initialize: (packetId, planVersion) => ({
+          adapterId: "test",
+          capabilities: [],
+          packetId,
+          planVersion,
+        }),
+        dispatch: async () => ({ kind: "result", value: {} }),
+      },
+      JSON.stringify({ jsonrpc: "2.0", id: 7, method, params: {} })
+    );
+    expect(response).toMatchObject({
+      id: 7,
+      error: { code: "adapter_method_not_implemented" },
+    });
+  }
+);
+
+test("clock and fault requests wait for earlier blocking work", async () => {
+  const ordered = `
+    import { serveStdioAdapter } from ${JSON.stringify(host)};
+    await serveStdioAdapter({
+      initialize: (packetId, planVersion) => ({adapterId:"ordering",capabilities:[],packetId,planVersion}),
+      dispatch: async () => { await new Promise(resolve => setTimeout(resolve, 80)); return {kind:"result",value:null}; }
+    });`;
+  const child = spawn(["bun", "--eval", ordered], {
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  for (const [id, method] of [
+    [1, "dispatch"],
+    [2, "setClock"],
+    [3, "armFault"],
+  ] as const) {
+    child.stdin.write(
+      `${JSON.stringify({ jsonrpc: "2.0", id, method, params: { operation: "probe" } })}\n`
+    );
+  }
+  child.stdin.end();
+  const [output, errors, exit] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  expect({ errors, exit }).toEqual({ errors: "", exit: 0 });
+  expect(
+    output
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line).id)
+  ).toEqual([1, 2, 3]);
+});
 
 const script = `
 import { serveStdioAdapter } from ${JSON.stringify(host)};

@@ -34,6 +34,8 @@ const PREVIOUSLY_CERTIFIED = [
   "kernel-dart-certification",
   "kernel-go-certification",
   "kernel-python-certification",
+  "kernel-rust-certification",
+  "kernel-typescript-certification",
   "kernel-typescript-postgres-certification",
   "kernel-typescript-sqlite-certification",
   "providers-typescript-certification",

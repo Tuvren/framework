@@ -200,7 +200,10 @@ const dispatchMethod = async (
     }
     case "startOperation": {
       if (adapter.startOperation === undefined) {
-        throw new Error("adapter does not support startOperation");
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "adapter does not support startOperation"
+        );
       }
       return await adapter.startOperation(
         readString(paramObject.operation, "operation"),
@@ -210,7 +213,10 @@ const dispatchMethod = async (
     }
     case "awaitOperation": {
       if (adapter.awaitOperation === undefined) {
-        throw new Error("adapter does not support awaitOperation");
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "adapter does not support awaitOperation"
+        );
       }
       return await adapter.awaitOperation(
         readString(paramObject.operationHandle, "operationHandle")
@@ -218,7 +224,10 @@ const dispatchMethod = async (
     }
     case "cancelOperation": {
       if (adapter.cancelOperation === undefined) {
-        throw new Error("adapter does not support cancelOperation");
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "adapter does not support cancelOperation"
+        );
       }
       await adapter.cancelOperation(
         readString(paramObject.operationHandle, "operationHandle"),
@@ -373,6 +382,8 @@ export const serveStdioAdapter = async (
           "createInstance",
           "events",
           "inspectState",
+          "setClock",
+          "armFault",
           "destroyInstance",
           "shutdown",
         ].includes(String(request.method))

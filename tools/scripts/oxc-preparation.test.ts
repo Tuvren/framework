@@ -17,6 +17,8 @@ import { pathToFileURL } from "node:url";
 import ts from "typescript";
 
 import {
+  BUILT_ADAPTER_ACCEPTANCE_TESTS,
+  DEFAULT_VERIFICATION_PHASES,
   ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS,
   TOOLING_ACCEPTANCE_STEP,
   TOOLING_ACCEPTANCE_TESTS,
@@ -496,5 +498,31 @@ describe("durable tooling acceptance lane", () => {
     for (const relative of TOOLING_ACCEPTANCE_TESTS) {
       expect(existsSync(path.join(REPO_ROOT, relative)), relative).toBe(true);
     }
+  });
+
+  test("real-adapter acceptance suites run after the targeted builds", () => {
+    const phase = DEFAULT_VERIFICATION_PHASES.find(
+      (item) => item.id === "transition-line builds, tests, and conformance"
+    );
+    const build =
+      phase?.steps.findIndex(
+        (step) => step.id === "transition-line targeted builds"
+      ) ?? -1;
+    const acceptance =
+      phase?.steps.findIndex(
+        (step) => step.id === "built-adapter tooling acceptance suites"
+      ) ?? -1;
+    expect(build).toBeGreaterThanOrEqual(0);
+    expect(acceptance).toBeGreaterThan(build);
+    expect(phase?.steps[acceptance]?.command).toEqual([
+      "bun",
+      "test",
+      ...BUILT_ADAPTER_ACCEPTANCE_TESTS,
+    ]);
+    expect(
+      BUILT_ADAPTER_ACCEPTANCE_TESTS.every(
+        (file) => !TOOLING_ACCEPTANCE_TESTS.includes(file)
+      )
+    ).toBe(true);
   });
 });

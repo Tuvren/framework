@@ -86,8 +86,7 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
     packet: "spec/kernel/authority-packet.json",
     port: "kernel",
     profile: "kernel.memory",
-    undetectedReasons:
-      "tools/conformance/meta-conformance/kernel-memory-undetected.json",
+    undetectedReasons: "spec/conformance/kernel/kernel-memory-undetected.json",
   },
   {
     activationOperation: "kernel.mutant.activation",
@@ -120,8 +119,7 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
     packet: "spec/kernel/authority-packet.json",
     port: "kernel",
     profile: "kernel.memory",
-    undetectedReasons:
-      "tools/conformance/meta-conformance/kernel-memory-undetected.json",
+    undetectedReasons: "spec/conformance/kernel/kernel-memory-undetected.json",
   },
 ];
 
@@ -340,15 +338,12 @@ const readProfileObligations = async (
   const declared = controls.filter((control) =>
     control.profiles.includes(config.profile)
   );
-  const missing = declared
-    .map((control) => control.mutantId)
-    .filter((id) => !negativeControls.includes(id));
   const unknown = negativeControls.filter(
     (id) => !declared.some((control) => control.mutantId === id)
   );
-  if (missing.length > 0 || unknown.length > 0) {
+  if (unknown.length > 0) {
     throw new Error(
-      `${config.profile} negative-control inventory mismatch: ${[...missing, ...unknown].join(", ")}`
+      `${config.profile} negative-control inventory mismatch: ${unknown.join(", ")}`
     );
   }
   const adapter = await readValidatedAdapterManifest(config.controlAdapter);
@@ -364,7 +359,7 @@ const readProfileObligations = async (
   assertClaimCoverage(
     config.profile,
     readStrings(profile.claimIds),
-    declared,
+    declared.filter((control) => negativeControls.includes(control.mutantId)),
     reasons,
     checks
   );

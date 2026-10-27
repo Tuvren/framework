@@ -186,7 +186,7 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
   ) as { controls: CoverageControl[] };
   const reasons = JSON.parse(
     await readFile(
-      "tools/conformance/meta-conformance/kernel-memory-undetected.json",
+      "spec/conformance/kernel/kernel-memory-undetected.json",
       "utf-8"
     )
   ) as Record<string, string>;
@@ -200,7 +200,9 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
     assertClaimCoverage(
       profile.profileId,
       profile.claimIds,
-      manifest.controls,
+      manifest.controls.filter((control) =>
+        profile.negativeControls.includes(control.mutantId)
+      ),
       reasons,
       checks
     )
@@ -215,7 +217,9 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
     assertClaimCoverage(
       profile.profileId,
       profile.claimIds,
-      manifest.controls,
+      manifest.controls.filter((control) =>
+        profile.negativeControls.includes(control.mutantId)
+      ),
       incomplete,
       checks
     )

@@ -365,7 +365,6 @@ export const ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
 ];
 
 export const FOLLOWUP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
-  "tools/conformance/harness/test/run.test.ts",
   "tools/scripts/api-freeze-gate.test.ts",
   "tools/scripts/generated-prerequisites.test.ts",
   "tools/scripts/json-check.test.ts",
@@ -391,7 +390,6 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/kernel-integrity.test.ts",
   "tools/conformance/harness/test/integrity-plan-contract.test.ts",
   "tools/conformance/harness/test/observation-encoding.test.ts",
-  "tools/conformance/harness/test/operation-handles.test.ts",
   "tools/conformance/harness/test/operation-plan.test.ts",
   "tools/conformance/meta-conformance/negative-controls.test.ts",
   "tools/conformance/meta-conformance/claim-coverage.test.ts",
@@ -401,6 +399,11 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/plan-compiler/handle-steps.test.ts",
   "tools/scripts/conformance/certification-schemas.test.ts",
   "tools/scripts/lib/conformance-contract.test.ts",
+];
+
+export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
+  "tools/conformance/harness/test/run.test.ts",
+  "tools/conformance/harness/test/operation-handles.test.ts",
 ];
 
 // This remains an explicit inventory rather than a glob. A new follow-up suite
@@ -421,9 +424,10 @@ export const TOOLING_ACCEPTANCE_STEP: VerificationStep = {
 // inventory can drift from the checkout. Fail loud at load time (like the
 // CODEGEN_PROJECTS guard) instead of letting `bun test` skip a missing path.
 {
-  const missing = TOOLING_ACCEPTANCE_TESTS.filter(
-    (relative) => !existsSync(path.join(process.cwd(), relative))
-  );
+  const missing = [
+    ...TOOLING_ACCEPTANCE_TESTS,
+    ...BUILT_ADAPTER_ACCEPTANCE_TESTS,
+  ].filter((relative) => !existsSync(path.join(process.cwd(), relative)));
   if (missing.length > 0) {
     throw new Error(
       `verify: TOOLING_ACCEPTANCE_TESTS references missing files (${missing.join(
@@ -642,6 +646,10 @@ const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           WORKSPACE_BUILD_PROJECTS.join(","),
         ],
         id: "transition-line targeted builds",
+      },
+      {
+        command: ["bun", "test", ...BUILT_ADAPTER_ACCEPTANCE_TESTS],
+        id: "built-adapter tooling acceptance suites",
       },
       {
         command: [
