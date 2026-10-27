@@ -57,7 +57,50 @@ test("the conformance lane fails when a required profile certificate is uncertif
             state: "pass",
           },
         ],
-        certified: [{ project: "fixture", profile: "kernel.memory" }],
+        certified: [{ project: "fixture", profile: "fixture.memory" }],
+      })
+    );
+    const fixtureDirectory = path.join(directory, "fixture");
+    await mkdir(fixtureDirectory);
+    const packetPath = path.join(fixtureDirectory, "packet.json");
+    const profilesPath = path.join(fixtureDirectory, "profiles.json");
+    await writeFile(
+      profilesPath,
+      JSON.stringify({
+        profiles: [
+          {
+            profileId: "fixture.memory",
+            requiredCapabilities: ["fixture.store"],
+            claimIds: ["fixture.claim"],
+            faultPoints: [],
+            negativeControls: [],
+            requiredEvidence: [],
+          },
+        ],
+      })
+    );
+    await writeFile(
+      packetPath,
+      JSON.stringify({ certificationProfiles: profilesPath })
+    );
+    await writeFile(
+      path.join(fixtureDirectory, "adapter.json"),
+      JSON.stringify({
+        adapterId: "fixture",
+        implementationId: "fixture",
+        language: "typescript",
+        boundary: "kernel",
+        protocol: {
+          name: "tuvren.conformance-adapter",
+          version: "0.2.0",
+          transport: "json-rpc-2.0-stdio",
+        },
+        command: ["bun"],
+        capabilities: ["fixture.store"],
+        authorityPackets: [packetPath],
+        profiles: ["fixture.memory"],
+        suiteId: "fixture.suite",
+        suiteVersion: "0.1.0",
       })
     );
     const fakeBun = path.join(directory, "bun");

@@ -9,11 +9,14 @@ import { spawn } from "bun";
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import { profileConditionalAssertions } from "../meta-conformance/claim-coverage.ts";
+import { finishCertificate } from "./bundle.ts";
 import {
   controlOutcomes,
   controlRunId,
   matchesControlRun,
 } from "./control-link.ts";
+import { readClaimedProfiles } from "./profile.ts";
+import { computeCertificateDigests } from "./provenance.ts";
 import type { VerifierDigests } from "./provenance.ts";
 
 const root = path.resolve(import.meta.dirname, "../../..");
@@ -185,18 +188,90 @@ test("real fleet controls certify both complete bundles and reject changed verif
         status: "certified",
       });
       expect(bundle.negativeControlRunId).toBe(controlRunIdentifier);
+      if (adapter === adapters[0]) {
+        const manifest = await readAdapterManifest(adapter);
+        const [claimed] = await readClaimedProfiles(
+          manifest,
+          manifest.authorityPackets
+        );
+        if (claimed === undefined) {
+          throw new Error("missing claimed profile");
+        }
+        const options = {
+          adapter,
+          controlReport: reportPath,
+          capabilities: [],
+          checks: [],
+          packets: [],
+          plans: [],
+        };
+        const before = await computeCertificateDigests(manifest, adapter);
+        const plans = await readPlans(manifest, { packets: [], plans: [] });
+        const previousPath = process.env.PATH;
+        process.env.PATH = "";
+        try {
+          const complete = await finishCertificate(
+            options,
+            manifest,
+            claimed,
+            plans,
+            evidence.checkResults,
+            evidence.status,
+            before
+          );
+          expect(complete.certificate).toMatchObject({
+            complete: true,
+            status: "certified",
+          });
+          const incomplete = await finishCertificate(
+            options,
+            manifest,
+            {
+              ...claimed,
+              requiredEvidence: [
+                ...claimed.requiredEvidence,
+                "trace.missing.result",
+              ],
+            },
+            plans,
+            evidence.checkResults,
+            evidence.status,
+            before
+          );
+          expect(incomplete.certificate).toMatchObject({
+            complete: false,
+            status: "uncertified",
+          });
+        } finally {
+          if (previousPath === undefined) {
+            delete process.env.PATH;
+          } else {
+            process.env.PATH = previousPath;
+          }
+        }
+      }
       for (const field of verifierFields) {
         expect(digests[field]).toBe(controlDigests[field]);
       }
       expect(record(bundle.environment)).toMatchObject({
         backend: { kind: "memory", version: expect.any(String) },
         fingerprint: expect.any(String),
-        toolchains: {
-          bun: expect.any(String),
-          cargo: expect.any(String),
-          rustc: expect.any(String),
-        },
+        toolchains: adapter.startsWith("rust/")
+          ? {
+              bun: expect.any(String),
+              cargo: expect.any(String),
+              rustc: expect.any(String),
+            }
+          : { bun: expect.any(String), typescript: expect.any(String) },
       });
+      if (!adapter.startsWith("rust/")) {
+        expect(
+          record(record(bundle.environment).toolchains)
+        ).not.toHaveProperty("cargo");
+        expect(
+          record(record(bundle.environment).toolchains)
+        ).not.toHaveProperty("rustc");
+      }
       for (const check of evidence.checkResults) {
         const details = record(check.details);
         expect(Array.isArray(details.schedule)).toBe(true);

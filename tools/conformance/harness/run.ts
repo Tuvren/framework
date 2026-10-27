@@ -82,6 +82,7 @@ import type {
   AssertionDiagnosis,
 } from "./assertion-engine/index.js";
 import { readPath } from "./assertion-engine/path.js";
+import { assertionId } from "./assertion-id.js";
 import { createBarrierSteps } from "./barrier-steps.js";
 import { selectCheck } from "./check-selection.js";
 import {
@@ -1191,7 +1192,7 @@ const executeCheck = async (
           ]
         : []),
       ...check.assertions.map((assertion, index) => ({
-        assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
+        assertionId: assertionId(check.checkId, index, assertion.kind),
         message,
         status: "fail" as const,
       })),

@@ -22,6 +22,7 @@ import type {
   ConformancePlanNumericOperand,
   ConformancePlanValueOperators,
 } from "../../plan-compiler/index.js";
+import { assertionId as deriveAssertionId } from "../assertion-id.js";
 import {
   findSecretLeaks,
   findSecretPatternLeaks,
@@ -856,7 +857,7 @@ export const diagnoseAssertions = (
   context: AssertionContext
 ): AssertionDiagnosis[] =>
   check.assertions.map((assertion, index) => {
-    const assertionId = `${check.checkId}.${index + 1}.${assertion.kind}`;
+    const assertionId = deriveAssertionId(check.checkId, index, assertion.kind);
     const { when } = assertion;
     let branch: Pick<AssertionEvaluation, "when"> = {};
     const failed = (

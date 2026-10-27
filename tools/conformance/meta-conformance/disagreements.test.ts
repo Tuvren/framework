@@ -138,6 +138,43 @@ test("sanctions error prose only with equal codes and reports coverage separatel
   ).toBe(true);
 });
 
+test("catalogued error codes permit unspecified details but never a different code", () => {
+  const catalog = [
+    {
+      operationId: "kernel.schema.register",
+      errors: ["duplicate_schema_path"],
+      catalogPath: "spec/conformance/kernel/operations.json",
+    },
+  ];
+  const rejected = (code: string, details: unknown) => ({
+    method: "dispatch",
+    operation: "kernel.schema.register",
+    outcome: { kind: "error", error: { code, message: "rejected", details } },
+  });
+  const left = implementation("a", [[rejected("duplicate_schema_path", null)]]);
+  const right = implementation("b", [
+    [rejected("duplicate_schema_path", { path: "a" })],
+  ]);
+  expect(compareObservations([left, right], catalog)).toMatchObject([
+    {
+      classification: "sanctioned",
+      citation: expect.stringContaining("operations.json"),
+    },
+  ]);
+  const different = implementation("b", [[rejected("other", { path: "a" })]]);
+  expect(
+    compareObservations([left, different], catalog).some(
+      (entry) =>
+        entry.path.endsWith(".code") && entry.classification === "disagreement"
+    )
+  ).toBe(true);
+  expect(
+    compareObservations([left, right], []).some(
+      (entry) => entry.classification === "disagreement"
+    )
+  ).toBe(true);
+});
+
 test("checks each recorded dispatch and events operation against its plan", () => {
   const steps = [
     { operation: "kernel.store.put", stepId: "put" },

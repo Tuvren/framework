@@ -31,6 +31,7 @@ const child = spawn(command[0] ?? "", command.slice(1), {
   stdio: ["pipe", "pipe", "inherit"],
 });
 const requests = new Map<unknown, { method: string; operation?: string }>();
+const operations = new Map<string, string>();
 let observations: unknown[] = [];
 const frame = (line: string): Record<string, unknown> => {
   const value: unknown = JSON.parse(line);
@@ -43,6 +44,16 @@ createInterface({ input: child.stdout }).on("line", (line) => {
   const response = frame(line);
   const request = requests.get(response.id);
   requests.delete(response.id);
+  if (
+    request?.method === "startOperation" &&
+    request.operation !== undefined &&
+    typeof response.result === "object" &&
+    response.result !== null &&
+    "operationHandle" in response.result &&
+    typeof response.result.operationHandle === "string"
+  ) {
+    operations.set(response.result.operationHandle, request.operation);
+  }
   if (request?.method === "createInstance") {
     observations = [];
   } else if (request?.method === "destroyInstance") {
@@ -75,16 +86,24 @@ child.on("close", (code) => {
 process.on("SIGTERM", () => {
   child.kill("SIGTERM");
 });
+const requestOperation = (params: unknown): string | undefined => {
+  if (typeof params !== "object" || params === null) {
+    return undefined;
+  }
+  if ("operation" in params && typeof params.operation === "string") {
+    return params.operation;
+  }
+  if (
+    "operationHandle" in params &&
+    typeof params.operationHandle === "string"
+  ) {
+    return operations.get(params.operationHandle);
+  }
+  return undefined;
+};
 for await (const line of createInterface({ input: process.stdin })) {
   const request = frame(line);
-  const params = request.params;
-  const operation =
-    typeof params === "object" &&
-    params !== null &&
-    "operation" in params &&
-    typeof params.operation === "string"
-      ? params.operation
-      : undefined;
+  const operation = requestOperation(request.params);
   requests.set(request.id, { method: String(request.method), operation });
   child.stdin.write(`${line}\n`);
 }

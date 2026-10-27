@@ -1,4 +1,28 @@
-import type { CompiledConformancePlan } from "../plan-compiler/index.js";
+import { assertionId } from "../harness/assertion-id.js";
+import type {
+  CompiledConformancePlan,
+  ConformancePlanCheck,
+} from "../plan-compiler/index.js";
+
+export const claimAssertions = (check: ConformancePlanCheck) => [
+  ...check.assertions.map((assertion, index) => ({
+    assertionId: assertionId(check.checkId, index, assertion.kind),
+    claimIds: check.claimIds ?? [],
+    conditional: assertion.when !== undefined,
+  })),
+  ...(check.steps ?? []).flatMap((step) =>
+    (step.assertions ?? []).map((assertion, index) => ({
+      assertionId: assertionId(
+        check.checkId,
+        index,
+        assertion.kind,
+        step.stepId
+      ),
+      claimIds: step.claimIds ?? [],
+      conditional: assertion.when !== undefined,
+    }))
+  ),
+];
 
 export const profileConditionalAssertions = (
   claimIds: readonly string[],
@@ -6,26 +30,15 @@ export const profileConditionalAssertions = (
 ): string[] => {
   const claims = new Set(claimIds);
   return plans.flatMap(({ checks }) =>
-    checks.flatMap(({ check }) => [
-      ...((check.claimIds ?? []).some((claim) => claims.has(claim))
-        ? check.assertions.flatMap((assertion, index) =>
-            assertion.when === undefined
-              ? []
-              : [`${check.checkId}.${index + 1}.${assertion.kind}`]
-          )
-        : []),
-      ...(check.steps ?? []).flatMap((step) =>
-        (step.claimIds ?? []).some((claim) => claims.has(claim))
-          ? (step.assertions ?? []).flatMap((assertion, index) =>
-              assertion.when === undefined
-                ? []
-                : [
-                    `${check.checkId}.${step.stepId}.${index + 1}.${assertion.kind}`,
-                  ]
-            )
-          : []
-      ),
-    ])
+    checks.flatMap(({ check }) =>
+      claimAssertions(check)
+        .filter(
+          (entry) =>
+            entry.conditional &&
+            entry.claimIds.some((claim) => claims.has(claim))
+        )
+        .map((entry) => entry.assertionId)
+    )
   );
 };
 

@@ -4582,9 +4582,7 @@
               "$ref": "capture.thread.rootTurnNodeHash"
             }
           },
-          "claimIds": [
-            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
-          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
           "assertions": [
             {
               "kind": "identity",
@@ -4602,9 +4600,7 @@
               "$ref": "capture.bootstrap.turnNodeHash"
             }
           },
-          "claimIds": [
-            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
-          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
           "assertions": [
             {
               "kind": "identity",
@@ -4622,9 +4618,7 @@
               "$ref": "capture.mainCheckpoint.turnNodeHash"
             }
           },
-          "claimIds": [
-            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
-          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
           "assertions": [
             {
               "kind": "identity",
@@ -4642,9 +4636,7 @@
               "$ref": "capture.forkCheckpoint.turnNodeHash"
             }
           },
-          "claimIds": [
-            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
-          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
           "assertions": [
             {
               "kind": "identity",

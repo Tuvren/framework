@@ -64,11 +64,6 @@ export const beginCertificate = async (
 };
 
 const certificationEnvironment = async (manifest: AdapterManifest) => {
-  const rustc = spawnSync("rustc", ["--version"], { encoding: "utf8" });
-  const cargo = spawnSync("cargo", ["--version"], { encoding: "utf8" });
-  if (rustc.status !== 0 || cargo.status !== 0) {
-    throw new Error("cannot determine the Rust toolchain versions");
-  }
   const packageValue: unknown =
     manifest.language === "rust"
       ? undefined
@@ -90,6 +85,33 @@ const certificationEnvironment = async (manifest: AdapterManifest) => {
   if (typeof backendVersion !== "string") {
     throw new Error("cannot determine the memory backend version");
   }
+  let implementationToolchain: Record<string, string>;
+  if (manifest.language === "rust") {
+    const rustc = spawnSync("rustc", ["--version"], { encoding: "utf8" });
+    const cargo = spawnSync("cargo", ["--version"], { encoding: "utf8" });
+    if (rustc.status !== 0 || cargo.status !== 0) {
+      throw new Error("cannot determine the Rust toolchain versions");
+    }
+    implementationToolchain = {
+      cargo: cargo.stdout.trim(),
+      rustc: rustc.stdout.trim(),
+    };
+  } else if (manifest.language === "typescript") {
+    const compiler: unknown = JSON.parse(
+      await readFile(
+        path.join(ROOT, "node_modules/typescript/package.json"),
+        "utf8"
+      )
+    );
+    if (!isRecord(compiler) || typeof compiler.version !== "string") {
+      throw new Error("cannot determine the TypeScript toolchain version");
+    }
+    implementationToolchain = { typescript: compiler.version };
+  } else {
+    throw new Error(
+      `unsupported certificate implementation ${manifest.language}`
+    );
+  }
   const values = {
     architecture: arch(),
     backend: { kind: "memory", version: backendVersion },
@@ -99,8 +121,7 @@ const certificationEnvironment = async (manifest: AdapterManifest) => {
       bunExecutable: createHash("sha256")
         .update(await readFile(process.execPath))
         .digest("hex"),
-      cargo: cargo.stdout.trim(),
-      rustc: rustc.stdout.trim(),
+      ...implementationToolchain,
     },
   };
   return {
@@ -132,6 +153,15 @@ const profilePassed = (
   ) {
     return false;
   }
+  if (
+    !hasProfileEvidence(
+      profile.requiredEvidence,
+      required.map((check) => check.checkId),
+      byId
+    )
+  ) {
+    return false;
+  }
   const points = new Set<string>();
   for (const result of results) {
     const fault = result.details?.fault;
@@ -155,6 +185,26 @@ const profilePassed = (
     }
   }
   return profile.faultPoints.every((point) => points.has(point));
+};
+
+const hasProfileEvidence = (
+  paths: readonly string[],
+  checkIds: readonly string[],
+  results: ReadonlyMap<string, ConformanceCheckResult>
+): boolean => {
+  const satisfied = new Set<string>();
+  for (const checkId of checkIds) {
+    const prefix = `${checkId}.requiredEvidence.`;
+    for (const assertion of results.get(checkId)?.assertionResults ?? []) {
+      if (
+        assertion.status === "pass" &&
+        assertion.assertionId.startsWith(prefix)
+      ) {
+        satisfied.add(assertion.assertionId.slice(prefix.length));
+      }
+    }
+  }
+  return paths.every((path) => satisfied.has(path));
 };
 
 const completedProcess = (value: unknown): boolean => {

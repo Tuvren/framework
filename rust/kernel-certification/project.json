@@ -7,6 +7,16 @@
   "targets": {
     "build": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/rust/kernel/**/*",
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/rust/kernel-certification/**/*",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml"
+      ],
       "outputs": [
         "{workspaceRoot}/target/debug/tuvren-kernel-rust-conformance-adapter"
       ],
