@@ -217,9 +217,9 @@ decisions:
     question: "The memory kernels apply a branch-head compare-and-set under a per-scope exclusive lock, so a barrier seam at the compare-and-set would serialize the contenders. What does the syscall concurrent-writer check certify?"
     blocks: [KRT-DE003, KRT-DE005, KRT-DE006]
     options:
-      - name: Certify transaction-entry overlap and prove sensitivity with the stale-read mutant
+      - name: Certify transaction-entry overlap and prove sensitivity with the stale-head mutant
         pros:
-          - "Both contenders are held at transaction entry and released together, so each reads the common base head before either commits; a kernel that validates and commits in separate transactions is caught, as the harness-independent stale-read mutant shows."
+          - "Both contenders are held at transaction entry and released together, so each reads the common base head before either commits; a kernel that validates and commits in separate transactions is caught, as the harness-independent stale-head mutant (kernel.accept-stale-head-update) shows."
           - "No product change to the kernels' locking; the barrier stays a test-only seam."
         cons:
           - "The check does not prove the compare-and-set itself runs concurrently; on today's memory kernels execution after release is equivalent to two serialized writes that both started from the base head."
@@ -228,7 +228,7 @@ decisions:
           - "The check would prove overlap at the exact commit point."
         cons:
           - "Requires a product change to the memory kernels' concurrency model, outside this epic's certification scope, and an architecture record."
-    recommendation: Certify transaction-entry overlap and prove sensitivity with the stale-read mutant
+    recommendation: Certify transaction-entry overlap and prove sensitivity with the stale-head mutant
     closure: ruling
     ruler: "Owner, after the EPIC-DE merge"
     status: proposed
@@ -237,7 +237,7 @@ decisions:
       in: EPIC-DE
     proposed_by: EPIC-DE @ 2f3d11b
     interim:
-      assumption: "The barrier seam sits at transaction entry; the concurrent-writer certificate claims overlapping transaction entry, not overlapping compare-and-set. In-process seams release participants to the serialization point in list order, so release order fixes the winner and the post-release outcome equals sequential writes in release order; what the race adds is two entry receipts before release, the head still at base between receipts and release, and the stale-read mutant's kill. Durable backends racing from two processes are outside this guarantee."
+      assumption: "The barrier seam sits at transaction entry; the concurrent-writer certificate claims overlapping transaction entry, not overlapping compare-and-set. In-process seams release participants to the serialization point in list order, so release order fixes the winner and the post-release outcome equals sequential writes in release order; what the race adds is two entry receipts before release, the head still at base between receipts and release, and the stale-head mutant's kill. Durable backends racing from two processes are outside this guarantee."
       applied_by:
         - typescript/kernel/testkit/src/lib/kernel-barrier-control.ts
         - rust/kernel/src/testkit/barrier.rs
@@ -275,6 +275,9 @@ decisions:
       assumption: "Both kernel adapters declare protocol 0.2.0 and claim kernel.barrier; subscribe, pull, and openInstance are bound by capability and storage kind, and no plan step uses them before a live-event capability exists. The pinned protocol schema gains the additive ProtocolErrorCode adapter_method_not_implemented (already used by the Go, Python, and Dart adapters) so hosts answer unclaimed method families with a typed error."
       applied_by:
         - typescript/kernel/conformance-adapter/adapter.json
+        - typescript/kernel/conformance-adapter/adapter-sqlite.json
+        - typescript/kernel/conformance-adapter/adapter-postgres.json
+        - typescript/kernel/conformance-adapter/adapter-mutant.json
         - rust/kernel-conformance-adapter/adapter.json
         - rust/kernel-conformance-adapter/adapter-mutant.json
         - rust/kernel-conformance-adapter/src/main.rs
@@ -337,7 +340,7 @@ closeout:
   changelog_entries:
     - directory: tasks
       type: added
-      text: "EPIC-DE certified the TypeScript and Rust memory kernels under the enforcing kernel.memory profile. Adapter protocol 0.2.0 runs operations through handles on concurrent stdio hosts in both languages. A writer race is proven with transaction-entry barriers, list-ordered release, and a harness-independent stale-read mutant. 27 schedule-fixed conditional assertions became unconditional authority outcomes, and the fleet branch-coverage and claim-coverage gates enforce. Complete certificate bundles are linked to a digest-matched control run. The TypeScript-Rust comparison shows no disagreement. Splitting edge-validation from its legacy composite let Rust claim it with no adapter losing coverage."
+      text: "EPIC-DE certified the TypeScript and Rust memory kernels under the enforcing kernel.memory profile. Adapter protocol 0.2.0 runs operations through handles on concurrent stdio hosts in both languages. A writer race is proven with transaction-entry barriers, list-ordered release, and the harness-independent stale-head mutant (kernel.accept-stale-head-update, which validates and commits in separate transactions). 27 schedule-fixed conditional assertions became unconditional authority outcomes, and the fleet branch-coverage and claim-coverage gates enforce. Complete certificate bundles are linked to a digest-matched control run. The TypeScript-Rust comparison shows no disagreement. Splitting edge-validation from its legacy composite let Rust claim it with no adapter losing coverage."
   candidate_terms: []
   routed_upstream:
     - stage: tech-spec
@@ -351,9 +354,10 @@ closeout:
     - stage: tech-spec
       item: "Cancelling or destroying an operation held at a barrier returns an outer adapter_host_error in both languages, which the runner classifies as adapter_protocol, so no cancel-at-gate plan can pass; decide the protocol-level cancellation outcome before any plan uses cancel (ADR-0077 decision 6)."
   follow_ups:
-    - "Ten kernel mutants still have no Rust reproduction (including the stale-head and stale-read race mutants), so the fleet kill of those claims rests on TypeScript alone; Rust certifies by pooled fleet controls under ADR-0079 decision 4."
+    - "Ten kernel mutants still have no Rust reproduction (including the stale-head race mutant), so the fleet kill of those claims rests on TypeScript alone; Rust certifies by pooled fleet controls under ADR-0079 decision 4."
     - "The three after-commit-before-ack claims are detected only by the fault-seam-never-fires instrumentation control; add a behavioral mutant."
     - "The conditional-branch coverage gate now has zero required assertions; it remains enforcing for future conditional assertions."
+    - "kernel.accept-noncanonical-cbor and kernel.resolve-object-across-scopes are required kernel.memory controls (ADR-0079: every manifest mutant is killed for a migrated profile) but designate only legacy assertions; before EPIC-DJ retires those plans they need syscall designations (codec under OD-16) or the profile change ADR-0079 would require."
     - "Sanctioned comparison rules still live in tools/conformance/meta-conformance/observation-comparison.ts apart from the catalog-derived error-details rule; move the rest into per-operation catalog metadata."
     - "The process-local node_modules digest cache does not detect an in-place change to a non-workspace dependency during one process."
     - "Tokio and Serde resolve to 1.53.1 and 1.0.229 in Cargo.lock while tech-spec guidelines name 1.52.1 and 1.0.228; run derive --write after merge."
@@ -386,16 +390,16 @@ closeout:
       kind: pattern
       paths: [tools/conformance/harness/assertion-id.ts]
       commit: b9738a1
-    - summary: "Native error details are compared as non-normative only when both implementations return the same catalogued error code and the catalog defines no details shape."
+    - summary: "Native error details are compared as non-normative when both implementations return the same catalogued error code; the catalog declares error codes only, so a future details shape would need its own comparison rule."
       kind: convention
       paths: [tools/conformance/meta-conformance/observation-comparison.ts]
       commit: b9738a1
   settled: []
   actuals:
-    diff_lines: 13893
+    diff_lines: 14226
     files_touched: 111
     milestones: 4
-    review_rounds: 5
+    review_rounds: 6
     per_ticket:
       - id: KRT-DE001
         diff_lines: 2728
@@ -409,5 +413,5 @@ closeout:
       - id: KRT-DE006
         diff_lines: 7040
         review_rounds: 1
-    merged_commit: 1f5df2a
+    merged_commit: ec43003
     measured_at: 2026-10-27

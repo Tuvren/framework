@@ -5,7 +5,7 @@ produced:
   commit: "1f5df2a"
   command: "bun run verify:kernel; bun run conformance"
 result: pass
-pass_criteria: "The syscall concurrent-writer check fails when contenders run sequentially (no second entry receipt before release), passes on the TypeScript memory kernel in both orderings, and kills the harness-independent stale-read mutant with activation proof."
+pass_criteria: "The syscall concurrent-writer check fails when contenders run sequentially (no second entry receipt before release), passes on the TypeScript memory kernel in both orderings, and kills the harness-independent stale-head mutant (kernel.accept-stale-head-update) with activation proof."
 files:
   - path: obligation-map.md
     sha256: d9c84c1e1e37921af752a5643157d1864f54c4d2f1f94a7767ddbb98a0582b65
@@ -15,3 +15,7 @@ files:
     sha256: 32a8aad11168bf1cf4f4434402904ee9d0c19f16875455bde69e4c623c3d0fc0
     bytes: 9436
     role: transcript
+  - path: final-run.md
+    sha256: 9427658f5c3f71dd5b507655614ae5da1109553349773e024a879f23e51239bd
+    bytes: 722
+    role: measurement

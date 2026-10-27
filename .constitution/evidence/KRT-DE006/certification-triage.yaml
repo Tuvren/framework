@@ -4,256 +4,199 @@ entries:
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-profile-117
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-profile-118
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-profile-119
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-profile-120
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-profile-121
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-profile-122
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-profile-123
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-edge-probe-0
     class: V
     evidence: rust-edge-capability-probe.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-edge-probe-1
     class: V
     evidence: rust-edge-capability-probe.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-edge-probe-2
     class: V
     evidence: rust-edge-capability-probe.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-edge-probe-3
     class: V
     evidence: rust-edge-capability-probe.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-edge-probe-4
     class: V
     evidence: rust-edge-capability-probe.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-edge-probe-5
     class: V
     evidence: rust-edge-capability-probe.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: rust-edge-probe-6
     class: V
     evidence: rust-edge-capability-probe.json
     owner: EPIC-DE lead
-    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven
-      syscall edge checks and excludes the seven legacy composite checks.
-      Historical evidence is retained.
+    resolution: OD-19 split implemented; the claimed Rust baseline passes all seven syscall edge checks and excludes the seven legacy composite checks. Historical evidence is retained.
     status: resolved
   - id: comparison-b-0
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: The ordered-release writer checks require the scheduled winner and
-      pass in both implementations; the current comparison records no
-      disagreement.
+    resolution: The ordered-release writer checks require the scheduled winner and pass in both implementations; the current comparison records no disagreement.
     status: resolved
   - id: comparison-b-25
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: The ordered-release writer checks require the scheduled winner and
-      pass in both implementations; the current comparison records no
-      disagreement.
+    resolution: The ordered-release writer checks require the scheduled winner and pass in both implementations; the current comparison records no disagreement.
     status: resolved
   - id: comparison-b-26
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: The ordered-release writer checks require the scheduled winner and
-      pass in both implementations; the current comparison records no
-      disagreement.
+    resolution: The ordered-release writer checks require the scheduled winner and pass in both implementations; the current comparison records no disagreement.
     status: resolved
   - id: comparison-b-27
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: The ordered-release writer checks require the scheduled winner and
-      pass in both implementations; the current comparison records no
-      disagreement.
+    resolution: The ordered-release writer checks require the scheduled winner and pass in both implementations; the current comparison records no disagreement.
     status: resolved
   - id: comparison-b-28
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: The ordered-release writer checks require the scheduled winner and
-      pass in both implementations; the current comparison records no
-      disagreement.
+    resolution: The ordered-release writer checks require the scheduled winner and pass in both implementations; the current comparison records no disagreement.
     status: resolved
   - id: comparison-b-29
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: The ordered-release writer checks require the scheduled winner and
-      pass in both implementations; the current comparison records no
-      disagreement.
+    resolution: The ordered-release writer checks require the scheduled winner and pass in both implementations; the current comparison records no disagreement.
     status: resolved
   - id: comparison-b-30
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: The ordered-release writer checks require the scheduled winner and
-      pass in both implementations; the current comparison records no
-      disagreement.
+    resolution: The ordered-release writer checks require the scheduled winner and pass in both implementations; the current comparison records no disagreement.
     status: resolved
   - id: typescript-certificate-incomplete
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: A complete schema-valid bundle now matches the passing fleet control
-      run and every verifier digest.
+    resolution: A complete schema-valid bundle now matches the passing fleet control run and every verifier digest.
     status: resolved
   - id: rust-certificate-incomplete
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: A complete schema-valid bundle now matches the passing fleet control
-      run and every verifier digest.
+    resolution: A complete schema-valid bundle now matches the passing fleet control run and every verifier digest.
     status: resolved
   - id: negative-control-gate-propagation
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: The conformance script now propagates the negative-control process
-      exit status.
+    resolution: The conformance script now propagates the negative-control process exit status.
     status: resolved
   - id: compatibility-profile-topology
     class: V
     evidence: certificate-summary.json
     owner: EPIC-DE lead
-    resolution: Compatibility topology includes synthetic profile failures and
-      matches a real failing runner in the regression test.
+    resolution: Compatibility topology includes synthetic profile failures and matches a real failing runner in the regression test.
     status: resolved
   - id: tree-projection
     class: V
     evidence: typescript/kernel/conformance-adapter/test/operation-plan-parity.test.ts
     owner: EPIC-DE worker
-    resolution: The plan now sends the tagged map from its fixture, and serial and
-      handle runs agree.
+    resolution: The plan now sends the tagged map from its fixture, and serial and handle runs agree.
     status: resolved
   - id: typescript-profile-handshake
     class: V
     evidence: typescript/kernel/conformance-adapter/src/host.ts
     owner: EPIC-DE lead
-    resolution: Initialize reports the memory profile and storage kind; the harness
-      validates claimed profiles and storage.
+    resolution: Initialize reports the memory profile and storage kind; the harness validates claimed profiles and storage.
     status: resolved
   - id: rust-profile-handshake
     class: V
     evidence: rust/kernel-conformance-adapter/src/main.rs
     owner: EPIC-DE lead
-    resolution: Initialize reports the memory profile and storage kind; the harness
-      validates claimed profiles and storage.
+    resolution: Initialize reports the memory profile and storage kind; the harness validates claimed profiles and storage.
     status: resolved
   - id: rust-executable-supervision
     class: V
     evidence: rust/kernel-conformance-adapter/adapter.json
     owner: EPIC-DE lead
-    resolution: The Nx target builds the Rust adapter and the supervisor launches
-      and hashes that executable.
+    resolution: The Nx target builds the Rust adapter and the supervisor launches and hashes that executable.
     status: resolved
   - id: conditional-branch-gate
     class: V
     evidence: conditional-coverage.json
     owner: EPIC-DE lead
-    resolution: The fixed schedules determine the outcomes. All 27 retained
-      assertions are unconditional and the exact-ID fleet gate passes.
+    resolution: The fixed schedules determine the outcomes. All 27 retained assertions are unconditional and the exact-ID fleet gate passes.
     status: resolved
   - id: claim-assertion-mapping
     class: V
     evidence: tools/conformance/meta-conformance/claim-coverage.ts
     owner: EPIC-DE lead
-    resolution: Claim coverage now matches actual assertion IDs and the claims
-      declared on their checks or steps.
+    resolution: Claim coverage now matches actual assertion IDs and the claims declared on their checks or steps.
     status: resolved
   - id: comparison-current-lateral-hashes
     class: V
     evidence: disagreement-summary.json
     owner: EPIC-DE lead
-    resolution: "The root event hashes differ under the permitted bootstrap rule;
-      descendants have different inputs. Both implementations pass identity
-      assertions on the observed root and descendants, and identical records
-      with different hashes remain disagreements."
+    resolution: "The root event hashes differ under the permitted bootstrap rule; descendants have different inputs. Both implementations pass identity assertions on the observed root and descendants, and identical records with different hashes remain disagreements."
     status: resolved
   - id: comparison-current-schema-error-details
     class: V
