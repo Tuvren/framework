@@ -52,6 +52,8 @@
     "kernel.barrier"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
+  "profiles": ["kernel.memory"],
+  "storage": "none",
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
 }

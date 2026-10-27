@@ -1336,7 +1336,7 @@
               "$ref": "fixture.input.turnTreeIdentityRecord.schemaId"
             },
             "changes": {
-              "$ref": "fixture.input.turnTreeIdentityRecord.manifest"
+              "$ref": "fixture.input.turnTreeChanges"
             }
           },
           "capture": [

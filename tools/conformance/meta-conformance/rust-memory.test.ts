@@ -15,19 +15,29 @@
  */
 
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
 import { spawn } from "bun";
 
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
+import { readAdapterManifest } from "../harness/run-plans.ts";
 import {
   NEGATIVE_CONTROL_PORTS,
   runNegativeControls,
 } from "./negative-controls.ts";
 
-test("Rust memory controls activate and fail designated shared-plan assertions", async () => {
+const exploratoryAdapter = async (directory: string): Promise<string> => {
+  const path = nodePath.join(directory, "rust-exploratory.json");
+  const manifest = await readAdapterManifest(
+    "rust/kernel-conformance-adapter/adapter.json"
+  );
+  await writeFile(path, JSON.stringify({ ...manifest, profiles: [] }));
+  return path;
+};
+
+test("Rust memory controls are diagnostic when its claimed profile is incomplete", async () => {
   const config = NEGATIVE_CONTROL_PORTS.find(
     ({ controlAdapter }) =>
       controlAdapter === "rust/kernel-conformance-adapter/adapter.json"
@@ -35,9 +45,15 @@ test("Rust memory controls activate and fail designated shared-plan assertions",
   if (config === undefined) {
     throw new Error("missing Rust memory negative-control configuration");
   }
-  const report = await runNegativeControls(config);
-  expect(report.control.status).toBe("pass");
-  expect(report.control.summary?.applicableChecks).toBeGreaterThan(0);
+  const claimed = await runNegativeControls(config);
+  expect(claimed.counted).toBe(false);
+  expect(claimed.control.status).toBe("fail");
+  expect(claimed.control.failedChecks?.length).toBe(7);
+  expect(claimed.mutants).toHaveLength(13);
+  expect(claimed.totals.killed).toBe(3);
+  expect(claimed.totals.unsupported).toBe(10);
+  expect(claimed.findings.join(" ")).toContain("diagnostic");
+  const report = claimed;
   const manifest: unknown = JSON.parse(
     await readFile("spec/conformance/kernel/negative-controls.json", "utf-8")
   );
@@ -68,7 +84,7 @@ test("Rust memory controls activate and fail designated shared-plan assertions",
   }
 }, 60_000);
 
-test("Rust syscall evidence covers every check in all four memory families", async () => {
+test("exploratory Rust syscall evidence covers every check in all four memory families", async () => {
   const directory = await mkdtemp(
     nodePath.join(tmpdir(), "tuvren-rust-memory-")
   );
@@ -79,7 +95,7 @@ test("Rust syscall evidence covers every check in all four memory families", asy
         "bun",
         "tools/conformance/harness/run.ts",
         "--adapter",
-        "rust/kernel-conformance-adapter/adapter.json",
+        await exploratoryAdapter(directory),
         "--capability",
         "kernel.syscall",
         "--summary-only",

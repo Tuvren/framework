@@ -363,6 +363,7 @@ describe("mutant run classification", () => {
 
   const control = {
     activation: { signal: `${MUTANT}.entered` },
+    claimIds: ["synthetic.claim"],
     designatedAssertions: [ALPHA],
     kind: "implementation",
     mutantId: MUTANT,

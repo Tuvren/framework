@@ -109,6 +109,14 @@ for (const occurrence of faultScenarios) {
           ? 1
           : 0
       );
+      if (
+        occurrence === "dispatch-bypass" ||
+        occurrence === "implicit-bypass"
+      ) {
+        expect(stderr).toContain("fault-action");
+        expect(await Bun.file(evidence).exists()).toBe(false);
+        return;
+      }
       const result: unknown = JSON.parse(await readFile(evidence, "utf-8"));
       assertConformanceEvidence(result, "clock/fault evidence");
       const [first] = result.checkResults;

@@ -40,6 +40,12 @@ import {
   findCertifiedEntriesForAdapter,
   readCertificationManifest,
 } from "../certification/certification-manifest.js";
+import {
+  assertKernelMemoryClaimInventory,
+  findProfileSelectionFailures,
+  readClaimedProfiles,
+} from "../certification/profile.js";
+import type { CertificationProfile } from "../certification/profile.js";
 import { nativeErrorAsserted } from "../plan-compiler/certification-rules.js";
 import type { CatalogOperation } from "../plan-compiler/certification-rules.js";
 import {
@@ -1543,18 +1549,125 @@ const applyShard = (
   );
 };
 
+interface ProfileFinding {
+  checkId: string;
+  details: Record<string, string>;
+  message: string;
+  replay: string;
+}
+
+const profileReplay = (
+  options: CliOptions,
+  project: string | undefined,
+  checkId?: string
+): string => {
+  if (project === undefined) {
+    return checkId === undefined
+      ? `bun tools/conformance/harness/run.ts --adapter ${shellQuote(options.adapter)}`
+      : createReplayCommand(options, checkId);
+  }
+  return [
+    "bun",
+    "tools/conformance/certification/replay.ts",
+    "--project",
+    project,
+    ...options.packets.flatMap((packet) => ["--packet", packet]),
+    ...options.plans.flatMap((plan) => ["--plan", plan]),
+    ...(checkId === undefined ? [] : ["--check", checkId]),
+  ]
+    .map(shellQuote)
+    .join(" ");
+};
+
+const collectProfileFindings = (
+  profiles: readonly CertificationProfile[],
+  plans: readonly CompiledConformancePlan[],
+  selection: NonNullable<ConformanceEvidence["selection"]>,
+  manifest: AdapterManifest,
+  options: CliOptions,
+  project: string | undefined
+): ProfileFinding[] => {
+  const complete =
+    options.checks.length === 0 &&
+    options.capabilities.length === 0 &&
+    options.packets.length === 0 &&
+    options.plans.length === 0 &&
+    options.shard === undefined;
+  const findings: ProfileFinding[] = findProfileSelectionFailures(
+    profiles,
+    plans,
+    selection
+  ).map((failure) => ({
+    checkId: `profile.${failure.profileId}.required.${failure.requiredCheckId}`,
+    details: {
+      profileId: failure.profileId,
+      requiredCheckId: failure.requiredCheckId,
+      reason: failure.reason,
+    },
+    message: `claimed profile ${failure.profileId} requires check ${failure.requiredCheckId}, which is not applicable: ${failure.reason}`,
+    replay: profileReplay(options, project, failure.requiredCheckId),
+  }));
+  if (!complete) {
+    return findings;
+  }
+  for (const profile of profiles) {
+    if (profile.profileId === "kernel.memory") {
+      assertKernelMemoryClaimInventory(profile, plans);
+    }
+    for (const capability of profile.requiredCapabilities) {
+      if (!manifest.capabilities.includes(capability)) {
+        findings.push({
+          checkId: `profile.${profile.profileId}.capability.${capability}`,
+          details: {
+            profileId: profile.profileId,
+            missingCapability: capability,
+            reason: `missing capability: ${capability}`,
+          },
+          message: `claimed profile ${profile.profileId} requires capability ${capability}`,
+          replay: profileReplay(options, project),
+        });
+      }
+    }
+  }
+  return findings;
+};
+
 const main = async (): Promise<void> => {
   const options = parseArgs(process.argv.slice(2));
   const adapterManifest = await readAdapterManifest(options.adapter);
+  const certificationManifest = await readCertificationManifest(
+    nodePath.resolve(REPO_ROOT, options.certificationManifest)
+  );
   const certifiedEntries = findCertifiedEntriesForAdapter(
-    await readCertificationManifest(
-      nodePath.resolve(REPO_ROOT, options.certificationManifest)
-    ),
+    certificationManifest,
     options.adapter,
     REPO_ROOT
   );
   const plans = await readPlans(adapterManifest, options);
   const selected = selectChecks(plans, adapterManifest, options);
+  const profiles = await readClaimedProfiles(
+    adapterManifest,
+    options.packets.length > 0
+      ? options.packets
+      : adapterManifest.authorityPackets
+  );
+  const profileFindings = collectProfileFindings(
+    profiles,
+    plans,
+    selected.selection,
+    adapterManifest,
+    options,
+    options.certificationManifest === CERTIFICATION_MANIFEST_PATH
+      ? certificationManifest.inventory.find(
+          (entry) =>
+            nodePath.resolve(REPO_ROOT, entry.adapter) ===
+            nodePath.resolve(REPO_ROOT, options.adapter)
+        )?.project
+      : undefined
+  );
+  for (const finding of profileFindings) {
+    process.stderr.write(`${finding.message}\n`);
+  }
   await validateHandshakeForSelectedPlans(
     adapterManifest,
     plans,
@@ -1574,6 +1687,12 @@ const main = async (): Promise<void> => {
         }
       : entry
   );
+  selection.push(
+    ...profileFindings.map((finding) => ({
+      checkId: finding.checkId,
+      selected: true,
+    }))
+  );
   const results = await runScheduledChecks(
     adapterManifest,
     scheduled,
@@ -1584,6 +1703,25 @@ const main = async (): Promise<void> => {
   const checkResults = results
     .toSorted((left, right) => left.index - right.index)
     .map((result) => result.checkResult);
+  checkResults.push(
+    ...profileFindings.map((finding) => ({
+      ...createCheckResult(
+        finding.checkId,
+        [
+          {
+            assertionId: `${finding.checkId}.applicability`,
+            status: "fail",
+            message: finding.message,
+          },
+        ],
+        finding.details
+      ),
+      failure: {
+        classification: "verification" as const,
+        replay: finding.replay,
+      },
+    }))
+  );
   const baseSummary = createConformanceEvidenceSummary(checkResults);
   const nonApplicableCheckIds = selection
     .filter(
@@ -1610,6 +1748,14 @@ const main = async (): Promise<void> => {
     suiteVersion: adapterManifest.suiteVersion,
     summary,
   };
+  const certificate =
+    profiles[0] === undefined
+      ? undefined
+      : {
+          complete: false,
+          profile: profiles[0].profileId,
+          status: "uncertified" as const,
+        };
   if (summary.failedChecks > 0) {
     process.stderr.write(
       `conformance failure artifacts retained at ${await retainFailureArtifacts(
@@ -1619,7 +1765,11 @@ const main = async (): Promise<void> => {
   }
 
   const text = `${JSON.stringify(
-    { ...evidence, checkResults: checkResults.map(previewFailure) },
+    {
+      ...evidence,
+      ...(certificate === undefined ? {} : { certificate }),
+      checkResults: checkResults.map(previewFailure),
+    },
     null,
     2
   )}\n`;
@@ -1636,6 +1786,7 @@ const main = async (): Promise<void> => {
         {
           adapterId: evidence.adapterId,
           implementationId: evidence.implementationId,
+          ...(certificate === undefined ? {} : { certificate }),
           status: evidence.status,
           suiteId: evidence.suiteId,
           suiteVersion: evidence.suiteVersion,

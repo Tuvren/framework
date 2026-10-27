@@ -40,6 +40,14 @@ import type {
 } from "../../scripts/lib/conformance-contract.ts";
 import { createVerificationLogs } from "../../scripts/lib/verification-logs.ts";
 import type { VerificationLogs } from "../../scripts/lib/verification-logs.ts";
+import {
+  readAdapterManifest as readValidatedAdapterManifest,
+  readPlans,
+} from "../harness/run-plans.ts";
+import {
+  assertClaimCoverage,
+  assertNegativeControlGate,
+} from "./claim-coverage.ts";
 
 /** One port's negative-control wiring (ADR-0079 decisions 1 to 3). */
 export interface NegativeControlPortConfig {
@@ -47,6 +55,7 @@ export interface NegativeControlPortConfig {
   capabilities?: readonly string[];
   mutants?: readonly string[];
   unsupportedReasons?: Readonly<Record<string, string>>;
+  undetectedReasons?: string;
   /** The certifying adapter whose unmutated run must pass first. */
   controlAdapter: string;
   mutantAdapter: string;
@@ -65,6 +74,8 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
     packet: "spec/kernel/authority-packet.json",
     port: "kernel",
     profile: "kernel.memory",
+    undetectedReasons:
+      "tools/conformance/meta-conformance/kernel-memory-undetected.json",
   },
   {
     activationOperation: "kernel.mutant.activation",
@@ -98,6 +109,8 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
     packet: "spec/kernel/authority-packet.json",
     port: "kernel",
     profile: "kernel.memory",
+    undetectedReasons:
+      "tools/conformance/meta-conformance/kernel-memory-undetected.json",
   },
 ];
 
@@ -142,7 +155,7 @@ export interface NegativeControlReport {
   counted: boolean;
   findings: string[];
   manifest: string;
-  mode: "report";
+  mode: "enforcing" | "report";
   mutantAdapter: string;
   mutants: MutantReport[];
   notRun: string[];
@@ -162,6 +175,7 @@ export interface NegativeControlRunOptions {
 
 export interface ControlEntry {
   activation: { signal: string };
+  claimIds: string[];
   designatedAssertions?: string[];
   expectedRejection?: string;
   kind: string;
@@ -215,6 +229,7 @@ const readControlEntries = (value: unknown): ControlEntry[] =>
         ? readString(control.activation.signal)
         : "",
     },
+    claimIds: readStrings(control.claimIds),
     ...(control.designatedAssertions === undefined
       ? {}
       : { designatedAssertions: readStrings(control.designatedAssertions) }),
@@ -258,6 +273,88 @@ const readControlManifest = async (
     controls: readControlEntries(manifest.controls),
     path: manifestPath,
   };
+};
+
+const readProfileObligations = async (
+  config: NegativeControlPortConfig,
+  controls: readonly ControlEntry[]
+): Promise<{ negativeControls: string[] } | undefined> => {
+  const packet = await readJson(config.packet);
+  if (!isRecord(packet) || typeof packet.certificationProfiles !== "string") {
+    return undefined;
+  }
+  const document = await readJson(packet.certificationProfiles);
+  const failures = [
+    ...validateCertificationDocument("certificationProfile", document),
+    ...collectCertificationIntegrityFailures("certificationProfile", document),
+  ];
+  if (
+    failures.length > 0 ||
+    !isRecord(document) ||
+    !Array.isArray(document.profiles)
+  ) {
+    throw new Error(`invalid certification profiles: ${failures.join("; ")}`);
+  }
+  const profile = document.profiles.find(
+    (entry: unknown) => isRecord(entry) && entry.profileId === config.profile
+  );
+  if (!isRecord(profile)) {
+    throw new Error(`${config.profile} is not declared by ${config.packet}`);
+  }
+  const reasonsValue =
+    config.undetectedReasons === undefined
+      ? {}
+      : await readJson(config.undetectedReasons);
+  if (
+    !isRecord(reasonsValue) ||
+    Object.values(reasonsValue).some(
+      (reason) => typeof reason !== "string" || reason.trim().length === 0
+    )
+  ) {
+    throw new Error(`${config.profile} has invalid undetected claim reasons`);
+  }
+  const reasons = Object.fromEntries(
+    Object.entries(reasonsValue).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string"
+    )
+  );
+  const negativeControls = readStrings(profile.negativeControls);
+  const declared = controls.filter((control) =>
+    control.profiles.includes(config.profile)
+  );
+  const missing = declared
+    .map((control) => control.mutantId)
+    .filter((id) => !negativeControls.includes(id));
+  const unknown = negativeControls.filter(
+    (id) => !declared.some((control) => control.mutantId === id)
+  );
+  if (missing.length > 0 || unknown.length > 0) {
+    throw new Error(
+      `${config.profile} negative-control inventory mismatch: ${[...missing, ...unknown].join(", ")}`
+    );
+  }
+  const adapter = await readValidatedAdapterManifest(config.controlAdapter);
+  const plans = await readPlans(adapter, {
+    packets: [config.packet],
+    plans: [],
+  });
+  const checks = plans.flatMap((plan) =>
+    plan.checks.map(({ check }) => ({
+      checkId: check.checkId,
+      claimIds: [
+        ...(check.claimIds ?? []),
+        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
+      ],
+    }))
+  );
+  assertClaimCoverage(
+    config.profile,
+    readStrings(profile.claimIds),
+    declared,
+    reasons,
+    checks
+  );
+  return { negativeControls };
 };
 
 const readAdapterManifest = async (
@@ -722,12 +819,49 @@ const emptyTotals = (): NegativeControlReport["totals"] => ({
   unsupported: 0,
 });
 
+const runUnclaimedDiagnostics = async (
+  report: NegativeControlReport,
+  controlManifest: Record<string, unknown>,
+  evidence: ConformanceEvidence | undefined,
+  config: NegativeControlPortConfig,
+  options: NegativeControlRunOptions,
+  workDirectory: string
+): Promise<void> => {
+  if (
+    report.mode !== "enforcing" ||
+    !evidence?.checkResults.some(({ checkId }) =>
+      checkId.startsWith(`profile.${config.profile}.`)
+    )
+  ) {
+    return;
+  }
+  const diagnosticAdapter = nodePath.join(
+    workDirectory,
+    "diagnostic-adapter.json"
+  );
+  await writeFile(
+    diagnosticAdapter,
+    JSON.stringify({ ...controlManifest, profiles: [] })
+  );
+  const diagnostic = await runNegativeControls(
+    { ...config, controlAdapter: diagnosticAdapter },
+    options
+  );
+  report.mutants = diagnostic.mutants;
+  report.totals = diagnostic.totals;
+  report.notRun = diagnostic.notRun;
+  report.findings.push(
+    "diagnostic outcomes use an unclaimed profile and do not count toward the gate"
+  );
+};
+
 /** Runs the unmutated control, then every selected mutant, unchanged plans. */
 export const runNegativeControls = async (
   config: NegativeControlPortConfig,
   options: NegativeControlRunOptions = {}
 ): Promise<NegativeControlReport> => {
   const manifest = await readControlManifest(config.packet);
+  const obligations = await readProfileObligations(config, manifest.controls);
   const selected = manifest.controls.filter(
     (control) =>
       options.mutants === undefined ||
@@ -739,7 +873,10 @@ export const runNegativeControls = async (
     counted: false,
     findings: [],
     manifest: display(manifest.path),
-    mode: "report",
+    mode:
+      obligations === undefined || (options.mutants?.length ?? 0) > 0
+        ? "report"
+        : "enforcing",
     mutantAdapter: display(config.mutantAdapter),
     mutants: [],
     notRun: [],
@@ -752,6 +889,9 @@ export const runNegativeControls = async (
     readAdapterManifest(config.controlAdapter),
     readAdapterManifest(config.mutantAdapter),
   ]);
+  if (!readStrings(controlManifest.profiles).includes(config.profile)) {
+    report.mode = "report";
+  }
   const controlCapabilities = sortedStrings(controlManifest.capabilities);
   if (
     controlCapabilities.join("\n") !==
@@ -817,6 +957,14 @@ export const runNegativeControls = async (
         }); no mutant is counted`
       );
       report.notRun = selected.map(({ mutantId }) => mutantId);
+      await runUnclaimedDiagnostics(
+        report,
+        controlManifest,
+        evidence,
+        config,
+        options,
+        workDirectory
+      );
       return report;
     }
     report.counted = true;
@@ -895,14 +1043,17 @@ export const formatNegativeControlSummary = (
       ? report.control.status
       : `${report.control.status} (${report.control.summary.passedChecks}/${report.control.summary.applicableChecks ?? report.control.summary.totalChecks})`;
   const lines = [
-    `negative controls ${report.port} (${report.profile}, report mode): unmutated control ${report.control.adapter} ${control}`,
+    `negative controls ${report.port} (${report.profile}, ${report.mode} mode): unmutated control ${report.control.adapter} ${control}`,
   ];
   if (!report.counted) {
     lines.push(
       ...report.findings.map((finding) => `finding: ${finding}`),
       `not run: ${report.notRun.join(", ")}`
     );
-    return `${lines.join("\n")}\n`;
+    if (report.mutants.length === 0) {
+      return `${lines.join("\n")}\n`;
+    }
+    lines.push("diagnostic outcomes only; no mutant counts toward the gate");
   }
   lines.push(
     `activated ${totals.activated}, killed ${totals.killed}, survived ${totals.survived}, equivalent ${totals.equivalent}, unsupported ${totals.unsupported}, invalid ${totals.invalid} of ${report.mutants.length}`,
@@ -1007,6 +1158,27 @@ const main = async (): Promise<void> => {
       recursive: true,
     });
     await writeFile(fromRoot(options.reportOut), text);
+  }
+  if ((options.mutants?.length ?? 0) === 0) {
+    for (const config of NEGATIVE_CONTROL_PORTS.filter(
+      ({ port }) => options.ports.length === 0 || options.ports.includes(port)
+    )) {
+      const manifest = await readControlManifest(config.packet);
+      const obligations = await readProfileObligations(
+        config,
+        manifest.controls
+      );
+      if (obligations !== undefined) {
+        assertNegativeControlGate(
+          config.profile,
+          obligations.negativeControls,
+          reports.filter(
+            (report) =>
+              report.profile === config.profile && report.mode === "enforcing"
+          )
+        );
+      }
+    }
   }
 };
 

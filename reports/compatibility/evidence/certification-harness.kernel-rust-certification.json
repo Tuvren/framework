@@ -6333,6 +6333,166 @@
         "traceStepIds": ["backend0", "worker0", "schema", "thread", "list"]
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path, which is not applicable: missing capabilities: kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "details": {
+        "profileId": "kernel.memory",
+        "requiredCheckId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+        "reason": "missing capabilities: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path, which is not applicable: missing capabilities: kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "details": {
+        "profileId": "kernel.memory",
+        "requiredCheckId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+        "reason": "missing capabilities: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch, which is not applicable: missing capabilities: kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "details": {
+        "profileId": "kernel.memory",
+        "requiredCheckId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+        "reason": "missing capabilities: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch, which is not applicable: missing capabilities: kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+      "details": {
+        "profileId": "kernel.memory",
+        "requiredCheckId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+        "reason": "missing capabilities: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step, which is not applicable: missing capabilities: kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "details": {
+        "profileId": "kernel.memory",
+        "requiredCheckId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+        "reason": "missing capabilities: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object, which is not applicable: missing capabilities: kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "details": {
+        "profileId": "kernel.memory",
+        "requiredCheckId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+        "reason": "missing capabilities: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires check kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage, which is not applicable: missing capabilities: kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "details": {
+        "profileId": "kernel.memory",
+        "requiredCheckId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+        "reason": "missing capabilities: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification --check kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "profile.kernel.memory.capability.kernel.edge-validation.applicability",
+          "status": "fail",
+          "message": "claimed profile kernel.memory requires capability kernel.edge-validation"
+        }
+      ],
+      "checkId": "profile.kernel.memory.capability.kernel.edge-validation",
+      "details": {
+        "profileId": "kernel.memory",
+        "missingCapability": "kernel.edge-validation",
+        "reason": "missing capability: kernel.edge-validation"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "verification",
+        "replay": "bun tools/conformance/certification/replay.ts --project kernel-rust-certification"
+      }
     }
   ],
   "command": [
@@ -6341,7 +6501,7 @@
     "--adapter",
     "[adapter-manifest]"
   ],
-  "exitCode": 0,
+  "exitCode": 1,
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
@@ -6370,13 +6530,13 @@
   ],
   "project": "kernel-rust-certification",
   "reportLabel": "Rust process-local kernel baseline",
-  "reportStatus": "capability_subset_pass",
-  "status": "pass",
+  "reportStatus": "unexpected_fail",
+  "status": "fail",
   "summary": {
-    "failedChecks": 0,
+    "failedChecks": 8,
     "passedChecks": 116,
-    "totalChecks": 139,
-    "applicableChecks": 116,
+    "totalChecks": 147,
+    "applicableChecks": 124,
     "nonApplicableChecks": 23
   },
   "suiteId": "tuvren.kernel.protocol",

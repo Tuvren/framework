@@ -1308,13 +1308,21 @@
             "kernel.syscall.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.stale_preemption",
             "kernel.syscall.scope-isolation.own_content",
-            "kernel.syscall.scope-isolation.own_enumeration"
+            "kernel.syscall.scope-isolation.own_enumeration",
+            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+            "profile.kernel.memory.required.kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+            "profile.kernel.memory.capability.kernel.edge-validation"
           ],
           "checkSummary": {
-            "failedChecks": 0,
+            "failedChecks": 8,
             "passedChecks": 116,
-            "totalChecks": 139,
-            "applicableChecks": 116,
+            "totalChecks": 147,
+            "applicableChecks": 124,
             "nonApplicableChecks": 23
           },
           "declaredCapabilities": [
@@ -1329,8 +1337,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
           "reportLabel": "Rust process-local kernel baseline",
-          "reportStatus": "capability_subset_pass",
-          "status": "pass",
+          "reportStatus": "unexpected_fail",
+          "status": "fail",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
         }

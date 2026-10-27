@@ -74,12 +74,24 @@ const visit = (
 
 export const stabilizeObservations = (value: unknown): unknown => {
   const tokens = new Map<string, string>();
+  const handles = new Map<string, string>();
   visit(value, (record) => {
     if (
       typeof record.fencingToken === "string" &&
       !tokens.has(record.fencingToken)
     ) {
       tokens.set(record.fencingToken, `opaque:fencingToken:${tokens.size + 1}`);
+    }
+    if (
+      record.method === "startOperation" &&
+      isRecord(record.outcome) &&
+      typeof record.outcome.operationHandle === "string" &&
+      !handles.has(record.outcome.operationHandle)
+    ) {
+      handles.set(
+        record.outcome.operationHandle,
+        `opaque:operationHandle:${handles.size + 1}`
+      );
     }
   });
   const replace = (child: unknown): unknown => {
@@ -90,8 +102,24 @@ export const stabilizeObservations = (value: unknown): unknown => {
       return child.map(replace);
     }
     if (isRecord(child)) {
+      const replaceField = (key: string, entry: unknown): unknown => {
+        if (key === "operationHandle" && typeof entry === "string") {
+          return handles.get(entry) ?? entry;
+        }
+        if (key === "operationHandles" && Array.isArray(entry)) {
+          return entry.map((handle: unknown) =>
+            typeof handle === "string"
+              ? (handles.get(handle) ?? handle)
+              : replace(handle)
+          );
+        }
+        return replace(entry);
+      };
       return Object.fromEntries(
-        Object.entries(child).map(([key, entry]) => [key, replace(entry)])
+        Object.entries(child).map(([key, entry]) => [
+          key,
+          replaceField(key, entry),
+        ])
       );
     }
     return child;
@@ -397,13 +425,44 @@ export const compareObservations = (
       .flatMap((right) => comparePair(left, right))
   );
 
+interface ObservationStep {
+  action?: string;
+  stepId: string;
+  operation: string;
+  inspectState?: unknown;
+}
+
+const methodsForStep = (step: ObservationStep): string[] => {
+  let methods: string[];
+  switch (step.action) {
+    case "start":
+      methods = ["startOperation"];
+      break;
+    case "await":
+      methods = ["awaitOperation"];
+      break;
+    case "cancel":
+      methods = ["cancelOperation"];
+      break;
+    default:
+      methods = ["dispatch", "events"];
+  }
+  if (
+    step.inspectState !== undefined &&
+    step.action !== "start" &&
+    step.action !== "cancel"
+  ) {
+    methods.push("inspectState");
+  }
+  return methods;
+};
+
+const hasOperation = (method: string): boolean =>
+  method === "dispatch" || method === "events" || method === "startOperation";
+
 export const validateObservationSteps = (
   checkId: string,
-  steps: readonly {
-    stepId: string;
-    operation: string;
-    inspectState?: unknown;
-  }[],
+  steps: readonly ObservationStep[],
   observations: unknown
 ): void => {
   if (!Array.isArray(observations)) {
@@ -411,17 +470,12 @@ export const validateObservationSteps = (
   }
   let index = 0;
   for (const step of steps) {
-    const methods = [
-      "dispatch",
-      "events",
-      ...(step.inspectState === undefined ? [] : ["inspectState"]),
-    ];
-    for (const method of methods) {
+    for (const method of methodsForStep(step)) {
       const frame: unknown = observations[index];
       if (
         !isRecord(frame) ||
         frame.method !== method ||
-        frame.operation !== step.operation
+        (hasOperation(method) && frame.operation !== step.operation)
       ) {
         throw new Error(
           `${checkId}/${step.stepId}: observation ${index} expected ${method} ${step.operation}`

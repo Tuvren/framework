@@ -168,12 +168,14 @@ export const readPlans = async (
       authority
     );
     assertCertificationEnforcement([
-      {
-        ...assessment,
-        violations: assessment.violations.filter(
-          (violation) => violation.rule === "control-input"
-        ),
-      },
+      assessment.profileIds.length > 0
+        ? assessment
+        : {
+            ...assessment,
+            violations: assessment.violations.filter(
+              (violation) => violation.rule === "control-input"
+            ),
+          },
     ]);
     plans.push({ ...compiled, catalog });
     await visitPlan(index + 1);

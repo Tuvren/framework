@@ -103,6 +103,7 @@ const captureImplementation = async (adapter: string, options: Options) => {
       wrapped,
       json({
         ...manifest,
+        profiles: [],
         command: [
           "bun",
           "tools/conformance/meta-conformance/observation-probe.ts",
@@ -278,7 +279,7 @@ const main = async (): Promise<void> => {
       })
     ),
     interpretation:
-      "Uncertified observations and outcomes. Sanctioned variation cites authority; coverage records applicability gaps; disagreement means no authority rule decides the difference. Tagged maps compare by key. Fencing tokens are consistently pseudonymized per trace before hashing.",
+      "Exploratory, uncertified observations and outcomes; comparison wrappers do not claim profiles. Sanctioned variation cites authority; coverage records applicability gaps; disagreement means no authority rule decides the difference. Tagged maps compare by key. Fencing tokens and operation handles are consistently pseudonymized per trace before hashing.",
     selection: { capabilities: options.capabilities, concurrency: 1 },
   };
   const reportPath = nodePath.resolve(
