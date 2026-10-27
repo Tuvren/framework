@@ -1,0 +1,37 @@
+owner: KRT-DE006
+mode: contract_test
+produced:
+  date: 2026-10-27
+  commit: "1f5df2a"
+  command: "bun run verify:kernel; bun run conformance; bun run verify"
+result: pass
+pass_criteria: "kernel.memory is enforcing; a claimed profile with a non-applicable required check fails; the TypeScript and Rust certificates validate with a control run matching every verifier digest; every kernel.memory claim has a detecting control or a recorded reason; the TypeScript-Rust comparison reports no disagreement."
+files:
+  - path: certificate-summary.json
+    sha256: 45a6da51a8c25e3877d0291c301be2f33601c14a80873cbf017d1a94a6e63a9b
+    bytes: 5170
+    role: measurement
+  - path: negative-controls-summary.json
+    sha256: c72640b206b14243160a74c2ff74be0b51d6e65469d7d0d97a49b89fd296ea9b
+    bytes: 19432
+    role: measurement
+  - path: claim-coverage.json
+    sha256: 9e484054ac5eeb231a7930558640616ba539bfe3f3434db5ec026974a6f1090c
+    bytes: 16124
+    role: measurement
+  - path: conditional-coverage.json
+    sha256: 0c86d101ac72f2096887f2707d5ced70082df2d206516ae7c83508c91a890e95
+    bytes: 10312
+    role: measurement
+  - path: disagreement-summary.json
+    sha256: af60f59a7eee428e6dbf8bdf62862cb3919aa286dda62534744676e3d54c5899
+    bytes: 48474
+    role: measurement
+  - path: certification-triage.yaml
+    sha256: 87a52b4656c921941657b24bd04fe24f8fdc37cadc5f44a3363f2d214302530f
+    bytes: 10587
+    role: transcript
+  - path: rust-edge-capability-probe.json
+    sha256: d0ae3217e79b8774e3ad3522cca5a13686091f32b9a47a45d5ed2ce5df8269c2
+    bytes: 2222
+    role: transcript

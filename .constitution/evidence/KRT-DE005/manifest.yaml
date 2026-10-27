@@ -1,0 +1,13 @@
+owner: KRT-DE005
+mode: contract_test
+produced:
+  date: 2026-10-27
+  commit: "1f5df2a"
+  command: "bun run conformance; cargo test -p tuvren-kernel-rust --features conformance --test barrier_release_order"
+result: pass
+pass_criteria: "The Rust adapter answers requests while operations run, both contenders reach the transaction-entry seam before release, both orderings pass the shared plan with the determined winner, and every failure has a triage entry."
+files:
+  - path: triage.md
+    sha256: 90c91b56b2511ac5bc4c26423b8762bcd19347e47b00a221b160029cce57aefd
+    bytes: 16493
+    role: transcript

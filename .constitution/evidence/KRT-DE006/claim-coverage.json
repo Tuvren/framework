@@ -1,0 +1,416 @@
+{
+  "profile": "kernel.memory",
+  "status": "pass",
+  "claims": [
+    {
+      "claim": "kernel.crash-recovery.in_process_fault_points",
+      "controls": [
+        "kernel.drop-uncommitted-staged-result-on-recovery",
+        "kernel.fault-seam-never-fires",
+        "kernel.promote-staged-before-checkpoint"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.concurrent_writer.a_first",
+      "controls": [
+        "kernel.accept-stale-head-update"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.concurrent_writer.b_first",
+      "controls": [
+        "kernel.accept-stale-head-update"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.controls.after_commit_before_ack",
+      "controls": [
+        "kernel.fault-seam-never-fires"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.controls.before_commit",
+      "controls": [
+        "kernel.fault-seam-never-fires"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.crash-recovery.after_commit_before_ack",
+      "controls": [
+        "kernel.fault-seam-never-fires"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.crash-recovery.before_commit",
+      "controls": [
+        "kernel.drop-uncommitted-staged-result-on-recovery",
+        "kernel.fault-seam-never-fires",
+        "kernel.promote-staged-before-checkpoint"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that bypasses this native validation or rejection; the legacy stale-head control does not designate this syscall assertion."
+    },
+    {
+      "claim": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that bypasses this native validation or rejection; the legacy stale-head control does not designate this syscall assertion."
+    },
+    {
+      "claim": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that bypasses this native validation or rejection; the legacy stale-head control does not designate this syscall assertion."
+    },
+    {
+      "claim": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that bypasses this native validation or rejection; the legacy stale-head control does not designate this syscall assertion."
+    },
+    {
+      "claim": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that bypasses this native validation or rejection; the legacy stale-head control does not designate this syscall assertion."
+    },
+    {
+      "claim": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that bypasses this native validation or rejection; the legacy stale-head control does not designate this syscall assertion."
+    },
+    {
+      "claim": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that bypasses this native validation or rejection; the legacy stale-head control does not designate this syscall assertion."
+    },
+    {
+      "claim": "kernel.syscall.lineage.cross_thread_rejection",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that accepts a cross-thread node in branch lineage."
+    },
+    {
+      "claim": "kernel.syscall.logical.branch_list",
+      "controls": [],
+      "reason": "The supplied controls contain no branch-enumeration omission or pagination mutant."
+    },
+    {
+      "claim": "kernel.syscall.logical.diff_paths",
+      "controls": [
+        "kernel.noncanonical-changed-paths-order"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.logical.recovery_state",
+      "controls": [
+        "kernel.drop-uncommitted-staged-result-on-recovery"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.logical.thread_list",
+      "controls": [],
+      "reason": "The supplied controls contain no thread-enumeration omission or pagination mutant."
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+      "controls": [
+        "kernel.wrong-opaque-object-hash"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.protocol.modify_composition",
+      "controls": [],
+      "reason": "The supplied controls contain no verdict-composition mutant."
+    },
+    {
+      "claim": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+      "controls": [],
+      "reason": "The supplied controls contain no verdict-composition mutant for this fixture."
+    },
+    {
+      "claim": "kernel.syscall.protocol.node_identity_walk",
+      "controls": [],
+      "reason": "The supplied controls contain no TurnNode identity or lineage-walk corruption mutant."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_canonical_cbor",
+      "controls": [],
+      "reason": "The noncanonical-CBOR control targets decoder acceptance, not schema encoding; no schema-encoding mutant is designated."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip",
+      "controls": [],
+      "reason": "The supplied controls contain no schema registration or roundtrip corruption mutant."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+      "controls": [],
+      "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+    },
+    {
+      "claim": "kernel.syscall.protocol.tree_manifest_identity",
+      "controls": [],
+      "reason": "The supplied controls contain no tree-manifest or TurnTree identity corruption mutant."
+    },
+    {
+      "claim": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+      "controls": [],
+      "reason": "The supplied controls contain no ciphertext-retention or unchanged-lineage mutant; host key destruction remains outside the kernel claim."
+    },
+    {
+      "claim": "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+      "controls": [
+        "kernel.never-sweep-eligible-objects",
+        "kernel.sweep-inside-grace-window"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+      "controls": [
+        "kernel.never-sweep-eligible-objects"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+      "controls": [
+        "kernel.sweep-inside-grace-window"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+      "controls": [
+        "kernel.delete-object-reachable-through-live-root"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.reclamation.shared_object_retained_via_live_root",
+      "controls": [
+        "kernel.delete-object-reachable-through-live-root"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+      "controls": [
+        "kernel.never-sweep-eligible-objects"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.run-liveness.expired_listing",
+      "controls": [],
+      "reason": "The premature-takeover control detects live-lease inclusion, not the complete expired-record membership claim; no dedicated membership mutant is designated."
+    },
+    {
+      "claim": "kernel.syscall.run-liveness.lease_renewal",
+      "controls": [
+        "kernel.accept-stale-owner-after-takeover"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.run-liveness.live_lease_excluded_from_expiry",
+      "controls": [
+        "kernel.lease-takeover-before-expiry"
+      ]
+    },
+    {
+      "claim": "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
+      "controls": [],
+      "reason": "The supplied controls contain no mutant that includes paused runs in expiry listing."
+    },
+    {
+      "claim": "kernel.syscall.run-liveness.stale_preemption",
+      "controls": [],
+      "reason": "The supplied controls contain no designated mutant for the complete stale-preemption checkpoint and recovery claim; collateral failures do not count as detection."
+    },
+    {
+      "claim": "kernel.syscall.scope-isolation.own_content",
+      "controls": [],
+      "reason": "The cross-scope mutant is designated against legacy cross-scope reads; no supplied mutant targets these own-scope content observations."
+    },
+    {
+      "claim": "kernel.syscall.scope-isolation.own_enumeration",
+      "controls": [],
+      "reason": "The cross-scope mutant targets legacy store reads; no supplied mutant targets these own-scope enumeration observations."
+    }
+  ]
+}

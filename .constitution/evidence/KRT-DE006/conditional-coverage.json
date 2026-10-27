@@ -1,0 +1,174 @@
+{
+  "profile": "kernel.memory",
+  "status": "pass",
+  "requiredAssertionCount": 0,
+  "exercisedAssertionCount": 0,
+  "unexercisedAssertionCount": 0,
+  "unexercised": [],
+  "originalUnexercised": [
+    "kernel.syscall.concurrent_writer.a_first.10.schemaValid",
+    "kernel.syscall.concurrent_writer.a_first.11.resultField",
+    "kernel.syscall.concurrent_writer.a_first.12.resultField",
+    "kernel.syscall.concurrent_writer.a_first.13.resultField",
+    "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+    "kernel.syscall.concurrent_writer.b_first.7.resultField",
+    "kernel.syscall.concurrent_writer.b_first.8.resultField",
+    "kernel.syscall.concurrent_writer.b_first.9.resultField",
+    "kernel.syscall.crash-recovery.before_commit.18.resultField",
+    "kernel.syscall.crash-recovery.before_commit.19.resultField",
+    "kernel.syscall.crash-recovery.before_commit.20.resultField",
+    "kernel.syscall.crash-recovery.before_commit.21.resultField",
+    "kernel.syscall.crash-recovery.before_commit.22.resultField",
+    "kernel.syscall.crash-recovery.before_commit.23.resultField",
+    "kernel.syscall.crash-recovery.before_commit.24.resultField",
+    "kernel.syscall.crash-recovery.before_commit.25.resultField",
+    "kernel.syscall.crash-recovery.before_commit.26.resultField",
+    "kernel.syscall.crash-recovery.before_commit.27.resultField",
+    "kernel.syscall.crash-recovery.before_commit.28.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.10.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.11.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.12.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.13.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.14.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.15.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.16.resultField",
+    "kernel.syscall.crash-recovery.after_commit_before_ack.17.resultField"
+  ],
+  "convertedAssertions": [
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+      "field": "$.state.trace.secondOutcome.state.adapterError",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.a_first.7.resultField",
+      "field": "$.trace.secondOutcome.outcome.kind",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.a_first.8.resultField",
+      "field": "$.trace.firstOutcome.result.branch.headTurnNodeHash",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.a_first.9.resultField",
+      "field": "$.trace.head.result.headTurnNodeHash",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+      "field": "$.state.trace.firstOutcome.state.adapterError",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.b_first.7.resultField",
+      "field": "$.trace.secondOutcome.outcome.kind",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.b_first.8.resultField",
+      "field": "$.trace.secondOutcome.result.branch.headTurnNodeHash",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.concurrent_writer.b_first.9.resultField",
+      "field": "$.trace.head.result.headTurnNodeHash",
+      "authority": "docs/KrakenKernelSpecification.md §4.2-4.3; ADR-0077 decision 5; adapter protocol release order"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.10.resultField",
+      "field": "$.trace.recover.result.lastTurnNodeHash",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.11.resultField",
+      "field": "$.trace.recover.result.consumedStagedResults",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.12.resultField",
+      "field": "$.trace.recover.result.uncommittedStagedResults",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.13.resultField",
+      "field": "$.trace.staging.result",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.14.resultField",
+      "field": "$.trace.durableNode.result",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.15.resultField",
+      "field": "$.trace.visibleMessages.result",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.16.resultField",
+      "field": "$.trace.lineage.result",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.before_commit.17.resultField",
+      "field": "$.trace.lineage.result.1.hash",
+      "authority": "docs/KrakenKernelSpecification.md §3.4, §5.5 and its Crash Recovery Invariant, §5.7 classes 2-3; ADR-0076 decision 4 before any checkpoint write"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.10.resultField",
+      "field": "$.trace.recover.result.lastTurnNodeHash",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.11.resultField",
+      "field": "$.trace.durableNode.result.previousTurnNodeHash",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.12.resultField",
+      "field": "$.trace.durableNode.result.turnTreeHash",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.13.resultField",
+      "field": "$.trace.durableNode.result.consumedStagedResults",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.14.resultField",
+      "field": "$.trace.recover.result.consumedStagedResults",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.15.resultField",
+      "field": "$.trace.recover.result.uncommittedStagedResults",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.16.resultField",
+      "field": "$.trace.staging.result",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.17.resultField",
+      "field": "$.trace.visibleMessages.result",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.18.resultField",
+      "field": "$.trace.lineage.result",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.19.resultField",
+      "field": "$.trace.lineage.result.1",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    },
+    {
+      "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.20.resultField",
+      "field": "$.trace.lineage.result.2.hash",
+      "authority": "docs/KrakenKernelSpecification.md §3.3-3.4, §5.5 and its Crash Recovery Invariant, §5.7 class 3; ADR-0076 decision 4 after durable commit"
+    }
+  ]
+}
