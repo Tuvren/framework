@@ -47,7 +47,7 @@
     {
       "project": "kernel-rust-certification",
       "adapter": "rust/kernel-conformance-adapter/adapter.json",
-      "state": "pass"
+      "state": "fail"
     },
     {
       "project": "kernel-typescript-certification",
@@ -89,14 +89,6 @@
     },
     {
       "project": "kernel-python-certification",
-      "profile": "tuvren.kernel.protocol"
-    },
-    {
-      "project": "kernel-rust-certification",
-      "profile": "tuvren.kernel.protocol"
-    },
-    {
-      "project": "kernel-typescript-certification",
       "profile": "tuvren.kernel.protocol"
     },
     {

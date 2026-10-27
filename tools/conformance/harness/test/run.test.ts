@@ -2034,3 +2034,144 @@ test.each(["explicit", "syscall", "arguments"])(
     }
   }
 );
+
+test("rejects a claimed profile when a required writer check is not applicable", async () => {
+  const tempDir = await mkdtemp(
+    nodePath.join(tmpdir(), "tuvren-profile-test-")
+  );
+  tempDirs.push(tempDir);
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const adapterPath = nodePath.join(tempDir, "adapter.json");
+  await writeFile(
+    adapterPath,
+    JSON.stringify({
+      ...adapter,
+      capabilities: adapter.capabilities.filter(
+        (capability) => capability !== "kernel.barrier"
+      ),
+      command: adapter.command.filter(
+        (argument, index, command) =>
+          argument !== "kernel.barrier" &&
+          command[index + 1] !== "kernel.barrier"
+      ),
+      profiles: ["kernel.memory"],
+    })
+  );
+
+  const result = await runCommand([
+    "bun",
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    adapterPath,
+    "--check",
+    "kernel.syscall.concurrent_writer.a_first",
+  ]);
+  expect(result.code).toBe(1);
+  expect(result.stderr).toContain("kernel.memory");
+  expect(result.stderr).toContain("kernel.syscall.concurrent_writer.a_first");
+  expect(result.stderr).toContain("kernel.barrier");
+  const evidence: unknown = JSON.parse(result.stdout);
+  assertConformanceEvidence(evidence, "inapplicable profile evidence");
+  expect(evidence.status).toBe("fail");
+  expect(evidence.nonApplicableCheckIds).toContain(
+    "kernel.syscall.concurrent_writer.a_first"
+  );
+  expect(evidence.checkResults).toContainEqual(
+    expect.objectContaining({
+      status: "fail",
+      failure: expect.objectContaining({ classification: "verification" }),
+      details: expect.objectContaining({
+        requiredCheckId: "kernel.syscall.concurrent_writer.a_first",
+      }),
+    })
+  );
+});
+
+test("rejects compiler violations in a profile-migrated plan before running it", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  await expect(
+    readPlans(
+      {
+        ...adapter,
+        authorityPackets: [
+          "tools/conformance/plan-compiler/__fixtures__/certification/packet.json",
+        ],
+      },
+      {
+        packets: [],
+        plans: [
+          "tools/conformance/plan-compiler/__fixtures__/certification/migrated-violating-plan.json",
+        ],
+      }
+    )
+  ).rejects.toThrow("literal-boolean");
+});
+
+test("a filtered profile run without a matching control run is uncertified", async () => {
+  const result = await runCommand([
+    "bun",
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    "typescript/kernel/conformance-adapter/adapter.json",
+    "--check",
+    "kernel.syscall.concurrent_writer.a_first",
+  ]);
+  expect(result.code).toBe(0);
+  const evidence: unknown = JSON.parse(result.stdout);
+  assertConformanceEvidence(evidence, "filtered profile evidence");
+  expect(evidence).toMatchObject({
+    certificate: {
+      status: "uncertified",
+      profile: "kernel.memory",
+      complete: false,
+    },
+  });
+});
+
+test("an unfiltered profile run without a matching control run is uncertified", async () => {
+  const result = await runCommand([
+    "bun",
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    "typescript/kernel/conformance-adapter/adapter.json",
+    "--concurrency",
+    "4",
+    "--summary-only",
+  ]);
+  expect(result.code).toBe(0);
+  const summary: unknown = JSON.parse(result.stdout);
+  expect(summary).toMatchObject({
+    certificate: {
+      status: "uncertified",
+      profile: "kernel.memory",
+      complete: false,
+    },
+  });
+}, 30_000);
+
+test("profile failure replay resolves the adapter from the certification inventory", async () => {
+  const result = await runCommand([
+    "bun",
+    "tools/conformance/certification/replay.ts",
+    "--project",
+    "kernel-rust-certification",
+    "--check",
+    "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+  ]);
+  expect(result.code).toBe(1);
+  const evidence: unknown = JSON.parse(result.stdout);
+  assertConformanceEvidence(evidence, "replayed profile failure");
+  expect(evidence.status).toBe("fail");
+  expect(
+    evidence.checkResults.some(
+      ({ failure }) => failure?.classification === "verification"
+    )
+  ).toBe(true);
+  expect(evidence.checkResults[0]?.failure?.replay).toContain(
+    "tools/conformance/certification/replay.ts"
+  );
+});

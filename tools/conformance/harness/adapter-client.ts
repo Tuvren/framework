@@ -39,6 +39,7 @@ export interface AdapterManifest {
   command: string[];
   implementationId: string;
   language: string;
+  profiles?: string[];
   protocol: {
     name: "tuvren.conformance-adapter";
     transport: "json-rpc-2.0-stdio";

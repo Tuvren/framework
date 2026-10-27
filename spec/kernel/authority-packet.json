@@ -139,6 +139,7 @@
     }
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
+  "certificationProfiles": "spec/conformance/kernel/profiles.json",
   "bindingProjections": {
     "typescript": "typescript/kernel/protocol",
     "rust": "rust/kernel",

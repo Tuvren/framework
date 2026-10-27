@@ -6,7 +6,6 @@ import path from "node:path";
 import { spawn } from "bun";
 
 import { readAdapterManifest } from "../../../../tools/conformance/harness/run-plans.ts";
-import { resolveStepArguments } from "../../../../tools/conformance/harness/step-arguments.ts";
 import { loadConformancePlan } from "../../../../tools/conformance/plan-compiler/index.ts";
 import type { ConformancePlanStep } from "../../../../tools/conformance/plan-compiler/index.ts";
 import { assertConformanceEvidence } from "../../../../tools/scripts/lib/conformance-contract.ts";
@@ -18,8 +17,7 @@ const planPath =
 test("promoted serial plan assertions keep their results when syscalls run through handles", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "kernel-handle-parity-"));
   try {
-    const { plan, fixtures: fixtureValues } =
-      await loadConformancePlan(planPath);
+    const { plan } = await loadConformancePlan(planPath);
     const originalPacket: unknown = JSON.parse(
       await readFile(
         path.join(repoRoot, "spec/kernel/authority-packet.json"),
@@ -50,7 +48,11 @@ test("promoted serial plan assertions keep their results when syscalls run throu
     );
     await writeFile(
       adapterPath,
-      JSON.stringify({ ...manifest, authorityPackets: [packetPath] })
+      JSON.stringify({
+        ...manifest,
+        authorityPackets: [packetPath],
+        profiles: [],
+      })
     );
     const fixtures = Object.fromEntries(
       Object.entries(plan.fixtures ?? {}).map(([key, value]) => [
@@ -66,39 +68,10 @@ test("promoted serial plan assertions keep their results when syscalls run throu
             return [step];
           }
           const capture = `operation_${step.stepId}`;
-          let argumentsValue = step.arguments;
-          const changes = argumentsValue?.changes;
-          if (
-            step.operation === "kernel.tree.create" &&
-            typeof changes === "object" &&
-            changes !== null &&
-            "$ref" in changes &&
-            typeof changes.$ref === "string" &&
-            changes.$ref.startsWith("fixture.input.")
-          ) {
-            const resolved = resolveStepArguments(changes, {
-              capture: {},
-              fixture: fixtureValues.get(check.fixture ?? ""),
-              input: check.input,
-            });
-            if (
-              typeof resolved !== "object" ||
-              resolved === null ||
-              Array.isArray(resolved)
-            ) {
-              throw new Error("fixture changes must be a map");
-            }
-            if (!Object.hasOwn(resolved, "$map")) {
-              argumentsValue = {
-                ...argumentsValue,
-                changes: { $literal: { $map: Object.entries(resolved) } },
-              };
-            }
-          }
           return [
             {
               action: "start",
-              arguments: argumentsValue,
+              arguments: step.arguments,
               claimIds: step.claimIds,
               handleCapture: capture,
               operation: step.operation,
