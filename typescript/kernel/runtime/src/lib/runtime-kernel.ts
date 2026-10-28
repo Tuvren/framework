@@ -41,6 +41,7 @@ import type {
 } from "@tuvren/kernel-protocol";
 
 import { mapSequential } from "./runtime-kernel-async.js";
+import { resolveTransactionClock } from "./runtime-kernel-clock.js";
 import {
   allocateArchiveBranchId,
   applyStagedResultsToManifest,
@@ -169,8 +170,8 @@ export interface RuntimeKernelOptions {
    */
   createFencingToken?: () => string;
   /**
-   * Clock the kernel uses for durable timestamps and lease-expiry
-   * comparisons, injectable for deterministic tests.
+   * Worker clock used for durable timestamps on backends without a shared
+   * lease clock and for translating worker-supplied lease expiries.
    *
    * Default: `() => Date.now()`.
    */
@@ -195,21 +196,24 @@ export const createRuntimeKernel = (
 ): RuntimeKernel & RuntimeKernelRunLiveness => {
   const now = options.now ?? (() => Date.now());
   const { backend } = options;
+  const sharedLeaseClock =
+    backend.capabilities()["shared-lease-clock"] === true;
   const createFencingToken = options.createFencingToken ?? randomUUID;
 
   return {
     branch: {
       async create(branchId, threadId, fromTurnNodeHash) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           await assertBranchIdAvailable(tx, branchId);
           const thread = await requireThread(tx, threadId);
           await requireThreadTurnNode(tx, fromTurnNodeHash, thread);
           const record: StoredBranch = {
             branchId,
-            createdAtMs: now(),
+            createdAtMs: clock(),
             headTurnNodeHash: fromTurnNodeHash,
             threadId,
-            updatedAtMs: now(),
+            updatedAtMs: clock(),
           };
           await tx.branches.set(record);
           return toBranchRecord(record);
@@ -236,6 +240,7 @@ export const createRuntimeKernel = (
 
       async setHead(branchId, turnNodeHash) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           const branch = await requireBranch(tx, branchId);
           const thread = await requireThread(tx, branch.threadId);
           await requireThreadTurnNode(tx, turnNodeHash, thread);
@@ -264,7 +269,7 @@ export const createRuntimeKernel = (
             const updated: StoredBranch = {
               ...branch,
               headTurnNodeHash: turnNodeHash,
-              updatedAtMs: now(),
+              updatedAtMs: clock(),
             };
             await tx.branches.set(updated);
             return { branch: toBranchRecord(updated) } satisfies SetHeadResult;
@@ -291,10 +296,10 @@ export const createRuntimeKernel = (
           const archiveBranch: StoredBranch = {
             archivedFromBranchId: branchId,
             branchId: archiveBranchId,
-            createdAtMs: now(),
+            createdAtMs: clock(),
             headTurnNodeHash: currentHead,
             threadId: branch.threadId,
-            updatedAtMs: now(),
+            updatedAtMs: clock(),
           };
           await tx.branches.set(archiveBranch);
 
@@ -312,7 +317,7 @@ export const createRuntimeKernel = (
               await tx.runs.set({
                 ...storedRun,
                 status: "failed",
-                updatedAtMs: now(),
+                updatedAtMs: clock(),
               });
             }
           })) {
@@ -322,7 +327,7 @@ export const createRuntimeKernel = (
           const updated: StoredBranch = {
             ...branch,
             headTurnNodeHash: turnNodeHash,
-            updatedAtMs: now(),
+            updatedAtMs: clock(),
           };
           await tx.branches.set(updated);
 
@@ -391,6 +396,7 @@ export const createRuntimeKernel = (
 
       async register(schema) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           assertTurnTreeSchema(schema, "schema");
           const existing = await tx.schemas.get(schema.schemaId);
 
@@ -405,7 +411,7 @@ export const createRuntimeKernel = (
           }
 
           await tx.schemas.put({
-            createdAtMs: now(),
+            createdAtMs: clock(),
             schemaCbor: encodeRecord(schema),
             schemaId: schema.schemaId,
           });
@@ -424,6 +430,7 @@ export const createRuntimeKernel = (
 
       async stage(runId, blob, taskId, objectType, status, interruptPayload) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           const run = await requireRun(tx, runId);
 
           if (run.status !== "running") {
@@ -433,14 +440,14 @@ export const createRuntimeKernel = (
             );
           }
 
-          const objectHash = await putObject(tx, blob, now);
+          const objectHash = await putObject(tx, blob, clock);
           const stagedResult = createStagedResult({
             interruptPayload,
             objectHash,
             objectType,
             status,
             taskId,
-            timestamp: now(),
+            timestamp: clock(),
           });
           await tx.stagedResults.set(toStoredStagedResult(runId, stagedResult));
           return { objectHash, stagedResult };
@@ -462,7 +469,13 @@ export const createRuntimeKernel = (
 
       async put(blob, mediaType) {
         return await backend.transact(
-          async (tx) => await putObject(tx, blob, now, mediaType)
+          async (tx) =>
+            await putObject(
+              tx,
+              blob,
+              resolveTransactionClock(sharedLeaseClock, now, tx),
+              mediaType
+            )
         );
       },
     },
@@ -470,38 +483,39 @@ export const createRuntimeKernel = (
     thread: {
       async create(threadId, schemaId, initialBranchId) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           await assertThreadCreateIdsAvailable(tx, threadId, initialBranchId);
           const schema = await requireSchema(tx, schemaId);
           const rootTurnTreeHash = await createTurnTree(tx, {
             changes: createEmptyManifest(schema),
-            now,
+            now: clock,
             schema,
           });
           const rootEventHash = await putObject(
             tx,
             encodeRecord({ threadId, type: "kernel_runtime_thread_bootstrap" }),
-            now
+            clock
           );
           const rootTurnNodeHash = await createTurnNode(tx, {
             consumedStagedResults: [],
             eventHash: rootEventHash,
-            now,
+            now: clock,
             previousTurnNodeHash: null,
             schemaId,
             turnTreeHash: rootTurnTreeHash,
           });
           await tx.threads.put({
-            createdAtMs: now(),
+            createdAtMs: clock(),
             rootTurnNodeHash,
             schemaId,
             threadId,
           });
           await tx.branches.set({
             branchId: initialBranchId,
-            createdAtMs: now(),
+            createdAtMs: clock(),
             headTurnNodeHash: rootTurnNodeHash,
             threadId,
-            updatedAtMs: now(),
+            updatedAtMs: clock(),
           });
           return {
             branchId: initialBranchId,
@@ -562,6 +576,7 @@ export const createRuntimeKernel = (
     tree: {
       async create(schemaId, changes, baseTurnTreeHash) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           const schema = await requireSchema(tx, schemaId);
           validateTurnTreeChangeSet(schema, changes);
 
@@ -602,7 +617,7 @@ export const createRuntimeKernel = (
           // applyStagedResultsToManifest and are safe to thread).
           return await createTurnTree(tx, {
             changes: { ...baseManifest, ...changes },
-            now,
+            now: clock,
             schema,
           });
         });
@@ -638,6 +653,7 @@ export const createRuntimeKernel = (
 
       async incorporate(baseTurnTreeHash, stagedResults) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           const baseTree = await requireTurnTree(tx, baseTurnTreeHash);
           const schema = await requireSchema(tx, baseTree.schemaId);
 
@@ -649,7 +665,7 @@ export const createRuntimeKernel = (
 
           return await createTurnTree(tx, {
             changes: manifest,
-            now,
+            now: clock,
             priorTurnTreeHash: baseTurnTreeHash,
             schema,
           });
@@ -690,6 +706,7 @@ export const createRuntimeKernel = (
         startTurnNodeHash
       ) {
         return await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           await assertTurnIdAvailable(tx, turnId);
           const thread = await requireThread(tx, threadId);
           const branch = await requireBranch(tx, branchId);
@@ -712,13 +729,13 @@ export const createRuntimeKernel = (
 
           const record: StoredTurn = {
             branchId,
-            createdAtMs: now(),
+            createdAtMs: clock(),
             headTurnNodeHash: startTurnNodeHash,
             parentTurnId: parentTurnId ?? null,
             startTurnNodeHash,
             threadId,
             turnId,
-            updatedAtMs: now(),
+            updatedAtMs: clock(),
           };
           await tx.turns.set(record);
           return toTurnRecord(record);
@@ -734,6 +751,7 @@ export const createRuntimeKernel = (
 
       async updateHead(turnId, headTurnNodeHash) {
         await backend.transact(async (tx) => {
+          const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
           const turn = await requireStoredTurn(tx, turnId);
           const thread = await requireThread(tx, turn.threadId);
           await requireThreadTurnNode(tx, headTurnNodeHash, thread);
@@ -760,7 +778,7 @@ export const createRuntimeKernel = (
           await tx.turns.set({
             ...turn,
             headTurnNodeHash,
-            updatedAtMs: now(),
+            updatedAtMs: clock(),
           });
         });
       },
