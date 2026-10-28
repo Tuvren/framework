@@ -163,6 +163,33 @@ tickets:
       evidence: "Assert every supported point has a receipt followed by a forced death of the same epoch, recovery assertions pass or are triaged red, a missing receipt invalidates the run, and the incomplete-checkpoint mutant is killed."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
+    deviations:
+      - files:
+          - spec/kernel/authority-packet.json
+          - spec/conformance/kernel/kernel-persistent-reopen-undetected.json
+          - spec/conformance/kernel/kernel-process-crash-undetected.json
+        justification: "The syscall crash-recovery plan must be registered in the kernel authority packet, and durable claims without a detecting control need recorded reasons."
+      - files:
+          - tools/schemas/conformance-plan.schema.json
+          - tools/conformance/plan-compiler
+        justification: "The pinned processExit assertion kind had no implementation; the plan schema and compiler must admit and validate it."
+      - files:
+          - typescript/kernel/conformance-adapter/src/host.ts
+          - typescript/kernel/conformance-adapter/src/host-support.ts
+          - typescript/kernel/conformance-adapter/adapter-sqlite-mutant.json
+          - typescript/kernel/conformance-adapter/adapter-postgres-mutant.json
+          - tools/conformance/meta-conformance
+          - tools/conformance/certification/bundle-contract.test.ts
+        justification: "Durable claims need durable negative controls: kernel mutants may now wrap the SQLite and PostgreSQL backends through non-certifying mutant manifests, and activation probes and profile-scoped control inventory must cover them without changing the strict kernel.memory inventory."
+      - files:
+          - tools/scripts/lib/conformance-contract.ts
+          - tools/scripts/lib/conformance-contract.test.ts
+          - tools/scripts/verify.ts
+          - tools/scripts/verify-kernel.ts
+          - .changeset/durable-crash-negative-control.md
+        justification: "Checked-in evidence normalizes per-run process values, real-adapter crash suites run after the build phase, and the touched publishable packages need direct changesets."
+      - files: [reports/compatibility]
+        justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
     status: planned
   - id: KRT-DF005
     title: Certify the shared backend profile with two-process races and clock skew
@@ -222,3 +249,31 @@ decisions:
         - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
         - spec/conformance/kernel/operations.json
         - KRT-DF003
+  - id: OD-21
+    question: "At the intermediate checkpoint fault points (after-turn-node-write-before-head, after-head-move-before-staging-clear), must recovery roll back to the baseline, or must an implementation whose turn-node write or head move was separately durable roll forward (KrakenKernelSpecification section 5.5: a durably visible post-checkpoint TurnNode means the checkpoint committed)?"
+    blocks: [KRT-DF004]
+    options:
+      - name: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
+        pros:
+          - "Both TypeScript durable backends write the checkpoint in one transaction, so a kill inside it is a rollback; the assertion is exact for them."
+          - "The conditional-coverage gate stays satisfiable, because no current backend could exercise a roll-forward branch."
+        cons:
+          - "A correct port with separately durable writes (ADR-0076 names Python) would fail these checks until the plan branches on observed durability."
+      - name: Branch on observed durability now (node present means head references it; absent means head equals baseline)
+        pros:
+          - "States the section 5.5 invariant for every implementation."
+        cons:
+          - "The roll-forward branch is unexercised by any current backend, which the ADR-0079 fleet branch-coverage gate rejects."
+    recommendation: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-10-28
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ 426f57d
+    interim:
+      assumption: "The crash-recovery syscall plan asserts rollback to baseline at the intermediate points; when a port with separately durable checkpoint writes is certified, the plan gains observed-durability branches exercised by that port."
+      applied_by:
+        - spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json
+        - KRT-DF004
