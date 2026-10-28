@@ -18,6 +18,24 @@
         }
       },
       "required": ["code"]
+    },
+    "liveLeaseErrorOutcome": {
+      "type": "object",
+      "required": ["kind", "error"],
+      "properties": {
+        "kind": {
+          "const": "error"
+        },
+        "error": {
+          "type": "object",
+          "required": ["code"],
+          "properties": {
+            "code": {
+              "const": "kernel_runtime_run_lease_not_expired"
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -127,8 +127,10 @@ test("writer race fails before release when the contenders execute sequentially"
 }, 30_000);
 
 test("stale-head mutation activates and the new syscall claims kill it", async () => {
-  const { NEGATIVE_CONTROL_PORTS, runNegativeControls } =
+  const { runNegativeControls } =
     await import("../../../../tools/conformance/meta-conformance/negative-controls.ts");
+  const { NEGATIVE_CONTROL_PORTS } =
+    await import("../../../../tools/conformance/meta-conformance/negative-control-config.ts");
   const config = NEGATIVE_CONTROL_PORTS.find((port) => port.port === "kernel");
   if (config === undefined) {
     throw new Error("missing kernel controls");

@@ -34,6 +34,11 @@ import {
   parseCertificationManifest,
 } from "../conformance/certification/certification-manifest.js";
 import {
+  assertCompatibilityCertificates,
+  collectCompatibilityCertificates,
+} from "../conformance/certification/compatibility-certificates.js";
+import type { CompatibilityCertificate } from "../conformance/certification/compatibility-certificates.js";
+import {
   findProfileSelectionFailures,
   readClaimedProfiles,
 } from "../conformance/certification/profile.js";
@@ -61,6 +66,7 @@ import type {
 import { readConformanceSuiteManifest } from "./lib/conformance-suite-manifest.js";
 
 interface CompatibilityMatrix {
+  certificates: CompatibilityCertificate[];
   generatedAtMs: number;
   implementations: CompatibilityImplementation[];
   interop: CompatibilityInteropResult[];
@@ -1555,6 +1561,7 @@ const checkCompatibilityEvidence = async (): Promise<void> => {
   );
   const matrix = await assertCompatibilityMatrixSchema(parsedMatrix);
   assertCompatibilityMatrix(matrix);
+  await assertCompatibilityCertificates(matrix.certificates);
 
   const matrixEvidencePaths = new Set<string>();
   const failures: string[] = [];
@@ -2823,6 +2830,7 @@ const main = async (): Promise<void> => {
     // committed, so the JSON payload keeps stable sentinel metadata instead of
     // embedding wall-clock or HEAD-derived values that would churn on reruns.
     generatedAtMs: COMPATIBILITY_METADATA.generatedAtMs,
+    certificates: await collectCompatibilityCertificates(),
     implementations,
     interop,
     sourceRevision: COMPATIBILITY_METADATA.sourceRevision,

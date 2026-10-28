@@ -29,17 +29,23 @@ import {
 const ROOT = nodePath.resolve(import.meta.dirname, "../../..");
 
 const PREVIOUSLY_CERTIFIED = [
-  "framework-batteries-included-certification",
-  "framework-typescript-certification",
-  "kernel-dart-certification",
-  "kernel-go-certification",
-  "kernel-python-certification",
-  "kernel-rust-certification",
-  "kernel-typescript-certification",
-  "kernel-typescript-postgres-certification",
-  "kernel-typescript-sqlite-certification",
-  "providers-typescript-certification",
-];
+  [
+    "framework-batteries-included-certification",
+    "tuvren.framework.runtime-api.batteries-included",
+  ],
+  ["framework-typescript-certification", "tuvren.framework.promoted-authority"],
+  ["kernel-dart-certification", "tuvren.kernel.protocol"],
+  ["kernel-go-certification", "tuvren.kernel.protocol"],
+  ["kernel-python-certification", "tuvren.kernel.protocol"],
+  ["kernel-rust-certification", "kernel.memory"],
+  ["kernel-typescript-certification", "kernel.memory"],
+  ["kernel-typescript-postgres-certification", "kernel.persistent-reopen"],
+  ["kernel-typescript-postgres-certification", "kernel.process-crash"],
+  ["kernel-typescript-postgres-certification", "kernel.shared-backend"],
+  ["kernel-typescript-sqlite-certification", "kernel.persistent-reopen"],
+  ["kernel-typescript-sqlite-certification", "kernel.process-crash"],
+  ["providers-typescript-certification", "tuvren.providers.provider-api"],
+] as const;
 
 const validManifest = {
   certified: [{ profile: "suite.a", project: "runner-a" }],
@@ -70,15 +76,11 @@ describe("checked-in certification manifest", () => {
     const manifest = await readCertificationManifest(
       nodePath.join(ROOT, CERTIFICATION_MANIFEST_PATH)
     );
-    const certifiedProjects = new Set(
-      manifest.certified.map((entry) => entry.project)
-    );
-
-    for (const project of PREVIOUSLY_CERTIFIED) {
+    for (const [project, profile] of PREVIOUSLY_CERTIFIED) {
       expect(
         manifest.inventory.find((entry) => entry.project === project)?.state
       ).toBe("pass");
-      expect(certifiedProjects.has(project)).toBe(true);
+      expect(manifest.certified).toContainEqual({ project, profile });
     }
   });
 

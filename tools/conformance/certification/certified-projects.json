@@ -101,11 +101,23 @@
     },
     {
       "project": "kernel-typescript-postgres-certification",
-      "profile": "tuvren.kernel.protocol"
+      "profile": "kernel.persistent-reopen"
+    },
+    {
+      "project": "kernel-typescript-postgres-certification",
+      "profile": "kernel.process-crash"
+    },
+    {
+      "project": "kernel-typescript-postgres-certification",
+      "profile": "kernel.shared-backend"
     },
     {
       "project": "kernel-typescript-sqlite-certification",
-      "profile": "tuvren.kernel.protocol"
+      "profile": "kernel.persistent-reopen"
+    },
+    {
+      "project": "kernel-typescript-sqlite-certification",
+      "profile": "kernel.process-crash"
     },
     {
       "project": "providers-typescript-certification",

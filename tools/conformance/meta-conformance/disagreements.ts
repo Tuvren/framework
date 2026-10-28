@@ -82,6 +82,7 @@ const readCatalogs = async (
 interface Options {
   adapters: string[];
   capabilities: string[];
+  plans: string[];
   output: string;
   summaryOut?: string;
 }
@@ -90,6 +91,7 @@ const parseCli = (args: readonly string[]): Options => {
   const options: Options = {
     adapters: [],
     capabilities: [],
+    plans: [],
     output: ".cache/conformance-comparison",
   };
   for (let index = 0; index < args.length; index += 2) {
@@ -105,6 +107,10 @@ const parseCli = (args: readonly string[]): Options => {
       }
       case "--capability": {
         options.capabilities.push(value);
+        break;
+      }
+      case "--plan": {
+        options.plans.push(value);
         break;
       }
       case "--output": {
@@ -128,13 +134,168 @@ const parseCli = (args: readonly string[]): Options => {
 
 const captureImplementation = async (adapter: string, options: Options) => {
   const manifest = await readAdapterManifest(adapter);
-  const plans = await readPlans(manifest, { packets: [], plans: [] });
+  const availablePlans = await readPlans(manifest, {
+    packets: [],
+    plans: options.plans,
+  });
+  const requested = new Set(
+    options.plans.map((plan) => nodePath.resolve(ROOT, plan))
+  );
+  const plans =
+    options.plans.length === 0
+      ? availablePlans
+      : availablePlans.filter((plan) =>
+          requested.has(nodePath.resolve(ROOT, plan.path))
+        );
+  if (options.plans.length > 0 && plans.length !== requested.size) {
+    throw new Error(
+      "one or more requested comparison plans could not be loaded"
+    );
+  }
   const directory = nodePath.resolve(
     ROOT,
     options.output,
     digest(manifest.implementationId).slice(0, 16)
   );
   await mkdir(directory, { recursive: true });
+  if (options.plans.length > 0) {
+    const evidencePath = nodePath.join(directory, "evidence.json");
+    const child = spawn(
+      [
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapter,
+        ...options.plans.flatMap((plan) => ["--plan", plan]),
+        ...plans.flatMap((plan) =>
+          plan.checks.flatMap(({ check }) => ["--check", check.checkId])
+        ),
+        ...options.capabilities.flatMap((capability) => [
+          "--capability",
+          capability,
+        ]),
+        "--capture-observations",
+        "--concurrency",
+        "1",
+        "--allow-failing-evidence",
+        "--evidence-out",
+        evidencePath,
+        "--summary-only",
+      ],
+      { cwd: ROOT, stderr: "inherit", stdout: "inherit" }
+    );
+    if ((await child.exited) !== 0) {
+      throw new Error(
+        `${manifest.implementationId}: comparison harness failed`
+      );
+    }
+    const evidenceText = await readFile(evidencePath, "utf8");
+    const evidence: unknown = JSON.parse(evidenceText);
+    assertConformanceEvidence(
+      evidence,
+      `${manifest.implementationId} comparison evidence`
+    );
+    if (evidence.selection === undefined) {
+      throw new Error("comparison evidence is missing selection inventory");
+    }
+    const observations = evidence.checkResults.map((result) => {
+      if (
+        result.status === "fail" &&
+        result.failure?.classification !== "implementation"
+      ) {
+        throw new Error(
+          `${result.checkId}: comparison requires valid observations`
+        );
+      }
+      const compiled = plans
+        .flatMap((plan) => plan.checks.map((check) => ({ plan, ...check })))
+        .find(({ check }) => check.checkId === result.checkId);
+      if (
+        compiled === undefined ||
+        !Array.isArray(result.details?.traceObservations)
+      ) {
+        throw new Error(
+          `${result.checkId}: comparison lacks trace observations`
+        );
+      }
+      const steps = compiled.check.steps ?? [];
+      const seen = new Set<string>();
+      const frames = result.details.traceObservations.flatMap(
+        (value: unknown) => {
+          if (
+            !(
+              isRecord(value) &&
+              typeof value.stepId === "string" &&
+              typeof value.operation === "string"
+            )
+          ) {
+            throw new Error(`${result.checkId}: malformed trace observation`);
+          }
+          const step = steps.find(
+            (candidate) => candidate.stepId === value.stepId
+          );
+          if (step === undefined || step.operation !== value.operation) {
+            throw new Error(
+              `${result.checkId}: observation does not match a plan step`
+            );
+          }
+          if (
+            compiled.plan.catalog?.operations.get(value.operation)?.kind !==
+            "syscall"
+          ) {
+            return [];
+          }
+          seen.add(value.stepId);
+          return [
+            {
+              method: "dispatch",
+              operation: value.operation,
+              outcome: value.outcome,
+              events: value.events,
+              state: value.inspectedState,
+            },
+          ];
+        }
+      );
+      for (const step of steps) {
+        if (
+          (step.action === undefined ||
+            step.action === "dispatch" ||
+            step.action === "await") &&
+          compiled.plan.catalog?.operations.get(step.operation)?.kind ===
+            "syscall" &&
+          !seen.has(step.stepId)
+        ) {
+          throw new Error(
+            `${result.checkId}/${step.stepId}: missing syscall observation`
+          );
+        }
+      }
+      return stabilizeObservations(frames);
+    });
+    const observationPath = nodePath.join(directory, "observations.json");
+    const observationText = json(observations);
+    await writeFile(observationPath, observationText);
+    return {
+      adapter,
+      catalog: await readCatalogs(manifest.authorityPackets),
+      checks: evidence.checkResults.map(
+        ({ checkId, status, assertionResults }) => ({
+          checkId,
+          status,
+          assertionResults,
+        })
+      ),
+      evidence: nodePath.relative(ROOT, evidencePath),
+      evidenceDigest: digest(evidenceText),
+      implementationId: manifest.implementationId,
+      observationDigest: digest(observationText),
+      observationPath: nodePath.relative(ROOT, observationPath),
+      observations,
+      selection: evidence.selection,
+      summary: evidence.summary,
+    };
+  }
   const probes = await mkdtemp(nodePath.join(directory, "observations-"));
   try {
     const wrapped = nodePath.join(directory, "adapter.json");
@@ -142,7 +303,7 @@ const captureImplementation = async (adapter: string, options: Options) => {
       wrapped,
       json({
         ...manifest,
-        executable: "bun",
+        executable: process.execPath,
         profiles: [],
         command: [
           "bun",
@@ -349,6 +510,7 @@ const main = async (): Promise<void> => {
       "--capability",
       capability,
     ]),
+    ...options.plans.flatMap((plan) => ["--plan", plan]),
     "--output",
     options.output,
   ]

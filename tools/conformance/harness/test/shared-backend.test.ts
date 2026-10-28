@@ -178,6 +178,44 @@ test("postgres clock skew uses the server clock for both preemption decisions", 
   ).toBe("pass");
 }, 60_000);
 
+test("an unconstrained outcome schema cannot admit an unexpected native error", async () => {
+  const manifest = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-postgres.json"
+  );
+  const plan = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
+  );
+  plan.catalog = parseOperationCatalog(
+    JSON.parse(
+      await readFile("spec/conformance/kernel/operations.json", "utf8")
+    ),
+    "kernel catalog"
+  );
+  plan.fixtures = new Map([
+    ["errors", { expected: { liveLeaseErrorOutcome: true } }],
+  ]);
+  const compiledCheck = plan.checks[0];
+  if (compiledCheck === undefined) {
+    throw new Error("missing clock skew check");
+  }
+  const [entry] = await runScheduledChecks(
+    manifest,
+    [{ plan, compiledCheck, index: 0 }],
+    1,
+    () => "replay",
+    false
+  );
+  expect(entry?.checkResult.status).toBe("fail");
+  expect(entry?.checkResult.assertionResults).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        status: "fail",
+        message: expect.stringContaining("has no adapterError assertion"),
+      }),
+    ])
+  );
+}, 60_000);
+
 test("a restarted PostgreSQL process restores the server and worker clock sources", async () => {
   const manifest = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-postgres.json"
@@ -584,7 +622,7 @@ await serveStdioAdapter({
       throw new Error("missing handle check");
     }
     const [entry] = await runScheduledChecks(
-      { ...manifest, executable, command: [executable] },
+      { ...manifest, executable, command: [executable], profiles: [] },
       [{ plan, compiledCheck, index: 0 }],
       1,
       () => "replay",
@@ -726,11 +764,11 @@ test("postgres worker-clock mutant is activated and killed by the live-lease ass
       true
     );
     expect(entry?.checkResult.status).toBe("fail");
+    expect(entry?.checkResult.failure?.classification).toBe("implementation");
     expect(entry?.checkResult.assertionResults).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          assertionId:
-            "kernel.syscall.clock_skew.preemption.livePreempt.1.stateField",
+          assertionId: "kernel.syscall.clock_skew.preemption.2.schemaValid",
           status: "fail",
         }),
       ])

@@ -296,13 +296,7 @@
             },
             "reason": "clock_skew"
           },
-          "assertions": [
-            {
-              "kind": "stateField",
-              "field": "$.adapterError.code",
-              "equals": "kernel_runtime_run_lease_not_expired"
-            }
-          ],
+          "assertions": [],
           "claimIds": [
             "kernel.syscall.clock_skew.live",
             "kernel.syscall.clock_skew.expired"
@@ -314,7 +308,9 @@
           "arguments": {
             "runId": "runexpired",
             "preemptingOwnerId": "other",
-            "nowMs": { "$ref": "capture.liveLease.leaseExpiresAtMs" },
+            "nowMs": {
+              "$ref": "capture.liveLease.leaseExpiresAtMs"
+            },
             "reason": "clock_skew"
           },
           "capture": [
@@ -338,7 +334,9 @@
         {
           "stepId": "expiredHead",
           "operation": "kernel.branch.get",
-          "arguments": { "branchId": "branchexpired" },
+          "arguments": {
+            "branchId": "branchexpired"
+          },
           "assertions": [
             {
               "kind": "resultField",
@@ -357,13 +355,22 @@
           "kind": "resultField",
           "field": "$.trace.liveLease.result.leaseExpiresAtMs",
           "greaterThan": "$.capture.backendNow"
+        },
+        {
+          "kind": "schemaValid",
+          "path": "$.result.trace.livePreempt.outcome",
+          "schema": "$.fixture.expected.liveLeaseErrorOutcome"
         }
       ],
       "evidence": [
         "trace.backendNow.result",
-        "trace.livePreempt.state.adapterError",
+        "result.trace.livePreempt.outcome",
         "trace.expiredPreempt.result"
-      ]
+      ],
+      "fixture": "errors"
     }
-  ]
+  ],
+  "fixtures": {
+    "errors": "../fixtures/run-liveness/errors.json"
+  }
 }

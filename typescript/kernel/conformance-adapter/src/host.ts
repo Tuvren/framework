@@ -177,6 +177,17 @@ const createMutantActivationOperation =
     createProjection({ activation: mutant.readActivation() });
 
 const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
+const CERTIFIED_PROFILES: Readonly<
+  Record<KernelAdapterConfig["backend"], readonly string[]>
+> = {
+  memory: ["kernel.memory"],
+  postgres: [
+    "kernel.persistent-reopen",
+    "kernel.process-crash",
+    "kernel.shared-backend",
+  ],
+  sqlite: ["kernel.persistent-reopen", "kernel.process-crash"],
+};
 
 let notificationSink:
   | ((
@@ -272,8 +283,8 @@ const initialize = (
   packetId,
   planVersion,
   profiles:
-    ADAPTER_CONFIG.backend === "memory" && ADAPTER_CONFIG.mutant === undefined
-      ? ["kernel.memory"]
+    ADAPTER_CONFIG.mutant === undefined
+      ? [...CERTIFIED_PROFILES[ADAPTER_CONFIG.backend]]
       : [],
   protocolVersion: "0.2.0",
   storageKinds: [STORAGE_KIND[ADAPTER_CONFIG.backend]],

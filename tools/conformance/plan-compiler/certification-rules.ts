@@ -38,6 +38,10 @@ import type {
   ConformancePlanStep,
   ConformancePlanValueOperators,
 } from "./index.js";
+import {
+  isDeclaredErrorOutcomeSchema,
+  resolveExpectedSchema,
+} from "./outcome-schema.js";
 
 /** ADR-0075 decisions 4 and 5, plus ADR-0030's evidence rule. */
 export const CERTIFICATION_RULE_IDS = [
@@ -456,6 +460,7 @@ type AssertionScope =
 
 type PathTarget =
   | { kind: "outcomeKind"; operationId: string }
+  | { kind: "outcome"; operationId: string }
   | { kind: "external"; segments: readonly PathSegment[] }
   | { kind: "invalid"; reason: string }
   | {
@@ -496,8 +501,13 @@ const locatePath = (
     };
   }
 
-  if (root === "outcome" && rest.length === 1 && rest[0] === "kind") {
-    return { kind: "outcomeKind", operationId: scope.operationId };
+  if (root === "outcome") {
+    if (rest.length === 0) {
+      return { kind: "outcome", operationId: scope.operationId };
+    }
+    if (rest.length === 1 && rest[0] === "kind") {
+      return { kind: "outcomeKind", operationId: scope.operationId };
+    }
   }
 
   if (root === "result" || root === "state" || root === "events") {
@@ -720,6 +730,7 @@ export const nativeErrorAsserted = (
 interface RuleContext {
   catalog: OperationCatalog | undefined;
   checkId: string;
+  fixture: unknown;
   stepId?: string;
   violations: CertificationViolation[];
 }
@@ -818,7 +829,8 @@ const checkObservationPath = (
   segments: PathSegment[] | undefined,
   label: string,
   allowExternal: boolean,
-  equals?: unknown
+  equals?: unknown,
+  allowOutcome = false
 ): boolean => {
   if (context.catalog === undefined) {
     return true;
@@ -846,6 +858,11 @@ const checkObservationPath = (
     problem = context.catalog.operations.has(target.operationId)
       ? undefined
       : `reads outcome kind of uncatalogued operation ${target.operationId}`;
+  } else if (target.kind === "outcome") {
+    problem =
+      allowOutcome && context.catalog.operations.has(target.operationId)
+        ? undefined
+        : "whole outcomes are available only to schemaValid assertions on catalogued operations";
   } else {
     problem =
       observationProblem(context.catalog, target) ??
@@ -1055,6 +1072,26 @@ const checkProcessExit = (
   }
 };
 
+const allowsErrorOutcome = (
+  context: RuleContext,
+  scope: AssertionScope,
+  assertion: ConformancePlanAssertion,
+  actual: PathSegment[] | undefined
+): boolean => {
+  const outcome = actual === undefined ? undefined : locatePath(actual, scope);
+  return (
+    scope.kind === "trace" &&
+    actual?.[0] === "result" &&
+    assertion.kind === "schemaValid" &&
+    assertion.when === undefined &&
+    outcome?.kind === "outcome" &&
+    isDeclaredErrorOutcomeSchema(
+      resolveExpectedSchema(context.fixture, assertion.schema),
+      context.catalog?.operations.get(outcome.operationId)?.errors ?? []
+    )
+  );
+};
+
 const checkAssertion = (
   context: RuleContext,
   scope: AssertionScope,
@@ -1103,6 +1140,7 @@ const checkAssertion = (
     );
   }
   const actual = assertionActualPath(assertion);
+  const allowOutcome = allowsErrorOutcome(context, scope, assertion, actual);
   const nodes = operatorNodes(assertion, actual, label);
   nodes.push(...referenceNodes(context, scope, assertion, actual, label));
   let actualResolves = true;
@@ -1115,7 +1153,8 @@ const checkAssertion = (
         node.actual,
         node.label,
         assertion.kind === "faultActivated",
-        node.operators.equals
+        node.operators.equals,
+        allowOutcome
       );
     }
 
@@ -1373,13 +1412,40 @@ const checkEvidenceOnlyProof = (
   }
 };
 
+const processExitEpochsForSteps = (
+  steps: readonly ConformancePlanStep[]
+): Map<string, Set<number>> => {
+  const epochs = new Map<string, number>();
+  const exits = new Map<string, Set<number>>();
+  for (const step of steps) {
+    const process = step.process ?? "primary";
+    const epoch = epochs.get(process) ?? 1;
+    if (step.action === "kill" || step.action === "restart") {
+      const exited = exits.get(process) ?? new Set<number>();
+      exited.add(epoch);
+      exits.set(process, exited);
+    }
+    if (step.action === "respawn" || step.action === "restart") {
+      epochs.set(process, epoch + 1);
+    }
+  }
+  return exits;
+};
+
 const checkCheck = (
   plan: ConformancePlan,
   check: ConformancePlanCheck,
   catalog: OperationCatalog | undefined,
-  violations: CertificationViolation[]
+  violations: CertificationViolation[],
+  fixtures: ReadonlyMap<string, unknown> | undefined
 ): void => {
-  const context: RuleContext = { catalog, checkId: check.checkId, violations };
+  const context: RuleContext = {
+    catalog,
+    checkId: check.checkId,
+    fixture:
+      check.fixture === undefined ? undefined : fixtures?.get(check.fixture),
+    violations,
+  };
   const steps = check.steps ?? [];
 
   if (catalog !== undefined && !catalog.operations.has(check.operation)) {
@@ -1409,20 +1475,7 @@ const checkCheck = (
     checkInstanceInputReferences(context, check);
   }
 
-  const epochs = new Map<string, number>();
-  const processExitEpochs = new Map<string, Set<number>>();
-  for (const step of steps) {
-    const process = step.process ?? "primary";
-    const epoch = epochs.get(process) ?? 1;
-    if (step.action === "kill" || step.action === "restart") {
-      const exited = processExitEpochs.get(process) ?? new Set<number>();
-      exited.add(epoch);
-      processExitEpochs.set(process, exited);
-    }
-    if (step.action === "respawn" || step.action === "restart") {
-      epochs.set(process, epoch + 1);
-    }
-  }
+  const processExitEpochs = processExitEpochsForSteps(steps);
   const scope: AssertionScope =
     steps.length === 0
       ? { kind: "operation", operationId: check.operation }
@@ -1461,12 +1514,13 @@ const checkCheck = (
  */
 export const evaluateCertificationRules = (
   plan: ConformancePlan,
-  catalog: OperationCatalog | undefined
+  catalog: OperationCatalog | undefined,
+  fixtures?: ReadonlyMap<string, unknown>
 ): CertificationViolation[] => {
   const violations: CertificationViolation[] = [];
 
   for (const check of plan.checks) {
-    checkCheck(plan, check, catalog, violations);
+    checkCheck(plan, check, catalog, violations, fixtures);
     violations.push(...checkBarrierSchedule(check, catalog));
   }
 

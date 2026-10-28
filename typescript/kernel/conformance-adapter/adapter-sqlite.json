@@ -57,5 +57,6 @@
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",
-  "suiteVersion": "0.1.0"
+  "suiteVersion": "0.1.0",
+  "profiles": ["kernel.persistent-reopen", "kernel.process-crash"]
 }

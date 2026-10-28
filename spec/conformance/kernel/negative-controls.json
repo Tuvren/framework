@@ -252,7 +252,7 @@
       },
       "profiles": ["kernel.shared-backend"],
       "designatedAssertions": [
-        "kernel.syscall.clock_skew.preemption.livePreempt.1.stateField"
+        "kernel.syscall.clock_skew.preemption.2.schemaValid"
       ]
     },
     {

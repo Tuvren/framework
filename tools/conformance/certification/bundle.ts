@@ -15,7 +15,7 @@ import type { AdapterManifest } from "../harness/adapter-client.js";
 import { readAdapterManifest } from "../harness/run-plans.js";
 import { profileConditionalAssertions } from "../meta-conformance/claim-coverage.js";
 import type { CompiledConformancePlan } from "../plan-compiler/index.js";
-import { matchesControlRun } from "./control-link.js";
+import { matchesControlRun, profileControlReport } from "./control-link.js";
 import type { CertificationProfile } from "./profile.js";
 import {
   computeCertificateDigests,
@@ -34,7 +34,7 @@ interface RunOptions {
   shard?: unknown;
 }
 
-interface BundleFields {
+export interface BundleFields {
   certificate?: {
     complete: boolean;
     profile: string;
@@ -63,7 +63,7 @@ export const beginCertificate = async (
     options.shard === undefined;
   return options.controlReport !== undefined &&
     unfiltered &&
-    profiles.length === 1
+    profiles.length > 0
     ? await computeCertificateDigests(manifest, options.adapter)
     : undefined;
 };
@@ -277,6 +277,33 @@ const completedProcess = (value: unknown, schedule: unknown): boolean => {
   );
 };
 
+const completedProcesses = (result: ConformanceCheckResult): boolean => {
+  const details = result.details;
+  const schedule = details?.schedule;
+  if (!Array.isArray(details?.processes)) {
+    return completedProcess(details?.process, schedule);
+  }
+  return (
+    details.processes.length > 0 &&
+    details.processes.every((process: unknown) => {
+      if (
+        !(
+          isRecord(process) &&
+          typeof process.name === "string" &&
+          Array.isArray(schedule)
+        )
+      ) {
+        return false;
+      }
+      const ownSchedule = schedule.filter(
+        (step: unknown) =>
+          isRecord(step) && (step.process ?? "primary") === process.name
+      );
+      return completedProcess(process, ownSchedule);
+    })
+  );
+};
+
 const branchAdapterNames = (
   reports: readonly unknown[]
 ): Set<string> | undefined => {
@@ -302,23 +329,27 @@ const branchAdapterNames = (
   return names;
 };
 
-const branchProvenanceMatches = async (value: unknown): Promise<boolean> => {
+const branchProvenanceMatches = async (
+  value: unknown,
+  profile: string
+): Promise<boolean> => {
+  const document = profileControlReport(value, profile);
   if (
     !(
-      isRecord(value) &&
-      Array.isArray(value.reports) &&
-      isRecord(value.controlRun) &&
-      Array.isArray(value.controlRun.adapters)
+      isRecord(document) &&
+      Array.isArray(document.reports) &&
+      isRecord(document.controlRun) &&
+      Array.isArray(document.controlRun.adapters)
     )
   ) {
     return false;
   }
-  const names = branchAdapterNames(value.reports);
+  const names = branchAdapterNames(document.reports);
   if (names === undefined) {
     return false;
   }
   for (const name of names) {
-    const digest = value.controlRun.adapters.find(
+    const digest = document.controlRun.adapters.find(
       (entry: unknown) => isRecord(entry) && entry.adapter === name
     );
     if (!isRecord(digest)) {
@@ -348,7 +379,7 @@ const controlRun = async (
     const value: unknown = JSON.parse(
       await readFile(path.resolve(ROOT, options.controlReport), "utf8")
     );
-    if (!(await branchProvenanceMatches(value))) {
+    if (!(await branchProvenanceMatches(value, profile.profileId))) {
       return undefined;
     }
     const { implementation, adapterManifest, ...verifierDigests } = digests;
@@ -376,7 +407,8 @@ export const finishCertificate = async (
   plans: readonly CompiledConformancePlan[],
   results: readonly ConformanceCheckResult[],
   status: ConformanceRunStatus,
-  before: CertificateDigests | undefined
+  before: CertificateDigests | undefined,
+  snapshotAfter?: CertificateDigests
 ): Promise<BundleFields> => {
   if (profile === undefined) {
     return {};
@@ -391,7 +423,9 @@ export const finishCertificate = async (
   if (before === undefined) {
     return incomplete;
   }
-  const after = await computeCertificateDigests(manifest, options.adapter);
+  const after =
+    snapshotAfter ??
+    (await computeCertificateDigests(manifest, options.adapter));
   const environment = await certificationEnvironment(manifest);
   if (JSON.stringify(before) !== JSON.stringify(after)) {
     return { ...incomplete, environment };
@@ -403,7 +437,7 @@ export const finishCertificate = async (
     profilePassed(profile, plans, results) &&
     results.every(
       (result) =>
-        completedProcess(result.details?.process, result.details?.schedule) &&
+        completedProcesses(result) &&
         result.details?.schedule !== undefined &&
         result.details?.storageIdentity !== undefined
     );

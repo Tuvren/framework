@@ -60,72 +60,8 @@ import {
   claimAssertions,
   profileConditionalAssertions,
 } from "./claim-coverage.ts";
-
-/** One port's negative-control wiring (ADR-0079 decisions 1 to 3). */
-export interface NegativeControlPortConfig {
-  activationOperation: string;
-  branchAdapters?: readonly string[];
-  capabilities?: readonly string[];
-  mutants?: readonly string[];
-  unsupportedReasons?: Readonly<Record<string, string>>;
-  undetectedReasons?: string;
-  /** The certifying adapter whose unmutated run must pass first. */
-  controlAdapter: string;
-  mutantAdapter: string;
-  mutantEnv: string;
-  packet: string;
-  port: string;
-  profile: string;
-}
-
-export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
-  {
-    activationOperation: "kernel.mutant.activation",
-    branchAdapters: [
-      "typescript/kernel/conformance-adapter/adapter-postgres.json",
-    ],
-    controlAdapter: "typescript/kernel/conformance-adapter/adapter.json",
-    mutantAdapter: "typescript/kernel/conformance-adapter/adapter-mutant.json",
-    mutantEnv: "TUVREN_KERNEL_MUTANT",
-    packet: "spec/kernel/authority-packet.json",
-    port: "kernel",
-    profile: "kernel.memory",
-    undetectedReasons: "spec/conformance/kernel/kernel-memory-undetected.json",
-  },
-  {
-    activationOperation: "kernel.mutant.activation",
-    controlAdapter: "rust/kernel-conformance-adapter/adapter.json",
-    mutantAdapter: "rust/kernel-conformance-adapter/adapter-mutant.json",
-    mutantEnv: "TUVREN_KERNEL_MUTANT",
-    mutants: [
-      "kernel.wrong-opaque-object-hash",
-      "kernel.drop-uncommitted-staged-result-on-recovery",
-      "kernel.delete-object-reachable-through-live-root",
-    ],
-    unsupportedReasons: {
-      "kernel.accept-noncanonical-cbor": "no Rust reproduction yet; not run",
-      "kernel.accept-stale-head-update": "no Rust reproduction yet; not run",
-      "kernel.accept-stale-owner-after-takeover":
-        "no Rust reproduction yet; not run",
-      "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
-      "kernel.lease-takeover-before-expiry":
-        "no Rust reproduction yet; not run",
-      "kernel.never-sweep-eligible-objects":
-        "no Rust reproduction yet; not run",
-      "kernel.noncanonical-changed-paths-order":
-        "no Rust reproduction yet; not run",
-      "kernel.promote-staged-before-checkpoint":
-        "no Rust reproduction yet; not run",
-      "kernel.resolve-object-across-scopes":
-        "no shared-substrate construction seam in the Rust kernel; not run",
-      "kernel.sweep-inside-grace-window": "no Rust reproduction yet; not run",
-    },
-    packet: "spec/kernel/authority-packet.json",
-    port: "kernel",
-    profile: "kernel.memory",
-    undetectedReasons: "spec/conformance/kernel/kernel-memory-undetected.json",
-  },
-];
+import { NEGATIVE_CONTROL_PORTS } from "./negative-control-config.ts";
+import type { NegativeControlPortConfig } from "./negative-control-config.ts";
 
 export type NegativeControlOutcome =
   | "equivalent"
@@ -587,7 +523,7 @@ const runHarness = async (
     wrappedPath,
     `${JSON.stringify({
       ...manifest,
-      executable: "bun",
+      executable: process.execPath,
       command: [
         "bun",
         PROBE,
@@ -1269,12 +1205,17 @@ export const formatNegativeControlSummary = (
 
 const parseCli = (
   args: readonly string[]
-): NegativeControlRunOptions & { ports: string[]; reportOut?: string } => {
+): NegativeControlRunOptions & {
+  ports: string[];
+  profiles: string[];
+  reportOut?: string;
+} => {
   const parsed: NegativeControlRunOptions & {
     mutants: string[];
     ports: string[];
+    profiles: string[];
     reportOut?: string;
-  } = { mutants: [], ports: [] };
+  } = { mutants: [], ports: [], profiles: [] };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     const value = args[index + 1];
@@ -1285,6 +1226,10 @@ const parseCli = (
     switch (arg) {
       case "--port": {
         parsed.ports.push(value);
+        break;
+      }
+      case "--profile": {
+        parsed.profiles.push(value);
         break;
       }
       case "--mutant": {
@@ -1394,60 +1339,82 @@ const main = async (): Promise<void> => {
   if (unknown.length > 0) {
     throw new Error(`unknown negative-control port(s) ${unknown.join(", ")}`);
   }
-  const configs = NEGATIVE_CONTROL_PORTS.filter(
-    ({ port }) => options.ports.length === 0 || options.ports.includes(port)
+  const unknownProfiles = options.profiles.filter(
+    (profile) =>
+      !NEGATIVE_CONTROL_PORTS.some((config) => config.profile === profile)
   );
-  const recordProvenance =
-    options.reportOut !== undefined && (options.mutants?.length ?? 0) === 0;
-  if (
-    recordProvenance &&
-    new Set(configs.map(({ packet, profile }) => `${packet}\n${profile}`))
-      .size !== 1
-  ) {
+  if (unknownProfiles.length > 0) {
     throw new Error(
-      "a control provenance report must cover one packet and profile"
+      `unknown negative-control profile(s) ${unknownProfiles.join(", ")}`
     );
   }
-  const profile = configs[0]?.profile;
-  const before = recordProvenance ? await snapshotControls(configs) : undefined;
+  const configs = NEGATIVE_CONTROL_PORTS.filter(
+    ({ port, profile }) =>
+      (options.ports.length === 0 || options.ports.includes(port)) &&
+      (options.profiles.length === 0 || options.profiles.includes(profile))
+  );
+  if (configs.length === 0) {
+    throw new Error("no negative-control configuration selected");
+  }
+  const recordProvenance =
+    options.reportOut !== undefined && (options.mutants?.length ?? 0) === 0;
+  const groups = [...new Set(configs.map(({ profile }) => profile))].map(
+    (profile) => ({
+      profile,
+      configs: configs.filter((config) => config.profile === profile),
+    })
+  );
+  const snapshots = recordProvenance
+    ? await inSequence(
+        groups,
+        async (group) => await snapshotControls(group.configs)
+      )
+    : [];
   const reports = await inSequence(configs, async (config) => {
     const report = await runNegativeControls(config, options);
     process.stdout.write(formatNegativeControlSummary(report));
     return report;
   });
-  const gateFailures =
-    (options.mutants?.length ?? 0) === 0
-      ? await checkFleetGate(configs, reports)
-      : [];
-  const after = recordProvenance ? await snapshotControls(configs) : undefined;
-  if (
-    before !== undefined &&
-    JSON.stringify(before) !== JSON.stringify(after)
-  ) {
-    gateFailures.push(
-      "verifier or implementation inputs changed during the control run"
+  const gateFailures: string[] = [];
+  const controlRuns = await inSequence(groups, async (group) => {
+    const groupReports = reports.filter(
+      (report) => report.profile === group.profile
     );
-  }
-  const controlRun =
-    before === undefined || profile === undefined
-      ? undefined
-      : (() => {
-          const identity = {
-            profile,
-            status:
-              gateFailures.length === 0 &&
-              reports.every(
-                (report) => report.counted && report.mode === "enforcing"
-              )
-                ? ("pass" as const)
-                : ("fail" as const),
-            verifierDigests: before.verifierDigests,
-            adapters: before.adapters,
-            outcomes: controlOutcomes(reports),
-          };
-          return { ...identity, id: controlRunId(identity) };
-        })();
-  const text = `${JSON.stringify({ reports, ...(controlRun === undefined ? {} : { controlRun }) }, null, 2)}\n`;
+    const failures =
+      (options.mutants?.length ?? 0) === 0
+        ? await checkFleetGate(group.configs, groupReports)
+        : [];
+    const before = snapshots[groups.indexOf(group)];
+    if (
+      before !== undefined &&
+      JSON.stringify(before) !==
+        JSON.stringify(await snapshotControls(group.configs))
+    ) {
+      failures.push(
+        `${group.profile}: verifier or implementation inputs changed during the control run`
+      );
+    }
+    gateFailures.push(...failures);
+    if (before === undefined) {
+      return undefined;
+    }
+    const identity = {
+      profile: group.profile,
+      status:
+        failures.length === 0 &&
+        groupReports.every(
+          (report) => report.counted && report.mode === "enforcing"
+        )
+          ? ("pass" as const)
+          : ("fail" as const),
+      verifierDigests: before.verifierDigests,
+      adapters: before.adapters,
+      outcomes: controlOutcomes(groupReports),
+    };
+    return { ...identity, id: controlRunId(identity) };
+  });
+  const completedRuns = controlRuns.filter((run) => run !== undefined);
+  const text = `${JSON.stringify({ reports, ...(completedRuns.length === 1 ? { controlRun: completedRuns[0] } : {}), ...(completedRuns.length > 1 ? { controlRuns: completedRuns } : {}) }, null, 2)}\n`;
   const logs = await createVerificationLogs(
     fromRoot(process.env.VERIFY_LOG_DIR ?? ".cache/verification")
   );

@@ -114,6 +114,7 @@ export interface ConformanceEvidenceSummary {
 
 export interface ConformanceEvidence {
   adapterId?: string;
+  runId?: string;
   boundary: string;
   capabilities?: readonly string[];
   checkResults: readonly ConformanceCheckResult[];

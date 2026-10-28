@@ -30,10 +30,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.clock_skew.preemption.livePreempt.1.stateField",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.syscall.clock_skew.preemption.expiredPreempt.1.resultField",
           "status": "pass"
         },
@@ -43,6 +39,10 @@
         },
         {
           "assertionId": "kernel.syscall.clock_skew.preemption.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.2.schemaValid",
           "status": "pass"
         },
         {
@@ -62,19 +62,15 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.livePreempt.outcome",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.backendNow.result",
           "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.expiredPreempt.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.livePreempt.state.adapterError",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.livePreempt.state.adapterError.code",
           "status": "pass"
         }
       ],
@@ -911,7 +907,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -920,7 +916,7 @@
                 }
               },
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -938,7 +934,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -947,7 +943,7 @@
               }
             },
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1255,7 +1251,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1264,7 +1260,7 @@
                 }
               },
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1282,7 +1278,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1291,7 +1287,7 @@
               }
             },
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1599,7 +1595,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1608,7 +1604,7 @@
                 }
               },
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1626,7 +1622,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1635,7 +1631,7 @@
               }
             },
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1943,7 +1939,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1952,7 +1948,7 @@
                 }
               },
               {
-                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1970,7 +1966,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1979,7 +1975,7 @@
               }
             },
             {
-              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+              "executableDigest": "47dba211c48871a90f0e7f250b76d8c90ac7d3af7301b1648043c05ddfd6447f",
               "epoch": 2,
               "signal": null,
               "exit": {
