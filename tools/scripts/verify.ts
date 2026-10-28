@@ -406,6 +406,7 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
 ];
 
 export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
+  "tools/conformance/certification/bundle-contract.test.ts",
   "tools/conformance/harness/test/durable-faults.test.ts",
   "tools/conformance/harness/test/run.test.ts",
   "tools/conformance/harness/test/operation-handles.test.ts",

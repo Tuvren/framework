@@ -1078,8 +1078,8 @@
             "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
-            "failedChecks": 2,
-            "passedChecks": 136,
+            "failedChecks": 0,
+            "passedChecks": 138,
             "totalChecks": 140,
             "applicableChecks": 138,
             "nonApplicableChecks": 2
@@ -1101,8 +1101,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
-          "reportStatus": "unexpected_fail",
-          "status": "fail",
+          "reportStatus": "capability_subset_pass",
+          "status": "pass",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
         }

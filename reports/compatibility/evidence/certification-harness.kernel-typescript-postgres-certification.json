@@ -483,7 +483,14 @@
       "assertionResults": [
         {
           "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
-          "status": "fail"
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+          "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+          "status": "pass",
+          "when": "not_applied"
         },
         {
           "assertionId": "kernel.syscall.controls.after_commit_before_ack.faultedCheckpoint.1.faultActivated",
@@ -494,7 +501,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.trace.backendCapabilities.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.trace.consumed.result",
           "status": "pass"
         }
       ],
@@ -515,6 +526,7 @@
         "traceStepIds": [
           "backendClock",
           "workerClock",
+          "backendCapabilities",
           "schema",
           "thread",
           "turn",
@@ -543,17 +555,20 @@
           ]
         }
       },
-      "status": "fail",
-      "failure": {
-        "classification": "implementation",
-        "replay": "bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --check kernel.syscall.controls.after_commit_before_ack"
-      }
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
-          "status": "fail"
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+          "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+          "status": "pass",
+          "when": "not_applied"
         },
         {
           "assertionId": "kernel.syscall.controls.before_commit.faultedCheckpoint.1.faultActivated",
@@ -564,7 +579,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
+          "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.trace.backendCapabilities.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.trace.consumed.result",
           "status": "pass"
         }
       ],
@@ -585,6 +604,7 @@
         "traceStepIds": [
           "backendClock",
           "workerClock",
+          "backendCapabilities",
           "schema",
           "thread",
           "turn",
@@ -613,11 +633,7 @@
           ]
         }
       },
-      "status": "fail",
-      "failure": {
-        "classification": "implementation",
-        "replay": "bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --check kernel.syscall.controls.before_commit"
-      }
+      "status": "pass"
     },
     {
       "assertionResults": [
@@ -7600,7 +7616,7 @@
     "--concurrency",
     "4"
   ],
-  "exitCode": 1,
+  "exitCode": 0,
   "implementationId": "typescript-kernel-postgres",
   "nonApplicableCheckIds": [
     "kernel.syscall.concurrent_writer.a_first",
@@ -7608,11 +7624,11 @@
   ],
   "project": "kernel-typescript-postgres-certification",
   "reportLabel": "TypeScript PostgreSQL durable kernel",
-  "reportStatus": "unexpected_fail",
-  "status": "fail",
+  "reportStatus": "capability_subset_pass",
+  "status": "pass",
   "summary": {
-    "failedChecks": 2,
-    "passedChecks": 136,
+    "failedChecks": 0,
+    "passedChecks": 138,
     "totalChecks": 140,
     "applicableChecks": 138,
     "nonApplicableChecks": 2

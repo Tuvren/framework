@@ -482,7 +482,14 @@
       "assertionResults": [
         {
           "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
-          "status": "pass"
+          "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+          "status": "pass",
+          "when": "applied"
         },
         {
           "assertionId": "kernel.syscall.controls.after_commit_before_ack.faultedCheckpoint.1.faultActivated",
@@ -493,7 +500,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.trace.backendCapabilities.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.trace.consumed.result",
           "status": "pass"
         }
       ],
@@ -514,6 +525,7 @@
         "traceStepIds": [
           "backendClock",
           "workerClock",
+          "backendCapabilities",
           "schema",
           "thread",
           "turn",
@@ -548,7 +560,14 @@
       "assertionResults": [
         {
           "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
-          "status": "pass"
+          "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+          "status": "pass",
+          "when": "applied"
         },
         {
           "assertionId": "kernel.syscall.controls.before_commit.faultedCheckpoint.1.faultActivated",
@@ -559,7 +578,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
+          "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.trace.backendCapabilities.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.trace.consumed.result",
           "status": "pass"
         }
       ],
@@ -580,6 +603,7 @@
         "traceStepIds": [
           "backendClock",
           "workerClock",
+          "backendCapabilities",
           "schema",
           "thread",
           "turn",

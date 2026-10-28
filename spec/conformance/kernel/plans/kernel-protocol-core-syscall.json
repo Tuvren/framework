@@ -1438,7 +1438,10 @@
     },
     {
       "checkId": "kernel.syscall.controls.before_commit",
-      "claimIds": ["kernel.syscall.controls.before_commit"],
+      "claimIds": [
+        "kernel.syscall.controls.before_commit",
+        "kernel.syscall.backend_capability.shared_lease_clock"
+      ],
       "operation": "kernel.schema.register",
       "steps": [
         {
@@ -1461,6 +1464,16 @@
             "nowMs": 200
           },
           "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "backendCapabilities",
+          "operation": "kernel.backend.capabilities",
+          "arguments": {},
+          "capture": [
+            { "name": "sharedLeaseClock", "path": "result.shared-lease-clock" }
+          ],
+          "claimIds": ["kernel.syscall.backend_capability.shared_lease_clock"],
           "assertions": []
         },
         {
@@ -1644,11 +1657,21 @@
               "path": "result"
             }
           ],
-          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "claimIds": [
+            "kernel.syscall.controls.before_commit",
+            "kernel.syscall.backend_capability.shared_lease_clock"
+          ],
           "assertions": [
             {
               "kind": "resultField",
               "field": "$.stagedResult.timestamp",
+              "when": { "path": "$.capture.sharedLeaseClock", "equals": true },
+              "equals": 100
+            },
+            {
+              "kind": "resultField",
+              "field": "$.stagedResult.timestamp",
+              "when": { "path": "$.capture.sharedLeaseClock", "equals": false },
               "equals": 200
             }
           ]
@@ -1697,11 +1720,15 @@
           "path": "$.capture.faultToken"
         }
       ],
+      "evidence": ["trace.backendCapabilities.result", "trace.consumed.result"],
       "capabilities": ["kernel.fault-injection", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.controls.after_commit_before_ack",
-      "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+      "claimIds": [
+        "kernel.syscall.controls.after_commit_before_ack",
+        "kernel.syscall.backend_capability.shared_lease_clock"
+      ],
       "operation": "kernel.schema.register",
       "steps": [
         {
@@ -1724,6 +1751,16 @@
             "nowMs": 200
           },
           "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "backendCapabilities",
+          "operation": "kernel.backend.capabilities",
+          "arguments": {},
+          "capture": [
+            { "name": "sharedLeaseClock", "path": "result.shared-lease-clock" }
+          ],
+          "claimIds": ["kernel.syscall.backend_capability.shared_lease_clock"],
           "assertions": []
         },
         {
@@ -1907,11 +1944,21 @@
               "path": "result"
             }
           ],
-          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "claimIds": [
+            "kernel.syscall.controls.after_commit_before_ack",
+            "kernel.syscall.backend_capability.shared_lease_clock"
+          ],
           "assertions": [
             {
               "kind": "resultField",
               "field": "$.stagedResult.timestamp",
+              "when": { "path": "$.capture.sharedLeaseClock", "equals": true },
+              "equals": 100
+            },
+            {
+              "kind": "resultField",
+              "field": "$.stagedResult.timestamp",
+              "when": { "path": "$.capture.sharedLeaseClock", "equals": false },
               "equals": 200
             }
           ]
@@ -1960,6 +2007,7 @@
           "path": "$.capture.faultToken"
         }
       ],
+      "evidence": ["trace.backendCapabilities.result", "trace.consumed.result"],
       "capabilities": ["kernel.fault-injection", "kernel.protocol"]
     }
   ]

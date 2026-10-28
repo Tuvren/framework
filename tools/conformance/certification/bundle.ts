@@ -12,11 +12,16 @@ import type {
   ConformanceRunStatus,
 } from "../../scripts/lib/conformance-contract.js";
 import type { AdapterManifest } from "../harness/adapter-client.js";
+import { readAdapterManifest } from "../harness/run-plans.js";
 import { profileConditionalAssertions } from "../meta-conformance/claim-coverage.js";
 import type { CompiledConformancePlan } from "../plan-compiler/index.js";
 import { matchesControlRun } from "./control-link.js";
 import type { CertificationProfile } from "./profile.js";
-import { computeCertificateDigests } from "./provenance.js";
+import {
+  computeCertificateDigests,
+  computeImplementationDigest,
+  digestAdapterManifest,
+} from "./provenance.js";
 import type { CertificateDigests } from "./provenance.js";
 
 interface RunOptions {
@@ -244,6 +249,64 @@ const completedProcess = (value: unknown): boolean => {
   );
 };
 
+const branchAdapterNames = (
+  reports: readonly unknown[]
+): Set<string> | undefined => {
+  const names = new Set<string>();
+  for (const report of reports) {
+    if (!(isRecord(report) && isRecord(report.control))) {
+      return undefined;
+    }
+    const controls = report.control.branchControls;
+    if (controls === undefined) {
+      continue;
+    }
+    if (!Array.isArray(controls)) {
+      return undefined;
+    }
+    for (const control of controls) {
+      if (!isRecord(control) || typeof control.adapter !== "string") {
+        return undefined;
+      }
+      names.add(control.adapter);
+    }
+  }
+  return names;
+};
+
+const branchProvenanceMatches = async (value: unknown): Promise<boolean> => {
+  if (
+    !(
+      isRecord(value) &&
+      Array.isArray(value.reports) &&
+      isRecord(value.controlRun) &&
+      Array.isArray(value.controlRun.adapters)
+    )
+  ) {
+    return false;
+  }
+  const names = branchAdapterNames(value.reports);
+  if (names === undefined) {
+    return false;
+  }
+  for (const name of names) {
+    const digest = value.controlRun.adapters.find(
+      (entry: unknown) => isRecord(entry) && entry.adapter === name
+    );
+    if (!isRecord(digest)) {
+      return false;
+    }
+    const manifest = await readAdapterManifest(path.resolve(ROOT, name));
+    if (
+      digest.adapterManifest !== (await digestAdapterManifest(name)) ||
+      digest.implementation !== (await computeImplementationDigest(manifest))
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const controlRun = async (
   options: RunOptions,
   profile: CertificationProfile,
@@ -257,6 +320,9 @@ const controlRun = async (
     const value: unknown = JSON.parse(
       await readFile(path.resolve(ROOT, options.controlReport), "utf8")
     );
+    if (!(await branchProvenanceMatches(value))) {
+      return undefined;
+    }
     const { implementation, adapterManifest, ...verifierDigests } = digests;
     return matchesControlRun(value, {
       adapter: path.relative(ROOT, path.resolve(ROOT, options.adapter)),

@@ -64,6 +64,7 @@ import {
 /** One port's negative-control wiring (ADR-0079 decisions 1 to 3). */
 export interface NegativeControlPortConfig {
   activationOperation: string;
+  branchAdapters?: readonly string[];
   capabilities?: readonly string[];
   mutants?: readonly string[];
   unsupportedReasons?: Readonly<Record<string, string>>;
@@ -80,6 +81,9 @@ export interface NegativeControlPortConfig {
 export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
   {
     activationOperation: "kernel.mutant.activation",
+    branchAdapters: [
+      "typescript/kernel/conformance-adapter/adapter-postgres.json",
+    ],
     controlAdapter: "typescript/kernel/conformance-adapter/adapter.json",
     mutantAdapter: "typescript/kernel/conformance-adapter/adapter-mutant.json",
     mutantEnv: "TUVREN_KERNEL_MUTANT",
@@ -164,6 +168,16 @@ export interface NegativeControlReport {
       assertionId: string;
       status: string;
       when?: string;
+    }[];
+    branchControls?: readonly {
+      adapter: string;
+      status: ConformanceRunStatus | "error";
+      conditionalAssertions: readonly {
+        assertionId: string;
+        status: string;
+        when?: string;
+      }[];
+      reason?: string;
     }[];
   };
   counted: boolean;
@@ -648,6 +662,68 @@ const runHarness = async (
   }
 };
 
+const runBranchControl = async (
+  config: NegativeControlPortConfig,
+  adapter: string,
+  directory: string,
+  options: NegativeControlRunOptions
+): Promise<
+  NonNullable<NegativeControlReport["control"]["branchControls"]>[number]
+> => {
+  await mkdir(directory, { recursive: true });
+  const evidencePath = nodePath.join(directory, "evidence.json");
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => key !== config.mutantEnv)
+  );
+  const run = await runProcess(
+    [
+      HARNESS,
+      "--adapter",
+      adapter,
+      "--packet",
+      config.packet,
+      "--concurrency",
+      String(options.concurrency ?? 4),
+      "--evidence-out",
+      evidencePath,
+      "--summary-only",
+    ],
+    env,
+    timeoutMs
+  );
+  if (run.timedOut || run.code !== 0) {
+    return {
+      adapter: display(adapter),
+      conditionalAssertions: [],
+      reason: run.timedOut
+        ? `harness timed out after ${timeoutMs}ms`
+        : `harness exited ${String(run.code)}: ${run.stderr.trim()}`,
+      status: "error",
+    };
+  }
+  try {
+    const evidence: unknown = JSON.parse(await readFile(evidencePath, "utf-8"));
+    assertConformanceEvidence(evidence, `${display(adapter)} branch evidence`);
+    return {
+      adapter: display(adapter),
+      conditionalAssertions: evidence.checkResults.flatMap((check) =>
+        check.assertionResults.filter(
+          (assertion) => assertion.when !== undefined
+        )
+      ),
+      status: evidence.status,
+    };
+  } catch (error: unknown) {
+    return {
+      adapter: display(adapter),
+      conditionalAssertions: [],
+      reason: `harness evidence unusable: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error",
+    };
+  }
+};
+
 const failingAssertions = (
   evidence: ConformanceEvidence
 ): CollateralFailure[] =>
@@ -872,6 +948,53 @@ const runUnclaimedDiagnostics = async (
   );
 };
 
+const runBranchControls = async (
+  report: NegativeControlReport,
+  config: NegativeControlPortConfig,
+  options: NegativeControlRunOptions,
+  workDirectory: string,
+  selected: readonly { mutantId: string }[]
+): Promise<boolean> => {
+  if (
+    report.mode !== "enforcing" ||
+    (config.branchAdapters?.length ?? 0) === 0
+  ) {
+    return true;
+  }
+  const branchControls = await inSequence(
+    (config.branchAdapters ?? []).map((adapter, index) => ({ adapter, index })),
+    async ({ adapter, index }) =>
+      await runBranchControl(
+        config,
+        adapter,
+        nodePath.join(workDirectory, `branch-${index}`),
+        options
+      )
+  );
+  report.control.branchControls = branchControls;
+  const failed = branchControls.filter((control) => control.status !== "pass");
+  if (failed.length === 0) {
+    return true;
+  }
+  report.findings.push(
+    ...failed.map(
+      (control) =>
+        `branch control ${control.adapter} did not pass (${control.status}${control.reason === undefined ? "" : `: ${control.reason}`})`
+    )
+  );
+  report.notRun = selected.map(({ mutantId }) => mutantId);
+  return false;
+};
+
+const countMutantOutcomes = (report: NegativeControlReport): void => {
+  for (const mutant of report.mutants) {
+    report.totals[mutant.outcome] += 1;
+    if (mutant.activated) {
+      report.totals.activated += 1;
+    }
+  }
+};
+
 /** Runs the unmutated control, then every selected mutant, unchanged plans. */
 export const runNegativeControls = async (
   config: NegativeControlPortConfig,
@@ -989,6 +1112,17 @@ export const runNegativeControls = async (
       );
       return report;
     }
+    if (
+      !(await runBranchControls(
+        report,
+        config,
+        options,
+        workDirectory,
+        selected
+      ))
+    ) {
+      return report;
+    }
     report.counted = true;
 
     report.mutants = await inSequence(
@@ -1033,12 +1167,7 @@ export const runNegativeControls = async (
     await logs?.finish(false);
   }
 
-  for (const mutant of report.mutants) {
-    report.totals[mutant.outcome] += 1;
-    if (mutant.activated) {
-      report.totals.activated += 1;
-    }
-  }
+  countMutantOutcomes(report);
   return report;
 };
 
@@ -1158,22 +1287,28 @@ const snapshotControls = async (
     throw new Error("no control packet selected");
   }
   const verifierDigests = await computeVerifierDigests([packet]);
-  const adapters = await inSequence(configs, async (config) => {
-    const manifest = await readValidatedAdapterManifest(config.controlAdapter);
-    if (
-      manifest.authorityPackets.length !== 1 ||
-      manifest.authorityPackets[0] !== config.packet
-    ) {
-      throw new Error(
-        `${config.controlAdapter} must run its full packet inventory`
-      );
+  const adapterPaths = configs.flatMap((config) =>
+    [config.controlAdapter, ...(config.branchAdapters ?? [])].map(
+      (adapter) => ({ adapter, packet: config.packet })
+    )
+  );
+  const adapters = await inSequence(
+    adapterPaths,
+    async ({ adapter, packet: adapterPacket }) => {
+      const manifest = await readValidatedAdapterManifest(adapter);
+      if (
+        manifest.authorityPackets.length !== 1 ||
+        manifest.authorityPackets[0] !== adapterPacket
+      ) {
+        throw new Error(`${adapter} must run its full packet inventory`);
+      }
+      return {
+        adapter: display(adapter),
+        adapterManifest: await digestAdapterManifest(adapter),
+        implementation: await computeImplementationDigest(manifest),
+      };
     }
-    return {
-      adapter: display(config.controlAdapter),
-      adapterManifest: await digestAdapterManifest(config.controlAdapter),
-      implementation: await computeImplementationDigest(manifest),
-    };
-  });
+  );
   return { verifierDigests, adapters };
 };
 
@@ -1205,7 +1340,12 @@ const checkFleetGate = async (
         obligations.conditionalAssertions,
         fleet
           .filter((report) => report.counted)
-          .map((report) => report.control.conditionalAssertions ?? [])
+          .flatMap((report) => [
+            report.control.conditionalAssertions ?? [],
+            ...(report.control.branchControls ?? [])
+              .filter((control) => control.status === "pass")
+              .map((control) => control.conditionalAssertions),
+          ])
       );
     } catch (error: unknown) {
       failures.push(error instanceof Error ? error.message : String(error));

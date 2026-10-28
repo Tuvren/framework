@@ -1,4 +1,5 @@
 {
+  "kernel.syscall.backend_capability.shared_lease_clock": "No designated control falsifies the backend capability descriptor or changes the transaction clock used for staged-result timestamps.",
   "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage": "No required control accepts a branch head from lateral lineage; the stale-head control designates concurrent-writer assertions instead.",
   "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step": "No required control permits a run to begin an out-of-order step.",
   "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object": "No required control permits run completion with a missing event object.",

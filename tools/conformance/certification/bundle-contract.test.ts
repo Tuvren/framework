@@ -63,6 +63,91 @@ const run = async (
   return { code, stdout, stderr };
 };
 
+test("certificate links require passing, provenance-bound fleet branch observations", () => {
+  const verifierDigests: VerifierDigests = {
+    harness: "harness",
+    packet: "packet",
+    plans: "plans",
+    catalogs: "catalogs",
+    fixtures: "fixtures",
+    profiles: "profiles",
+    controls: "controls",
+    verifierAuthority: "verifier",
+  };
+  const primary = {
+    adapter: "memory",
+    adapterManifest: "m",
+    implementation: "i",
+  };
+  const supporting = {
+    adapter: "postgres",
+    adapterManifest: "p",
+    implementation: "j",
+  };
+  const expected = {
+    ...primary,
+    conditionalAssertions: ["worker", "shared"],
+    negativeControls: ["mutant"],
+    profile: "kernel.memory",
+    verifierDigests,
+  };
+  const makeRun = (status: string, includeDigest: boolean, applied: string) => {
+    const reports = [
+      {
+        control: {
+          adapter: primary.adapter,
+          status: "pass",
+          conditionalAssertions: [
+            { assertionId: "worker", status: "pass", when: "applied" },
+          ],
+          branchControls: [
+            {
+              adapter: supporting.adapter,
+              status,
+              conditionalAssertions: [
+                { assertionId: "shared", status: "pass", when: applied },
+              ],
+            },
+          ],
+        },
+        counted: true,
+        findings: [],
+        mode: "enforcing",
+        notRun: [],
+        profile: expected.profile,
+        mutants: [
+          {
+            mutantId: "mutant",
+            kind: "implementation",
+            outcome: "killed",
+            activated: true,
+            designatedFailures: ["detector"],
+          },
+        ],
+      },
+    ];
+    const identity = {
+      profile: expected.profile,
+      status: "pass" as const,
+      verifierDigests,
+      adapters: includeDigest ? [primary, supporting] : [primary],
+      outcomes: controlOutcomes(reports),
+    };
+    return { reports, controlRun: { ...identity, id: controlRunId(identity) } };
+  };
+  const passing = makeRun("pass", true, "applied");
+  expect(matchesControlRun(passing, expected)).toBe(passing.controlRun.id);
+  expect(
+    matchesControlRun(makeRun("fail", true, "applied"), expected)
+  ).toBeUndefined();
+  expect(
+    matchesControlRun(makeRun("pass", false, "applied"), expected)
+  ).toBeUndefined();
+  expect(
+    matchesControlRun(makeRun("pass", true, "not_applied"), expected)
+  ).toBeUndefined();
+});
+
 test("certificate environment identifies the adapter storage backend", async () => {
   const adapter = adapters[0];
   const manifest = await readAdapterManifest(adapter);
@@ -227,6 +312,51 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
       profile: profile.profileId,
       status: "certified",
     });
+    const branchAdapter =
+      "typescript/kernel/conformance-adapter/adapter-postgres.json";
+    const forgedReports = passing.reports.map((report) => ({
+      ...report,
+      control: {
+        ...report.control,
+        branchControls: [
+          { adapter: branchAdapter, status: "pass", conditionalAssertions: [] },
+        ],
+      },
+    }));
+    const branchManifestDigest = createHash("sha256")
+      .update(await readFile(path.join(root, branchAdapter)))
+      .digest("hex");
+    const forgedIdentity = {
+      profile: profile.profileId,
+      status: "pass" as const,
+      verifierDigests,
+      adapters: [
+        adapterIdentity,
+        {
+          adapter: branchAdapter,
+          adapterManifest: branchManifestDigest,
+          implementation: "stale",
+        },
+      ],
+      outcomes: controlOutcomes(forgedReports),
+    };
+    await writeFile(
+      reportPath,
+      JSON.stringify({
+        reports: forgedReports,
+        controlRun: { ...forgedIdentity, id: controlRunId(forgedIdentity) },
+      })
+    );
+    const staleBranch = await finishCertificate(
+      options,
+      manifest,
+      profile,
+      plans,
+      results,
+      "pass",
+      digests
+    );
+    expect(staleBranch.certificate).toMatchObject({ status: "uncertified" });
     expect(
       matchesControlRun(makeReport("survived", "killed"), expected)
     ).toBeUndefined();

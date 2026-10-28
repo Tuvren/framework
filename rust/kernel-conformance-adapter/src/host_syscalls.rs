@@ -42,6 +42,14 @@ macro_rules! routing {
 }
 
 const BINDINGS: &[(&str, Binding)] = routing![
+    "kernel.backend.capabilities" => |k, _| {
+        let capabilities = k.capabilities();
+        Ok(json!({
+            "maintenance.reclamation": capabilities.maintenance_reclamation,
+            "shared-lease-clock": capabilities.shared_lease_clock,
+            "thread.enumeration": capabilities.thread_enumeration,
+        }))
+    },
     "kernel.store.put" => |k, a| {
         Ok(k.store_put(
             encoding::decode_bytes(field(a, "blob")?)?,
