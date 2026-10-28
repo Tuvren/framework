@@ -216,6 +216,26 @@ tickets:
       evidence: "Assert the two-process race needs both receipts before release, the worker-clock mutant is killed, and SQLite and PostgreSQL certificates validate with matching control runs."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
+    deviations:
+      - files:
+          - tools/schemas/conformance-plan.schema.json
+          - tools/conformance/adapter-protocol
+          - tools/conformance/plan-compiler
+          - spec/kernel/authority-packet.json
+        justification: "OD-22 interim: the collect step, process routing with spawn and createInstance, and setClock source server are additive plan and protocol shapes that the plan schema, protocol schema, and compiler must admit and validate; the new syscall plans are registered in the kernel authority packet."
+      - files:
+          - typescript/kernel/backends/postgres
+          - rust/kernel-conformance-adapter
+          - typescript/kernel/protocol/test/kernel-certification-authority.test.ts
+        justification: "The PostgreSQL backend serves the real server clock when no clock is injected; every adapter that runs the clock plans answers source server, including Rust with clock_source_unsupported; the kernel certification authority test recognizes the new control operations."
+      - files:
+          - tools/scripts/verify.ts
+          - tools/scripts/verify-kernel.ts
+          - tools/scripts/lib/conformance-contract.ts
+          - .changeset
+        justification: "Real-adapter two-process suites run after the build phase, checked-in evidence normalizes per-process values, and touched publishable packages need direct changesets."
+      - files: [reports/compatibility]
+        justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
     status: planned
 decisions:
   - id: OD-20
@@ -305,7 +325,12 @@ decisions:
       assumption: "The design recorded for KRT-DF005: collect (kernel.harness.collect control observation with outcomes and byKind), steps[].process with spawn (one instance per process, handle-owned routing for await/cancel/release/barrier/collect), setClock source server gated by clock.backend-server with relative skew assertions, and per-profile certificate bundles from one run linked to per-profile control gates."
       applied_by:
         - tools/schemas/conformance-plan.schema.json
+        - tools/conformance/adapter-protocol
+        - tools/conformance/plan-compiler
         - tools/conformance/harness
         - tools/conformance/certification
         - spec/conformance/kernel
+        - typescript/kernel/testkit
+        - typescript/kernel/backends/postgres
+        - rust/kernel-conformance-adapter
         - KRT-DF005
