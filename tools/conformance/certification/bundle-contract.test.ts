@@ -7,8 +7,12 @@ import path from "node:path";
 import { spawn } from "bun";
 
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
+import { selectCheck } from "../harness/check-selection.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
-import { profileConditionalAssertions } from "../meta-conformance/claim-coverage.ts";
+import {
+  claimAssertions,
+  profileConditionalAssertions,
+} from "../meta-conformance/claim-coverage.ts";
 import { finishCertificate } from "./bundle.ts";
 import {
   controlOutcomes,
@@ -382,7 +386,11 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
   }
 }, 120_000);
 
-const checkDesignatedFailures = (report: unknown, manifest: unknown): void => {
+const checkDesignatedFailures = (
+  report: unknown,
+  manifest: unknown,
+  profileAssertions: ReadonlySet<string>
+): void => {
   const reports = record(report).reports;
   const controls = record(manifest).controls;
   if (!(Array.isArray(reports) && Array.isArray(controls))) {
@@ -411,7 +419,12 @@ const checkDesignatedFailures = (report: unknown, manifest: unknown): void => {
       }
       expect(mutant.designatedFailures.length).toBeGreaterThan(0);
       if (adapter === adapters[0]) {
-        for (const assertion of control.designatedAssertions) {
+        const applicable = control.designatedAssertions.filter(
+          (assertion) =>
+            typeof assertion === "string" && profileAssertions.has(assertion)
+        );
+        expect(applicable.length).toBeGreaterThan(0);
+        for (const assertion of applicable) {
           expect(mutant.designatedFailures).toContain(assertion);
         }
       }
@@ -438,7 +451,30 @@ test("real fleet controls certify both complete bundles and reject changed verif
         "utf8"
       )
     );
-    checkDesignatedFailures(report, controlManifest);
+    const memoryAdapter = await readAdapterManifest(adapters[0]);
+    const plans = await readPlans(memoryAdapter, { packets: [], plans: [] });
+    const capabilities = new Set(memoryAdapter.capabilities);
+    const applicable = new Set(
+      plans.flatMap((plan) =>
+        plan.checks.flatMap(({ check }) => {
+          const selection = selectCheck({
+            adapter: capabilities,
+            checkId: check.checkId,
+            protocolVersion: memoryAdapter.protocol.version,
+            requested: new Set(),
+            required: [
+              ...plan.plan.applicability.capabilities,
+              ...(check.capabilities ?? []),
+            ],
+            steps: check.steps,
+          });
+          return selection.selected
+            ? claimAssertions(check).map((assertion) => assertion.assertionId)
+            : [];
+        })
+      )
+    );
+    checkDesignatedFailures(report, controlManifest, applicable);
     const controlRun = record(record(report).controlRun);
     expect(controlRun.status).toBe("pass");
     const controlRunIdentifier = string(controlRun.id);

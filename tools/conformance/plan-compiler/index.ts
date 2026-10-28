@@ -26,6 +26,7 @@ import { validateHandleSchedule } from "./handle-rules.js";
 export type AssertionKind =
   | "arrival"
   | "faultActivated"
+  | "processExit"
   | "digest"
   | "canonicalCbor"
   | "identity"
@@ -84,6 +85,9 @@ export interface ConformancePlanReference {
 }
 
 export interface ConformancePlanAssertion extends ConformancePlanValueOperators {
+  epoch?: number;
+  signal?: string | null;
+  code?: number | null;
   recordType?: string;
   references?: ConformancePlanReference[];
   eventType?: string;
@@ -361,6 +365,7 @@ const assertionRequiredEvidencePath = (
   if (
     isIntegrityKind(assertion.kind) ||
     assertion.kind === "faultActivated" ||
+    assertion.kind === "processExit" ||
     assertion.kind === "arrival" ||
     assertion.present === false ||
     assertion.when !== undefined
@@ -406,6 +411,7 @@ const stepAssertionRequiredEvidencePath = (
   if (
     isIntegrityKind(assertion.kind) ||
     assertion.kind === "faultActivated" ||
+    assertion.kind === "processExit" ||
     assertion.kind === "arrival"
   ) {
     return undefined;

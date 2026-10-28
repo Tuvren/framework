@@ -20,12 +20,14 @@ import type {
   KernelMutantSummary,
   SelectedKernelMutant,
 } from "./kernel-mutant-types.js";
+import { DURABLE_KERNEL_MUTANTS } from "./kernel-mutants-durable.js";
 import { PROTOCOL_KERNEL_MUTANTS } from "./kernel-mutants-protocol.js";
 import { STORAGE_KERNEL_MUTANTS } from "./kernel-mutants-storage.js";
 
 const KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   ...PROTOCOL_KERNEL_MUTANTS,
   ...STORAGE_KERNEL_MUTANTS,
+  ...DURABLE_KERNEL_MUTANTS,
 ].toSorted((left, right) => left.mutantId.localeCompare(right.mutantId));
 
 const SEAM_NAMES: readonly KernelMutantSeamName[] = [

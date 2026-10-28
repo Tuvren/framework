@@ -9,7 +9,7 @@ import {
 import { loadConformancePlan } from "../../plan-compiler/index.ts";
 import { readAdapterManifest } from "../run-plans.ts";
 
-test("every durable reopen claim has an explicit detection gap and is outside the memory profile", async () => {
+test("durable reopen claims have designated controls or explicit gaps and stay outside memory", async () => {
   const plan = await loadConformancePlan(
     "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
   );
@@ -29,14 +29,18 @@ test("every durable reopen claim has an explicit detection gap and is outside th
     }
     reasons[claim] = reason;
   }
+  const manifest = JSON.parse(
+    await readFile("spec/conformance/kernel/negative-controls.json", "utf8")
+  );
+  const controls = manifest.controls;
+  const drop = controls.find(
+    (entry: { mutantId: string }) =>
+      entry.mutantId === "kernel.drop-uncommitted-staged-result-on-recovery"
+  );
   for (const claim of ["pending_state", "pending_count"]) {
-    const reason = reasons[`kernel.syscall.reopen.${claim}`];
-    expect(reason).toContain(
-      "kernel.drop-uncommitted-staged-result-on-recovery"
-    );
-    expect(reason).toContain("kernel.promote-staged-before-checkpoint");
-    expect(reason).toContain("no durable mutant manifest");
-    expect(reason).toContain("KRT-DF005");
+    expect(reasons[`kernel.syscall.reopen.${claim}`]).toBeUndefined();
+    expect(drop.claimIds).toContain(`kernel.syscall.reopen.${claim}`);
+    expect(drop.profiles).toContain("kernel.persistent-reopen");
   }
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter.json"
@@ -63,7 +67,13 @@ test("every durable reopen claim has an explicit detection gap and is outside th
   );
   expect(claims.every((claim) => !memory.claimIds.includes(claim))).toBe(true);
   expect(() =>
-    assertClaimCoverage("kernel.persistent-reopen", claims, [], reasons, checks)
+    assertClaimCoverage(
+      "kernel.persistent-reopen",
+      claims,
+      controls,
+      reasons,
+      checks
+    )
   ).not.toThrow();
   const missing = { ...reasons };
   const claim = claims[0];
@@ -72,6 +82,52 @@ test("every durable reopen claim has an explicit detection gap and is outside th
   }
   delete missing[claim];
   expect(() =>
-    assertClaimCoverage("kernel.persistent-reopen", claims, [], missing, checks)
+    assertClaimCoverage(
+      "kernel.persistent-reopen",
+      claims,
+      controls,
+      missing,
+      checks
+    )
   ).toThrow(claim);
+});
+
+test("process-crash claims are covered by a designated detector or a documented gap", async () => {
+  const plan = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json"
+  );
+  const controls = JSON.parse(
+    await readFile("spec/conformance/kernel/negative-controls.json", "utf8")
+  ).controls;
+  const reasons = JSON.parse(
+    await readFile(
+      "spec/conformance/kernel/kernel-process-crash-undetected.json",
+      "utf8"
+    )
+  );
+  const claims = [
+    ...new Set(plan.checks.flatMap(({ check }) => check.claimIds ?? [])),
+  ];
+  const checks = plan.checks.map(({ check }) => ({
+    assertions: claimAssertions(check),
+  }));
+  expect(claims).toHaveLength(4);
+  expect(() =>
+    assertClaimCoverage(
+      "kernel.process-crash",
+      claims,
+      controls,
+      reasons,
+      checks
+    )
+  ).not.toThrow();
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const profiles = await readClaimedProfiles(adapter, adapter.authorityPackets);
+  const memory = profiles.find(
+    (profile) => profile.profileId === "kernel.memory"
+  );
+  expect(memory).toBeDefined();
+  expect(claims.every((claim) => !memory?.claimIds.includes(claim))).toBe(true);
 });

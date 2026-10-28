@@ -255,6 +255,1198 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.kill.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.kill.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.19.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.lineage.result.0.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.lineage.result.1.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.lineage.result.2.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.recover.result.stepSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.visibleMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.visibleMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.result.trace.visibleMessages.result.1",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.process-crash.after_commit_before_ack",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.process-crash.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "arm",
+          "kill",
+          "respawn",
+          "open",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "after-commit-before-ack",
+              "occurrence": 1,
+              "mode": "block",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ],
+          "receipts": [
+            {
+              "token": "fault-token-1",
+              "phase": "after-commit-before-ack",
+              "processEpoch": 1
+            }
+          ]
+        },
+        "process": {
+          "epochs": [
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 1,
+              "exit": {
+                "code": null,
+                "signal": "SIGKILL"
+              },
+              "signal": "SIGKILL"
+            },
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 2,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            }
+          ]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.kill.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.kill.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.19.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.20.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.21.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.lineage.result.0.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.lineage.result.1.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.recover.result.stepSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.visibleMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.visibleMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.process-crash.after_head_move_before_staging_clear",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.process-crash.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "arm",
+          "kill",
+          "respawn",
+          "open",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "after-head-move-before-staging-clear",
+              "occurrence": 1,
+              "mode": "block",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ],
+          "receipts": [
+            {
+              "token": "fault-token-1",
+              "phase": "after-head-move-before-staging-clear",
+              "processEpoch": 1
+            }
+          ]
+        },
+        "process": {
+          "epochs": [
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 1,
+              "exit": {
+                "code": null,
+                "signal": "SIGKILL"
+              },
+              "signal": "SIGKILL"
+            },
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 2,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            }
+          ]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.kill.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.kill.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.19.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.20.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.21.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.lineage.result.0.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.lineage.result.1.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.recover.result.stepSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.visibleMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.visibleMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.process-crash.after_turn_node_write_before_head",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.process-crash.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "arm",
+          "kill",
+          "respawn",
+          "open",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "after-turn-node-write-before-head",
+              "occurrence": 1,
+              "mode": "block",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ],
+          "receipts": [
+            {
+              "token": "fault-token-1",
+              "phase": "after-turn-node-write-before-head",
+              "processEpoch": 1
+            }
+          ]
+        },
+        "process": {
+          "epochs": [
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 1,
+              "exit": {
+                "code": null,
+                "signal": "SIGKILL"
+              },
+              "signal": "SIGKILL"
+            },
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 2,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            }
+          ]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.kill.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.kill.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.19.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.20.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.21.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.lineage.result.0.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.lineage.result.1.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.recover.result.stepSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.visibleMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.visibleMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.process-crash.before_commit",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.process-crash.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "arm",
+          "kill",
+          "respawn",
+          "open",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "before-commit",
+              "occurrence": 1,
+              "mode": "block",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ],
+          "receipts": [
+            {
+              "token": "fault-token-1",
+              "phase": "before-commit",
+              "processEpoch": 1
+            }
+          ]
+        },
+        "process": {
+          "epochs": [
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 1,
+              "exit": {
+                "code": null,
+                "signal": "SIGKILL"
+              },
+              "signal": "SIGKILL"
+            },
+            {
+              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "epoch": 2,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            }
+          ]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.lineage.cross_thread_rejection.1.resultField",
           "status": "pass"
         },
@@ -551,7 +1743,8 @@
                 "branchId": "branch_main"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -629,7 +1822,8 @@
                 "branchId": "branch_main"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -6343,7 +7537,8 @@
                 "operation": "checkpoint"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -6627,7 +7822,8 @@
                 "operation": "checkpoint"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -7498,9 +8694,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 137,
-    "totalChecks": 140,
-    "applicableChecks": 137,
+    "passedChecks": 141,
+    "totalChecks": 144,
+    "applicableChecks": 141,
     "nonApplicableChecks": 3
   },
   "suiteId": "tuvren.kernel.protocol",

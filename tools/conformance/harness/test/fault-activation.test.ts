@@ -75,3 +75,40 @@ test("shared controls and fault activation use catalog metadata across ports", (
   ).toBe(true);
   expect(faults.missing()).toEqual([]);
 });
+
+test("a blocked fault activates only after a matching receipt and forced death in the same epoch", () => {
+  const faults = createFaultActivationTracker();
+  faults.arm(
+    { mode: "block", occurrence: 1, point: "before-commit", selector: {} },
+    { kind: "result", value: { result: { token: "armed" } } },
+    "storage_interrupted"
+  );
+  expect(faults.missing()).toEqual(["armed"]);
+  expect(
+    faults.receipt(
+      { token: "other", phase: "before-commit", processEpoch: 3 },
+      3
+    )
+  ).toBe(false);
+  expect(
+    faults.receipt({ token: "armed", phase: "wrong", processEpoch: 3 }, 3)
+  ).toBe(false);
+  expect(
+    faults.receipt(
+      { token: "armed", phase: "before-commit", processEpoch: 2 },
+      3
+    )
+  ).toBe(false);
+  expect(
+    faults.receipt(
+      { token: "armed", phase: "before-commit", processEpoch: 3 },
+      3
+    )
+  ).toBe(true);
+  expect(faults.missing()).toEqual(["armed"]);
+  faults.death(2, { code: null, signal: "SIGKILL" });
+  faults.death(3, { code: 0, signal: null });
+  expect(faults.missing()).toEqual(["armed"]);
+  faults.death(3, { code: null, signal: "SIGKILL" });
+  expect(faults.missing()).toEqual([]);
+});

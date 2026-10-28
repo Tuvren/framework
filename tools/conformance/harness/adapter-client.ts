@@ -196,6 +196,12 @@ export class JsonRpcAdapterClient {
   private stderr = "";
   private stderrTotal = 0;
   private readonly frames: RecordedFrame[] = [];
+  private readonly faultReceipts: {
+    token: string;
+    processEpoch: number;
+    phase: string;
+    sequence: number;
+  }[] = [];
   private frameSequence = 0;
   private exit: AdapterExit | undefined;
   private supervisorTerminated = false;
@@ -404,6 +410,40 @@ export class JsonRpcAdapterClient {
     return { token: value.token };
   }
 
+  async waitForFaultReached(
+    token: string,
+    timeoutMs: number,
+    afterSequence: number
+  ): Promise<{ token: string; processEpoch: number; phase: string }> {
+    const deadline = performance.now() + timeoutMs;
+    while (performance.now() < deadline) {
+      const index = this.faultReceipts.findIndex(
+        (receipt) => receipt.token === token
+      );
+      if (index >= 0) {
+        const [receipt] = this.faultReceipts.splice(index, 1);
+        if (receipt !== undefined) {
+          if (receipt.sequence <= afterSequence) {
+            throw new Error("faultReached preceded the attempted operation");
+          }
+          return {
+            token: receipt.token,
+            processEpoch: receipt.processEpoch,
+            phase: receipt.phase,
+          };
+        }
+      }
+      if (this.sessionFailure !== undefined) {
+        throw this.sessionFailure;
+      }
+      if (this.exited) {
+        throw new Error("adapter exited before faultReached");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error(`faultReached timed out for ${token}`);
+  }
+
   async awaitOperation(
     operationHandle: string,
     timeoutMs?: number
@@ -545,6 +585,10 @@ export class JsonRpcAdapterClient {
     return frame.sequence;
   }
 
+  nextFrameSequence(): number {
+    return this.frameSequence;
+  }
+
   framesSince(mark: AdapterTranscriptMark): AdapterFrame[] {
     return this.frames
       .filter((entry) => entry.sequence >= mark.frameSequence)
@@ -659,6 +703,29 @@ export class JsonRpcAdapterClient {
     return await Promise.race([response.promise, writeRequest()]);
   }
 
+  private recordNotification(frame: Record<string, unknown>): void {
+    if (validateAdapterDefinition("JsonRpcNotification", frame).length !== 0) {
+      throw new Error(
+        "adapter stdout contained malformed JSON-RPC notification"
+      );
+    }
+    const params = frame.params;
+    if (
+      frame.method === "faultReached" &&
+      isRecord(params) &&
+      typeof params.token === "string" &&
+      typeof params.processEpoch === "number" &&
+      typeof params.phase === "string"
+    ) {
+      this.faultReceipts.push({
+        token: params.token,
+        processEpoch: params.processEpoch,
+        phase: params.phase,
+        sequence: this.frameSequence - 1,
+      });
+    }
+  }
+
   private handleLine(line: string): void {
     let parsed: unknown;
 
@@ -680,13 +747,7 @@ export class JsonRpcAdapterClient {
         assertLosslessFrame(line);
       }
       if (isRecord(parsed) && !("id" in parsed)) {
-        if (
-          validateAdapterDefinition("JsonRpcNotification", parsed).length !== 0
-        ) {
-          throw new Error(
-            "adapter stdout contained malformed JSON-RPC notification"
-          );
-        }
+        this.recordNotification(parsed);
         return;
       }
       if (!isJsonRpcResponse(parsed)) {

@@ -1004,9 +1004,11 @@ export const runNegativeControls = async (
   const obligations = await readProfileObligations(config, manifest.controls);
   const selected = manifest.controls.filter(
     (control) =>
-      options.mutants === undefined ||
-      options.mutants.length === 0 ||
-      options.mutants.includes(control.mutantId)
+      (obligations === undefined ||
+        control.profiles.includes(config.profile)) &&
+      (options.mutants === undefined ||
+        options.mutants.length === 0 ||
+        options.mutants.includes(control.mutantId))
   );
   const report: NegativeControlReport = {
     control: { adapter: display(config.controlAdapter), status: "error" },

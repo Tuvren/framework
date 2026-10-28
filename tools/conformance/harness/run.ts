@@ -812,6 +812,37 @@ const validateStartedInput = (
   }
 };
 
+const isBlockingFault = (
+  step: ConformancePlanStep,
+  input: unknown
+): input is Record<string, unknown> =>
+  step.action === "armFault" && isRecord(input) && input.mode === "block";
+
+const armBlockingFault = async (
+  client: JsonRpcAdapterClient,
+  instance: unknown,
+  input: Record<string, unknown>
+): Promise<OperationOutcome> => {
+  if (typeof input.point !== "string" || typeof input.occurrence !== "number") {
+    throw new ArgumentResolutionError("invalid blocking fault arguments");
+  }
+  try {
+    const value = await client.armFault(
+      instance,
+      input.point,
+      input.selector,
+      input.occurrence,
+      "block"
+    );
+    return { kind: "result", value: { result: value } };
+  } catch (error: unknown) {
+    if (!(error instanceof JsonRpcAdapterError)) {
+      throw error;
+    }
+    return { kind: "error", error: error.envelope };
+  }
+};
+
 const observeTraceStep = async ({
   catalogOperation,
   check,
@@ -836,22 +867,30 @@ const observeTraceStep = async ({
     throw new ArgumentResolutionError(inputProblem);
   }
   client.setLosslessObservations(catalogOperation !== undefined);
-  const outcome = handleStep
-    ? await runOperationHandleStep(
-        client,
-        step,
-        input,
-        instance,
-        startedOperations,
-        timeoutMs
-      )
-    : await client.dispatch(
-        step.operation,
-        input,
-        controls,
-        instance,
-        timeoutMs
-      );
+  let outcome:
+    | OperationOutcome
+    | { kind: "started"; operationHandle: string }
+    | { kind: "cancelled" };
+  if (isBlockingFault(step, input)) {
+    outcome = await armBlockingFault(client, instance, input);
+  } else {
+    outcome = handleStep
+      ? await runOperationHandleStep(
+          client,
+          step,
+          input,
+          instance,
+          startedOperations,
+          timeoutMs
+        )
+      : await client.dispatch(
+          step.operation,
+          input,
+          controls,
+          instance,
+          timeoutMs
+        );
+  }
   if (outcome.kind === "started" || outcome.kind === "cancelled") {
     throw new Error("orchestration receipt cannot become an observation");
   }
@@ -985,22 +1024,89 @@ interface LifecycleStepRequest {
   action: LifecycleAction;
   catalogOperation: CatalogOperation | undefined;
   clocks: ReadonlyMap<string, number>;
+  faultAttempts: ReadonlyMap<string, number>;
   input: unknown;
+  recorder: CheckRecorder;
+  timeoutMs: number;
   state: LifecycleState;
   step: ConformancePlanStep;
   storageRef: string | undefined;
   supervisor: ProcessSupervisor | undefined;
 }
 
+const killAfterFaultReceipts = async (
+  client: JsonRpcAdapterClient,
+  supervisor: ProcessSupervisor,
+  recorder: CheckRecorder,
+  timeoutMs: number,
+  faultAttempts: ReadonlyMap<string, number>
+): Promise<void> => {
+  const epoch = supervisor.current.epoch;
+  for (const arming of recorder.faults.armed.filter(
+    (entry) =>
+      entry.mode === "block" &&
+      !recorder.faults.activations.includes(entry.token)
+  )) {
+    const afterSequence = faultAttempts.get(arming.token);
+    if (afterSequence === undefined) {
+      throw new MissingFaultActivationError(
+        `no attempted operation for ${arming.token}`
+      );
+    }
+    let receipt: unknown;
+    try {
+      receipt = await client.waitForFaultReached(
+        arming.token,
+        timeoutMs,
+        afterSequence
+      );
+    } catch (error: unknown) {
+      throw new MissingFaultActivationError(
+        `missing faultReached for ${arming.token}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+    if (!recorder.faults.receipt(receipt, epoch)) {
+      throw new MissingFaultActivationError(
+        `faultReached does not match arming and process epoch for ${arming.token}`
+      );
+    }
+  }
+  await supervisor.kill();
+  const exit = supervisor.current.exit;
+  if (exit === undefined) {
+    throw new Error("supervisor did not record the process exit");
+  }
+  recorder.faults.death(epoch, exit);
+};
+
+const recordFaultAttempts = (
+  step: ConformancePlanStep,
+  client: JsonRpcAdapterClient,
+  recorder: CheckRecorder,
+  faultAttempts: Map<string, number>
+): void => {
+  if (step.action !== "start") {
+    return;
+  }
+  for (const arming of recorder.faults.armed) {
+    if (arming.mode === "block" && !faultAttempts.has(arming.token)) {
+      faultAttempts.set(arming.token, client.nextFrameSequence());
+    }
+  }
+};
+
 const runLifecycleStep = async ({
   action,
   catalogOperation,
   clocks,
+  faultAttempts,
   input,
+  recorder,
   state,
   step,
   storageRef,
   supervisor,
+  timeoutMs,
 }: LifecycleStepRequest): Promise<LifecycleState> => {
   if (supervisor === undefined || storageRef === undefined) {
     throw new ArgumentResolutionError(
@@ -1025,11 +1131,18 @@ const runLifecycleStep = async ({
       instance = undefined;
       processRunning = true;
       break;
-    case "kill":
-      await supervisor.kill();
+    case "kill": {
+      await killAfterFaultReceipts(
+        client,
+        supervisor,
+        recorder,
+        timeoutMs,
+        faultAttempts
+      );
       instance = undefined;
       processRunning = false;
       break;
+    }
     case "respawn":
       await supervisor.respawn();
       client = supervisor.client;
@@ -1091,6 +1204,7 @@ const runTraceCheck = async (
   > = {};
   const traceAdapterErrors: Record<string, unknown> = {};
   const startedOperations = new Map<string, string>();
+  const faultAttempts = new Map<string, number>();
   const arrivals: Record<string, number> = {};
   const captureStore = createCaptureStore();
   const captures = captureStore.values;
@@ -1143,7 +1257,10 @@ const runTraceCheck = async (
         action: step.action,
         catalogOperation,
         clocks,
+        faultAttempts,
         input,
+        recorder,
+        timeoutMs: Math.min(controls.deadlineMs ?? 10_000, 10_000),
         state: { client, instance, processRunning },
         step,
         storageRef,
@@ -1155,7 +1272,15 @@ const runTraceCheck = async (
         value: { result: {} },
       };
       validateObservation(catalogOperation, { result: {} });
-      const context = { input: contextInput, result: {} };
+      const context = {
+        input: contextInput,
+        result: {},
+        processExits: Object.fromEntries(
+          (supervisor?.history ?? []).flatMap((entry) =>
+            entry.exit === undefined ? [] : [[entry.epoch, entry.exit]]
+          )
+        ),
+      };
       trace[step.stepId] = { ...context, outcome };
       recorder.observation.push({
         operation: step.operation,
@@ -1173,6 +1298,7 @@ const runTraceCheck = async (
     validateStartedInput(step, catalogOperation, input);
     if (step.action === "start" || step.action === "cancel") {
       client.setLosslessObservations(catalogOperation !== undefined);
+      recordFaultAttempts(step, client, recorder, faultAttempts);
       const receipt = await runOperationHandleStep(
         client,
         step,
@@ -1250,6 +1376,11 @@ const runTraceCheck = async (
         capture: captures,
         evidence: { trace },
         faultActivations: recorder.faults.activations,
+        processExits: Object.fromEntries(
+          (supervisor?.history ?? []).flatMap((entry) =>
+            entry.exit === undefined ? [] : [[entry.epoch, entry.exit]]
+          )
+        ),
         fixture: baseInput.fixture,
         input: baseInput.checkInput,
         result: { trace },
@@ -1553,6 +1684,7 @@ const createFailure = async (
           fault: {
             activations: recorder.faults.activations,
             armed: recorder.faults.armed,
+            receipts: recorder.faults.receipts,
           },
         }),
     ...(exit === undefined ? {} : { exit }),
@@ -1601,15 +1733,24 @@ const runCheck = async (
   );
 
   const missing = recorder.faults.missing();
+  const missingBlockedFault = recorder.faults.armed.some(
+    (arming) => arming.mode === "block" && missing.includes(arming.token)
+  );
   if (
     missing.length > 0 &&
-    (recorder.thrown === undefined ||
-      recorder.thrown instanceof MissingFaultActivationError)
+    (missingBlockedFault ||
+      recorder.thrown === undefined ||
+      primaryError(recorder.thrown) instanceof MissingFaultActivationError)
   ) {
     const rejection = new MissingFaultActivationError(
       `armed faults never activated: ${missing.join(", ")}`
     );
-    recorder.thrown = rejection;
+    if (
+      recorder.thrown === undefined ||
+      primaryError(recorder.thrown) instanceof MissingFaultActivationError
+    ) {
+      recorder.thrown = rejection;
+    }
     checkResult = createCheckResult(
       checkResult.checkId,
       [
@@ -1635,6 +1776,7 @@ const runCheck = async (
         fault: {
           activations: recorder.faults.activations,
           armed: recorder.faults.armed,
+          receipts: recorder.faults.receipts,
         },
       },
     };
@@ -1788,12 +1930,18 @@ const executeScheduledCheck = async (
       (result, error) =>
         appendCleanupFailure(result, error, replayFor(result.checkId))
     );
-    return recordCertification
+    const processCrash =
+      scheduledCheck.compiledCheck.check.steps?.some(
+        (step) => step.action === "armFault" && step.arguments?.mode === "block"
+      ) === true;
+    return recordCertification || processCrash
       ? {
           ...checkResult,
           details: {
             ...checkResult.details,
-            storageIdentity: { kind: manifest.storage, storageRef },
+            ...(recordCertification
+              ? { storageIdentity: { kind: manifest.storage, storageRef } }
+              : {}),
             process: { epochs: supervisor.history },
           },
         }

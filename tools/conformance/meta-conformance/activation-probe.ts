@@ -23,7 +23,7 @@ import { createInterface } from "node:readline";
 
 /**
  * Transparent stdio relay between the shared harness and a mutant adapter.
- * Before the harness's shutdown request reaches the adapter (or when the
+ * Before forwarding faultReached or a shutdown request (or when the
  * harness closes stdin), it dispatches the mutant activation control
  * operation and records the raw reply, or the adapter's exit, as
  * `<record>/<pid>.json`. Every other frame passes through unchanged.
@@ -115,10 +115,15 @@ const probe = async (): Promise<void> => {
   );
 };
 
-createInterface({ input: child.stdout }).on("line", (line) => {
+createInterface({ input: child.stdout }).on("line", async (line) => {
   const frame = readFrame(line);
   if (frame?.id === ACTIVATION_PROBE_ID && resolveProbe !== undefined) {
     resolveProbe(frame);
+    return;
+  }
+  if (frame?.method === "faultReached") {
+    await probe();
+    process.stdout.write(`${line}\n`);
     return;
   }
   process.stdout.write(`${line}\n`);

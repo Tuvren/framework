@@ -1,8 +1,6 @@
 {
   "kernel.syscall.reopen.committed_state": "No designated control loses committed state across process restart.",
-  "kernel.syscall.reopen.pending_state": "The harness-independent kernel.drop-uncommitted-staged-result-on-recovery and kernel.promote-staged-before-checkpoint mutants apply but are not yet designated because no durable mutant manifest exists; designation lands in KRT-DF005.",
   "kernel.syscall.reopen.checkpoint_lineage": "No designated control corrupts checkpoint lineage across reopen.",
   "kernel.syscall.reopen.recovery_head": "No designated control returns a different recovery head after reopen.",
-  "kernel.syscall.reopen.completed_step": "No designated control loses the last completed step on reopen.",
-  "kernel.syscall.reopen.pending_count": "The harness-independent kernel.drop-uncommitted-staged-result-on-recovery and kernel.promote-staged-before-checkpoint mutants apply but are not yet designated because no durable mutant manifest exists; designation lands in KRT-DF005."
+  "kernel.syscall.reopen.completed_step": "No designated control loses the last completed step on reopen."
 }

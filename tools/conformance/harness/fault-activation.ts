@@ -8,7 +8,7 @@ interface Arming {
   point: string;
   selector: unknown;
   occurrence: number;
-  mode: "throw";
+  mode: "throw" | "block";
   outcomeCode: string;
 }
 
@@ -19,9 +19,11 @@ export class MissingFaultActivationError extends Error {
 export const createFaultActivationTracker = () => {
   const armed: Arming[] = [];
   const activations: string[] = [];
+  const receipts: { token: string; phase: string; processEpoch: number }[] = [];
   return {
     armed,
     activations,
+    receipts,
     arm: (
       input: unknown,
       outcome: OperationOutcome,
@@ -34,7 +36,7 @@ export const createFaultActivationTracker = () => {
       if (
         !isRecord(input) ||
         typeof input.point !== "string" ||
-        input.mode !== "throw" ||
+        (input.mode !== "throw" && input.mode !== "block") ||
         typeof input.occurrence !== "number" ||
         !Number.isSafeInteger(input.occurrence) ||
         input.occurrence < 1 ||
@@ -44,7 +46,7 @@ export const createFaultActivationTracker = () => {
         armed.some((entry) => entry.token === value.token)
       ) {
         throw new TypeError(
-          "invalid throw fault arming or duplicate activation token"
+          "invalid fault arming or duplicate activation token"
         );
       }
       armed.push({
@@ -57,7 +59,9 @@ export const createFaultActivationTracker = () => {
       });
     },
     isFaultOutcome: (code: string): boolean =>
-      armed.some((entry) => entry.outcomeCode === code),
+      armed.some(
+        (entry) => entry.mode === "throw" && entry.outcomeCode === code
+      ),
     observe: (outcome: OperationOutcome): boolean => {
       if (outcome.kind !== "error") {
         return false;
@@ -69,6 +73,7 @@ export const createFaultActivationTracker = () => {
         !armed.some(
           (entry) =>
             entry.outcomeCode === outcome.error.code &&
+            entry.mode === "throw" &&
             entry.token === details.token &&
             entry.point === details.point
         )
@@ -77,6 +82,45 @@ export const createFaultActivationTracker = () => {
       }
       activations.push(details.token);
       return true;
+    },
+    receipt: (value: unknown, epoch: number): boolean => {
+      if (
+        !isRecord(value) ||
+        typeof value.token !== "string" ||
+        typeof value.phase !== "string" ||
+        value.processEpoch !== epoch ||
+        !armed.some(
+          (entry) =>
+            entry.mode === "block" &&
+            entry.token === value.token &&
+            entry.point === value.phase
+        ) ||
+        receipts.some((entry) => entry.token === value.token)
+      ) {
+        return false;
+      }
+      receipts.push({
+        token: value.token,
+        phase: value.phase,
+        processEpoch: epoch,
+      });
+      return true;
+    },
+    death: (
+      epoch: number,
+      exit: { code: number | null; signal: string | null }
+    ): void => {
+      if (exit.signal !== "SIGKILL") {
+        return;
+      }
+      for (const receipt of receipts) {
+        if (
+          receipt.processEpoch === epoch &&
+          !activations.includes(receipt.token)
+        ) {
+          activations.push(receipt.token);
+        }
+      }
     },
     missing: (): string[] =>
       armed
