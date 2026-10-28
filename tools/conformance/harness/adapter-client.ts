@@ -63,6 +63,7 @@ export interface JsonRpcClientOptions {
   cwd: string;
   env?: NodeJS.ProcessEnv;
   timeoutMs?: number;
+  processGroup?: boolean;
 }
 
 interface JsonRpcSuccessResponse {
@@ -201,6 +202,7 @@ export class JsonRpcAdapterClient {
   private clientClosed = false;
   private readonly closed: Promise<void>;
   private readonly timeoutMs: number;
+  private readonly processGroup: boolean;
 
   constructor(options: JsonRpcClientOptions) {
     const [command, ...args] = options.command;
@@ -210,8 +212,10 @@ export class JsonRpcAdapterClient {
     }
 
     this.timeoutMs = options.timeoutMs ?? 30_000;
+    this.processGroup = options.processGroup === true;
     this.child = spawn(command, args, {
       cwd: options.cwd,
+      detached: this.processGroup,
       ...(options.env === undefined ? {} : { env: options.env }),
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -231,6 +235,9 @@ export class JsonRpcAdapterClient {
     this.closed = closed.promise;
     this.child.on("close", () => {
       closed.resolve();
+    });
+    this.child.on("error", (error) => {
+      this.failSession(error);
     });
     this.child.on("exit", (code, signal) => {
       this.exited = true;
@@ -479,25 +486,37 @@ export class JsonRpcAdapterClient {
         this.child.exitCode === null &&
         this.child.stdin.writable
       ) {
-        await this.request("shutdown", {});
+        await this.request(
+          "shutdown",
+          {},
+          this.processGroup ? 5000 : this.timeoutMs
+        );
       }
     } catch {
       // Adapter shutdown is best-effort; request failures are already isolated
       // at check scope, and this path must only reclaim the process.
-    } finally {
-      this.lines.close();
-      this.writer.releaseLock();
-      this.child.stdin.end();
+    }
+    this.lines.close();
+    this.writer.releaseLock();
+    this.child.stdin.end();
+    if (
+      this.child.pid !== undefined &&
+      (await this.terminationStatus(this.processGroup ? 5000 : 2000)) ===
+        undefined
+    ) {
+      this.signal("SIGTERM");
       if ((await this.terminationStatus()) === undefined) {
-        this.supervisorTerminated = this.child.kill("SIGTERM");
-        await this.terminationStatus();
+        this.signal("SIGKILL");
+        if ((await this.terminationStatus()) === undefined) {
+          throw new Error("adapter process did not exit after SIGKILL");
+        }
       }
     }
   }
 
   async terminate(signal: NodeJS.Signals): Promise<AdapterExit> {
     if (!this.exited) {
-      this.supervisorTerminated = this.child.kill(signal);
+      this.signal(signal);
     }
     const exit = await this.terminationStatus();
     if (exit === undefined) {
@@ -566,12 +585,12 @@ export class JsonRpcAdapterClient {
     return this.exit;
   }
 
-  async terminationStatus(): Promise<AdapterExit | undefined> {
+  async terminationStatus(graceMs = 2000): Promise<AdapterExit | undefined> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     await Promise.race([
       this.closed,
       new Promise<void>((resolve) => {
-        timer = setTimeout(resolve, 2000);
+        timer = setTimeout(resolve, graceMs);
       }),
     ]);
     clearTimeout(timer);
@@ -719,12 +738,30 @@ export class JsonRpcAdapterClient {
 
   private failSession(error: Error): void {
     this.sessionFailure = error;
-    this.child.kill();
+    this.signal("SIGTERM");
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timer);
       pending.reject(error);
     }
 
     this.pending.clear();
+  }
+
+  private signal(signal: NodeJS.Signals): void {
+    const pid = this.child.pid;
+    if (this.processGroup && pid !== undefined) {
+      try {
+        process.kill(-pid, signal);
+        this.supervisorTerminated = true;
+      } catch (error: unknown) {
+        if (
+          !(error instanceof Error && "code" in error && error.code === "ESRCH")
+        ) {
+          throw error;
+        }
+      }
+      return;
+    }
+    this.supervisorTerminated = this.child.kill(signal);
   }
 }

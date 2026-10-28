@@ -209,6 +209,36 @@ describe("conformance evidence contract", () => {
     ]);
   });
 
+  test("checked-in fault tokens are stable while preserving their correlations", () => {
+    const check = (first: string, second: string) => ({
+      ...createCheckResult("sample.fault", [
+        createAssertionResult("sample.fault.1.faultActivated", true),
+      ]),
+      details: {
+        fault: {
+          armed: [{ token: first }, { token: second }],
+          activations: [second, first],
+        },
+        adapterErrors: { step: { details: { token: first } } },
+        other: "unchanged",
+      },
+    });
+    const original = check("random-first", "random-second");
+    const checkedIn = toCheckedInCheckResult(original);
+    expect(checkedIn).toEqual(
+      toCheckedInCheckResult(check("other-first", "other-second"))
+    );
+    expect(checkedIn.details).toEqual({
+      fault: {
+        armed: [{ token: "fault-token-1" }, { token: "fault-token-2" }],
+        activations: ["fault-token-2", "fault-token-1"],
+      },
+      adapterErrors: { step: { details: { token: "fault-token-1" } } },
+      other: "unchanged",
+    });
+    expect(original.details.fault.armed[0]?.token).toBe("random-first");
+  });
+
   test("checked-in failure checks accept evidence that predates failure artifacts", () => {
     expect(
       findCheckedInFailureViolations(runnerEvidence().checkResults)

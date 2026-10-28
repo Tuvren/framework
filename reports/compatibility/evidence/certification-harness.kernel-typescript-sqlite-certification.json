@@ -115,10 +115,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.20.resultField",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
           "status": "pass"
         },
@@ -252,199 +248,7 @@
           "recoveredHead",
           "lineage",
           "visibleMessages"
-        ],
-        "storageIdentity": {
-          "kind": "sqlite-directory",
-          "storageRef": "/home/oscar/.cache/codex-subagent/framework/tmp/tuvren-conformance-bNJOzC"
-        },
-        "process": {
-          "epochs": [
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1573073,
-              "epoch": 1,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            },
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1573144,
-              "epoch": 2,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            }
-          ]
-        }
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineCheckpoint.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineMessages.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineMessages.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.pendingStaging.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.pendingStaging.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.3.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.4.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.5.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.6.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineMessages.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineMessages.result.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.pendingStaging.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.pendingStaging.result.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.visibleMessages.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.visibleMessages.result.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.durableNode.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.lineage.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.recover.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.recoveredHead.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.staging.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.visibleMessages.result",
-          "status": "pass"
-        }
-      ],
-      "checkId": "kernel.syscall.reopen.invalid_staged_result",
-      "details": {
-        "adapterId": "typescript-kernel-sqlite",
-        "planId": "tuvren.kernel.close-reopen.syscall",
-        "traceStepIds": [
-          "backendClock",
-          "workerClock",
-          "schema",
-          "thread",
-          "turn",
-          "run",
-          "beginBaseline",
-          "baselineStaged",
-          "baselineStaging",
-          "baselineCheckpoint",
-          "baselineNode",
-          "baselineMessages",
-          "beginPending",
-          "pendingStaged",
-          "pendingStaging",
-          "restart",
-          "open",
-          "durableHead",
-          "durableNode",
-          "recover",
-          "staging",
-          "recoveredHead",
-          "lineage",
-          "visibleMessages"
-        ],
-        "storageIdentity": {
-          "kind": "sqlite-directory",
-          "storageRef": "/home/oscar/.cache/codex-subagent/framework/tmp/tuvren-conformance-wGfB4Q"
-        },
-        "process": {
-          "epochs": [
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1573071,
-              "epoch": 1,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            },
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1573142,
-              "epoch": 2,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            }
-          ]
-        }
+        ]
       },
       "status": "pass"
     },
@@ -702,7 +506,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "after-commit-before-ack",
-              "token": "fault-d829cb57-efb1-4d8d-9be8-d4d52cc0e561"
+              "token": "fault-token-1"
             },
             "message": "injected after-commit-before-ack persistence fault interrupted verification"
           }
@@ -722,11 +526,11 @@
           "faultedCheckpoint"
         ],
         "fault": {
-          "activations": ["fault-d829cb57-efb1-4d8d-9be8-d4d52cc0e561"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-d829cb57-efb1-4d8d-9be8-d4d52cc0e561",
+              "token": "fault-token-1",
               "point": "after-commit-before-ack",
               "occurrence": 1,
               "mode": "throw",
@@ -768,7 +572,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "before-commit",
-              "token": "fault-b20675cb-e968-4996-abb6-0ecbe015e14e"
+              "token": "fault-token-1"
             },
             "message": "injected before-commit persistence fault interrupted verification"
           }
@@ -788,11 +592,11 @@
           "faultedCheckpoint"
         ],
         "fault": {
-          "activations": ["fault-b20675cb-e968-4996-abb6-0ecbe015e14e"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-b20675cb-e968-4996-abb6-0ecbe015e14e",
+              "token": "fault-token-1",
               "point": "before-commit",
               "occurrence": 1,
               "mode": "throw",
@@ -6468,7 +6272,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "after-commit-before-ack",
-              "token": "fault-04afabcf-4c91-401c-b275-ba087c34bad4"
+              "token": "fault-token-1"
             },
             "message": "injected after-commit-before-ack persistence fault interrupted verification"
           }
@@ -6502,11 +6306,11 @@
           "visibleMessages"
         ],
         "fault": {
-          "activations": ["fault-04afabcf-4c91-401c-b275-ba087c34bad4"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-04afabcf-4c91-401c-b275-ba087c34bad4",
+              "token": "fault-token-1",
               "point": "after-commit-before-ack",
               "occurrence": 1,
               "mode": "throw",
@@ -6752,7 +6556,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "before-commit",
-              "token": "fault-3d0ef804-3d9a-4e5b-a6a1-0430831b48c8"
+              "token": "fault-token-1"
             },
             "message": "injected before-commit persistence fault interrupted verification"
           }
@@ -6786,11 +6590,11 @@
           "visibleMessages"
         ],
         "fault": {
-          "activations": ["fault-3d0ef804-3d9a-4e5b-a6a1-0430831b48c8"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-3d0ef804-3d9a-4e5b-a6a1-0430831b48c8",
+              "token": "fault-token-1",
               "point": "before-commit",
               "occurrence": 1,
               "mode": "throw",
@@ -7670,9 +7474,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 138,
-    "totalChecks": 141,
-    "applicableChecks": 138,
+    "passedChecks": 137,
+    "totalChecks": 140,
+    "applicableChecks": 137,
     "nonApplicableChecks": 3
   },
   "suiteId": "tuvren.kernel.protocol",

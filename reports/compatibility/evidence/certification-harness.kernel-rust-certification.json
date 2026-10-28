@@ -549,7 +549,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "after-commit-before-ack",
-              "token": "fault-1"
+              "token": "fault-token-1"
             },
             "message": "injected persistence fault interrupted verification"
           }
@@ -569,11 +569,11 @@
           "faultedCheckpoint"
         ],
         "fault": {
-          "activations": ["fault-1"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-1",
+              "token": "fault-token-1",
               "point": "after-commit-before-ack",
               "occurrence": 1,
               "mode": "throw",
@@ -615,7 +615,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "before-commit",
-              "token": "fault-1"
+              "token": "fault-token-1"
             },
             "message": "injected persistence fault interrupted verification"
           }
@@ -635,11 +635,11 @@
           "faultedCheckpoint"
         ],
         "fault": {
-          "activations": ["fault-1"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-1",
+              "token": "fault-token-1",
               "point": "before-commit",
               "occurrence": 1,
               "mode": "throw",
@@ -5616,7 +5616,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "after-commit-before-ack",
-              "token": "fault-1"
+              "token": "fault-token-1"
             },
             "message": "injected persistence fault interrupted verification"
           }
@@ -5650,11 +5650,11 @@
           "visibleMessages"
         ],
         "fault": {
-          "activations": ["fault-1"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-1",
+              "token": "fault-token-1",
               "point": "after-commit-before-ack",
               "occurrence": 1,
               "mode": "throw",
@@ -5900,7 +5900,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "before-commit",
-              "token": "fault-1"
+              "token": "fault-token-1"
             },
             "message": "injected persistence fault interrupted verification"
           }
@@ -5934,11 +5934,11 @@
           "visibleMessages"
         ],
         "fault": {
-          "activations": ["fault-1"],
+          "activations": ["fault-token-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
-              "token": "fault-1",
+              "token": "fault-token-1",
               "point": "before-commit",
               "occurrence": 1,
               "mode": "throw",
@@ -6705,7 +6705,6 @@
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
     "kernel.syscall.reopen.close_reopen_checkpoint",
-    "kernel.syscall.reopen.invalid_staged_result",
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
     "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
     "kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -6730,9 +6729,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 123,
-    "totalChecks": 141,
+    "totalChecks": 140,
     "applicableChecks": 123,
-    "nonApplicableChecks": 18
+    "nonApplicableChecks": 17
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
