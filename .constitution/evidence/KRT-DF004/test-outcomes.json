@@ -1,0 +1,91 @@
+{
+  "commit": "44e9481",
+  "date": "2026-10-28",
+  "command": "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts",
+  "exit_status": 0,
+  "tests": 77,
+  "failures": 0,
+  "outcomes": [
+    {
+      "backend": "sqlite",
+      "point": "before-commit",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "sqlite",
+      "point": "after-turn-node-write-before-head",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "sqlite",
+      "point": "after-head-move-before-staging-clear",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "sqlite",
+      "point": "after-commit-before-ack",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "postgres",
+      "point": "before-commit",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "postgres",
+      "point": "after-turn-node-write-before-head",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "postgres",
+      "point": "after-head-move-before-staging-clear",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "postgres",
+      "point": "after-commit-before-ack",
+      "status": "pass",
+      "observation": "receipt matches token and epoch; same epoch exits on SIGKILL; next epoch recovers"
+    },
+    {
+      "backend": "sqlite",
+      "test": "incomplete checkpoint mutant fails the designated post-commit assertions",
+      "status": "pass",
+      "mutant": "killed"
+    },
+    {
+      "backend": "postgres",
+      "test": "incomplete checkpoint mutant fails the designated post-commit assertions",
+      "status": "pass",
+      "mutant": "killed"
+    },
+    {
+      "test": "missing or early receipt invalidates the crash run",
+      "status": "pass",
+      "rejection": "missing_fault_activation"
+    },
+    {
+      "test": "receipt followed by a completed operation invalidates the crash run",
+      "status": "pass"
+    }
+  ],
+  "verification_lanes": [
+    {
+      "command": "bun run verify:kernel",
+      "exit_status": 0,
+      "result": "pass"
+    },
+    {
+      "command": "bun run conformance",
+      "exit_status": 0,
+      "result": "pass"
+    }
+  ]
+}

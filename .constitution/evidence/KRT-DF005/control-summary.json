@@ -1,0 +1,91 @@
+{
+  "control_runs": [
+    {
+      "profile": "kernel.persistent-reopen",
+      "status": "pass",
+      "id": "8a232ef9d884031bca3c14684b6dd92faa6f9fad805239c176797f97b14a01d4",
+      "verifier_digests": {
+        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
+        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
+        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
+        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
+        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31"
+      }
+    },
+    {
+      "profile": "kernel.process-crash",
+      "status": "pass",
+      "id": "818dab1e4aed0d8984df1524a8a70bdf7bbe6e06eb27323a72e1e80019265071",
+      "verifier_digests": {
+        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
+        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
+        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
+        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
+        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31"
+      }
+    },
+    {
+      "profile": "kernel.shared-backend",
+      "status": "pass",
+      "id": "4d6f83e18a2c69f408b1e95dc2a416fa1acb73398c2fe7c217885da4b63b0ce0",
+      "verifier_digests": {
+        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
+        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
+        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
+        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
+        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31"
+      }
+    }
+  ],
+  "per_mutant_outcomes": [
+    {
+      "profile": "kernel.persistent-reopen",
+      "implementation": "typescript-kernel-sqlite",
+      "baseline": "pass",
+      "mutant": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "activated": true,
+      "outcome": "killed"
+    },
+    {
+      "profile": "kernel.persistent-reopen",
+      "implementation": "typescript-kernel-postgres",
+      "baseline": "pass",
+      "mutant": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "activated": true,
+      "outcome": "killed"
+    },
+    {
+      "profile": "kernel.process-crash",
+      "implementation": "typescript-kernel-sqlite",
+      "baseline": "pass",
+      "mutant": "kernel.expose-incomplete-checkpoint",
+      "activated": true,
+      "outcome": "killed"
+    },
+    {
+      "profile": "kernel.process-crash",
+      "implementation": "typescript-kernel-postgres",
+      "baseline": "pass",
+      "mutant": "kernel.expose-incomplete-checkpoint",
+      "activated": true,
+      "outcome": "killed"
+    },
+    {
+      "profile": "kernel.shared-backend",
+      "implementation": "typescript-kernel-postgres",
+      "baseline": "pass",
+      "mutant": "kernel.worker-clock-expiry",
+      "activated": true,
+      "outcome": "killed"
+    }
+  ]
+}

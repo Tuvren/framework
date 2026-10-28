@@ -1,0 +1,122 @@
+{
+  "commit": "ef893e1",
+  "date": "2026-10-28",
+  "command": "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts",
+  "exit_status": 0,
+  "tests": 77,
+  "failures": 0,
+  "outcomes": [
+    {
+      "backend": "sqlite",
+      "point": "before-commit",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "sqlite",
+      "point": "after-turn-node-write-before-head",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "sqlite",
+      "point": "after-head-move-before-staging-clear",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "sqlite",
+      "point": "after-commit-before-ack",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "postgres",
+      "point": "before-commit",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "postgres",
+      "point": "after-turn-node-write-before-head",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "postgres",
+      "point": "after-head-move-before-staging-clear",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "postgres",
+      "point": "after-commit-before-ack",
+      "status": "pass",
+      "observation": "one token-matched receipt; operation held at the real boundary"
+    },
+    {
+      "backend": "sqlite",
+      "point": "commit-outcome-unknown",
+      "status": "unsupported",
+      "assertion": "pass"
+    },
+    {
+      "backend": "postgres",
+      "point": "commit-outcome-unknown",
+      "status": "unsupported",
+      "assertion": "pass"
+    },
+    {
+      "backend": "sqlite",
+      "test": "public construction cannot activate the separately constructed seam",
+      "status": "pass"
+    },
+    {
+      "backend": "postgres",
+      "test": "public construction cannot activate the separately constructed seam",
+      "status": "pass"
+    },
+    {
+      "test": "production construction paths cannot reach commit fault hooks",
+      "status": "not_met",
+      "observation": "Both publicly constructed backends expose a separate legacy symbol control. Reflecting that control and installing a beforeCommit callback invokes it during transact without constructing the durable fault wrapper."
+    }
+  ],
+  "legacy_hook_probe": {
+    "exit_status": 0,
+    "runtime": "Node child for native SQLite, launched through Bun and the harness resource manager",
+    "outcomes": [
+      {
+        "backend": "sqlite",
+        "legacy_symbol_hook_reachable": true,
+        "before_commit_hook_calls": 1,
+        "durable_wrapper_constructed": false
+      },
+      {
+        "backend": "postgres",
+        "legacy_symbol_hook_reachable": true,
+        "before_commit_hook_calls": 1,
+        "durable_wrapper_constructed": false
+      }
+    ],
+    "sources": [
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts:969",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts:1205",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts:858",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts:1151"
+    ],
+    "method": "Provision each backend with withCheckStorage; construct the public backend in a Node child; discover the fault-injection symbol with Object.getOwnPropertySymbols, install beforeCommit via setFaultHooks, and call transact without the durable wrapper."
+  },
+  "verification_lanes": [
+    {
+      "command": "bun run verify:kernel",
+      "exit_status": 0,
+      "result": "pass"
+    },
+    {
+      "command": "bun run conformance",
+      "exit_status": 0,
+      "result": "pass"
+    }
+  ]
+}

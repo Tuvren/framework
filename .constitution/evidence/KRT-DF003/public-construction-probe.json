@@ -1,0 +1,18 @@
+{
+  "commit": "ef893e1",
+  "date": "2026-10-28",
+  "commands": [
+    "bun run nx run backend-sqlite:test --skip-nx-cache",
+    "bun test typescript/kernel/backends/postgres/test/backend-postgres.fault-seam.test.ts"
+  ],
+  "exit_status": 0,
+  "before_fix": "At 44e9481 a publicly constructed SQLite or PostgreSQL backend exposed the symbol-keyed fault control; a probe installed a beforeCommit callback and observed it run once during transact on each backend.",
+  "outcomes": [
+    {"test": "public SQLite construction exposes no commit-hook installation path", "status": "pass"},
+    {"test": "SQLite test seam injects before-commit without affecting the public backend", "status": "pass"},
+    {"test": "SQLite test seam injects after-commit-before-ack without affecting the public backend", "status": "pass"},
+    {"test": "public PostgreSQL construction exposes no commit-hook installation path", "status": "pass"},
+    {"test": "PostgreSQL test seam injects before-commit without affecting the public backend", "status": "pass"},
+    {"test": "PostgreSQL test seam injects after-commit-before-ack without affecting the public backend", "status": "pass"}
+  ]
+}
