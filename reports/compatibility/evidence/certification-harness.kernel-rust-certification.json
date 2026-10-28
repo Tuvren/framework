@@ -6704,6 +6704,8 @@
   "exitCode": 0,
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
+    "kernel.syscall.reopen.close_reopen_checkpoint",
+    "kernel.syscall.reopen.invalid_staged_result",
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
     "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
     "kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -6728,9 +6730,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 123,
-    "totalChecks": 139,
+    "totalChecks": 141,
     "applicableChecks": 123,
-    "nonApplicableChecks": 16
+    "nonApplicableChecks": 18
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

@@ -18,6 +18,438 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.19.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.20.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.lineage.result.0.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.lineage.result.1.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.recover.result.stepSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.visibleMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.visibleMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.reopen.close_reopen_checkpoint",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.close-reopen.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "restart",
+          "open",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "storageIdentity": {
+          "kind": "sqlite-directory",
+          "storageRef": "/home/oscar/.cache/codex-subagent/framework/tmp/tuvren-conformance-nm6hZQ"
+        },
+        "process": {
+          "epochs": [
+            {
+              "executableDigest": "d0673018bc0b2ce83e92f2d2819e5edc52b8b3b32d3be066530ee4539c489937",
+              "pid": 1094963,
+              "epoch": 1,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            },
+            {
+              "executableDigest": "d0673018bc0b2ce83e92f2d2819e5edc52b8b3b32d3be066530ee4539c489937",
+              "pid": 1095028,
+              "epoch": 2,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            }
+          ]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.visibleMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.visibleMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.reopen.invalid_staged_result",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.close-reopen.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "restart",
+          "open",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "storageIdentity": {
+          "kind": "sqlite-directory",
+          "storageRef": "/home/oscar/.cache/codex-subagent/framework/tmp/tuvren-conformance-1clBXg"
+        },
+        "process": {
+          "epochs": [
+            {
+              "executableDigest": "d0673018bc0b2ce83e92f2d2819e5edc52b8b3b32d3be066530ee4539c489937",
+              "pid": 1094964,
+              "epoch": 1,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            },
+            {
+              "executableDigest": "d0673018bc0b2ce83e92f2d2819e5edc52b8b3b32d3be066530ee4539c489937",
+              "pid": 1095034,
+              "epoch": 2,
+              "exit": {
+                "code": 0,
+                "signal": null
+              }
+            }
+          ]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.lineage.cross_thread_rejection.1.resultField",
           "status": "pass"
         },
@@ -6517,9 +6949,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 132,
-    "totalChecks": 139,
-    "applicableChecks": 132,
+    "passedChecks": 134,
+    "totalChecks": 141,
+    "applicableChecks": 134,
     "nonApplicableChecks": 7
   },
   "suiteId": "tuvren.kernel.protocol",

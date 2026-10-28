@@ -3,13 +3,14 @@
   "implementationId": "typescript-kernel-postgres",
   "language": "typescript",
   "boundary": "kernel",
+  "storage": "postgres-database",
+  "executable": "typescript/kernel/conformance-adapter/dist/host.mjs",
   "protocol": {
     "name": "tuvren.conformance-adapter",
     "version": "0.2.0",
     "transport": "json-rpc-2.0-stdio"
   },
   "command": [
-    "node",
     "typescript/kernel/conformance-adapter/dist/host.mjs",
     "--adapter-id",
     "typescript-kernel-postgres",

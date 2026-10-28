@@ -729,9 +729,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 135,
-            "totalChecks": 139,
+            "totalChecks": 141,
             "applicableChecks": 135,
-            "nonApplicableChecks": 4
+            "nonApplicableChecks": 6
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -763,6 +763,8 @@
       "results": [
         {
           "checkIds": [
+            "kernel.syscall.reopen.close_reopen_checkpoint",
+            "kernel.syscall.reopen.invalid_staged_result",
             "kernel.lineage.cross_thread_rejection",
             "kernel.logical.branch_list",
             "kernel.logical.diff_paths",
@@ -898,9 +900,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 132,
-            "totalChecks": 139,
-            "applicableChecks": 132,
+            "passedChecks": 134,
+            "totalChecks": 141,
+            "applicableChecks": 134,
             "nonApplicableChecks": 7
           },
           "declaredCapabilities": [
@@ -932,6 +934,8 @@
       "results": [
         {
           "checkIds": [
+            "kernel.syscall.reopen.close_reopen_checkpoint",
+            "kernel.syscall.reopen.invalid_staged_result",
             "kernel.lineage.cross_thread_rejection",
             "kernel.logical.branch_list",
             "kernel.logical.diff_paths",
@@ -1068,9 +1072,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 133,
-            "totalChecks": 139,
-            "applicableChecks": 133,
+            "passedChecks": 135,
+            "totalChecks": 141,
+            "applicableChecks": 135,
             "nonApplicableChecks": 6
           },
           "declaredCapabilities": [
@@ -1325,9 +1329,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 123,
-            "totalChecks": 139,
+            "totalChecks": 141,
             "applicableChecks": 123,
-            "nonApplicableChecks": 16
+            "nonApplicableChecks": 18
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1428,9 +1432,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 139,
+            "totalChecks": 141,
             "applicableChecks": 68,
-            "nonApplicableChecks": 71
+            "nonApplicableChecks": 73
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1531,9 +1535,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 139,
+            "totalChecks": 141,
             "applicableChecks": 68,
-            "nonApplicableChecks": 71
+            "nonApplicableChecks": 73
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1634,9 +1638,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 139,
+            "totalChecks": 141,
             "applicableChecks": 68,
-            "nonApplicableChecks": 71
+            "nonApplicableChecks": 73
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

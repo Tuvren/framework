@@ -196,6 +196,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
 
 export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "kernel-contract-protocol",
+  "kernel-typescript-conformance-adapter",
   "kernel-testkit",
   "backend-shared",
   "backend-memory",
@@ -391,6 +392,9 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/integrity-plan-contract.test.ts",
   "tools/conformance/harness/test/observation-encoding.test.ts",
   "tools/conformance/harness/test/operation-plan.test.ts",
+  "tools/conformance/harness/test/storage-resource.test.ts",
+  "tools/conformance/harness/test/process-supervisor.test.ts",
+  "tools/conformance/harness/test/durable-claims.test.ts",
   "tools/conformance/meta-conformance/negative-controls.test.ts",
   "tools/conformance/meta-conformance/claim-coverage.test.ts",
   "tools/conformance/plan-compiler/barrier-rules.test.ts",
@@ -404,6 +408,8 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
 export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/run.test.ts",
   "tools/conformance/harness/test/operation-handles.test.ts",
+  "tools/conformance/harness/test/durable-instance.test.ts",
+  "tools/conformance/harness/test/storage-runner.test.ts",
 ];
 
 // This remains an explicit inventory rather than a glob. A new follow-up suite

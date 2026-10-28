@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-import { randomUUID } from "node:crypto";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 
 import type { createMemoryBackend as CreateMemoryBackend } from "@tuvren/backend-memory";
-import type {
-  createPostgresBackend as CreatePostgresBackend,
-  destroyPostgresBackend as DestroyPostgresBackend,
-} from "@tuvren/backend-postgres";
+import type { createPostgresBackend as CreatePostgresBackend } from "@tuvren/backend-postgres";
 import type { createSqliteBackend as CreateSqliteBackend } from "@tuvren/backend-sqlite";
 import type {
   RuntimeBackend,
@@ -80,11 +74,7 @@ const hasPostgresBackendFactories = (
   value: unknown
 ): value is {
   createPostgresBackend: typeof CreatePostgresBackend;
-  destroyPostgresBackend: typeof DestroyPostgresBackend;
-} =>
-  isRecord(value) &&
-  typeof value.createPostgresBackend === "function" &&
-  typeof value.destroyPostgresBackend === "function";
+} => isRecord(value) && typeof value.createPostgresBackend === "function";
 
 const runConcurrentWriterConflictOnBackends = async (
   primaryBackend: RuntimeBackend,
@@ -534,7 +524,7 @@ const runCrashRecoveryFaultPoint = async (
 };
 
 const createCrashRecoveryHarness = async (
-  config: Pick<KernelAdapterConfig, "backend" | "mutant">
+  config: Pick<KernelAdapterConfig, "backend" | "mutant" | "storageRef">
 ): Promise<CrashRecoveryBackendHarness> => {
   const { backend } = config;
   if (backend === "memory") {
@@ -562,16 +552,15 @@ const createCrashRecoveryHarness = async (
       throw new Error("sqlite backend module is missing its factory");
     }
     const { createSqliteBackend } = sqliteBackendModule;
-    const tempDirectory = await mkdtemp(
-      path.join(tmpdir(), `tuvren-crash-recovery-${process.pid}-`)
-    );
-    const databasePath = path.join(tempDirectory, "kernel.sqlite");
+    if (config.storageRef === undefined) {
+      throw new Error("sqlite storageRef is required");
+    }
+    const databasePath = path.join(config.storageRef, "kernel.sqlite");
     const handles = new Set<ManagedRuntimeBackend>();
 
     return {
       cleanup: async () => {
         await closeManagedBackends([...handles]);
-        await rm(tempDirectory, { force: true, recursive: true });
       },
       createBackend: () => {
         const handle = createSqliteBackend({
@@ -589,17 +578,18 @@ const createCrashRecoveryHarness = async (
   if (!hasPostgresBackendFactories(postgresBackendModule)) {
     throw new Error("postgres backend module is missing its factories");
   }
-  const schemaName = `crash_${randomUUID().replaceAll("-", "_")}`;
+  if (config.storageRef === undefined) {
+    throw new Error("postgres storageRef is required");
+  }
   const options = {
-    database: process.env.PGDATABASE ?? "tuvren_runtime",
-    schemaName,
+    database: config.storageRef,
+    schemaName: "tuvren_cert",
   };
   const handles = new Set<ManagedRuntimeBackend>();
 
   return {
     cleanup: async () => {
       await closeManagedBackends([...handles]);
-      await postgresBackendModule.destroyPostgresBackend(options);
     },
     createBackend: () => {
       const handle = postgresBackendModule.createPostgresBackend(options);
@@ -609,17 +599,16 @@ const createCrashRecoveryHarness = async (
   };
 };
 
-const runPostgresRestartRecovery = async (): Promise<
-  Record<string, unknown>
-> => {
+const runPostgresRestartRecovery = async (
+  storageRef: string
+): Promise<Record<string, unknown>> => {
   const postgresBackendModule: unknown = await import(
     new URL("../../backends/postgres/dist/index.js", import.meta.url).href
   );
   if (!hasPostgresBackendFactories(postgresBackendModule)) {
     throw new Error("postgres backend module is missing its factories");
   }
-  const { createPostgresBackend, destroyPostgresBackend } =
-    postgresBackendModule;
+  const { createPostgresBackend } = postgresBackendModule;
   const restartSchema: TurnTreeSchema = {
     incorporationRules: [{ objectType: "message", targetPath: "messages" }],
     paths: [
@@ -628,10 +617,9 @@ const runPostgresRestartRecovery = async (): Promise<
     ],
     schemaId: "schema_restart_recovery",
   };
-  const schemaName = `restart_${randomUUID().replaceAll("-", "_")}`;
   const options = {
-    database: process.env.PGDATABASE ?? "tuvren_runtime",
-    schemaName,
+    database: storageRef,
+    schemaName: "tuvren_cert",
   };
   const firstBackend = createPostgresBackend(options);
   let reopenedBackend: ReturnType<typeof createPostgresBackend> | undefined;
@@ -755,38 +743,31 @@ const runPostgresRestartRecovery = async (): Promise<
   } finally {
     await firstBackend.close();
 
-    await (reopenedBackend === undefined
-      ? destroyPostgresBackend(options)
-      : reopenedBackend.destroy({ dropSchema: true }));
+    await reopenedBackend?.close();
   }
 };
 
 export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
   const runRestartRecovery = async (): Promise<Record<string, unknown>> => {
-    const tempDirectory = await mkdtemp(
-      path.join(tmpdir(), "tuvren-kernel-restart-")
-    );
-    const databasePath = path.join(tempDirectory, "kernel.sqlite");
-    const metadataPath = path.join(tempDirectory, "restart-metadata.json");
-
-    try {
-      if (config.backend === "postgres") {
-        return await runPostgresRestartRecovery();
-      }
-
-      await runRestartRecoveryPhase("write", databasePath, metadataPath);
-      const reopened = await runRestartRecoveryPhase(
-        "read",
-        databasePath,
-        metadataPath
-      );
-
-      return createProjection({
-        restartRecovery: reopened,
-      });
-    } finally {
-      await rm(tempDirectory, { force: true, recursive: true });
+    if (config.storageRef === undefined) {
+      throw new Error("durable storageRef is required");
     }
+    const databasePath = path.join(config.storageRef, "kernel.sqlite");
+    const metadataPath = path.join(config.storageRef, "restart-metadata.json");
+    if (config.backend === "postgres") {
+      return await runPostgresRestartRecovery(config.storageRef);
+    }
+
+    await runRestartRecoveryPhase("write", databasePath, metadataPath);
+    const reopened = await runRestartRecoveryPhase(
+      "read",
+      databasePath,
+      metadataPath
+    );
+
+    return createProjection({
+      restartRecovery: reopened,
+    });
   };
 
   const runDurableCrashRecovery = async (): Promise<

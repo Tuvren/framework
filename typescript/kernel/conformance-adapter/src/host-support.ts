@@ -17,8 +17,7 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -63,7 +62,7 @@ const SQLITE_RESTART_SCENARIO_URL = new URL(
 
 type ConformanceConfig = Pick<
   KernelAdapterConfig,
-  "adapterId" | "backend" | "mutant"
+  "adapterId" | "backend" | "mutant" | "storageRef" | "scope"
 >;
 
 const REFERENCE_CODEC: KernelMutantCodec = {
@@ -314,17 +313,20 @@ export const createConfiguredBackend = async (
       throw new Error("postgres backend module is missing its factory");
     }
     const { createPostgresBackend } = postgresBackendModule;
-    const schemaName = `${config.adapterId.replaceAll("-", "_")}_${randomUUID().replaceAll("-", "_")}`;
+    if (config.storageRef === undefined) {
+      throw new Error("postgres storageRef is required");
+    }
     const backend = createPostgresBackend({
-      database: process.env.PGDATABASE ?? "tuvren_runtime",
-      schemaName,
+      database: config.storageRef,
+      schemaName: "tuvren_cert",
+      ...(config.scope === undefined ? {} : { scope: config.scope }),
       ...clock,
     });
 
     return {
       backend,
       cleanup: async () => {
-        await backend.destroy({ dropSchema: true });
+        await backend.close();
       },
     };
   }
@@ -341,14 +343,19 @@ export const createConfiguredBackend = async (
       throw new Error("sqlite backend module is missing its factory");
     }
     const { createSqliteBackend } = sqliteBackendModule;
-    const tempDirectory = await mkdtemp(
-      path.join(tmpdir(), `${config.adapterId}-${process.pid}-`)
-    );
-    const databasePath = path.join(tempDirectory, `${randomUUID()}.sqlite`);
+    if (config.storageRef === undefined) {
+      throw new Error("sqlite storageRef is required");
+    }
+    const databasePath = path.join(config.storageRef, "kernel.sqlite");
+    const backend = createSqliteBackend({
+      databasePath,
+      ...(config.scope === undefined ? {} : { scope: config.scope }),
+      ...clock,
+    });
     return {
-      backend: createSqliteBackend({ databasePath, ...clock }),
+      backend,
       cleanup: async () => {
-        await rm(tempDirectory, { force: true, recursive: true });
+        await backend.close();
       },
     };
   }
@@ -372,6 +379,11 @@ export const createConfiguredBackend = async (
   };
 };
 
+const legacyScopedConfig = (config: ConformanceConfig): ConformanceConfig =>
+  config.backend === "memory" || config.scope !== undefined
+    ? config
+    : { ...config, scope: `tuvren.scope.legacy-${randomUUID()}` };
+
 const createConformanceKernel = async (
   schema: TurnTreeSchema,
   config: ConformanceConfig
@@ -379,7 +391,9 @@ const createConformanceKernel = async (
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createRuntimeKernel>;
 }> => {
-  const configuredBackend = await createConfiguredBackend(config);
+  const configuredBackend = await createConfiguredBackend(
+    legacyScopedConfig(config)
+  );
   const kernel = createConformanceRuntimeKernel(config, {
     backend: configuredBackend.backend,
   });
@@ -405,10 +419,12 @@ const createScopedBackendPair = async (
       throw new Error("postgres backend module is missing its factory");
     }
     const { createPostgresBackend } = postgresBackendModule;
-    const schemaName = `${config.adapterId.replaceAll("-", "_")}_${randomUUID().replaceAll("-", "_")}`;
+    if (config.storageRef === undefined) {
+      throw new Error("postgres storageRef is required");
+    }
     const baseOptions = {
-      database: process.env.PGDATABASE ?? "tuvren_runtime",
-      schemaName,
+      database: config.storageRef,
+      schemaName: "tuvren_cert",
     };
     const backendA = createPostgresBackend({
       ...baseOptions,
@@ -421,10 +437,8 @@ const createScopedBackendPair = async (
 
     return {
       cleanup: async () => {
-        // Close the co-tenant pool first, then drop the shared schema through
-        // the surviving backend's destroy hook.
-        await backendB.destroy();
-        await backendA.destroy({ dropSchema: true });
+        await backendB.close();
+        await backendA.close();
       },
       pair: { backendA, backendB },
     };
@@ -442,10 +456,10 @@ const createScopedBackendPair = async (
       throw new Error("sqlite backend module is missing its factory");
     }
     const { createSqliteBackend } = sqliteBackendModule;
-    const tempDirectory = await mkdtemp(
-      path.join(tmpdir(), `${config.adapterId}-${process.pid}-scope-`)
-    );
-    const databasePath = path.join(tempDirectory, `${randomUUID()}.sqlite`);
+    if (config.storageRef === undefined) {
+      throw new Error("sqlite storageRef is required");
+    }
+    const databasePath = path.join(config.storageRef, "kernel.sqlite");
     const backendA = createSqliteBackend({
       databasePath,
       scope: CONFORMANCE_SCOPE_A,
@@ -459,7 +473,6 @@ const createScopedBackendPair = async (
       cleanup: async () => {
         await backendA.close?.();
         await backendB.close?.();
-        await rm(tempDirectory, { force: true, recursive: true });
       },
       pair: { backendA, backendB },
     };
@@ -516,7 +529,10 @@ export const withConfiguredBackend = async <T>(
   execute: (backend: RuntimeBackend) => Promise<T>,
   options?: BackendClockOptions
 ): Promise<T> => {
-  const configuredBackend = await createConfiguredBackend(config, options);
+  const configuredBackend = await createConfiguredBackend(
+    legacyScopedConfig(config),
+    options
+  );
 
   try {
     return await execute(configuredBackend.backend);

@@ -23,13 +23,14 @@ export interface KernelAdapterConfig {
   readonly adapterId: string;
   readonly backend: KernelBackend;
   readonly capabilities: readonly string[];
+  readonly storageRef?: string;
+  readonly scope?: string;
   /** Test-only negative control (ADR-0079); never set by certifying manifests. */
   readonly mutant?: SelectedKernelMutant;
 }
 
 export interface ManagedRuntimeBackend extends RuntimeBackend {
   close?: () => Promise<void>;
-  destroy?: (options?: { dropSchema?: boolean }) => Promise<void>;
 }
 
 export type KernelOperation = (

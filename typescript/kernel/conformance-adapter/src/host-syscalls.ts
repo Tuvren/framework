@@ -395,6 +395,7 @@ interface Instance {
 }
 
 interface InstanceState {
+  config: KernelAdapterConfig;
   clock: ReturnType<typeof createKernelTestClock>;
   opened?: Promise<Instance>;
   destroying?: Promise<void>;
@@ -403,10 +404,27 @@ interface InstanceState {
 
 export const createSyscallBindings = (config: KernelAdapterConfig) => {
   const instances = new Map<string, InstanceState>();
-  const createInstance = async (): Promise<string> => {
+  const createInstance = async (
+    _input?: unknown,
+    options: {
+      storageRef?: string;
+      scope?: string;
+      clock?: Record<string, unknown>;
+    } = {}
+  ): Promise<string> => {
+    if (options.clock !== undefined) {
+      throw new AdapterProtocolError(
+        "adapter_method_not_implemented",
+        "initial clock configuration is not specified; set each clock domain explicitly"
+      );
+    }
+    if (config.backend !== "memory" && options.storageRef === undefined) {
+      throw new Error("durable storageRef is required");
+    }
     const handle = randomUUID();
     instances.set(handle, {
       clock: createKernelTestClock(),
+      config: { ...config, ...options },
       inFlight: new Set(),
     });
     return await Promise.resolve(handle);
@@ -484,7 +502,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (pending === undefined) {
       pending = (async () => {
         const { clock } = state;
-        const backend = await createConfiguredBackend(config, {
+        const backend = await createConfiguredBackend(state.config, {
           now: clock.backendNow,
         });
         const fault = createKernelFaultControl(
@@ -574,6 +592,23 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     destroyInstance: closeInstance,
     dispatch: trackedDispatch,
     has: (operation: string): boolean => Object.hasOwn(parameters, operation),
+    instanceConfig: (handle: unknown): KernelAdapterConfig => {
+      const state =
+        typeof handle === "string" ? instances.get(handle) : undefined;
+      return state?.config ?? config;
+    },
+    openInstance: async (options: {
+      storageRef: string;
+      scope?: string;
+    }): Promise<string> => {
+      if (config.backend === "memory") {
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "memory storage cannot be reopened"
+        );
+      }
+      return await createInstance(undefined, options);
+    },
     shutdown: async (): Promise<void> => {
       await Promise.all(
         [...instances.keys()].map(async (handle) => {
