@@ -153,6 +153,31 @@ test("stale-head mutation activates and the new syscall claims kill it", async (
   }
 }, 60_000);
 
+test("a process can arm and release its one local participant", async () => {
+  const { createMemoryBackend } = await import("@tuvren/backend-memory");
+  const { createKernelBarrierControl } =
+    await import("../../testkit/src/lib/kernel-barrier-control.ts");
+  const barrier = createKernelBarrierControl(createMemoryBackend());
+  barrier.arm("writers", "kernel.persistence.before-transact", ["a"]);
+  const writer = barrier.run(
+    "handle-a",
+    undefined,
+    async () =>
+      await barrier.backend.transact(async () => await Promise.resolve(1))
+  );
+  try {
+    await barrier.wait("writers", "handle-a", 1000);
+    barrier.release("writers", ["handle-a"]);
+    expect(await writer).toBe(1);
+    expect(() =>
+      barrier.arm("next", "kernel.persistence.before-transact", ["b"])
+    ).not.toThrow();
+  } finally {
+    barrier.close();
+    await Promise.allSettled([writer]);
+  }
+});
+
 test("barrier holds all started operations entering the seam and clears after release", async () => {
   const { createMemoryBackend } = await import("@tuvren/backend-memory");
   const { createKernelBarrierControl } =

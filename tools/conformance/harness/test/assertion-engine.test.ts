@@ -788,6 +788,26 @@ test("faultActivated requires the exact armed token in runner activation evidenc
   ).toEqual(["fail"]);
 });
 
+test("processExit reads the named process epoch independently of primary", () => {
+  const check = {
+    checkId: "process",
+    operation: "probe",
+    assertions: [
+      {
+        kind: "processExit" as const,
+        process: "second",
+        epoch: 1,
+        signal: "SIGKILL",
+      },
+    ],
+  };
+  const evaluations = evaluateAssertions(check, {
+    processExits: { 1: { code: 0, signal: null } },
+    processExitsByProcess: { second: { 1: { code: null, signal: "SIGKILL" } } },
+  });
+  expect(evaluations.map(({ status }) => status)).toEqual(["pass"]);
+});
+
 test("processExit reads the selected supervisor epoch and requires every specified exit field", () => {
   const check = buildCheck([
     { kind: "processExit", epoch: 2, signal: "SIGKILL", code: null },

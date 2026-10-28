@@ -28,8 +28,54 @@ import {
 import type { CertificationRuleId } from "./certification-rules.ts";
 import {
   evaluateCertificationRules,
+  nativeErrorAsserted,
   parseOperationCatalog,
 } from "./certification-rules.ts";
+
+test("collected native errors count only when every error code is asserted unconditionally", () => {
+  const awaited: ConformancePlanStep = {
+    stepId: "await",
+    action: "await",
+    operation: "kernel.branch.setHead",
+    arguments: { operationHandle: { $ref: "capture.op" } },
+  };
+  const collect: ConformancePlanStep = {
+    stepId: "collect",
+    action: "collect",
+    operation: "kernel.harness.collect",
+    participants: ["await"],
+    assertions: [
+      {
+        kind: "resultField",
+        field: "$.byKind.error",
+        length: 1,
+        every: {
+          field: "$.error.code",
+          equals: "kernel_runtime_lateral_head_movement",
+        },
+      },
+    ],
+  };
+  const check: ConformancePlanCheck = {
+    checkId: "race",
+    operation: "kernel.branch.setHead",
+    assertions: [],
+    steps: [awaited, collect],
+  };
+  expect(nativeErrorAsserted(check, awaited)).toBe(true);
+  const assertion = collect.assertions?.[0];
+  if (assertion === undefined) {
+    throw new Error("missing assertion");
+  }
+  assertion.when = { path: "$.result.x", equals: true };
+  expect(nativeErrorAsserted(check, awaited)).toBe(false);
+  assertion.when = undefined;
+  assertion.length = undefined;
+  expect(nativeErrorAsserted(check, awaited)).toBe(false);
+  assertion.length = 1;
+  collect.participants = ["other"];
+  expect(nativeErrorAsserted(check, awaited)).toBe(false);
+});
 import type {
   ConformancePlan,
   ConformancePlanAssertion,

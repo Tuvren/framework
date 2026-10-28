@@ -63,7 +63,8 @@ cancelOperation({ operationHandle, reason })
 subscribe({ instance, channel, operationHandle? }) -> { subscription }
 pull({ subscription, credit })
 armFault({ instance, point, selector, occurrence, mode: "throw" | "block" }) -> { token }
-setClock({ instance, domain: "backend" | "worker", nowMs })
+setClock({ instance, domain: "backend" | "worker", source?: "injected", nowMs })
+setClock({ instance, domain: "backend", source: "server" })
 
 notification event({ subscription, sequence, event })
 notification eventsEnd({ subscription, terminal })
@@ -76,7 +77,13 @@ Handles (`operationHandle`, `subscription`, `token`, `storageRef`) are opaque st
 
 A `start` plan step can declare `handleCapture: "NAME"`. The runner validates the receipt against `StartOperationResult` in `protocol.schema.json` and exposes its opaque string as `{"$ref": "capture.NAME"}` only to later argument projections. Start and cancel receipts never enter observation, assertion, capture, trace, or required-evidence contexts. The compiler rejects observation captures, state inspection, and nonempty assertions on start and cancel steps. Checks with start, await, or cancel actions require a manifest protocol version of at least `0.2.0`; selection records the reason when excluding older adapters.
 
+The injected clock source is the default and requires `nowMs`. The server source omits `nowMs` and applies only to the backend domain. Adapters that lack `clock.backend-server` return `clock_source_unsupported` for the server source. PostgreSQL uses its server clock when this source is selected.
+
 An armed barrier holds each started operation that reaches its seam in the adapter instance. Barrier participants name start step IDs, and each participant must declare `handleCapture`. The runner resolves those handles, requires an entry receipt for every participant, and sends handles in the plan's release order. The `kernel.barrier.release` entry in `spec/conformance/kernel/operations.json` defines the release-order guarantee and its scope. Start arguments must match the catalogued native operation input.
+
+For a multi-process trace, `spawn` starts a named supervisor and `openInstance` attaches that process to the same storage reference. Steps select a process with `process`, which defaults to `primary`. Await and cancel actions follow the process that owns the operation handle. The runner arms each participant process, records each entry receipt with its process, and releases only after all receipts arrive. Across processes, release order does not determine the winner.
+
+The runner synthesizes `kernel.harness.collect` from earlier await steps. Each outcome retains the await step ID, process, resolved start arguments, and native result or error. The `outcomes` array and the `byKind` groups preserve participant order. The compiler and runner reject collection unless each participant reached an armed barrier before release.
 
 A cancel step must follow a matching `kernel.barrier.wait` entry receipt for the started operation while its barrier remains held. The compiler rejects cancellation before that receipt, after release, or against another participant's receipt. Live event cancellation requires a migrated event-observation path; subscribe acknowledgements alone cannot establish entry.
 

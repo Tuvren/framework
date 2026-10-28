@@ -63,6 +63,8 @@ const defaultCapabilities = (
       // capability so it runs only where backend-time lease judgment applies;
       // single-writer embedded backends keep the in-process clock and are excluded.
       "kernel.shared-lease-clock",
+      "clock.backend-server",
+      "kernel.barrier",
       "kernel.persistence.durable",
       "kernel.restart-recovery",
       "kernel.scope-isolation",
@@ -327,6 +329,8 @@ await serveStdioAdapter({
       typeof params.operation === "string" &&
       syscallBindings.has(params.operation)),
   openInstance: syscallBindings.openInstance,
+  setClock: async (params) =>
+    await syscallBindings.protocolControl("setClock", params),
   setNotificationSink: (sink) => {
     notificationSink = sink;
   },

@@ -5,8 +5,55 @@ import path from "node:path";
 
 import { spawn } from "bun";
 
+import { selectCheck } from "../check-selection.ts";
+
 const host = new URL("../../adapter-protocol/stdio-host.ts", import.meta.url)
   .pathname;
+
+test("a server-clock step requires the server clock capability", () => {
+  const steps = [
+    { action: "setClock", arguments: { domain: "backend", source: "server" } },
+  ];
+  const base = {
+    checkId: "clock",
+    protocolVersion: "0.2.0",
+    requested: new Set<string>(),
+    required: ["kernel.syscall"],
+    steps,
+  };
+  expect(
+    selectCheck({ ...base, adapter: new Set(["kernel.syscall"]) })
+  ).toMatchObject({
+    selected: false,
+    reason: expect.stringContaining("clock.backend-server"),
+  });
+  expect(
+    selectCheck({
+      ...base,
+      adapter: new Set(["kernel.syscall", "clock.backend-server"]),
+    })
+  ).toMatchObject({ selected: true });
+  expect(
+    selectCheck({
+      ...base,
+      steps: [{ action: "setClock" }],
+      adapter: new Set(["kernel.syscall"]),
+    })
+  ).toMatchObject({ selected: true });
+  const dynamicSource = [
+    {
+      action: "setClock",
+      arguments: { domain: "backend", source: { $ref: "input.source" } },
+    },
+  ];
+  expect(
+    selectCheck({
+      ...base,
+      steps: dynamicSource,
+      adapter: new Set(["kernel.syscall"]),
+    })
+  ).toMatchObject({ selected: false });
+});
 
 test.each(["0.2.0", "0.1.0"])(
   "handle plans select by protocol %s and keep receipts outside observations",

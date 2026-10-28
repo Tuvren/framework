@@ -283,11 +283,14 @@ describe("kernel certification catalog", () => {
       "kernel.barrier.release",
       "kernel.clock.set",
       "kernel.fault.arm",
+      "kernel.harness.collect",
+      "kernel.instance.create",
       "kernel.instance.open",
       "kernel.mutant.activation",
       "kernel.process.kill",
       "kernel.process.respawn",
       "kernel.process.restart",
+      "kernel.process.spawn",
     ]);
     for (const id of planOperations) {
       if (nativeIds.has(id)) {

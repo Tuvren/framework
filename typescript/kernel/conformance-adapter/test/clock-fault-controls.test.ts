@@ -13,6 +13,132 @@ const config = {
   capabilities: ["kernel.syscall"],
 } as const;
 
+test.each(["memory", "sqlite"] as const)(
+  "%s rejects the backend server clock source",
+  async (backend) => {
+    const bridge = createSyscallBindings({ ...config, backend });
+    const instance = await bridge.createInstance(
+      undefined,
+      backend === "sqlite" ? { storageRef: "unused" } : {}
+    );
+    try {
+      expect(
+        await bridge.dispatch(
+          "kernel.clock.set",
+          { domain: "backend", source: "server" },
+          instance
+        )
+      ).toMatchObject({
+        error: { code: "clock_source_unsupported" },
+        kind: "error",
+      });
+    } finally {
+      await bridge.destroyInstance(instance);
+    }
+  }
+);
+
+test.each(["adapter.json", "adapter-sqlite.json"])(
+  "%s does not claim the server clock capability",
+  async (file) => {
+    const manifest: unknown = await Bun.file(
+      new URL(`../${file}`, import.meta.url)
+    ).json();
+    if (
+      typeof manifest !== "object" ||
+      manifest === null ||
+      !("capabilities" in manifest) ||
+      !Array.isArray(manifest.capabilities)
+    ) {
+      throw new Error("invalid adapter capabilities");
+    }
+    expect(manifest.capabilities).not.toContain("clock.backend-server");
+  }
+);
+
+test("postgres server clock does not inject the adapter backend clock", async () => {
+  const original = hostSupport.createConfiguredBackend;
+  const factory = spyOn(
+    hostSupport,
+    "createConfiguredBackend"
+  ).mockImplementation(async (adapterConfig, options) => {
+    expect(options?.now).toBeUndefined();
+    return await original({ ...adapterConfig, backend: "memory" }, options);
+  });
+  const bridge = createSyscallBindings({
+    ...config,
+    backend: "postgres",
+    capabilities: ["kernel.syscall", "clock.backend-server"],
+  });
+  const instance = await bridge.createInstance(undefined, {
+    storageRef: "unused",
+  });
+  try {
+    expect(
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "backend", source: "server" },
+        instance
+      )
+    ).toMatchObject({ kind: "result" });
+    expect(
+      await bridge.dispatch("kernel.backend.capabilities", {}, instance)
+    ).toMatchObject({ kind: "result" });
+    expect(factory).toHaveBeenCalledTimes(1);
+  } finally {
+    await bridge.destroyInstance(instance);
+    factory.mockRestore();
+  }
+});
+
+test("switching backend clock sources reopens the backend with the selected source", async () => {
+  const original = hostSupport.createConfiguredBackend;
+  const sources: boolean[] = [];
+  const factory = spyOn(
+    hostSupport,
+    "createConfiguredBackend"
+  ).mockImplementation(async (adapterConfig, options) => {
+    sources.push(options?.now !== undefined);
+    return await original({ ...adapterConfig, backend: "memory" }, options);
+  });
+  const bridge = createSyscallBindings({
+    ...config,
+    backend: "postgres",
+    capabilities: ["kernel.syscall", "clock.backend-server"],
+  });
+  const instance = await bridge.createInstance(undefined, {
+    storageRef: "unused",
+  });
+  try {
+    await bridge.dispatch(
+      "kernel.clock.set",
+      { domain: "backend", nowMs: 1 },
+      instance
+    );
+    await bridge.dispatch("kernel.backend.capabilities", {}, instance);
+    expect(
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "backend", source: "server" },
+        instance
+      )
+    ).toMatchObject({ kind: "result" });
+    await bridge.dispatch("kernel.backend.capabilities", {}, instance);
+    expect(
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "backend", nowMs: 2, source: "injected" },
+        instance
+      )
+    ).toMatchObject({ kind: "result" });
+    await bridge.dispatch("kernel.backend.capabilities", {}, instance);
+    expect(sources).toEqual([true, false, true]);
+  } finally {
+    await bridge.destroyInstance(instance);
+    factory.mockRestore();
+  }
+});
+
 test("backend capability observations come from the instance's backend", async () => {
   const original = hostSupport.createConfiguredBackend;
   let sharedLeaseClock = false;

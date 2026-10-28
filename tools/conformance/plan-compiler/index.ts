@@ -86,6 +86,7 @@ export interface ConformancePlanReference {
 
 export interface ConformancePlanAssertion extends ConformancePlanValueOperators {
   epoch?: number;
+  process?: string;
   signal?: string | null;
   code?: number | null;
   recordType?: string;
@@ -113,6 +114,8 @@ export type ConformancePlanStepAction =
   | "await"
   | "barrier"
   | "cancel"
+  | "collect"
+  | "createInstance"
   | "dispatch"
   | "kill"
   | "openInstance"
@@ -121,6 +124,7 @@ export type ConformancePlanStepAction =
   | "respawn"
   | "restart"
   | "setClock"
+  | "spawn"
   | "start"
   | "subscribe";
 
@@ -174,6 +178,7 @@ export interface ConformancePlanStep {
   inspectState?: unknown;
   operation: string;
   participants?: string[];
+  process?: string;
   seam?: string;
   stepId: string;
 }

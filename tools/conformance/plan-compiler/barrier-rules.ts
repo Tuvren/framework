@@ -10,6 +10,89 @@ interface BarrierSchedule {
   released: Set<string>;
 }
 
+const handleReference = (step: ConformancePlanStep): string | undefined => {
+  const handle = step.arguments?.operationHandle;
+  return typeof handle === "object" &&
+    handle !== null &&
+    "$ref" in handle &&
+    typeof handle.$ref === "string"
+    ? handle.$ref
+    : undefined;
+};
+
+export const collectProblem = (
+  step: ConformancePlanStep,
+  earlier: readonly ConformancePlanStep[]
+): string | undefined => {
+  const participants = step.participants ?? [];
+  if (
+    step.operation !== "kernel.harness.collect" ||
+    participants.length === 0 ||
+    new Set(participants).size !== participants.length
+  ) {
+    return "collect requires distinct earlier await participants";
+  }
+  for (const participant of participants) {
+    const awaited = earlier.find(
+      (candidate) =>
+        candidate.stepId === participant && candidate.action === "await"
+    );
+    const reference =
+      awaited === undefined ? undefined : handleReference(awaited);
+    const start = earlier.find(
+      (candidate) =>
+        candidate.action === "start" &&
+        candidate.operation === awaited?.operation &&
+        candidate.handleCapture !== undefined &&
+        `capture.${candidate.handleCapture}` === reference
+    );
+    const arm = earlier.find(
+      (candidate) =>
+        candidate.action === "barrier" &&
+        candidate.participants?.includes(start?.stepId ?? "")
+    );
+    const release = earlier.find(
+      (candidate) =>
+        candidate.action === "release" &&
+        candidate.barrierId === arm?.barrierId &&
+        (candidate.participants === undefined ||
+          candidate.participants.includes(start?.stepId ?? ""))
+    );
+    if (
+      awaited === undefined ||
+      reference === undefined ||
+      start === undefined ||
+      arm === undefined ||
+      release === undefined ||
+      earlier.indexOf(arm) >= earlier.indexOf(start) ||
+      earlier.indexOf(release) >= earlier.indexOf(awaited) ||
+      (arm.participants ?? []).some((id) => {
+        const member = earlier.find(
+          (candidate) => candidate.stepId === id && candidate.action === "start"
+        );
+        const receipt = earlier.find(
+          (candidate) =>
+            candidate.operation === "kernel.barrier.wait" &&
+            (candidate.action === undefined ||
+              candidate.action === "dispatch") &&
+            candidate.arguments?.barrierId === arm.barrierId &&
+            member?.handleCapture !== undefined &&
+            handleReference(candidate) === `capture.${member.handleCapture}`
+        );
+        return (
+          member === undefined ||
+          receipt === undefined ||
+          earlier.indexOf(member) >= earlier.indexOf(receipt) ||
+          earlier.indexOf(receipt) >= earlier.indexOf(release)
+        );
+      })
+    ) {
+      return "collect requires barrier participants with all entry receipts before release and awaits after release";
+    }
+  }
+  return undefined;
+};
+
 const armBarrier = (
   step: ConformancePlanStep,
   laterSteps: readonly ConformancePlanStep[],
@@ -110,6 +193,9 @@ export const checkBarrierSchedule = (
     }
     if (step.action === "release") {
       problem = releaseBarrier(step, steps.slice(0, index), catalog, barriers);
+    }
+    if (step.action === "collect") {
+      problem = collectProblem(step, steps.slice(0, index));
     }
     if (problem !== undefined) {
       violations.push({

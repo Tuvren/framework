@@ -80,6 +80,25 @@ describe("adapter protocol 0.1.0 compatibility", () => {
 });
 
 describe("adapter protocol 0.2.0", () => {
+  test("clock source server is available only for backend without nowMs", () => {
+    for (const params of [
+      { instance: "i", domain: "backend", source: "server" },
+      { instance: "i", domain: "backend", source: "injected", nowMs: 12 },
+      { instance: "i", domain: "worker", nowMs: 12 },
+    ]) {
+      expect(validateAdapterDefinition("SetClockParams", params)).toEqual([]);
+    }
+    for (const params of [
+      { instance: "i", domain: "worker", source: "server" },
+      { instance: "i", domain: "backend", source: "server", nowMs: 12 },
+      { instance: "i", domain: "backend", source: "injected" },
+      { instance: "i", domain: "backend" },
+    ]) {
+      expect(validateAdapterDefinition("SetClockParams", params)).not.toEqual(
+        []
+      );
+    }
+  });
   test("covers and accepts every pinned request", () => {
     expect(methodsOf(PINNED_0_2_0_REQUESTS)).toEqual(
       [

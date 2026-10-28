@@ -63,6 +63,7 @@ const EXPECTED_MUTANTS = [
   ["kernel.promote-staged-before-checkpoint", "implementation"],
   ["kernel.resolve-object-across-scopes", "implementation"],
   ["kernel.sweep-inside-grace-window", "implementation"],
+  ["kernel.worker-clock-expiry", "implementation"],
   ["kernel.wrong-opaque-object-hash", "implementation"],
 ] as const;
 
@@ -341,6 +342,7 @@ describe("kernel negative-control manifest", () => {
         "kernel.persistent-reopen",
       ],
       "kernel.expose-incomplete-checkpoint": ["kernel.process-crash"],
+      "kernel.worker-clock-expiry": ["kernel.shared-backend"],
     };
     for (const control of controls) {
       const mutant = registered.get(control.mutantId);

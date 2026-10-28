@@ -2,7 +2,9 @@
   "adapterId": "typescript-kernel-postgres",
   "boundary": "kernel",
   "capabilities": [
+    "clock.backend-server",
     "kernel-protocol.thread.enumeration",
+    "kernel.barrier",
     "kernel.edge-validation",
     "kernel.edge-validation.composite",
     "kernel.fault-injection",
@@ -17,6 +19,94 @@
     "kernel.syscall"
   ],
   "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.backendNow.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.liveLease.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.livePreempt.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.expiredPreempt.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.expiredHead.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.backendNow.result.threads",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.expiredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.expiredPreempt.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.liveLease.result.leaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.backendNow.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.expiredPreempt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.livePreempt.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.trace.livePreempt.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.clock_skew.preemption",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.clock-skew.syscall",
+        "adapterErrors": {
+          "livePreempt": {
+            "code": "kernel_runtime_run_lease_not_expired",
+            "message": "run \"runrenewal\" lease has not expired"
+          }
+        },
+        "traceStepIds": [
+          "serverClock",
+          "workerBase",
+          "schema",
+          "threadrenewal",
+          "backendNow",
+          "turnrenewal",
+          "liveLease",
+          "threadexpired",
+          "turnexpired",
+          "expiredLease",
+          "workerAhead",
+          "livePreempt",
+          "expiredPreempt",
+          "expiredHead"
+        ]
+      },
+      "status": "pass"
+    },
     {
       "assertionResults": [
         {
@@ -249,6 +339,288 @@
           "recoveredHead",
           "lineage",
           "visibleMessages"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstOutcome.result.branch.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.secondOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.concurrent_writer.a_first",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.concurrent-writer.syscall",
+        "adapterErrors": {
+          "secondOutcome": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch.setHead cannot move laterally: \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" and \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" share no lineage"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "head"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.firstOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondOutcome.result.branch.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.concurrent_writer.b_first",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.concurrent-writer.syscall",
+        "adapterErrors": {
+          "firstOutcome": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch.setHead cannot move laterally: \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" and \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" share no lineage"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "head"
         ]
       },
       "status": "pass"
@@ -512,6 +884,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -527,14 +901,44 @@
             {
               "token": "fault-token-1",
               "phase": "after-commit-before-ack",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -543,7 +947,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -824,6 +1228,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-head-move-before-staging-clear",
@@ -839,14 +1245,44 @@
             {
               "token": "fault-token-1",
               "phase": "after-head-move-before-staging-clear",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -855,7 +1291,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1136,6 +1572,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-turn-node-write-before-head",
@@ -1151,14 +1589,44 @@
             {
               "token": "fault-token-1",
               "phase": "after-turn-node-write-before-head",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1167,7 +1635,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1448,6 +1916,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -1463,14 +1933,44 @@
             {
               "token": "fault-token-1",
               "phase": "before-commit",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1479,7 +1979,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1781,6 +2281,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -1860,6 +2362,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -7575,6 +8079,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -7860,6 +8366,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -8849,6 +9357,286 @@
         "traceStepIds": ["backend0", "worker0", "schema", "thread", "list"]
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.collect.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.collect.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.head.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.6.arrival",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.7.arrival",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.collect.result.byKind.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.collect.result.byKind.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.trace.collect.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.a_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.shared_writer.a_first",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.shared-writer.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "spawn",
+          "open",
+          "backendSecond",
+          "workerSecond",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "collect",
+          "head"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.collect.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.collect.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.head.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.6.arrival",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.7.arrival",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.collect.result.byKind.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.collect.result.byKind.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.trace.collect.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.shared_writer.b_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.shared_writer.b_first",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.shared-writer.syscall",
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "spawn",
+          "open",
+          "backendSecond",
+          "workerSecond",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "collect",
+          "head"
+        ]
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -8861,20 +9649,17 @@
   ],
   "exitCode": 0,
   "implementationId": "typescript-kernel-postgres",
-  "nonApplicableCheckIds": [
-    "kernel.syscall.concurrent_writer.a_first",
-    "kernel.syscall.concurrent_writer.b_first"
-  ],
+  "nonApplicableCheckIds": [],
   "project": "kernel-typescript-postgres-certification",
   "reportLabel": "TypeScript PostgreSQL durable kernel",
-  "reportStatus": "capability_subset_pass",
+  "reportStatus": "full_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 142,
-    "totalChecks": 144,
-    "applicableChecks": 142,
-    "nonApplicableChecks": 2
+    "passedChecks": 147,
+    "totalChecks": 147,
+    "applicableChecks": 147,
+    "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

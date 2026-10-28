@@ -1,6 +1,6 @@
 {
   "catalogId": "tuvren.kernel.operations",
-  "catalogVersion": "0.2.0",
+  "catalogVersion": "0.3.0",
   "packetId": "tuvren.kernel.protocol",
   "operations": [
     {
@@ -2858,7 +2858,10 @@
           ]
         }
       },
-      "errors": ["kernel_persistence_fault_injected"],
+      "errors": [
+        "kernel_persistence_fault_injected",
+        "kernel_runtime_run_lease_not_expired"
+      ],
       "handles": {
         "consumes": ["instance"]
       },
@@ -2966,13 +2969,27 @@
           "domain": {
             "enum": ["backend", "worker"]
           },
+          "source": { "enum": ["injected", "server"], "default": "injected" },
           "nowMs": {
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
           }
         },
-        "required": ["instance", "domain", "nowMs"]
+        "required": ["instance", "domain"],
+        "allOf": [
+          {
+            "if": {
+              "required": ["source"],
+              "properties": { "source": { "const": "server" } }
+            },
+            "then": {
+              "properties": { "domain": { "const": "backend" } },
+              "not": { "required": ["nowMs"] }
+            },
+            "else": { "required": ["nowMs"] }
+          }
+        ]
       },
       "observation": {
         "result": {
@@ -2982,7 +2999,7 @@
           "required": []
         }
       },
-      "errors": [],
+      "errors": ["clock_source_unsupported"],
       "handles": {
         "consumes": ["instance"]
       },
@@ -5672,7 +5689,7 @@
               "type": "string",
               "minLength": 1
             },
-            "minItems": 2,
+            "minItems": 1,
             "uniqueItems": true
           },
           "instance": {
@@ -5822,6 +5839,162 @@
       }
     },
     {
+      "operationId": "kernel.harness.collect",
+      "kind": "control",
+      "capability": "kernel.barrier",
+      "binding": "tools/schemas/conformance-plan.schema.json#/$defs/step/properties/action",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "$defs": {
+            "arguments": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "branchId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "turnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "required": ["branchId", "turnNodeHash"]
+            },
+            "branch": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "branchId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "threadId": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+                },
+                "headTurnNodeHash": {
+                  "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+                }
+              },
+              "required": ["branchId", "threadId", "headTurnNodeHash"]
+            },
+            "error": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": { "type": "string", "minLength": 1 },
+                "message": { "type": "string" },
+                "details": {
+                  "anyOf": [
+                    {
+                      "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "point": { "type": "string" },
+                        "token": { "type": "string" }
+                      },
+                      "required": ["point"]
+                    }
+                  ]
+                },
+                "cause": { "$ref": "#/$defs/error" }
+              },
+              "required": ["code", "message"]
+            },
+            "resultOutcome": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "stepId": { "type": "string", "minLength": 1 },
+                "process": { "type": "string", "minLength": 1 },
+                "arguments": { "$ref": "#/$defs/arguments" },
+                "kind": { "const": "result" },
+                "result": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch": { "$ref": "#/$defs/branch" },
+                    "archiveBranch": { "$ref": "#/$defs/branch" }
+                  },
+                  "required": ["branch"]
+                }
+              },
+              "required": ["stepId", "process", "arguments", "kind", "result"]
+            },
+            "errorOutcome": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "stepId": { "type": "string", "minLength": 1 },
+                "process": { "type": "string", "minLength": 1 },
+                "arguments": { "$ref": "#/$defs/arguments" },
+                "kind": { "const": "error" },
+                "error": { "$ref": "#/$defs/error" }
+              },
+              "required": ["stepId", "process", "arguments", "kind", "error"]
+            }
+          },
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "outcomes": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  { "$ref": "#/$defs/resultOutcome" },
+                  { "$ref": "#/$defs/errorOutcome" }
+                ]
+              }
+            },
+            "byKind": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "result": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/resultOutcome" }
+                },
+                "error": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/errorOutcome" }
+                }
+              },
+              "required": ["result", "error"]
+            }
+          },
+          "required": ["outcomes", "byKind"]
+        }
+      },
+      "errors": []
+    },
+    {
+      "operationId": "kernel.process.spawn",
+      "kind": "control",
+      "capability": "kernel.persistence.durable",
+      "binding": "tools/schemas/conformance-plan.schema.json#/$defs/step/properties/action",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": []
+    },
+    {
       "operationId": "kernel.process.restart",
       "kind": "control",
       "capability": "kernel.persistence.durable",
@@ -5883,6 +6056,27 @@
       },
       "errors": [],
       "binding": "tools/schemas/conformance-plan.schema.json#/$defs/step/properties/action"
+    },
+    {
+      "operationId": "kernel.instance.create",
+      "kind": "control",
+      "capability": "kernel.persistence.durable",
+      "binding": "tools/conformance/adapter-protocol/protocol.schema.json#/$defs/CreateInstanceParams",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": []
     },
     {
       "operationId": "kernel.instance.open",

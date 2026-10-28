@@ -161,3 +161,33 @@ test("only a wait response for the requested handle authorizes release", () => {
     operationHandles: ["handle-b", "handle-a"],
   });
 });
+
+test("receipts belong to the process that owns the handle even when handle strings collide", () => {
+  const barriers = createBarrierSteps({ first: "same", second: "same" });
+  barriers.input(arm, {});
+  barriers.started("a", "first", "primary");
+  barriers.started("b", "second", "other");
+  const reply = {
+    kind: "result" as const,
+    value: {
+      result: {
+        barrierId: "writers",
+        operationHandle: "same",
+        seam: "persistence",
+      },
+    },
+  };
+  barriers.observe(receipt, { operationHandle: "same" }, reply, "primary");
+  expect(() => barriers.input(release, {})).toThrow(
+    "every implementation entry receipt"
+  );
+  barriers.observe(receipt, { operationHandle: "same" }, reply, "other");
+  expect(barriers.input(release, {})).toEqual({
+    barrierId: "writers",
+    operationHandles: ["same", "same"],
+  });
+  expect(barriers.eligible("a")).toBe(false);
+  barriers.released(release);
+  expect(barriers.eligible("a")).toBe(true);
+  expect(barriers.eligible("b")).toBe(true);
+});

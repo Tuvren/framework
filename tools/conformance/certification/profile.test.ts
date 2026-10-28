@@ -6,6 +6,7 @@ import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import {
   assertKernelMemoryClaimInventory,
   assertProfileCapabilities,
+  findProfileSelectionFailures,
   readClaimedProfiles,
 } from "./profile.ts";
 
@@ -27,6 +28,41 @@ test("a complete profile run rejects a missing required capability", () => {
     assertProfileCapabilities(profiles, ["required"], true)
   ).not.toThrow();
   expect(() => assertProfileCapabilities(profiles, [], false)).not.toThrow();
+});
+
+test("a claimed profile rejects a non-applicable required check", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const [profile] = await readClaimedProfiles(
+    adapter,
+    adapter.authorityPackets
+  );
+  if (profile === undefined) {
+    throw new Error("missing memory profile");
+  }
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  const required = plans
+    .flatMap(({ checks }) => checks)
+    .find(({ check }) =>
+      check.claimIds?.some((claim) => profile.claimIds.includes(claim))
+    );
+  if (required === undefined) {
+    throw new Error("missing profile check");
+  }
+  expect(
+    findProfileSelectionFailures([profile], plans, [
+      {
+        checkId: required.check.checkId,
+        selected: false,
+        reason: "missing capabilities: required",
+      },
+    ])
+  ).toContainEqual({
+    profileId: profile.profileId,
+    requiredCheckId: required.check.checkId,
+    reason: "missing capabilities: required",
+  });
 });
 
 test("the composite capability retains legacy coverage without selecting it for Rust", async () => {

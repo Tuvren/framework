@@ -38,6 +38,12 @@ export interface AssertionContext {
   processExits?: Readonly<
     Record<number, { code: number | null; signal: string | null }>
   >;
+  processExitsByProcess?: Readonly<
+    Record<
+      string,
+      Readonly<Record<number, { code: number | null; signal: string | null }>>
+    >
+  >;
   capture?: Readonly<Record<string, unknown>>;
   faultActivations?: readonly string[];
   events?: readonly unknown[];
@@ -514,6 +520,22 @@ const assertNever = (value: never): never => {
   throw new Error(`unsupported assertion kind ${String(value)}`);
 };
 
+const processExit = (
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+) => {
+  if (assertion.epoch === undefined) {
+    return undefined;
+  }
+  const process = assertion.process ?? "primary";
+  return (
+    context.processExitsByProcess?.[process]?.[assertion.epoch] ??
+    (process === "primary"
+      ? context.processExits?.[assertion.epoch]
+      : undefined)
+  );
+};
+
 const evaluateAssertion = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
@@ -530,7 +552,7 @@ const evaluateAssertion = (
           "processExit requires an epoch and an exit expectation"
         );
       }
-      const exit = context.processExits?.[assertion.epoch];
+      const exit = processExit(assertion, context);
       return (
         exit !== undefined &&
         (!Object.hasOwn(assertion, "signal") ||
@@ -672,11 +694,8 @@ const readSubject = (
 ): { actual: unknown; path: string } => {
   if (assertion.kind === "processExit") {
     return {
-      actual:
-        assertion.epoch === undefined
-          ? undefined
-          : context.processExits?.[assertion.epoch],
-      path: `$.processExits.${String(assertion.epoch)}`,
+      actual: processExit(assertion, context),
+      path: `$.processExitsByProcess.${assertion.process ?? "primary"}.${String(assertion.epoch)}`,
     };
   }
   const fieldRoot = FIELD_ROOTS[assertion.kind];

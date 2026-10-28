@@ -2915,6 +2915,7 @@
   "exitCode": 0,
   "implementationId": "dart-kernel",
   "nonApplicableCheckIds": [
+    "kernel.syscall.clock_skew.preemption",
     "kernel.syscall.reopen.close_reopen_checkpoint",
     "kernel.syscall.concurrent_writer.a_first",
     "kernel.syscall.concurrent_writer.b_first",
@@ -2990,7 +2991,9 @@
     "kernel.syscall.run-liveness.lease_renewal",
     "kernel.syscall.run-liveness.stale_preemption",
     "kernel.syscall.scope-isolation.own_content",
-    "kernel.syscall.scope-isolation.own_enumeration"
+    "kernel.syscall.scope-isolation.own_enumeration",
+    "kernel.syscall.shared_writer.a_first",
+    "kernel.syscall.shared_writer.b_first"
   ],
   "project": "kernel-dart-certification",
   "reportLabel": "Dart process-local kernel baseline",
@@ -2999,9 +3002,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 68,
-    "totalChecks": 144,
+    "totalChecks": 147,
     "applicableChecks": 68,
-    "nonApplicableChecks": 76
+    "nonApplicableChecks": 79
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

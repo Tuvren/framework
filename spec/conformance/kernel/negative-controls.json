@@ -242,6 +242,20 @@
       ]
     },
     {
+      "mutantId": "kernel.worker-clock-expiry",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
+      "claimIds": ["kernel.syscall.clock_skew.live"],
+      "activation": {
+        "precondition": "preemption compares a shared-backend lease expiry while the requesting worker clock is ahead of the server clock",
+        "signal": "mutant.worker-clock-expiry.entered"
+      },
+      "profiles": ["kernel.shared-backend"],
+      "designatedAssertions": [
+        "kernel.syscall.clock_skew.preemption.livePreempt.1.stateField"
+      ]
+    },
+    {
       "mutantId": "kernel.wrong-opaque-object-hash",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#23-hash",

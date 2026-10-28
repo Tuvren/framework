@@ -76,6 +76,8 @@
             "start",
             "await",
             "cancel",
+            "collect",
+            "createInstance",
             "subscribe",
             "pull",
             "barrier",
@@ -85,11 +87,13 @@
             "respawn",
             "openInstance",
             "armFault",
-            "setClock"
+            "setClock",
+            "spawn"
           ],
           "default": "dispatch"
         },
         "claimIds": { "$ref": "#/$defs/claimIds" },
+        "process": { "type": "string", "minLength": 1, "default": "primary" },
         "input": {},
         "arguments": { "type": "object", "$ref": "#/$defs/argumentValue" },
         "handleCapture": {
@@ -167,9 +171,49 @@
         },
         {
           "if": {
+            "required": ["action"],
+            "properties": { "action": { "const": "spawn" } }
+          },
+          "then": { "required": ["process"] }
+        },
+        {
+          "if": {
+            "required": ["action"],
+            "properties": { "action": { "const": "collect" } }
+          },
+          "then": {
+            "required": ["participants"],
+            "not": {
+              "anyOf": [{ "required": ["barrierId"] }, { "required": ["seam"] }]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["action"],
+            "properties": {
+              "action": {
+                "enum": [
+                  "await",
+                  "cancel",
+                  "barrier",
+                  "release",
+                  "collect",
+                  "subscribe",
+                  "pull"
+                ]
+              }
+            }
+          },
+          "then": { "not": { "required": ["process"] } }
+        },
+        {
+          "if": {
             "not": {
               "required": ["action"],
-              "properties": { "action": { "enum": ["barrier", "release"] } }
+              "properties": {
+                "action": { "enum": ["barrier", "release", "collect"] }
+              }
             }
           },
           "then": {
@@ -305,6 +349,7 @@
         "secretsPath": { "type": "string", "minLength": 1 },
         "eventType": { "type": "string", "minLength": 1 },
         "epoch": { "type": "integer", "minimum": 1 },
+        "process": { "type": "string", "minLength": 1, "default": "primary" },
         "signal": { "type": ["string", "null"], "minLength": 1 },
         "code": { "type": ["integer", "null"] },
         "recordType": {
@@ -360,6 +405,7 @@
             "not": {
               "anyOf": [
                 { "required": ["epoch"] },
+                { "required": ["process"] },
                 { "required": ["signal"] },
                 { "required": ["code"] }
               ]
