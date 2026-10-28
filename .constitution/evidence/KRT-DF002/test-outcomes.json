@@ -1,0 +1,43 @@
+{
+  "commit": "44e9481",
+  "date": "2026-10-28",
+  "command": "bun test tools/conformance/harness/test/storage-resource.test.ts tools/conformance/harness/test/storage-runner.test.ts tools/conformance/harness/test/durable-instance.test.ts tools/conformance/harness/test/process-supervisor.test.ts",
+  "exit_status": 0,
+  "tests": 31,
+  "failures": 0,
+  "outcomes": [
+    {
+      "test": "sqlite and postgres openInstance read a previous instance’s writes",
+      "status": "pass"
+    },
+    {
+      "test": "sqlite and postgres syscall reopen plans run through supervised processes",
+      "status": "pass"
+    },
+    {
+      "test": "sqlite and postgres supervised kill and respawn use distinct PIDs and epochs on the same storage reference and have no descendants during the syscall probe",
+      "status": "pass"
+    },
+    {
+      "test": "supervisor requires a clean graceful restart and a verified SIGKILL on kill",
+      "status": "pass"
+    },
+    {
+      "test": "all adapter code avoids spawning its own kernel processes",
+      "status": "not_met",
+      "observation": "The legacy SQLite restart-recovery scenario calls runRestartRecoveryPhase for write and read. That helper spawns the SQLite kernel scenario as a child process; the supervised syscall path does not."
+    }
+  ],
+  "verification_lanes": [
+    {
+      "command": "bun run verify:kernel",
+      "exit_status": 0,
+      "result": "pass"
+    },
+    {
+      "command": "bun run conformance",
+      "exit_status": 0,
+      "result": "pass"
+    }
+  ]
+}

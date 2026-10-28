@@ -1,0 +1,33 @@
+owner: KRT-DF005
+mode: contract_test
+produced:
+  date: 2026-10-28
+  commit: "44e9481"
+  command: "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts; bun run verify:kernel; bun run conformance; bun tools/conformance/meta-conformance/negative-controls.ts --port kernel --profile kernel.persistent-reopen --profile kernel.process-crash --profile kernel.shared-backend --report-out .cache/df-evidence-44e9481-iRk9Q4/controls.json; bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-sqlite.json --control-report .cache/df-evidence-44e9481-iRk9Q4/controls.json --require-certified --evidence-out .cache/df-evidence-44e9481-iRk9Q4/sqlite/evidence.json --concurrency 4 --summary-only; bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --control-report .cache/df-evidence-44e9481-iRk9Q4/controls.json --require-certified --evidence-out .cache/df-evidence-44e9481-iRk9Q4/postgres/evidence.json --concurrency 4 --summary-only; bun tools/conformance/meta-conformance/disagreements.ts --adapter typescript/kernel/conformance-adapter/adapter-sqlite.json --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --plan spec/conformance/kernel/plans/kernel-close-reopen-syscall.json --plan spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json --plan spec/conformance/kernel/plans/kernel-shared-writer-syscall.json --plan spec/conformance/kernel/plans/kernel-clock-skew-syscall.json --output .cache/df-evidence-44e9481-iRk9Q4/disagreement"
+result: pass
+pass_criteria: "The two-process race requires both receipts before release; the worker-clock mutant is killed; SQLite and PostgreSQL certificates validate with matching control runs."
+files:
+  - path: certificate-summary.json
+    sha256: bcfdbef0bf0eb86ad3cbf872527ce96f871cea1f744b243cd7937e96bf6fb5cd
+    bytes: 7893
+    role: measurement
+  - path: claim-and-conditional-coverage.json
+    sha256: a3a215b713edb4617de20ce1c44e365cc86c99fe2d9c81b19300ec0b39777d9b
+    bytes: 4759
+    role: measurement
+  - path: control-summary.json
+    sha256: 553983de2bea0c13e4bd1a49d5d671ec1b55d5be763bca97c2248a347a02f375
+    bytes: 3987
+    role: measurement
+  - path: disagreement-summary.json
+    sha256: 9d9766ffd65905aa5d1ae8d20474211018c8b1285a18573aa820f9e2df6d6e6d
+    bytes: 1508
+    role: measurement
+  - path: test-outcomes.json
+    sha256: 7048426e759cec2ddd1f5a38019ba2f508182cc46425b76eb09054de7fda9eca
+    bytes: 1368
+    role: measurement
+  - path: triage.md
+    sha256: 4f6e2ceb5f70378ce4f4c0bed4b1caebd2d270538b4e411a7b901e60e989e1de
+    bytes: 1478
+    role: transcript

@@ -1,0 +1,17 @@
+owner: KRT-DF001
+mode: contract_test
+produced:
+  date: 2026-10-28
+  commit: "44e9481"
+  command: "bun test tools/conformance/harness/test/storage-resource.test.ts tools/conformance/harness/test/storage-runner.test.ts tools/conformance/harness/test/durable-instance.test.ts tools/conformance/harness/test/process-supervisor.test.ts; bun run verify:kernel; bun run conformance"
+result: pass
+pass_criteria: "Two checks never share a resource; openInstance sees state written by an earlier instance on the same storageRef; resources are removed after the check, including on failure; adapter code no longer creates databases or directories."
+files:
+  - path: test-outcomes.json
+    sha256: 10b2ac8212e24c13e6034a3ad9bf2ae212b6998faf3f4d80ee371b6006cb75e9
+    bytes: 1245
+    role: measurement
+  - path: triage.md
+    sha256: b1b3fab2533a06e20079e7ba4da546c1352c4e27a883689bb154e01993d43478
+    bytes: 752
+    role: transcript

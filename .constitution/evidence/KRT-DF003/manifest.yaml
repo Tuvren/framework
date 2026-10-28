@@ -1,0 +1,21 @@
+owner: KRT-DF003
+mode: contract_test
+produced:
+  date: 2026-10-28
+  commit: "ef893e1"
+  command: "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts; bun run nx run-many -t test --projects=backend-sqlite,backend-postgres,kernel-testkit --skip-nx-cache"
+result: pass
+pass_criteria: "Each supported point emits exactly one receipt with the arming token before blocking; unsupported points report unsupported; production construction paths cannot reach the hooks."
+files:
+  - path: test-outcomes.json
+    sha256: 29269cbbb51a8d0018f1e4eca28f91b6866a4f2aaa5a017e07c635075aa93f9a
+    bytes: 4275
+    role: measurement
+  - path: public-construction-probe.json
+    sha256: 2ad3f3e461d25d610bf75d3d13d6213140b88b81d9bac7f815c75aa8725365fe
+    bytes: 1165
+    role: measurement
+  - path: triage.md
+    sha256: 0e080cc052e8366e5e0c53a6244d15420d19a49b8d469fcb299e30ee7f0d0e97
+    bytes: 1813
+    role: transcript

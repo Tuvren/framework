@@ -46,7 +46,7 @@ tickets:
       evidence: "Assert two checks never share a resource, openInstance sees state written by an earlier instance on the same storageRef, resources are removed after the check including on failure, and adapter code no longer creates databases or directories."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DF002
     title: Supervise adapter processes and certify persistent reopen
     type: Feature
@@ -88,7 +88,7 @@ tickets:
           - tools/scripts/lib/conformance-contract.ts
           - tools/scripts/lib/conformance-contract.test.ts
         justification: "Review required implementation provenance to cover the durable backend code the adapter imports, and compatibility evidence to normalize per-run process, storage, and token values so refreshes are deterministic and leak no local paths."
-    status: planned
+    status: done
   - id: KRT-DF003
     title: Add blocking fault seams with receipts to the SQLite and PostgreSQL backends
     type: Feature
@@ -140,7 +140,7 @@ tickets:
         justification: "Real-adapter fault and certificate suites must be registered after the build phase."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
-    status: planned
+    status: done
   - id: KRT-DF004
     title: Certify process-crash recovery on SQLite and PostgreSQL
     type: Feature
@@ -190,7 +190,7 @@ tickets:
         justification: "Checked-in evidence normalizes per-run process values, real-adapter crash suites run after the build phase, and the touched publishable packages need direct changesets."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
-    status: planned
+    status: done
   - id: KRT-DF005
     title: Certify the shared backend profile with two-process races and clock skew
     type: Feature
@@ -244,7 +244,7 @@ tickets:
         justification: "OD-22 interim design D: one run finalizes per-profile certificate bundles with a shared run id, per-profile control runs and gates, profile-keyed compatibility certificate rows, a conformance lane that requires them, and a SQLite-PostgreSQL disagreement capture."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
-    status: planned
+    status: done
 decisions:
   - id: OD-20
     question: "On a backend that advertises a shared backend clock, which clock stamps the kernel's non-lease durable timestamps (thread, branch, turn, run, node, staged-result, checkpoint createdAtMs and updatedAtMs)? The specification assigns only lease stamping to backend time (section 5.2, ADR-0050)."
@@ -342,3 +342,90 @@ decisions:
         - typescript/kernel/backends/postgres
         - rust/kernel-conformance-adapter
         - KRT-DF005
+closeout:
+  tickets_completed: [KRT-DF001, KRT-DF002, KRT-DF003, KRT-DF004, KRT-DF005]
+  tickets_deferred: []
+  points_completed: 28
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: added
+      text: "EPIC-DF certified the TypeScript SQLite and PostgreSQL kernels under the durable profiles: kernel.persistent-reopen and kernel.process-crash for both, and kernel.shared-backend for PostgreSQL, alongside the kernel.memory certificates for TypeScript and Rust. The harness owns storage per check, supervises adapter process groups with survivor checks, holds blocking fault seams with receipts, and observes backend capabilities. Certification found and fixed a PostgreSQL clock-domain mix (OD-20) and a controls plan that encoded the memory kernel's clock domain. One run produces per-profile certificate bundles linked to per-profile control runs, and compatibility checks recompute their digests."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "OD-20: every kernel-stamped durable timestamp in a transaction comes from one transaction clock (tx.now on shared-lease-clock backends, otherwise the injected clock); record it against ADR-0050 and KrakenKernelSpecification section 5.2, and rule whether a backward-stepping backend clock rejects or clamps."
+    - stage: tech-spec
+      item: "OD-21: the crash-recovery plan asserts rollback at the intermediate checkpoint fault points; record that a port with separately durable checkpoint writes adds observed-durability branches exercised by that port (KrakenKernelSpecification section 5.5, ADR-0076)."
+    - stage: tech-spec
+      item: "OD-22: add the collect step (kernel.harness.collect, outcomes and byKind), steps[].process with spawn and handle-owned routing, setClock source server gated by clock.backend-server, and per-profile certificate bundles to the pinned plan and protocol sections of conformance-certification.md; amend ADR-0077 decision 5 so release order does not fix the winner across processes."
+    - stage: tech-spec
+      item: "The adapter protocol leaves the createInstance clock members, the processExit evidence field shape, and capture.default unspecified; specify them in conformance-certification.md."
+    - stage: tech-spec
+      item: "The collect closed schema rejects arbitrary native error details, and the commit-outcome-unknown error is omitted from the durable plans; decide whether collect admits catalogued details and whether commit-outcome-unknown needs an observed branch."
+    - stage: tech-spec
+      item: "The per-profile undetected registers (kernel-memory, kernel-persistent-reopen, kernel-process-crash, kernel-shared-backend under spec/conformance/kernel/) have no schema or authority-packet reference; specify one shape for all four."
+    - stage: tech-spec
+      item: "Lease expiry inclusivity (expiresAtMs equal to now) is undecided in the specification; the clock-skew plan avoids the boundary."
+    - stage: tech-spec
+      item: "The tuvren.kernel.protocol suite-level certified entries were removed for SQLite and PostgreSQL in favour of profile certificates; record that compatibility rows are keyed by profile."
+  follow_ups:
+    - "The legacy SQLite restart-recovery path in typescript/kernel/conformance-adapter still spawns kernel child processes for the unchanged legacy close-reopen plan; EPIC-DJ removes it with that plan."
+    - "kernel.syscall.shared_writer.a_first and b_first have no detecting control: the PostgreSQL stale-head mutant activates in one writer process while the shared collect still observes one result and one error; design a cross-process mutant before kernel.shared-backend claims those assertions as detected."
+    - "kernel.syscall.clock_skew.expired has no designated negative control in the shared-backend profile."
+    - "The Rust certification executable is built outside the Nx cache so the certificate digests what ran; Cargo incremental builds keep it cheap, but a content-addressed Nx output would restore caching."
+    - "Rust has no durable backend, so the durable profiles certify the TypeScript backends only."
+    - "The in-memory backend still exposes its symbol-keyed fault control on public construction; move it behind the testkit commit seam as ef893e1 did for SQLite and PostgreSQL."
+    - "docs/guides/add-a-kernel-backend.md still describes the removed symbol-based fault integration; rewrite it for the testkit commit seam."
+  code_decisions:
+    - summary: "The harness provisions one storage resource per check (a SQLite directory or a tuvren_cert_ PostgreSQL database), passes opaque storageRef values to createInstance and openInstance, drops it afterwards including on failure, and sweeps stale resources best effort; adapters no longer choose storage locations."
+      kind: pattern
+      paths: [tools/conformance/harness/storage-resource.ts]
+      commit: c5c68e5
+    - summary: "A process supervisor owns each adapter process group, kills by group, checks for survivors, and records a processExit observation per process."
+      kind: pattern
+      paths: [tools/conformance/harness/process-supervisor.ts]
+      commit: c5c68e5
+    - summary: "Blocking fault seams hold at the named point and return a faultReached receipt; a check whose seam never held fails as seam_did_not_hold."
+      kind: contract_shape
+      paths:
+        - tools/conformance/harness/fault-activation.ts
+        - spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json
+      commit: 426f57d
+    - summary: "kernel.backend.capabilities observes the backend descriptor (KrakenKernelSpecification section 9.1), and plans select clock-domain expectations from it instead of encoding one backend's clock."
+      kind: contract_shape
+      paths:
+        - spec/conformance/kernel/operations.json
+        - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
+      commit: 79471ed
+    - summary: "The runtime resolves one transaction clock per durable store for lineage and run writes (OD-20 interim)."
+      kind: pattern
+      paths: [typescript/kernel/runtime/src/lib/runtime-kernel-clock.ts]
+      commit: b0a9552
+    - summary: "The collect step, steps[].process with spawn, and setClock source server are additive plan and protocol shapes; adapters without a server clock answer clock_source_unsupported (OD-22 interim)."
+      kind: contract_shape
+      paths:
+        - tools/conformance/harness/collect-steps.ts
+        - tools/schemas/conformance-plan.schema.json
+        - tools/conformance/adapter-protocol
+        - rust/kernel-conformance-adapter/src/host_syscalls.rs
+      commit: 6911dd5
+    - summary: "One run finalizes a certificate bundle per claimed profile with a shared runId, each linked to its own control run in controlRuns[]; compatibility rows are keyed by profile, compatibility --check recomputes certificate digests, summaries report outsideProfileChecks, and --control-report requires --evidence-out."
+      kind: contract_shape
+      paths:
+        - tools/conformance/certification/profile-bundles.ts
+        - tools/conformance/certification/compatibility-certificates.ts
+        - tools/schemas/certification-evidence.schema.json
+        - reports/compatibility/compatibility-matrix.schema.json
+      commit: aa6858b
+    - summary: "Every manifest mutant tagged for a profile must be a required control of that profile and be killed; an unsupported control needs a per-port reason, so a profile cannot certify on another backend's kill."
+      kind: convention
+      paths:
+        - tools/conformance/meta-conformance/negative-controls.ts
+        - spec/conformance/kernel/negative-controls.json
+      commit: "44e9481"
+    - summary: "Commit-phase fault hooks exist only in the testkit: one transaction seam with beforeCommit and afterCommit callbacks serves both the receipt-and-block control and the legacy fault-injecting wrapper, and public backend construction exposes no hook."
+      kind: pattern
+      paths: [typescript/kernel/testkit/src/lib/commit-fault-seam.ts]
+      commit: ef893e1
+  settled: []

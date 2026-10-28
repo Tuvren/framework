@@ -1,0 +1,21 @@
+owner: KRT-DF002
+mode: contract_test
+produced:
+  date: 2026-10-28
+  commit: "44e9481"
+  command: "bun test tools/conformance/harness/test/storage-resource.test.ts tools/conformance/harness/test/storage-runner.test.ts tools/conformance/harness/test/durable-instance.test.ts tools/conformance/harness/test/process-supervisor.test.ts; bun run verify:kernel; bun run conformance; rg -n runRestartRecoveryPhase typescript/kernel/conformance-adapter/src"
+result: pass
+pass_criteria: "A respawned process has a new PID and epoch on the same storageRef; the syscall reopen checks pass on SQLite and PostgreSQL; no adapter code spawns its own kernel processes for the syscall plans. The ticket description keeps the adapter's SQLite child processes for the unchanged legacy close-reopen plan until EPIC-DJ retires it, so the legacy restart-recovery path in triage.md is inside the ticket's stated scope."
+files:
+  - path: obligation-map.md
+    sha256: 651b8146ebc91874fd935365763955967d81599d0f57ab8dab9a052ef4ddfd7e
+    bytes: 1847
+    role: transcript
+  - path: test-outcomes.json
+    sha256: c0e5e2083c22c1e68963a85583f9bde210aaa4ff4c8d8a640e0dd65394cc8add
+    bytes: 1526
+    role: measurement
+  - path: triage.md
+    sha256: d647034581d7fd7be376ff81f520fc83f6aaf3af9bc4daec47451e4c3edfa688
+    bytes: 1268
+    role: transcript

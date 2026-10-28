@@ -1,0 +1,70 @@
+{
+  "counts": {
+    "sanctioned": {
+      "checks": 0,
+      "differences": 0
+    },
+    "disagreement": {
+      "checks": 0,
+      "differences": 0
+    },
+    "coverage": {
+      "checks": 3,
+      "differences": 3
+    }
+  },
+  "implementations": [
+    {
+      "implementation": "typescript-kernel-sqlite",
+      "summary": {
+        "failedChecks": 0,
+        "passedChecks": 5,
+        "totalChecks": 8,
+        "applicableChecks": 5,
+        "nonApplicableChecks": 3
+      }
+    },
+    {
+      "implementation": "typescript-kernel-postgres",
+      "summary": {
+        "failedChecks": 0,
+        "passedChecks": 8,
+        "totalChecks": 8,
+        "applicableChecks": 8,
+        "nonApplicableChecks": 0
+      }
+    }
+  ],
+  "differences": [
+    {
+      "checkId": "kernel.syscall.clock_skew.preemption",
+      "kind": "applicability",
+      "classification": "coverage",
+      "citation": "ADR-0081 §1, §3 (selection inventory)",
+      "values": [
+        false,
+        true
+      ]
+    },
+    {
+      "checkId": "kernel.syscall.shared_writer.a_first",
+      "kind": "applicability",
+      "classification": "coverage",
+      "citation": "ADR-0081 §1, §3 (selection inventory)",
+      "values": [
+        false,
+        true
+      ]
+    },
+    {
+      "checkId": "kernel.syscall.shared_writer.b_first",
+      "kind": "applicability",
+      "classification": "coverage",
+      "citation": "ADR-0081 §1, §3 (selection inventory)",
+      "values": [
+        false,
+        true
+      ]
+    }
+  ]
+}
