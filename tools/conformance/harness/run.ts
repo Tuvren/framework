@@ -98,6 +98,7 @@ import {
   recordHandleCapture,
   runOperationHandleStep,
 } from "./operation-steps.js";
+import { ProcessSupervisor } from "./process-supervisor.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
   ArgumentResolutionError,
@@ -106,6 +107,7 @@ import {
   resolveStepArguments,
 } from "./step-arguments.js";
 import type { ArgumentRoots } from "./step-arguments.js";
+import { StorageResourceError, withCheckStorage } from "./storage-resource.js";
 
 interface CliOptions {
   adapter: string;
@@ -863,12 +865,161 @@ const recordSchedule = (
   });
 };
 
+const diagnoseTraceStep = (
+  check: ConformancePlanCheck,
+  step: ConformancePlanStep,
+  context: AssertionContext,
+  arrivals: Record<string, number>,
+  captures: Record<string, unknown>,
+  recorder: CheckRecorder
+): void => {
+  if (step.assertions === undefined) {
+    return;
+  }
+  const stepContext: RunnerContext = {
+    ...context,
+    arrivals: { ...arrivals },
+    capture: { ...captures },
+    faultActivations: recorder.faults.activations,
+  };
+  recorder.diagnoses.push(
+    ...diagnoseAssertions(
+      {
+        ...check,
+        assertions: step.assertions,
+        checkId: `${check.checkId}.${step.stepId}`,
+        operation: step.operation,
+      },
+      stepContext
+    )
+  );
+};
+
+type LifecycleAction = "restart" | "kill" | "respawn" | "openInstance";
+
+const LIFECYCLE_OPERATIONS: Readonly<Record<LifecycleAction, string>> = {
+  restart: "kernel.process.restart",
+  kill: "kernel.process.kill",
+  respawn: "kernel.process.respawn",
+  openInstance: "kernel.instance.open",
+};
+
+const isLifecycleAction = (
+  action: ConformancePlanStep["action"]
+): action is LifecycleAction =>
+  action !== undefined && Object.hasOwn(LIFECYCLE_OPERATIONS, action);
+
+const arrivalIncrement = (
+  previous: JsonRpcAdapterClient,
+  current: JsonRpcAdapterClient
+): number => (previous === current ? 0 : previous.latestArrivalSequence());
+
+interface LifecycleState {
+  client: JsonRpcAdapterClient;
+  instance: unknown;
+  processRunning: boolean;
+}
+
+interface LifecycleStepRequest {
+  action: LifecycleAction;
+  catalogOperation: CatalogOperation | undefined;
+  clocks: ReadonlyMap<string, number>;
+  input: unknown;
+  manifest: AdapterManifest;
+  plan: CompiledConformancePlan;
+  state: LifecycleState;
+  step: ConformancePlanStep;
+  storageRef: string | undefined;
+  supervisor: ProcessSupervisor | undefined;
+}
+
+const runLifecycleStep = async ({
+  action,
+  catalogOperation,
+  clocks,
+  input,
+  manifest,
+  plan,
+  state,
+  step,
+  storageRef,
+  supervisor,
+}: LifecycleStepRequest): Promise<LifecycleState> => {
+  if (supervisor === undefined || storageRef === undefined) {
+    throw new ArgumentResolutionError(
+      "lifecycle steps require supervised durable storage"
+    );
+  }
+  const expected = LIFECYCLE_OPERATIONS[action];
+  if (step.operation !== expected) {
+    throw new ArgumentResolutionError(
+      `lifecycle action ${action} requires ${expected}`
+    );
+  }
+  const problem = controlInputProblem(catalogOperation, input);
+  if (problem !== undefined) {
+    throw new ArgumentResolutionError(problem);
+  }
+  let { client, instance, processRunning } = state;
+  switch (action) {
+    case "restart":
+      await supervisor.restart();
+      client = supervisor.client;
+      instance = undefined;
+      processRunning = true;
+      break;
+    case "kill":
+      await supervisor.kill();
+      instance = undefined;
+      processRunning = false;
+      break;
+    case "respawn":
+      await supervisor.respawn();
+      client = supervisor.client;
+      processRunning = true;
+      break;
+    case "openInstance":
+      instance = await client.openInstance(storageRef);
+      for (const [domain, nowMs] of clocks) {
+        const outcome = await client.dispatch(
+          "kernel.clock.set",
+          { domain, nowMs },
+          {},
+          instance
+        );
+        if (outcome.kind !== "result") {
+          throw new Error(`failed to restore ${domain} clock`);
+        }
+      }
+      break;
+    default:
+      throw new ArgumentResolutionError(
+        `unknown lifecycle action ${String(action)}`
+      );
+  }
+  if (action === "restart" || action === "respawn") {
+    const capabilities = await client.initialize(
+      plan.plan.packetId,
+      plan.plan.planVersion
+    );
+    validateAdapterHandshake(
+      capabilities,
+      manifest,
+      plan.plan.packetId,
+      plan.plan.planVersion
+    );
+  }
+  return { client, instance, processRunning };
+};
+
 const runTraceCheck = async (
-  client: JsonRpcAdapterClient,
+  initialClient: JsonRpcAdapterClient,
   manifest: AdapterManifest,
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck,
-  recorder: CheckRecorder
+  recorder: CheckRecorder,
+  storageRef?: string,
+  supervisor?: ProcessSupervisor
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
   const steps = check.steps ?? [];
@@ -877,11 +1028,17 @@ const runTraceCheck = async (
     rejectLegacySelectors(check.input);
   }
   const baseInput = createAdapterInput(plan, compiledCheck);
-  const instance = await client.createInstance(
-    projected ? { checkInput: check.input } : baseInput
+  let client = initialClient;
+  let instance = await client.createInstance(
+    projected ? { checkInput: check.input } : baseInput,
+    storageRef === undefined ? {} : { storageRef }
   );
   if (recorder.recordCertification) {
-    recorder.storageIdentity = { kind: manifest.storage ?? "none", instance };
+    recorder.storageIdentity = {
+      kind: manifest.storage ?? "none",
+      instance,
+      ...(storageRef === undefined ? {} : { storageRef }),
+    };
   }
   const trace: Record<
     string,
@@ -894,6 +1051,11 @@ const runTraceCheck = async (
   const captures = captureStore.values;
   const handleCaptures: Record<string, string> = Object.create(null);
   const barriers = createBarrierSteps(handleCaptures);
+  const clocks = new Map<string, number>();
+  let processRunning = true;
+  let arrivalOffset = 0;
+  const latestArrival = (): number =>
+    arrivalOffset + client.latestArrivalSequence();
   const argumentRoots: ArgumentRoots = {
     capture: captures,
     fixture:
@@ -931,6 +1093,41 @@ const runTraceCheck = async (
         operation: step.operation,
         stepId: step.stepId,
       });
+      if (isLifecycleAction(step.action)) {
+        const previousClient = client;
+        ({ client, instance, processRunning } = await runLifecycleStep({
+          action: step.action,
+          catalogOperation,
+          clocks,
+          input,
+          manifest,
+          plan,
+          state: { client, instance, processRunning },
+          step,
+          storageRef,
+          supervisor,
+        }));
+        arrivalOffset += arrivalIncrement(previousClient, client);
+        const outcome: OperationOutcome = {
+          kind: "result",
+          value: { result: {} },
+        };
+        validateObservation(catalogOperation, { result: {} });
+        const context = { input: contextInput, result: {} };
+        trace[step.stepId] = { ...context, outcome };
+        recorder.observation.push({
+          operation: step.operation,
+          stepId: step.stepId,
+          outcome,
+        });
+        const arrivalSequence = latestArrival();
+        arrivals[step.stepId] = arrivalSequence;
+        recordSchedule(recorder, step, arrivalSequence, input);
+        recordStepCaptures(step.capture, context, captureStore);
+        diagnoseTraceStep(check, step, context, arrivals, captures, recorder);
+        await visit(index + 1);
+        return;
+      }
       validateStartedInput(step, catalogOperation, input);
       if (step.action === "start" || step.action === "cancel") {
         client.setLosslessObservations(catalogOperation !== undefined);
@@ -942,7 +1139,7 @@ const runTraceCheck = async (
           startedOperations,
           controls.deadlineMs
         );
-        const arrivalSequence = client.latestArrivalSequence();
+        const arrivalSequence = latestArrival();
         arrivals[step.stepId] = arrivalSequence;
         recordSchedule(recorder, step, arrivalSequence, input);
         if (receipt.kind === "started") {
@@ -976,8 +1173,17 @@ const runTraceCheck = async (
         startedOperations,
         step,
       });
+      if (
+        step.action === "setClock" &&
+        outcome.kind === "result" &&
+        isRecord(input) &&
+        typeof input.domain === "string" &&
+        typeof input.nowMs === "number"
+      ) {
+        clocks.set(input.domain, input.nowMs);
+      }
       barriers.observe(step, input, outcome);
-      const arrivalSequence = client.latestArrivalSequence();
+      const arrivalSequence = latestArrival();
       arrivals[step.stepId] = arrivalSequence;
       recordSchedule(recorder, step, arrivalSequence, input);
       if (outcome.kind === "error") {
@@ -991,30 +1197,14 @@ const runTraceCheck = async (
         captureStore
       );
 
-      if (step.assertions !== undefined) {
-        const stepContext: RunnerContext = {
-          ...context,
-          arrivals: { ...arrivals },
-          capture: { ...captures },
-          faultActivations: recorder.faults.activations,
-        };
-        recorder.diagnoses.push(
-          ...diagnoseAssertions(
-            {
-              ...check,
-              assertions: step.assertions,
-              checkId: `${check.checkId}.${step.stepId}`,
-              operation: step.operation,
-            },
-            stepContext
-          )
-        );
-      }
+      diagnoseTraceStep(check, step, context, arrivals, captures, recorder);
       await visit(index + 1);
     };
     await visit(0);
   } finally {
-    await client.destroyInstance(instance);
+    if (processRunning && instance !== undefined) {
+      await client.destroyInstance(instance);
+    }
   }
 
   const finalContext: RunnerContext = {
@@ -1052,7 +1242,9 @@ const executeCheck = async (
   manifest: AdapterManifest,
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck,
-  recorder: CheckRecorder
+  recorder: CheckRecorder,
+  storageRef?: string,
+  supervisor?: ProcessSupervisor
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
 
@@ -1075,91 +1267,103 @@ const executeCheck = async (
         manifest,
         plan,
         compiledCheck,
-        recorder
+        recorder,
+        storageRef,
+        supervisor
       );
     }
 
     const input = createAdapterInput(plan, compiledCheck);
-    const controls = createAdapterControls(compiledCheck);
-    const timeoutMs = controls.deadlineMs;
-    recorder.arguments.push({ input, operation: check.operation });
-    const observed: StepObservationRecord = { operation: check.operation };
-    recorder.observation.push(observed);
-    const catalogOperation = plan.catalog?.operations.get(check.operation);
-    if (catalogOperation?.faultOutcome !== undefined) {
-      throw new ArgumentResolutionError(
-        "fault arming requires an armFault trace step"
+    const instance =
+      storageRef === undefined
+        ? undefined
+        : await client.createInstance(input, { storageRef });
+    try {
+      const controls = createAdapterControls(compiledCheck);
+      const timeoutMs = controls.deadlineMs;
+      recorder.arguments.push({ input, operation: check.operation });
+      const observed: StepObservationRecord = { operation: check.operation };
+      recorder.observation.push(observed);
+      const catalogOperation = plan.catalog?.operations.get(check.operation);
+      if (catalogOperation?.faultOutcome !== undefined) {
+        throw new ArgumentResolutionError(
+          "fault arming requires an armFault trace step"
+        );
+      }
+      client.setLosslessObservations(catalogOperation !== undefined);
+      const outcome = await client.dispatch(
+        check.operation,
+        input,
+        controls,
+        instance,
+        timeoutMs
       );
-    }
-    client.setLosslessObservations(catalogOperation !== undefined);
-    const outcome = await client.dispatch(
-      check.operation,
-      input,
-      controls,
-      undefined,
-      timeoutMs
-    );
-    observed.outcome = outcome;
-    if (outcome.kind === "error") {
-      recorder.operationErrors.push(outcome.error);
-      validateNativeError(
-        outcome.error,
-        catalogOperation,
-        nativeErrorAsserted(check)
-      );
-    }
-    const context = createAssertionContext(
-      outcome,
-      input,
-      catalogOperation !== undefined
-    );
-    validateObservation(
-      catalogOperation,
-      outcome.kind === "result" ? context : {},
-      outcome.kind === "result"
-    );
-    const extraEvents = await client.events(
-      check.operation,
-      input,
-      controls,
-      undefined,
-      timeoutMs
-    );
-    observed.events = extraEvents;
-    validateObservation(catalogOperation, { events: extraEvents });
-
-    if (context.events === undefined && extraEvents.length > 0) {
-      context.events = extraEvents;
-    }
-
-    const inspectedState = await client.inspectState(
-      {
-        operation: check.operation,
-      },
-      undefined,
-      timeoutMs
-    );
-    observed.inspectedState = inspectedState;
-    validateObservation(catalogOperation, { state: inspectedState });
-
-    mergeInspectedState(context, inspectedState, outcome);
-
-    recorder.diagnoses.push(
-      ...diagnoseAssertions(check, context),
-      ...diagnoseRequiredEvidence(
-        compiledCheck,
-        context,
+      observed.outcome = outcome;
+      if (outcome.kind === "error") {
+        recorder.operationErrors.push(outcome.error);
+        validateNativeError(
+          outcome.error,
+          catalogOperation,
+          nativeErrorAsserted(check)
+        );
+      }
+      const context = createAssertionContext(
+        outcome,
+        input,
         catalogOperation !== undefined
-      )
-    );
+      );
+      validateObservation(
+        catalogOperation,
+        outcome.kind === "result" ? context : {},
+        outcome.kind === "result"
+      );
+      const extraEvents = await client.events(
+        check.operation,
+        input,
+        controls,
+        instance,
+        timeoutMs
+      );
+      observed.events = extraEvents;
+      validateObservation(catalogOperation, { events: extraEvents });
 
-    return createCheckResult(check.checkId, readEvaluations(recorder), {
-      // Adapter-declared operation errors stay isolated from $.result.error,
-      // but persisted evidence still records the native error for diagnosis.
-      ...(outcome.kind === "error" ? { adapterError: outcome.error } : {}),
-      adapterId: manifest.adapterId,
-      planId: plan.plan.planId,
-    });
+      if (context.events === undefined && extraEvents.length > 0) {
+        context.events = extraEvents;
+      }
+
+      const inspectedState = await client.inspectState(
+        {
+          operation: check.operation,
+        },
+        instance,
+        timeoutMs
+      );
+      observed.inspectedState = inspectedState;
+      validateObservation(catalogOperation, { state: inspectedState });
+
+      mergeInspectedState(context, inspectedState, outcome);
+
+      recorder.diagnoses.push(
+        ...diagnoseAssertions(check, context),
+        ...diagnoseRequiredEvidence(
+          compiledCheck,
+          context,
+          catalogOperation !== undefined
+        )
+      );
+
+      return createCheckResult(check.checkId, readEvaluations(recorder), {
+        // Adapter-declared operation errors stay isolated from $.result.error,
+        // but persisted evidence still records the native error for diagnosis.
+        ...(outcome.kind === "error" ? { adapterError: outcome.error } : {}),
+        adapterId: manifest.adapterId,
+        planId: plan.plan.planId,
+      });
+    } finally {
+      if (instance !== undefined) {
+        await client.destroyInstance(instance);
+      }
+    }
   } catch (error: unknown) {
     recorder.thrown = error;
     const message = readErrorMessage(error);
@@ -1260,17 +1464,20 @@ const createFailure = async (
   client: JsonRpcAdapterClient,
   mark: AdapterTranscriptMark,
   recorder: CheckRecorder,
-  replay: string
+  replay: string,
+  storageRef?: string,
+  supervisor?: ProcessSupervisor
 ): Promise<ConformanceFailure> => {
-  const exit = await client.exitStatus();
+  const exit = await (supervisor?.latestClient() ?? client).exitStatus();
   const operands = recorder.diagnoses
     .filter(({ evaluation }) => evaluation.status === "fail")
     .flatMap(({ operands: entries }) => entries);
-  const stderrTail = client.stderrTail(STDERR_TAIL_CHARS);
+  const stderr = supervisor?.stderr() ?? client.stderrSince(mark);
+  const stderrTail = stderr.slice(-STDERR_TAIL_CHARS);
 
   return {
     ...(recorder.arguments.length > 0 ? { arguments: recorder.arguments } : {}),
-    classification: classifyFailure(recorder, client.stderrSince(mark)),
+    classification: classifyFailure(recorder, stderr),
     ...(recorder.faults.armed.length === 0
       ? {}
       : {
@@ -1280,12 +1487,13 @@ const createFailure = async (
           },
         }),
     ...(exit === undefined ? {} : { exit }),
-    frameLog: client.framesSince(mark),
+    frameLog: supervisor?.frames() ?? client.framesSince(mark),
     ...(recorder.observation.length > 0
       ? { observation: recorder.observation }
       : {}),
     ...(operands.length > 0 ? { operands } : {}),
     replay,
+    ...(storageRef === undefined ? {} : { storageRef }),
     ...(stderrTail.length > 0 ? { stderrTail } : {}),
   };
 };
@@ -1296,7 +1504,9 @@ const runCheck = async (
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck,
   replay: string,
-  recordCertification: boolean
+  recordCertification: boolean,
+  storageRef?: string,
+  supervisor?: ProcessSupervisor
 ): Promise<ConformanceCheckResult> => {
   const mark = client.markTranscript();
   const recorder: CheckRecorder = {
@@ -1306,6 +1516,9 @@ const runCheck = async (
     observation: [],
     operationErrors: [],
     recordCertification,
+    ...(storageRef === undefined
+      ? {}
+      : { storageIdentity: { kind: manifest.storage, storageRef } }),
     schedule: [],
   };
   let checkResult = await executeCheck(
@@ -1313,7 +1526,9 @@ const runCheck = async (
     manifest,
     plan,
     compiledCheck,
-    recorder
+    recorder,
+    storageRef,
+    supervisor
   );
 
   const missing = recorder.faults.missing();
@@ -1385,7 +1600,14 @@ const runCheck = async (
 
   return {
     ...checkResult,
-    failure: await createFailure(client, mark, recorder, replay),
+    failure: await createFailure(
+      client,
+      mark,
+      recorder,
+      replay,
+      storageRef,
+      supervisor
+    ),
   };
 };
 
@@ -1433,6 +1655,109 @@ const previewFailure = (
         },
       };
 
+const executeScheduledCheck = async (
+  client: JsonRpcAdapterClient,
+  manifest: AdapterManifest,
+  scheduledCheck: ScheduledCheck,
+  replayFor: (checkId: string) => string,
+  recordCertification: boolean
+): Promise<ConformanceCheckResult> => {
+  let checkStorageRef: string | undefined;
+  let supervision: ProcessSupervisor | undefined;
+  const execute = async (
+    storageRef?: string
+  ): Promise<ConformanceCheckResult> => {
+    checkStorageRef = storageRef;
+    const lifecycle =
+      scheduledCheck.compiledCheck.check.steps?.some((step) =>
+        isLifecycleAction(step.action)
+      ) === true;
+    if (!lifecycle) {
+      return await runCheck(
+        client,
+        manifest,
+        scheduledCheck.plan,
+        scheduledCheck.compiledCheck,
+        replayFor(scheduledCheck.compiledCheck.check.checkId),
+        recordCertification,
+        storageRef
+      );
+    }
+    if (manifest.executable === undefined || storageRef === undefined) {
+      throw new Error(
+        "lifecycle checks require a directly executable adapter and durable storage"
+      );
+    }
+    const supervisor = await ProcessSupervisor.start({
+      executable: manifest.executable,
+      args: adapterCommand(manifest).slice(1),
+      cwd: REPO_ROOT,
+      packetId: scheduledCheck.plan.plan.packetId,
+      planVersion: scheduledCheck.plan.plan.planVersion,
+    });
+    supervision = supervisor;
+    let checkResult: ConformanceCheckResult;
+    try {
+      checkResult = await runCheck(
+        supervisor.client,
+        manifest,
+        scheduledCheck.plan,
+        scheduledCheck.compiledCheck,
+        replayFor(scheduledCheck.compiledCheck.check.checkId),
+        recordCertification,
+        storageRef,
+        supervisor
+      );
+    } finally {
+      await supervisor.close();
+    }
+    return {
+      ...checkResult,
+      details: {
+        ...checkResult.details,
+        storageIdentity: { kind: manifest.storage, storageRef },
+        process: { epochs: supervisor.history },
+      },
+    };
+  };
+  let checkResult: ConformanceCheckResult;
+  try {
+    checkResult =
+      manifest.storage === "sqlite-directory" ||
+      manifest.storage === "postgres-database"
+        ? await withCheckStorage(manifest.storage, execute)
+        : await execute();
+  } catch (error: unknown) {
+    const checkId = scheduledCheck.compiledCheck.check.checkId;
+    const message = readErrorMessage(error);
+    checkResult = {
+      ...createCheckResult(
+        checkId,
+        [{ assertionId: `${checkId}.setup`, message, status: "fail" }],
+        {
+          adapterId: manifest.adapterId,
+          planId: scheduledCheck.plan.plan.planId,
+          ...(supervision === undefined
+            ? {}
+            : { process: { epochs: supervision.history } }),
+        }
+      ),
+      failure: {
+        classification:
+          error instanceof StorageResourceError
+            ? "environment"
+            : "adapter_protocol",
+        replay: replayFor(checkId),
+        ...(checkStorageRef === undefined
+          ? {}
+          : { storageRef: checkStorageRef }),
+      },
+    };
+  }
+
+  return checkResult;
+};
+
 const runScheduledChecks = async (
   manifest: AdapterManifest,
   scheduled: readonly ScheduledCheck[],
@@ -1464,15 +1789,15 @@ const runScheduledChecks = async (
           return;
         }
 
+        const checkResult = await executeScheduledCheck(
+          client,
+          manifest,
+          scheduledCheck,
+          replayFor,
+          recordCertification
+        );
         const result = {
-          checkResult: await runCheck(
-            client,
-            manifest,
-            scheduledCheck.plan,
-            scheduledCheck.compiledCheck,
-            replayFor(scheduledCheck.compiledCheck.check.checkId),
-            recordCertification
-          ),
+          checkResult,
           index: scheduledCheck.index,
         };
         results.push(result);
@@ -1489,7 +1814,7 @@ const runScheduledChecks = async (
             ...result.checkResult,
             details: {
               ...result.checkResult.details,
-              process: {
+              process: result.checkResult.details?.process ?? {
                 pid: client.processId(),
                 exit: exit ?? null,
                 supervisorTerminated: client.wasTerminatedBySupervisor(),

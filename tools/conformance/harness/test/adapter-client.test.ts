@@ -275,6 +275,63 @@ describe("JsonRpcAdapterClient request lifecycle", () => {
 });
 
 describe("stdio host callback parity", () => {
+  test("passes storage and scope through create and open requests", async () => {
+    const calls: unknown[] = [];
+    const adapter: StdioConformanceAdapter = {
+      dispatch: () => ({ kind: "result", value: null }),
+      initialize: (packetId, planVersion) => ({
+        adapterId: "storage-test",
+        capabilities: [],
+        packetId,
+        planVersion,
+      }),
+      createInstance: async (input, options) => {
+        calls.push({ input, options });
+        return await Promise.resolve("created");
+      },
+      openInstance: async (options) => {
+        calls.push(options);
+        return await Promise.resolve("opened");
+      },
+    };
+    expect(
+      await handleStdioAdapterLine(
+        adapter,
+        frame("createInstance", {
+          input: { seed: 1 },
+          storageRef: "resource",
+          scope: "tenant",
+          clock: { nowMs: 10 },
+        })
+      )
+    ).toMatchObject({ result: "created" });
+    expect(
+      await handleStdioAdapterLine(
+        adapter,
+        frame("openInstance", {
+          storageRef: "resource",
+          scope: "tenant",
+        })
+      )
+    ).toMatchObject({ result: "opened" });
+    expect(calls).toEqual([
+      {
+        input: { seed: 1 },
+        options: {
+          storageRef: "resource",
+          scope: "tenant",
+          clock: { nowMs: 10 },
+        },
+      },
+      { storageRef: "resource", scope: "tenant" },
+    ]);
+    expect(
+      await handleStdioAdapterLine(
+        adapter,
+        frame("createInstance", { input: {}, clock: [] })
+      )
+    ).toMatchObject({ error: { message: "clock must be an object" } });
+  });
   test.each([false, true])(
     "preserves responses and controls with async=%s",
     async (asynchronous) => {

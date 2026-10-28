@@ -1,6 +1,6 @@
 {
   "catalogId": "tuvren.kernel.operations",
-  "catalogVersion": "0.1.0",
+  "catalogVersion": "0.2.0",
   "packetId": "tuvren.kernel.protocol",
   "operations": [
     {
@@ -5794,6 +5794,90 @@
       "handles": {
         "consumes": ["instance", "operation"]
       }
+    },
+    {
+      "operationId": "kernel.process.restart",
+      "kind": "control",
+      "capability": "kernel.persistence.durable",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": [],
+      "binding": "tools/schemas/conformance-plan.schema.json#/$defs/step/properties/action"
+    },
+    {
+      "operationId": "kernel.process.kill",
+      "kind": "control",
+      "capability": "kernel.persistence.durable",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": [],
+      "binding": "tools/schemas/conformance-plan.schema.json#/$defs/step/properties/action"
+    },
+    {
+      "operationId": "kernel.process.respawn",
+      "kind": "control",
+      "capability": "kernel.persistence.durable",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": [],
+      "binding": "tools/schemas/conformance-plan.schema.json#/$defs/step/properties/action"
+    },
+    {
+      "operationId": "kernel.instance.open",
+      "kind": "control",
+      "capability": "kernel.persistence.durable",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      },
+      "errors": [],
+      "binding": "tools/conformance/adapter-protocol/protocol.schema.json#/$defs/OpenInstanceParams"
     }
   ],
   "seams": [

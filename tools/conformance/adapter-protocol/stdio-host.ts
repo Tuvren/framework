@@ -24,6 +24,17 @@ import type {
   OperationOutcome,
 } from "./index.js";
 
+export interface InstanceOptions {
+  storageRef?: string;
+  scope?: string;
+  clock?: Record<string, unknown>;
+}
+
+export interface OpenInstanceOptions {
+  storageRef: string;
+  scope?: string;
+}
+
 export interface StdioConformanceAdapter {
   isLosslessRequest?: (method: string, params: unknown) => boolean;
   startOperation?: (
@@ -33,7 +44,11 @@ export interface StdioConformanceAdapter {
   ) => Promise<{ operationHandle: string }>;
   awaitOperation?: (operationHandle: string) => Promise<OperationOutcome>;
   cancelOperation?: (operationHandle: string, reason: string) => Promise<void>;
-  createInstance?: (input: unknown) => Promise<unknown>;
+  createInstance?: (
+    input: unknown,
+    options: InstanceOptions
+  ) => Promise<unknown>;
+  openInstance?: (options: OpenInstanceOptions) => Promise<unknown>;
   destroyInstance?: (instance: unknown) => Promise<void>;
   dispatch: (
     operation: string,
@@ -171,6 +186,93 @@ const readString = (value: unknown, label: string): string => {
   return value;
 };
 
+const createAdapterInstance = async (
+  adapter: StdioConformanceAdapter,
+  params: Record<string, unknown>
+): Promise<unknown> => {
+  if (adapter.createInstance === undefined) {
+    return null;
+  }
+  if (params.clock !== undefined && !isRecord(params.clock)) {
+    throw new Error("clock must be an object");
+  }
+  return await adapter.createInstance(params.input, {
+    ...(params.storageRef === undefined
+      ? {}
+      : { storageRef: readString(params.storageRef, "storageRef") }),
+    ...(params.scope === undefined
+      ? {}
+      : { scope: readString(params.scope, "scope") }),
+    ...(isRecord(params.clock) ? { clock: params.clock } : {}),
+  });
+};
+
+const openAdapterInstance = async (
+  adapter: StdioConformanceAdapter,
+  params: Record<string, unknown>
+): Promise<unknown> => {
+  if (adapter.openInstance === undefined) {
+    throw new AdapterProtocolError(
+      "adapter_method_not_implemented",
+      "adapter does not support openInstance"
+    );
+  }
+  return await adapter.openInstance({
+    storageRef: readString(params.storageRef, "storageRef"),
+    ...(params.scope === undefined
+      ? {}
+      : { scope: readString(params.scope, "scope") }),
+  });
+};
+
+const dispatchOperationMethod = async (
+  adapter: StdioConformanceAdapter,
+  method: string,
+  params: Record<string, unknown>
+): Promise<unknown> => {
+  switch (method) {
+    case "startOperation": {
+      if (adapter.startOperation === undefined) {
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "adapter does not support startOperation"
+        );
+      }
+      return await adapter.startOperation(
+        readString(params.operation, "operation"),
+        params.arguments,
+        params.instance
+      );
+    }
+    case "awaitOperation": {
+      if (adapter.awaitOperation === undefined) {
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "adapter does not support awaitOperation"
+        );
+      }
+      return await adapter.awaitOperation(
+        readString(params.operationHandle, "operationHandle")
+      );
+    }
+    case "cancelOperation": {
+      if (adapter.cancelOperation === undefined) {
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "adapter does not support cancelOperation"
+        );
+      }
+      await adapter.cancelOperation(
+        readString(params.operationHandle, "operationHandle"),
+        readString(params.reason, "reason")
+      );
+      return null;
+    }
+    default:
+      throw new Error(`unknown operation method ${method}`);
+  }
+};
+
 const dispatchMethod = async (
   adapter: StdioConformanceAdapter,
   method: string,
@@ -186,9 +288,10 @@ const dispatchMethod = async (
       );
     }
     case "createInstance": {
-      return adapter.createInstance === undefined
-        ? null
-        : await adapter.createInstance(paramObject.input);
+      return await createAdapterInstance(adapter, paramObject);
+    }
+    case "openInstance": {
+      return await openAdapterInstance(adapter, paramObject);
     }
     case "dispatch": {
       return await adapter.dispatch(
@@ -198,42 +301,10 @@ const dispatchMethod = async (
         paramObject.instance
       );
     }
-    case "startOperation": {
-      if (adapter.startOperation === undefined) {
-        throw new AdapterProtocolError(
-          "adapter_method_not_implemented",
-          "adapter does not support startOperation"
-        );
-      }
-      return await adapter.startOperation(
-        readString(paramObject.operation, "operation"),
-        paramObject.arguments,
-        paramObject.instance
-      );
-    }
-    case "awaitOperation": {
-      if (adapter.awaitOperation === undefined) {
-        throw new AdapterProtocolError(
-          "adapter_method_not_implemented",
-          "adapter does not support awaitOperation"
-        );
-      }
-      return await adapter.awaitOperation(
-        readString(paramObject.operationHandle, "operationHandle")
-      );
-    }
+    case "startOperation":
+    case "awaitOperation":
     case "cancelOperation": {
-      if (adapter.cancelOperation === undefined) {
-        throw new AdapterProtocolError(
-          "adapter_method_not_implemented",
-          "adapter does not support cancelOperation"
-        );
-      }
-      await adapter.cancelOperation(
-        readString(paramObject.operationHandle, "operationHandle"),
-        readString(paramObject.reason, "reason")
-      );
-      return null;
+      return await dispatchOperationMethod(adapter, method, paramObject);
     }
     case "events": {
       return await collectEvents(
@@ -380,6 +451,7 @@ export const serveStdioAdapter = async (
         [
           "dispatch",
           "createInstance",
+          "openInstance",
           "events",
           "inspectState",
           "setClock",

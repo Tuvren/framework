@@ -180,62 +180,67 @@ const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
 
 const syscallBindings = createSyscallBindings(ADAPTER_CONFIG);
 
-const protocolLogicalScenarios = createProtocolLogicalScenarios(ADAPTER_CONFIG);
-const reclamationScenarios = createReclamationScenarios(ADAPTER_CONFIG);
-const restartRecoveryScenarios = createRestartRecoveryScenarios(ADAPTER_CONFIG);
-const runLivenessScenarios = createRunLivenessScenarios(ADAPTER_CONFIG);
+const createKernelOperations = (
+  config: KernelAdapterConfig
+): Map<string, KernelOperation> => {
+  const protocolLogicalScenarios = createProtocolLogicalScenarios(config);
+  const reclamationScenarios = createReclamationScenarios(config);
+  const restartRecoveryScenarios = createRestartRecoveryScenarios(config);
+  const runLivenessScenarios = createRunLivenessScenarios(config);
 
-const kernelOperations = new Map<string, KernelOperation>(
-  Object.entries({
-    "kernel.lineage.cross-thread-rejection":
-      protocolLogicalScenarios.runCrossThreadLineage,
-    "kernel.logical.branch-list": protocolLogicalScenarios.runBranchList,
-    "kernel.logical.diff-paths": protocolLogicalScenarios.runLogicalDiff,
-    "kernel.logical.recovery-state": protocolLogicalScenarios.runRecoveryState,
-    "kernel.logical.thread-list": protocolLogicalScenarios.runThreadList,
-    "kernel.protocol.canonical-rejection": (input) =>
-      protocolLogicalScenarios.runCanonicalRejection(
-        protocolLogicalScenarios.readProtocolFixture(input)
-      ),
-    "kernel.protocol.deterministic-hashing":
-      protocolLogicalScenarios.deterministicHashing,
-    "kernel.protocol.edge-validation":
-      protocolLogicalScenarios.runProtocolEdgeValidation,
-    "kernel.protocol.modify-composition":
-      protocolLogicalScenarios.runModifyComposition,
-    "kernel.protocol.schema-roundtrip": (input) =>
-      protocolLogicalScenarios.schemaRoundtrip(
-        protocolLogicalScenarios.readProtocolFixture(input)
-      ),
-    "kernel.reclamation.erasure-probe": reclamationScenarios.runErasureProbe,
-    "kernel.reclamation.reclaim-probe":
-      reclamationScenarios.runReclamationProbe,
-    "kernel.restart-recovery.close-reopen-checkpoint":
-      restartRecoveryScenarios.runRestartRecovery,
-    "kernel.restart-recovery.concurrent-writer":
-      restartRecoveryScenarios.runConcurrentWriterConflict,
-    "kernel.restart-recovery.crash-recovery-durable":
-      restartRecoveryScenarios.runDurableCrashRecovery,
-    "kernel.restart-recovery.crash-recovery-in-process":
-      restartRecoveryScenarios.runInProcessCrashRecovery,
-    "kernel.run-liveness.clock-skew-preemption":
-      runLivenessScenarios.runClockSkewPreemption,
-    "kernel.run-liveness.expired-listing":
-      runLivenessScenarios.runExpiredListing,
-    "kernel.run-liveness.lease-renewal": runLivenessScenarios.runLeaseRenewal,
-    "kernel.run-liveness.stale-preemption":
-      runLivenessScenarios.runStalePreemption,
-    "kernel.scope-isolation.cross-scope-probe":
-      reclamationScenarios.runCrossScopeProbe,
-    ...(ADAPTER_CONFIG.mutant === undefined
-      ? {}
-      : {
-          [MUTANT_ACTIVATION_OPERATION]: createMutantActivationOperation(
-            ADAPTER_CONFIG.mutant
-          ),
-        }),
-  } satisfies Record<string, KernelOperation>)
-);
+  return new Map<string, KernelOperation>(
+    Object.entries({
+      "kernel.lineage.cross-thread-rejection":
+        protocolLogicalScenarios.runCrossThreadLineage,
+      "kernel.logical.branch-list": protocolLogicalScenarios.runBranchList,
+      "kernel.logical.diff-paths": protocolLogicalScenarios.runLogicalDiff,
+      "kernel.logical.recovery-state":
+        protocolLogicalScenarios.runRecoveryState,
+      "kernel.logical.thread-list": protocolLogicalScenarios.runThreadList,
+      "kernel.protocol.canonical-rejection": (input) =>
+        protocolLogicalScenarios.runCanonicalRejection(
+          protocolLogicalScenarios.readProtocolFixture(input)
+        ),
+      "kernel.protocol.deterministic-hashing":
+        protocolLogicalScenarios.deterministicHashing,
+      "kernel.protocol.edge-validation":
+        protocolLogicalScenarios.runProtocolEdgeValidation,
+      "kernel.protocol.modify-composition":
+        protocolLogicalScenarios.runModifyComposition,
+      "kernel.protocol.schema-roundtrip": (input) =>
+        protocolLogicalScenarios.schemaRoundtrip(
+          protocolLogicalScenarios.readProtocolFixture(input)
+        ),
+      "kernel.reclamation.erasure-probe": reclamationScenarios.runErasureProbe,
+      "kernel.reclamation.reclaim-probe":
+        reclamationScenarios.runReclamationProbe,
+      "kernel.restart-recovery.close-reopen-checkpoint":
+        restartRecoveryScenarios.runRestartRecovery,
+      "kernel.restart-recovery.concurrent-writer":
+        restartRecoveryScenarios.runConcurrentWriterConflict,
+      "kernel.restart-recovery.crash-recovery-durable":
+        restartRecoveryScenarios.runDurableCrashRecovery,
+      "kernel.restart-recovery.crash-recovery-in-process":
+        restartRecoveryScenarios.runInProcessCrashRecovery,
+      "kernel.run-liveness.clock-skew-preemption":
+        runLivenessScenarios.runClockSkewPreemption,
+      "kernel.run-liveness.expired-listing":
+        runLivenessScenarios.runExpiredListing,
+      "kernel.run-liveness.lease-renewal": runLivenessScenarios.runLeaseRenewal,
+      "kernel.run-liveness.stale-preemption":
+        runLivenessScenarios.runStalePreemption,
+      "kernel.scope-isolation.cross-scope-probe":
+        reclamationScenarios.runCrossScopeProbe,
+      ...(config.mutant === undefined
+        ? {}
+        : {
+            [MUTANT_ACTIVATION_OPERATION]: createMutantActivationOperation(
+              config.mutant
+            ),
+          }),
+    } satisfies Record<string, KernelOperation>)
+  );
+};
 
 const initialize = (
   packetId: string,
@@ -262,7 +267,9 @@ const dispatch = async (
   if (syscallBindings.has(operation)) {
     return await syscallBindings.dispatch(operation, input, instance);
   }
-  const operationHandler = kernelOperations.get(operation);
+  const operationHandler = createKernelOperations(
+    syscallBindings.instanceConfig(instance)
+  ).get(operation);
   if (operationHandler === undefined) {
     return {
       error: {
@@ -298,6 +305,7 @@ await serveStdioAdapter({
       "operation" in params &&
       typeof params.operation === "string" &&
       syscallBindings.has(params.operation)),
+  openInstance: syscallBindings.openInstance,
   shutdown: syscallBindings.shutdown,
   startOperation: syscallBindings.startOperation,
 } satisfies StdioConformanceAdapter);

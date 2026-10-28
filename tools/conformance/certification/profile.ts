@@ -156,8 +156,12 @@ export const assertKernelMemoryClaimInventory = (
 ): void => {
   const expected = new Set(
     plans
-      .filter((plan) =>
-        plan.plan.applicability.capabilities.includes("kernel.syscall")
+      .filter(
+        (plan) =>
+          plan.plan.applicability.capabilities.includes("kernel.syscall") &&
+          plan.plan.applicability.capabilities.every((capability) =>
+            profile.requiredCapabilities.includes(capability)
+          )
       )
       .flatMap((plan) =>
         plan.checks.flatMap(({ check }) => [

@@ -197,6 +197,7 @@ export class JsonRpcAdapterClient {
   private frameSequence = 0;
   private exit: AdapterExit | undefined;
   private supervisorTerminated = false;
+  private clientClosed = false;
   private readonly closed: Promise<void>;
   private readonly timeoutMs: number;
 
@@ -301,8 +302,22 @@ export class JsonRpcAdapterClient {
     };
   }
 
-  async createInstance(input: unknown): Promise<unknown> {
-    return await this.request("createInstance", { input });
+  async createInstance(
+    input: unknown,
+    options: {
+      storageRef?: string;
+      scope?: string;
+      clock?: Record<string, unknown>;
+    } = {}
+  ): Promise<unknown> {
+    return await this.request("createInstance", { input, ...options });
+  }
+
+  async openInstance(storageRef: string, scope?: string): Promise<unknown> {
+    return await this.request("openInstance", {
+      storageRef,
+      ...(scope === undefined ? {} : { scope }),
+    });
   }
 
   async dispatch(
@@ -427,6 +442,10 @@ export class JsonRpcAdapterClient {
   }
 
   async shutdown(): Promise<void> {
+    if (this.clientClosed) {
+      return;
+    }
+    this.clientClosed = true;
     try {
       if (
         !this.exited &&
@@ -442,10 +461,22 @@ export class JsonRpcAdapterClient {
       this.lines.close();
       this.writer.releaseLock();
       this.child.stdin.end();
-      if (this.child.exitCode === null) {
-        this.supervisorTerminated = this.child.kill();
+      if ((await this.terminationStatus()) === undefined) {
+        this.supervisorTerminated = this.child.kill("SIGTERM");
+        await this.terminationStatus();
       }
     }
+  }
+
+  async terminate(signal: NodeJS.Signals): Promise<AdapterExit> {
+    if (!this.exited) {
+      this.supervisorTerminated = this.child.kill(signal);
+    }
+    const exit = await this.terminationStatus();
+    if (exit === undefined) {
+      throw new Error(`adapter failed to exit after ${signal}`);
+    }
+    return exit;
   }
 
   /** Starts a check's transcript and releases frames of earlier checks. */

@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.kernel.protocol",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "boundary": "kernel",
   "surface": "protocol",
   "humanAuthorityRefs": [
@@ -69,6 +69,10 @@
     {
       "path": "spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json",
+      "format": "conformance-plan"
     }
   ],
   "conformancePlans": [
@@ -136,6 +140,11 @@
       "planId": "tuvren.kernel.concurrent-writer.syscall",
       "planVersion": "0.1.0",
       "path": "spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.close-reopen.syscall",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
     }
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
@@ -147,6 +156,7 @@
     "python": "python/kernel",
     "dart": "dart/kernel",
     "adapter-protocol": "tools/conformance/adapter-protocol/protocol.schema.json",
+    "conformance-plan": "tools/schemas/conformance-plan.schema.json",
     "typescript-testkit": "typescript/kernel/testkit"
   },
   "bindingSections": {
@@ -182,6 +192,7 @@
     "docs",
     ".constitution",
     "tools/conformance/adapter-protocol/protocol.schema.json",
+    "tools/schemas/conformance-plan.schema.json",
     "typescript/kernel/testkit"
   ],
   "verificationPaths": [
@@ -236,6 +247,10 @@
     {
       "kind": "conformance-plan",
       "target": "spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
     }
   ],
   "operationCatalog": "spec/conformance/kernel/operations.json",

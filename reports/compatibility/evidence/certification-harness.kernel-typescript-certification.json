@@ -7224,6 +7224,8 @@
   "exitCode": 0,
   "implementationId": "typescript-kernel-memory",
   "nonApplicableCheckIds": [
+    "kernel.syscall.reopen.close_reopen_checkpoint",
+    "kernel.syscall.reopen.invalid_staged_result",
     "kernel-restart-af.invalid-staged-result-reexecutes",
     "kernel.crash-recovery.durable_fault_points",
     "kernel.restart-recovery.close_reopen_checkpoint",
@@ -7236,9 +7238,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 135,
-    "totalChecks": 139,
+    "totalChecks": 141,
     "applicableChecks": 135,
-    "nonApplicableChecks": 4
+    "nonApplicableChecks": 6
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
