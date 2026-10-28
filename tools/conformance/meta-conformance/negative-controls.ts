@@ -338,12 +338,15 @@ const readProfileObligations = async (
   const declared = controls.filter((control) =>
     control.profiles.includes(config.profile)
   );
+  const missing = declared
+    .map((control) => control.mutantId)
+    .filter((id) => !negativeControls.includes(id));
   const unknown = negativeControls.filter(
     (id) => !declared.some((control) => control.mutantId === id)
   );
-  if (unknown.length > 0) {
+  if (missing.length > 0 || unknown.length > 0) {
     throw new Error(
-      `${config.profile} negative-control inventory mismatch: ${unknown.join(", ")}`
+      `${config.profile} negative-control inventory mismatch: ${[...missing, ...unknown].join(", ")}`
     );
   }
   const adapter = await readValidatedAdapterManifest(config.controlAdapter);
@@ -359,7 +362,7 @@ const readProfileObligations = async (
   assertClaimCoverage(
     config.profile,
     readStrings(profile.claimIds),
-    declared.filter((control) => negativeControls.includes(control.mutantId)),
+    declared,
     reasons,
     checks
   );

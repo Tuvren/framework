@@ -199,6 +199,50 @@ describe("negative-control runner", () => {
     }
   });
 
+  test("rejects a profile that omits a tagged manifest control", async () => {
+    const profiles = await writeJson("profiles-omitting-control.json", {
+      profiles: [
+        {
+          profileId: "synthetic.profile",
+          requiredCapabilities: ["synthetic.core"],
+          claimIds: [],
+          faultPoints: [],
+          negativeControls: [
+            "synthetic.crash-at-startup",
+            "synthetic.dormant",
+            "synthetic.beta-only",
+            "synthetic.alpha-and-beta",
+            "synthetic.gamma-gated",
+            "synthetic.instrumentation",
+          ],
+          requiredEvidence: [],
+        },
+      ],
+    });
+    const originalPacket: unknown = JSON.parse(
+      await readFile(nodePath.join(directory, "packet.json"), "utf8")
+    );
+    if (
+      typeof originalPacket !== "object" ||
+      originalPacket === null ||
+      Array.isArray(originalPacket)
+    ) {
+      throw new TypeError("expected a synthetic packet");
+    }
+    const packet = await writeJson("packet-omitting-control.json", {
+      ...originalPacket,
+      certificationProfiles: profiles,
+    });
+    await expect(
+      runNegativeControls(
+        { ...config(nodePath.join(directory, "adapter.json")), packet },
+        { logDirectory, mutants: ["synthetic.wrong-alpha"] }
+      )
+    ).rejects.toThrow(
+      "synthetic.profile negative-control inventory mismatch: synthetic.wrong-alpha"
+    );
+  });
+
   test("counts mutants only after the unmutated control passes", () => {
     expect(report.control.status).toBe("pass");
     expect(report.counted).toBe(true);
