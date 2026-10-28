@@ -1,14 +1,41 @@
 import { expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 
-import { readClaimedProfiles } from "../../certification/profile.ts";
+import {
+  assertProfileClaimInventory,
+  readClaimedProfiles,
+} from "../../certification/profile.ts";
 import {
   assertClaimCoverage,
   claimAssertions,
 } from "../../meta-conformance/claim-coverage.ts";
 import { loadConformancePlan } from "../../plan-compiler/index.ts";
 import { computeIdentity } from "../kernel-integrity.ts";
-import { readAdapterManifest } from "../run-plans.ts";
+import { readAdapterManifest, readPlans } from "../run-plans.ts";
+
+test("a durable profile cannot claim an obligation without a loaded check", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json"
+  );
+  const profiles = await readClaimedProfiles(adapter, adapter.authorityPackets);
+  const profile = profiles.find(
+    (entry) => entry.profileId === "kernel.persistent-reopen"
+  );
+  if (profile === undefined) {
+    throw new Error("missing durable profile");
+  }
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  expect(() => assertProfileClaimInventory(profile, plans)).not.toThrow();
+  expect(() =>
+    assertProfileClaimInventory(
+      {
+        ...profile,
+        claimIds: [...profile.claimIds, "kernel.syscall.reopen.orphan"],
+      },
+      plans
+    )
+  ).toThrow("kernel.syscall.reopen.orphan");
+});
 
 test("durable reopen claims have designated controls or explicit gaps and stay outside memory", async () => {
   const plan = await loadConformancePlan(

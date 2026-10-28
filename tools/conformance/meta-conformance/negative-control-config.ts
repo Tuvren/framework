@@ -27,6 +27,7 @@ const durable = (
   ...kernel,
   controlAdapter: `typescript/kernel/conformance-adapter/adapter-${backend}.json`,
   mutantAdapter: `typescript/kernel/conformance-adapter/adapter-${backend}-mutant.json`,
+  unsupportedReasons: {},
   profile,
   undetectedReasons: `spec/conformance/kernel/${profile.replace(".", "-")}-undetected.json`,
 });

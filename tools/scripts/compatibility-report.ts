@@ -445,6 +445,16 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     ],
     implementationId: "rust-kernel",
     language: "rust",
+    prerequisiteCommands: [
+      [
+        "cargo",
+        "build",
+        "-p",
+        "tuvren-kernel-rust-certification",
+        "-p",
+        "tuvren-kernel-rust-conformance-adapter",
+      ],
+    ],
     project: "kernel-rust-certification",
     reportLabel: "Rust process-local kernel baseline",
   },

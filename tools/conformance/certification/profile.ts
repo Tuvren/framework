@@ -179,3 +179,23 @@ export const assertKernelMemoryClaimInventory = (
     );
   }
 };
+
+export const assertProfileClaimInventory = (
+  profile: CertificationProfile,
+  plans: readonly CompiledConformancePlan[]
+): void => {
+  const loaded = new Set(
+    plans.flatMap(({ checks }) =>
+      checks.flatMap(({ check }) => [
+        ...(check.claimIds ?? []),
+        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
+      ])
+    )
+  );
+  const orphaned = profile.claimIds.filter((claim) => !loaded.has(claim));
+  if (orphaned.length > 0) {
+    throw new Error(
+      `${profile.profileId} claim inventory has no loaded check for: ${orphaned.join(", ")}`
+    );
+  }
+};

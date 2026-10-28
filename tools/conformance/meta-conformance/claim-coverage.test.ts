@@ -169,7 +169,13 @@ test("the fleet gate requires a real kill and rejects invalid runs", () => {
   };
   const unsupported = {
     counted: true,
-    mutants: [{ mutantId: "mutant.a", outcome: "unsupported" }],
+    mutants: [
+      {
+        mutantId: "mutant.a",
+        outcome: "unsupported",
+        reason: "This port has no mutant implementation.",
+      },
+    ],
   };
   expect(() =>
     assertNegativeControlGate(
@@ -178,6 +184,19 @@ test("the fleet gate requires a real kill and rejects invalid runs", () => {
       [passing, unsupported]
     )
   ).not.toThrow();
+  expect(() =>
+    assertNegativeControlGate(
+      "example.profile",
+      ["mutant.a"],
+      [
+        passing,
+        {
+          counted: true,
+          mutants: [{ mutantId: "mutant.a", outcome: "unsupported" }],
+        },
+      ]
+    )
+  ).toThrow("mutant.a");
   expect(() =>
     assertNegativeControlGate("example.profile", ["mutant.a"], [unsupported])
   ).toThrow("mutant.a");
@@ -201,6 +220,31 @@ test("the fleet gate requires a real kill and rejects invalid runs", () => {
       [{ ...passing, counted: false }]
     )
   ).toThrow("baseline");
+});
+
+test("a SQLite non-activation cannot borrow PostgreSQL's kill", () => {
+  const postgres = {
+    counted: true,
+    mutants: [{ mutantId: "kernel.example", outcome: "killed" }],
+  };
+  const sqlite = {
+    counted: true,
+    mutants: [
+      {
+        mutantId: "kernel.example",
+        outcome: "invalid",
+        reason:
+          "mutant never activated and has no recorded per-port unsupported reason",
+      },
+    ],
+  };
+  expect(() =>
+    assertNegativeControlGate(
+      "kernel.process-crash",
+      ["kernel.example"],
+      [sqlite, postgres]
+    )
+  ).toThrow("invalid");
 });
 
 test("the kernel profile accounts for its actual controls and recorded gaps", async () => {

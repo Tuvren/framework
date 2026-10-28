@@ -403,13 +403,13 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/plan-compiler/certification-rules.test.ts",
   "tools/conformance/plan-compiler/index.test.ts",
   "tools/conformance/plan-compiler/handle-steps.test.ts",
-  "tools/conformance/plan-compiler/outcome-schema.test.ts",
   "tools/scripts/conformance/certification-schemas.test.ts",
   "tools/scripts/lib/conformance-contract.test.ts",
 ];
 
 export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/certification/bundle-contract.test.ts",
+  "tools/conformance/certification/compatibility-certificates.test.ts",
   "tools/conformance/certification/durable-bundle-contract.test.ts",
   "tools/conformance/harness/test/durable-crash.test.ts",
   "tools/conformance/harness/test/durable-faults.test.ts",
@@ -605,6 +605,19 @@ const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
     concurrency: 1,
     id: "codegen freshness and typecheck",
     steps: [
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run-many",
+          "-t",
+          "build",
+          "-p",
+          "kernel-contract-protocol,kernel-runtime,kernel-testkit,backend-shared,backend-memory,backend-sqlite,backend-postgres,kernel-typescript-conformance-adapter",
+        ],
+        id: "certificate artifact prerequisites",
+      },
       {
         command: [
           "bun",

@@ -393,9 +393,7 @@
           "arguments": {
             "runId": "runexpired",
             "preemptingOwnerId": "other",
-            "nowMs": {
-              "$ref": "capture.futureLease.leaseExpiresAtMs"
-            },
+            "nowMs": { "$ref": "capture.futureLease.leaseExpiresAtMs" },
             "reason": "clock_skew"
           },
           "capture": [
@@ -419,9 +417,7 @@
         {
           "stepId": "expiredHead",
           "operation": "kernel.branch.get",
-          "arguments": {
-            "branchId": "branchexpired"
-          },
+          "arguments": { "branchId": "branchexpired" },
           "assertions": [
             {
               "kind": "resultField",
@@ -443,8 +439,13 @@
         },
         {
           "kind": "schemaValid",
-          "path": "$.result.trace.livePreempt.outcome",
-          "schema": "$.fixture.expected.liveLeaseErrorOutcome"
+          "path": "$.state.trace.livePreempt.state.adapterError",
+          "schema": "$.fixture.expected.liveLeaseError"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.livePreempt.outcome.kind",
+          "equals": "error"
         }
       ],
       "evidence": [

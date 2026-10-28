@@ -736,7 +736,8 @@ const describeControl = (control: ControlEntry) => ({
 /** Classifies one mutant run under ADR-0079 decision 3. */
 export const classifyMutantRun = (
   control: ControlEntry,
-  run: HarnessRun
+  run: HarnessRun,
+  unsupportedReason?: string
 ): Omit<MutantReport, "replay"> => {
   const activationCount = run.activations.reduce(
     (total, activation) => total + activation.activationCount,
@@ -756,6 +757,13 @@ export const classifyMutantRun = (
     ...(reason === undefined ? {} : { reason }),
     ...(run.evidence === undefined ? {} : { summary: run.evidence.summary }),
   });
+  const nonActivation = (): Omit<MutantReport, "replay"> =>
+    unsupportedReason?.trim()
+      ? result("unsupported", unsupportedReason)
+      : result(
+          "invalid",
+          "mutant never activated and has no recorded per-port unsupported reason"
+        );
 
   const { evidence } = run;
   if (run.failure !== undefined || evidence === undefined) {
@@ -794,7 +802,7 @@ export const classifyMutantRun = (
 
   if (control.kind !== "implementation") {
     if (!base.activated) {
-      return result("unsupported", "never activated; not counted");
+      return nonActivation();
     }
     const rejections = evidence.checkResults.filter((check) => {
       const rejection = check.details?.rejection;
@@ -857,7 +865,7 @@ export const classifyMutantRun = (
     );
   }
   if (!base.activated) {
-    return result("unsupported", "never activated; not counted");
+    return nonActivation();
   }
   if (base.designatedFailures.length > 0) {
     return result("killed");
@@ -1100,12 +1108,13 @@ export const runNegativeControls = async (
           config.mutants !== undefined &&
           !config.mutants.includes(control.mutantId)
         ) {
+          const reason = config.unsupportedReasons?.[control.mutantId];
           return {
             ...describeControl(control),
-            outcome: "unsupported",
-            reason:
-              config.unsupportedReasons?.[control.mutantId] ??
-              "mutant is not supported by this port configuration; not run",
+            outcome: reason?.trim() ? "unsupported" : "invalid",
+            reason: reason?.trim()
+              ? reason
+              : "mutant is not supported and has no recorded per-port reason",
           };
         }
         if (!control.profiles.includes(config.profile)) {
@@ -1124,7 +1133,11 @@ export const runNegativeControls = async (
           retain
         );
         return {
-          ...classifyMutantRun(control, run),
+          ...classifyMutantRun(
+            control,
+            run,
+            config.unsupportedReasons?.[control.mutantId]
+          ),
           ...(run.artifacts === undefined ? {} : { artifacts: run.artifacts }),
           replay: replayCommand(config, control.mutantId),
         };

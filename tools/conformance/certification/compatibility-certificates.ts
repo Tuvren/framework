@@ -10,6 +10,7 @@ import type { CertificationInventoryEntry } from "./certification-manifest.js";
 import { readClaimedProfiles } from "./profile.js";
 import type { CertificationProfile } from "./profile.js";
 import type { CertificateDigests } from "./provenance.js";
+import { computeCertificateDigests } from "./provenance.js";
 
 export interface CompatibilityCertificate {
   backend: string;
@@ -122,7 +123,8 @@ const backendKind = (storage: string | undefined): string => {
 export const assertCompatibilityCertificates = async (
   rows: readonly CompatibilityCertificate[]
 ): Promise<void> => {
-  const expected = (await certifiedAdapters())
+  const adapters = await certifiedAdapters();
+  const expected = adapters
     .flatMap(({ manifest, profiles }) =>
       profiles.map(
         ({ profileId }) =>
@@ -143,6 +145,27 @@ export const assertCompatibilityCertificates = async (
     throw new Error(
       "compatibility certificate rows do not match the certified implementation, backend, and profile inventory"
     );
+  }
+  for (const { manifest, adapter, profiles } of adapters) {
+    const current = await computeCertificateDigests(manifest, adapter);
+    for (const { profileId } of profiles) {
+      const row = rows.find(
+        (entry) =>
+          entry.implementationId === manifest.implementationId &&
+          entry.backend === backendKind(manifest.storage) &&
+          entry.profile === profileId
+      );
+      if (row === undefined) {
+        throw new Error(`missing certificate row ${profileId}`);
+      }
+      for (const field of digestFields) {
+        if (row.digests[field] !== current[field]) {
+          throw new Error(
+            `stale certificate digest ${field} for ${manifest.implementationId} ${profileId}`
+          );
+        }
+      }
+    }
   }
 };
 

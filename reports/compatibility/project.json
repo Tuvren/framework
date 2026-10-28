@@ -7,6 +7,13 @@
   "targets": {
     "codegen": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-rust-certification"],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
       "//": "Cross-boundary aggregator: intentionally broad inputs (every boundary's conformance evidence + adapter manifests). This target stays wide on purpose while per-boundary conformance runners are tightly scoped.",
       "inputs": [
         "default",
@@ -30,6 +37,13 @@
     },
     "check": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-rust-certification"],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
       "inputs": [
         "default",
         "^production",

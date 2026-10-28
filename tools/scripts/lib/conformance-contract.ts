@@ -107,6 +107,7 @@ export interface ConformanceEvidenceSummary {
   applicableChecks?: number;
   failedChecks: number;
   nonApplicableChecks?: number;
+  outsideProfileChecks?: number;
   passedChecks: number;
   totalChecks: number;
   unsupportedChecks?: number;
@@ -640,6 +641,14 @@ export const assertConformanceEvidence: (
       false
     ) ?? [];
   const expectedSummary = createConformanceEvidenceSummary(checkResults);
+  const outsideProfileChecks = Array.isArray(value.selection)
+    ? value.selection.filter(
+        (entry: unknown) =>
+          isRecord(entry) &&
+          !entry.selected &&
+          entry.reason === "outside-profile"
+      ).length
+    : 0;
 
   if (!isRecord(value.summary)) {
     throw new Error(`${label}.summary must be an object`);
@@ -648,7 +657,14 @@ export const assertConformanceEvidence: (
   assertSafeInteger(
     value.summary.totalChecks,
     `${label}.summary.totalChecks`,
-    expectedSummary.totalChecks + nonApplicableCheckIds.length
+    expectedSummary.totalChecks +
+      nonApplicableCheckIds.length +
+      outsideProfileChecks
+  );
+  assertSafeInteger(
+    value.summary.outsideProfileChecks ?? 0,
+    `${label}.summary.outsideProfileChecks`,
+    outsideProfileChecks
   );
   assertSafeInteger(
     value.summary.passedChecks,

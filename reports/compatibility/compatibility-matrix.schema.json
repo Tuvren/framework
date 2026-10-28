@@ -25,15 +25,9 @@
         "type": "object",
         "required": ["suiteId", "suiteVersion", "boundary"],
         "properties": {
-          "suiteId": {
-            "type": "string"
-          },
-          "suiteVersion": {
-            "type": "string"
-          },
-          "boundary": {
-            "type": "string"
-          }
+          "suiteId": { "type": "string" },
+          "suiteVersion": { "type": "string" },
+          "boundary": { "type": "string" }
         },
         "additionalProperties": false
       }
@@ -44,15 +38,9 @@
         "type": "object",
         "required": ["implementationId", "language", "version", "results"],
         "properties": {
-          "implementationId": {
-            "type": "string"
-          },
-          "language": {
-            "type": "string"
-          },
-          "version": {
-            "type": "string"
-          },
+          "implementationId": { "type": "string" },
+          "language": { "type": "string" },
+          "version": { "type": "string" },
           "results": {
             "type": "array",
             "items": {
@@ -68,12 +56,8 @@
                 "checkSummary"
               ],
               "properties": {
-                "suiteId": {
-                  "type": "string"
-                },
-                "suiteVersion": {
-                  "type": "string"
-                },
+                "suiteId": { "type": "string" },
+                "suiteVersion": { "type": "string" },
                 "status": {
                   "type": "string",
                   "enum": ["fail", "not_applicable", "pass", "unsupported"]
@@ -89,52 +73,29 @@
                     "unexpected_fail"
                   ]
                 },
-                "reportLabel": {
-                  "type": "string"
-                },
+                "reportLabel": { "type": "string" },
                 "declaredCapabilities": {
                   "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                  "items": { "type": "string" }
                 },
-                "evidencePath": {
-                  "type": "string"
-                },
+                "evidencePath": { "type": "string" },
                 "checkIds": {
                   "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                  "items": { "type": "string" }
                 },
                 "checkSummary": {
                   "type": "object",
                   "required": ["failedChecks", "passedChecks", "totalChecks"],
                   "properties": {
-                    "applicableChecks": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "failedChecks": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
+                    "applicableChecks": { "type": "integer", "minimum": 0 },
+                    "failedChecks": { "type": "integer", "minimum": 0 },
                     "nonApplicableChecks": {
                       "type": "integer",
                       "minimum": 0
                     },
-                    "passedChecks": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "totalChecks": {
-                      "type": "integer",
-                      "minimum": 1
-                    },
-                    "unsupportedChecks": {
-                      "type": "integer",
-                      "minimum": 0
-                    }
+                    "passedChecks": { "type": "integer", "minimum": 0 },
+                    "totalChecks": { "type": "integer", "minimum": 1 },
+                    "unsupportedChecks": { "type": "integer", "minimum": 0 }
                   },
                   "additionalProperties": false
                 }
@@ -162,15 +123,9 @@
           "checkSummary"
         ],
         "properties": {
-          "pairId": {
-            "type": "string"
-          },
-          "suiteId": {
-            "type": "string"
-          },
-          "suiteVersion": {
-            "type": "string"
-          },
+          "pairId": { "type": "string" },
+          "suiteId": { "type": "string" },
+          "suiteVersion": { "type": "string" },
           "status": {
             "type": "string",
             "enum": ["fail", "not_applicable", "pass", "unsupported"]
@@ -186,46 +141,22 @@
               "unexpected_fail"
             ]
           },
-          "reportLabel": {
-            "type": "string"
-          },
-          "evidencePath": {
-            "type": "string"
-          },
+          "reportLabel": { "type": "string" },
+          "evidencePath": { "type": "string" },
           "checkIds": {
             "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "items": { "type": "string" }
           },
           "checkSummary": {
             "type": "object",
             "required": ["failedChecks", "passedChecks", "totalChecks"],
             "properties": {
-              "applicableChecks": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "failedChecks": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "nonApplicableChecks": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "passedChecks": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "totalChecks": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "unsupportedChecks": {
-                "type": "integer",
-                "minimum": 0
-              }
+              "applicableChecks": { "type": "integer", "minimum": 0 },
+              "failedChecks": { "type": "integer", "minimum": 0 },
+              "nonApplicableChecks": { "type": "integer", "minimum": 0 },
+              "passedChecks": { "type": "integer", "minimum": 0 },
+              "totalChecks": { "type": "integer", "minimum": 1 },
+              "unsupportedChecks": { "type": "integer", "minimum": 0 }
             },
             "additionalProperties": false
           }

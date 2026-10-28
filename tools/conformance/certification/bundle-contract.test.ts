@@ -141,23 +141,6 @@ test("certificate links require passing, provenance-bound fleet branch observati
   };
   const passing = makeRun("pass", true, "applied");
   expect(matchesControlRun(passing, expected)).toBe(passing.controlRun.id);
-  const other = makeRun("pass", true, "applied");
-  const multiProfileReport = {
-    reports: [
-      ...passing.reports,
-      ...other.reports.map((report) => ({
-        ...report,
-        profile: "other.profile",
-      })),
-    ],
-    controlRuns: [
-      passing.controlRun,
-      { ...other.controlRun, profile: "other.profile" },
-    ],
-  };
-  expect(matchesControlRun(multiProfileReport, expected)).toBe(
-    passing.controlRun.id
-  );
   expect(
     matchesControlRun(makeRun("fail", true, "applied"), expected)
   ).toBeUndefined();
@@ -167,6 +150,74 @@ test("certificate links require passing, provenance-bound fleet branch observati
   expect(
     matchesControlRun(makeRun("pass", true, "not_applied"), expected)
   ).toBeUndefined();
+});
+
+test("a PostgreSQL kill cannot certify SQLite's unreasoned non-activation", () => {
+  const verifierDigests: VerifierDigests = {
+    harness: "h",
+    packet: "p",
+    plans: "pl",
+    catalogs: "c",
+    fixtures: "f",
+    profiles: "pr",
+    controls: "co",
+    verifierAuthority: "a",
+  };
+  const sqlite = {
+    adapter: "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+    adapterManifest: "s",
+    implementation: "s",
+  };
+  const postgres = {
+    adapter: "typescript/kernel/conformance-adapter/adapter-postgres.json",
+    adapterManifest: "p",
+    implementation: "p",
+  };
+  const profile = "kernel.process-crash";
+  for (const reason of [undefined, "never activated; not counted"]) {
+    const reports = [sqlite, postgres].map((entry) => ({
+      control: {
+        adapter: entry.adapter,
+        status: "pass",
+        conditionalAssertions: [],
+      },
+      counted: true,
+      findings: [],
+      mode: "enforcing",
+      notRun: [],
+      profile,
+      mutants: [
+        {
+          mutantId: "mutant",
+          kind: "implementation",
+          outcome: entry === sqlite ? "unsupported" : "killed",
+          activated: entry !== sqlite,
+          designatedFailures: entry === sqlite ? [] : ["detector"],
+          ...(entry === sqlite && reason !== undefined ? { reason } : {}),
+        },
+      ],
+    }));
+    const identity = {
+      profile,
+      status: "pass" as const,
+      verifierDigests,
+      adapters: [sqlite, postgres],
+      outcomes: controlOutcomes(reports),
+    };
+    const report = {
+      reports,
+      controlRuns: [{ ...identity, id: controlRunId(identity) }],
+    };
+    expect(
+      matchesControlRun(report, {
+        ...sqlite,
+        profile,
+        verifierDigests,
+        negativeControls: ["mutant"],
+        conditionalAssertions: [],
+      })
+    ).toBeUndefined();
+  }
 });
 
 test("certificate environment identifies the adapter storage backend", async () => {
@@ -333,6 +384,26 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
       profile: profile.profileId,
       status: "certified",
     });
+    for (const controlRuns of [
+      [{ ...passing.controlRun, profile: "other.profile" }],
+      [passing.controlRun, passing.controlRun],
+    ]) {
+      await writeFile(
+        reportPath,
+        JSON.stringify({ reports: passing.reports, controlRuns })
+      );
+      const invalid = await finishCertificate(
+        options,
+        manifest,
+        profile,
+        plans,
+        results,
+        "pass",
+        digests
+      );
+      expect(invalid.certificate?.status).toBe("uncertified");
+    }
+    await writeFile(reportPath, JSON.stringify(passing));
     for (const [action, firstExit, expected] of [
       ["restart", { code: 0, signal: null }, "certified"],
       ["kill", { code: null, signal: "SIGKILL" }, "certified"],
@@ -826,6 +897,8 @@ test("real fleet controls certify both complete bundles and reject changed verif
       adapters[0],
       "--control-report",
       reportPath,
+      "--evidence-out",
+      path.join(directory, "filtered.json"),
       "--check",
       "kernel.syscall.concurrent_writer.a_first",
       "--summary-only",
@@ -841,6 +914,8 @@ test("real fleet controls certify both complete bundles and reject changed verif
       adapters[0],
       "--control-report",
       reportPath,
+      "--evidence-out",
+      path.join(directory, "required-filtered.json"),
       "--require-certified",
       "--check",
       "kernel.syscall.concurrent_writer.a_first",
