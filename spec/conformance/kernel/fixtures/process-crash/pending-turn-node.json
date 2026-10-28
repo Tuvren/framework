@@ -1,0 +1,20 @@
+{
+  "input": {
+    "pendingTurnNodeHash": "9cc4ed553849e8b6aef341df5cf6ecb1e7b13bf60bb82b54b71fc0a38dc9195a"
+  },
+  "identity": {
+    "consumedStagedResults": [
+      {
+        "objectHash": "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "objectType": "message",
+        "status": "completed",
+        "taskId": "pending_task",
+        "timestamp": 200
+      }
+    ],
+    "eventHash": null,
+    "previousTurnNodeHash": "df7c490b6cb4e985da427fc5a597fe6df3466c8319f44a1fa0ed1c558b294f41",
+    "schemaId": "recovery_schema",
+    "turnTreeHash": "feadeff5dc5ed58ac2f30dc5cac30cc7703297800b236ca1a1a31625bde2a503"
+  }
+}

@@ -86,7 +86,7 @@ const record = (entry: Record<string, unknown>): void => {
   );
 };
 
-const probe = async (): Promise<void> => {
+const probe = async (trigger: string): Promise<void> => {
   if (recorded || exited || !child.stdin.writable) {
     return;
   }
@@ -106,13 +106,15 @@ const probe = async (): Promise<void> => {
   const frame = await reply.promise;
   clearTimeout(timer);
   resolveProbe = undefined;
-  record(
-    frame === null
+  record({
+    trigger,
+    processEpoch: Number(process.env.TUVREN_CONFORMANCE_PROCESS_EPOCH),
+    ...(frame === null
       ? {
           error: `no reply to ${options.operation} within ${PROBE_TIMEOUT_MS}ms`,
         }
-      : { reply: frame }
-  );
+      : { reply: frame }),
+  });
 };
 
 createInterface({ input: child.stdout }).on("line", async (line) => {
@@ -122,7 +124,7 @@ createInterface({ input: child.stdout }).on("line", async (line) => {
     return;
   }
   if (frame?.method === "faultReached") {
-    await probe();
+    await probe("faultReached");
     process.stdout.write(`${line}\n`);
     return;
   }
@@ -152,11 +154,11 @@ process.on("SIGTERM", () => {
 
 for await (const line of createInterface({ input: process.stdin })) {
   if (readFrame(line)?.method === "shutdown") {
-    await probe();
+    await probe("shutdown");
   }
   if (!exited) {
     child.stdin.write(`${line}\n`);
   }
 }
-await probe();
+await probe("stdin-closed");
 child.stdin.end();

@@ -101,7 +101,7 @@
       "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
       "claimIds": ["kernel.syscall.process-crash.after_commit_before_ack"],
       "activation": {
-        "precondition": "a later checkpoint advances the head without clearing its consumed staged results",
+        "precondition": "a checkpoint advances the head and defers clearing its consumed staged results until the next transaction",
         "signal": "mutant.expose-incomplete-checkpoint.entered"
       },
       "profiles": ["kernel.process-crash"],

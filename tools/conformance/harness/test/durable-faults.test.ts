@@ -204,6 +204,95 @@ for (const [backend, kind] of [
   ["sqlite", "sqlite-directory"],
   ["postgres", "postgres-database"],
 ] as const) {
+  test(`${backend} incomplete checkpoint mutant preserves graceful checkpoint traces`, async () => {
+    await withCheckStorage(kind, async (storageRef) => {
+      const supervisor = await ProcessSupervisor.start({
+        executable: "typescript/kernel/conformance-adapter/dist/host.mjs",
+        args: [
+          "--backend",
+          backend,
+          "--mutant",
+          "kernel.expose-incomplete-checkpoint",
+        ],
+        cwd: process.cwd(),
+        packetId: "tuvren.kernel.protocol",
+        planVersion: "0.1.0",
+      });
+      try {
+        const client = supervisor.client;
+        const { instance } = await checkpointSetup(client, storageRef, [
+          "step",
+          "next",
+        ]);
+        await result(client, instance, "kernel.run.completeStep", {
+          runId: "run",
+          stepId: "step",
+        });
+        await result(client, instance, "kernel.run.beginStep", {
+          runId: "run",
+          stepId: "next",
+        });
+        await result(client, instance, "kernel.staging.stage", {
+          runId: "run",
+          blob: { $bytes: "02" },
+          taskId: "next-task",
+          objectType: "message",
+          status: "completed",
+        });
+        await result(client, instance, "kernel.run.completeStep", {
+          runId: "run",
+          stepId: "next",
+        });
+        expect(
+          await result(client, instance, "kernel.staging.current", {
+            runId: "run",
+          })
+        ).toEqual([]);
+      } finally {
+        await supervisor.close();
+      }
+    });
+  }, 30_000);
+  test(`${backend} incomplete checkpoint mutant survives graceful close before another transaction`, async () => {
+    await withCheckStorage(kind, async (storageRef) => {
+      const supervisor = await ProcessSupervisor.start({
+        executable: "typescript/kernel/conformance-adapter/dist/host.mjs",
+        args: [
+          "--backend",
+          backend,
+          "--mutant",
+          "kernel.expose-incomplete-checkpoint",
+        ],
+        cwd: process.cwd(),
+        packetId: "tuvren.kernel.protocol",
+        planVersion: "0.1.0",
+      });
+      try {
+        const client = supervisor.client;
+        const { instance } = await checkpointSetup(client, storageRef);
+        await result(client, instance, "kernel.run.completeStep", {
+          runId: "run",
+          stepId: "step",
+        });
+        await client.destroyInstance(instance);
+        const reopened = await client.openInstance(storageRef);
+        for (const domain of ["backend", "worker"]) {
+          await result(client, reopened, "kernel.clock.set", {
+            domain,
+            nowMs: 200,
+          });
+        }
+        expect(
+          await result(client, reopened, "kernel.staging.current", {
+            runId: "run",
+          })
+        ).toEqual([]);
+      } finally {
+        await supervisor.close();
+      }
+    });
+  }, 30_000);
+
   test(`${backend} fault operation selector distinguishes unrestricted transactions from checkpoints`, async () => {
     await withCheckStorage(kind, async (storageRef) => {
       const supervisor = await ProcessSupervisor.start({

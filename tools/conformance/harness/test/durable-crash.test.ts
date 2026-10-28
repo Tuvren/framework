@@ -42,6 +42,17 @@ for (const backend of ["sqlite", "postgres"]) {
       expect(evidence.checkResults).toHaveLength(1);
       const check = evidence.checkResults[0];
       expect(check?.status).toBe("pass");
+      const observedAssertion =
+        suffix === "after_commit_before_ack"
+          ? ".recoveredHead.1.resultField"
+          : ".pendingNode.1.resultField";
+      expect(
+        check?.assertionResults.some(
+          (entry) =>
+            entry.assertionId.endsWith(observedAssertion) &&
+            entry.status === "pass"
+        )
+      ).toBe(true);
       const detail = check?.details;
       expect(detail?.fault).toMatchObject({
         armed: [{ mode: "block", point }],
@@ -199,6 +210,8 @@ for (const backend of ["sqlite", "postgres"]) {
       expect(
         records.some(
           (record) =>
+            record.trigger === "faultReached" &&
+            record.processEpoch === 1 &&
             record.reply?.result?.value?.result?.activation?.activated ===
               true &&
             record.reply.result.value.result.activation.signal ===
@@ -353,3 +366,58 @@ test.each(["missing", "early"])(
   },
   60_000
 );
+
+test("a receipt followed by a completed operation invalidates the crash run", async () => {
+  const directory = await mkdtemp(path.resolve(".cache/df004-settled-"));
+  try {
+    const manifest = JSON.parse(
+      await readFile(
+        "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+        "utf8"
+      )
+    );
+    const manifestPath = path.join(directory, "adapter.json");
+    await writeFile(
+      manifestPath,
+      JSON.stringify({
+        ...manifest,
+        executable: process.execPath,
+        command: [
+          process.execPath,
+          "tools/conformance/harness/test/fixtures/settled-fault-receipt.mjs",
+          manifest.executable,
+          ...manifest.command.slice(1),
+        ],
+      })
+    );
+    const child = spawn({
+      cmd: [
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        manifestPath,
+        "--check",
+        "kernel.syscall.process-crash.before_commit",
+      ],
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [stdout, stderr, exit] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    expect(exit, stderr).toBe(1);
+    const evidence: unknown = JSON.parse(stdout);
+    assertConformanceEvidence(evidence, "settled fault seam");
+    expect(evidence.checkResults[0]).toMatchObject({
+      status: "fail",
+      details: {
+        experimentStatus: "invalid",
+        rejection: { code: "seam_did_not_hold" },
+      },
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 60_000);

@@ -9,6 +9,7 @@ export const claimAssertions = (check: ConformancePlanCheck) => [
     assertionId: assertionId(check.checkId, index, assertion.kind),
     claimIds: check.claimIds ?? [],
     conditional: assertion.when !== undefined,
+    detecting: assertion.kind !== "processExit",
   })),
   ...(check.steps ?? []).flatMap((step) =>
     (step.assertions ?? []).map((assertion, index) => ({
@@ -20,6 +21,7 @@ export const claimAssertions = (check: ConformancePlanCheck) => [
       ),
       claimIds: step.claimIds ?? [],
       conditional: assertion.when !== undefined,
+      detecting: assertion.kind !== "processExit",
     }))
   ),
 ];
@@ -57,7 +59,11 @@ export const assertClaimCoverage = (
   controls: readonly CoverageControl[],
   undetected: Readonly<Record<string, string>>,
   checks: readonly {
-    assertions: readonly { assertionId: string; claimIds: readonly string[] }[];
+    assertions: readonly {
+      assertionId: string;
+      claimIds: readonly string[];
+      detecting?: boolean;
+    }[];
   }[]
 ): void => {
   const missing = claims.filter(
@@ -74,6 +80,7 @@ export const assertClaimCoverage = (
                     check.assertions.some(
                       (candidate) =>
                         candidate.assertionId === assertion &&
+                        candidate.detecting !== false &&
                         candidate.claimIds.includes(claim)
                     )
                   )

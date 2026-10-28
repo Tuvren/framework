@@ -1,5 +1,5 @@
 {
-  "kernel.syscall.process-crash.before_commit": "No durable mutant commits checkpoint writes before the before-commit fault.",
-  "kernel.syscall.process-crash.after_turn_node_write_before_head": "No durable mutant lets a TurnNode write escape the transaction before the head moves.",
-  "kernel.syscall.process-crash.after_head_move_before_staging_clear": "No durable mutant commits the head move before the transaction reaches staging clear."
+  "kernel.syscall.process-crash.before_commit": "Recovery observes that the pending TurnNode is absent and the baseline head and staging remain intact; no durable mutant commits checkpoint writes before this fault. The shared wrapper cannot commit an independent write inside SQLite’s locked transaction.",
+  "kernel.syscall.process-crash.after_turn_node_write_before_head": "Recovery observes that the pending TurnNode is absent and the baseline head remains intact; no durable mutant leaks the node before the head move. The shared wrapper cannot commit an independent write inside SQLite’s locked transaction.",
+  "kernel.syscall.process-crash.after_head_move_before_staging_clear": "Recovery observes that the pending TurnNode is absent and the baseline head remains intact; no durable mutant commits the head move before staging clear. The shared wrapper cannot commit an independent write inside SQLite’s locked transaction."
 }

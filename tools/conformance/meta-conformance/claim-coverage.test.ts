@@ -81,6 +81,39 @@ test("requires each profile claim to have a designated detector or a recorded re
   ).toThrow("claim.detected");
 });
 
+test("a supervisor processExit assertion cannot detect an implementation mutant", async () => {
+  const plan = await (
+    await import("../plan-compiler/index.ts")
+  ).loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json"
+  );
+  const check = plan.checks[0]?.check;
+  if (check === undefined) {
+    throw new Error("missing crash check");
+  }
+  const exitAssertions = [
+    `${check.checkId}.2.processExit`,
+    `${check.checkId}.kill.2.processExit`,
+  ];
+  expect(() =>
+    assertClaimCoverage(
+      "kernel.process-crash",
+      check.claimIds ?? [],
+      [
+        {
+          claimIds: check.claimIds ?? [],
+          designatedAssertions: exitAssertions,
+          kind: "implementation",
+          mutantId: "exit-only",
+          profiles: ["kernel.process-crash"],
+        },
+      ],
+      {},
+      [{ assertions: claimAssertions(check) }]
+    )
+  ).toThrow("without a designated detecting control");
+});
+
 test("every conditional assertion must apply in a passing fleet run", () => {
   const required = ["check.a.1.resultField", "check.b.1.resultField"];
   const first = [

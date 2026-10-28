@@ -7,6 +7,7 @@ import {
   claimAssertions,
 } from "../../meta-conformance/claim-coverage.ts";
 import { loadConformancePlan } from "../../plan-compiler/index.ts";
+import { computeIdentity } from "../kernel-integrity.ts";
 import { readAdapterManifest } from "../run-plans.ts";
 
 test("durable reopen claims have designated controls or explicit gaps and stay outside memory", async () => {
@@ -130,4 +131,16 @@ test("process-crash claims are covered by a designated detector or a documented 
   );
   expect(memory).toBeDefined();
   expect(claims.every((claim) => !memory?.claimIds.includes(claim))).toBe(true);
+});
+
+test("pending process-crash node fixture matches the independent identity encoder", async () => {
+  const fixture = JSON.parse(
+    await readFile(
+      "spec/conformance/kernel/fixtures/process-crash/pending-turn-node.json",
+      "utf8"
+    )
+  );
+  expect(computeIdentity("turn-node", fixture.identity)).toBe(
+    fixture.input.pendingTurnNodeHash
+  );
 });

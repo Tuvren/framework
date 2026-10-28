@@ -133,7 +133,8 @@
         "trace.staging.result",
         "trace.recoveredHead.result",
         "trace.lineage.result",
-        "trace.visibleMessages.result"
+        "trace.visibleMessages.result",
+        "trace.pendingNode.result"
       ],
       "steps": [
         {
@@ -563,6 +564,23 @@
           ]
         },
         {
+          "stepId": "pendingNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "fixture.input.pendingTurnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.process-crash.before_commit"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": null
+            }
+          ]
+        },
+        {
           "stepId": "staging",
           "operation": "kernel.staging.current",
           "arguments": {
@@ -627,7 +645,8 @@
             }
           ]
         }
-      ]
+      ],
+      "fixture": "process-crash-pending-turn-node"
     },
     {
       "checkId": "kernel.syscall.process-crash.after_turn_node_write_before_head",
@@ -753,7 +772,8 @@
         "trace.staging.result",
         "trace.recoveredHead.result",
         "trace.lineage.result",
-        "trace.visibleMessages.result"
+        "trace.visibleMessages.result",
+        "trace.pendingNode.result"
       ],
       "steps": [
         {
@@ -1229,6 +1249,25 @@
           ]
         },
         {
+          "stepId": "pendingNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "fixture.input.pendingTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.process-crash.after_turn_node_write_before_head"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": null
+            }
+          ]
+        },
+        {
           "stepId": "staging",
           "operation": "kernel.staging.current",
           "arguments": {
@@ -1301,7 +1340,8 @@
             }
           ]
         }
-      ]
+      ],
+      "fixture": "process-crash-pending-turn-node"
     },
     {
       "checkId": "kernel.syscall.process-crash.after_head_move_before_staging_clear",
@@ -1427,7 +1467,8 @@
         "trace.staging.result",
         "trace.recoveredHead.result",
         "trace.lineage.result",
-        "trace.visibleMessages.result"
+        "trace.visibleMessages.result",
+        "trace.pendingNode.result"
       ],
       "steps": [
         {
@@ -1903,6 +1944,25 @@
           ]
         },
         {
+          "stepId": "pendingNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "fixture.input.pendingTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.process-crash.after_head_move_before_staging_clear"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": null
+            }
+          ]
+        },
+        {
           "stepId": "staging",
           "operation": "kernel.staging.current",
           "arguments": {
@@ -1975,7 +2035,8 @@
             }
           ]
         }
-      ]
+      ],
+      "fixture": "process-crash-pending-turn-node"
     },
     {
       "checkId": "kernel.syscall.process-crash.after_commit_before_ack",
@@ -2540,7 +2601,13 @@
             "branchId": "branch"
           },
           "claimIds": ["kernel.syscall.process-crash.after_commit_before_ack"],
-          "assertions": [],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.headTurnNodeHash",
+              "equalsPath": "$.fixture.input.pendingTurnNodeHash"
+            }
+          ],
           "capture": [
             {
               "name": "recoveredHead",
@@ -2583,7 +2650,11 @@
             }
           ]
         }
-      ]
+      ],
+      "fixture": "process-crash-pending-turn-node"
     }
-  ]
+  ],
+  "fixtures": {
+    "process-crash-pending-turn-node": "../fixtures/process-crash/pending-turn-node.json"
+  }
 }

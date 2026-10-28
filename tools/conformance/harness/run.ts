@@ -72,6 +72,7 @@ import type {
   AdapterManifest,
   AdapterTranscriptMark,
 } from "./adapter-client.js";
+import { AdapterRequestTimeoutError } from "./adapter-client.js";
 import { JsonRpcAdapterError } from "./adapter-error.js";
 import {
   diagnoseAssertions,
@@ -88,6 +89,7 @@ import { selectCheck } from "./check-selection.js";
 import {
   createFaultActivationTracker,
   MissingFaultActivationError,
+  SeamDidNotHoldError,
 } from "./fault-activation.js";
 import {
   ObservationEncodingError,
@@ -1014,6 +1016,11 @@ const arrivalIncrement = (
   current: JsonRpcAdapterClient
 ): number => (previous === current ? 0 : previous.latestArrivalSequence());
 
+interface FaultAttempt {
+  afterSequence: number;
+  operationHandle?: string;
+}
+
 interface LifecycleState {
   client: JsonRpcAdapterClient;
   instance: unknown;
@@ -1024,7 +1031,7 @@ interface LifecycleStepRequest {
   action: LifecycleAction;
   catalogOperation: CatalogOperation | undefined;
   clocks: ReadonlyMap<string, number>;
-  faultAttempts: ReadonlyMap<string, number>;
+  faultAttempts: ReadonlyMap<string, FaultAttempt>;
   input: unknown;
   recorder: CheckRecorder;
   timeoutMs: number;
@@ -1039,7 +1046,7 @@ const killAfterFaultReceipts = async (
   supervisor: ProcessSupervisor,
   recorder: CheckRecorder,
   timeoutMs: number,
-  faultAttempts: ReadonlyMap<string, number>
+  faultAttempts: ReadonlyMap<string, FaultAttempt>
 ): Promise<void> => {
   const epoch = supervisor.current.epoch;
   for (const arming of recorder.faults.armed.filter(
@@ -1047,8 +1054,8 @@ const killAfterFaultReceipts = async (
       entry.mode === "block" &&
       !recorder.faults.activations.includes(entry.token)
   )) {
-    const afterSequence = faultAttempts.get(arming.token);
-    if (afterSequence === undefined) {
+    const attempt = faultAttempts.get(arming.token);
+    if (attempt?.operationHandle === undefined) {
       throw new MissingFaultActivationError(
         `no attempted operation for ${arming.token}`
       );
@@ -1058,7 +1065,7 @@ const killAfterFaultReceipts = async (
       receipt = await client.waitForFaultReached(
         arming.token,
         timeoutMs,
-        afterSequence
+        attempt.afterSequence
       );
     } catch (error: unknown) {
       throw new MissingFaultActivationError(
@@ -1070,6 +1077,15 @@ const killAfterFaultReceipts = async (
         `faultReached does not match arming and process epoch for ${arming.token}`
       );
     }
+    try {
+      await client.awaitOperation(attempt.operationHandle, 150);
+    } catch (error: unknown) {
+      if (error instanceof AdapterRequestTimeoutError) {
+        continue;
+      }
+      throw error;
+    }
+    throw new SeamDidNotHoldError(`seam did not hold for ${arming.token}`);
   }
   await supervisor.kill();
   const exit = supervisor.current.exit;
@@ -1083,14 +1099,27 @@ const recordFaultAttempts = (
   step: ConformancePlanStep,
   client: JsonRpcAdapterClient,
   recorder: CheckRecorder,
-  faultAttempts: Map<string, number>
+  faultAttempts: Map<string, FaultAttempt>
 ): void => {
   if (step.action !== "start") {
     return;
   }
   for (const arming of recorder.faults.armed) {
     if (arming.mode === "block" && !faultAttempts.has(arming.token)) {
-      faultAttempts.set(arming.token, client.nextFrameSequence());
+      faultAttempts.set(arming.token, {
+        afterSequence: client.nextFrameSequence(),
+      });
+    }
+  }
+};
+
+const recordFaultAttemptHandles = (
+  faultAttempts: Map<string, FaultAttempt>,
+  operationHandle: string
+): void => {
+  for (const attempt of faultAttempts.values()) {
+    if (attempt.operationHandle === undefined) {
+      attempt.operationHandle = operationHandle;
     }
   }
 };
@@ -1204,7 +1233,7 @@ const runTraceCheck = async (
   > = {};
   const traceAdapterErrors: Record<string, unknown> = {};
   const startedOperations = new Map<string, string>();
-  const faultAttempts = new Map<string, number>();
+  const faultAttempts = new Map<string, FaultAttempt>();
   const arrivals: Record<string, number> = {};
   const captureStore = createCaptureStore();
   const captures = captureStore.values;
@@ -1311,6 +1340,7 @@ const runTraceCheck = async (
       arrivals[step.stepId] = arrivalSequence;
       recordSchedule(recorder, step, arrivalSequence, input);
       if (receipt.kind === "started") {
+        recordFaultAttemptHandles(faultAttempts, receipt.operationHandle);
         recordHandleCapture(
           step.handleCapture,
           receipt.operationHandle,
@@ -1625,7 +1655,8 @@ const classifyFailure = (
 
   if (
     thrown instanceof ArgumentResolutionError ||
-    thrown instanceof MissingFaultActivationError
+    thrown instanceof MissingFaultActivationError ||
+    thrown instanceof SeamDidNotHoldError
   ) {
     return "verification";
   }
@@ -1738,6 +1769,7 @@ const runCheck = async (
   );
   if (
     missing.length > 0 &&
+    !(primaryError(recorder.thrown) instanceof SeamDidNotHoldError) &&
     (missingBlockedFault ||
       recorder.thrown === undefined ||
       primaryError(recorder.thrown) instanceof MissingFaultActivationError)
@@ -1765,6 +1797,18 @@ const runCheck = async (
         ...checkResult.details,
         experimentStatus: "invalid",
         rejection: { code: rejection.code, tokens: missing },
+      }
+    );
+  }
+  const failure = primaryError(recorder.thrown);
+  if (failure instanceof SeamDidNotHoldError) {
+    checkResult = createCheckResult(
+      checkResult.checkId,
+      checkResult.assertionResults,
+      {
+        ...checkResult.details,
+        experimentStatus: "invalid",
+        rejection: { code: failure.code, message: failure.message },
       }
     );
   }
