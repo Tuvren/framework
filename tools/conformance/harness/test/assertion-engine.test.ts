@@ -787,3 +787,21 @@ test("faultActivated requires the exact armed token in runner activation evidenc
     }).map(({ evaluation }) => evaluation.status)
   ).toEqual(["fail"]);
 });
+
+test("processExit reads the selected supervisor epoch and requires every specified exit field", () => {
+  const check = buildCheck([
+    { kind: "processExit", epoch: 2, signal: "SIGKILL", code: null },
+  ]);
+  const statuses = (
+    processExits: Record<number, { code: number | null; signal: string | null }>
+  ) => evaluateAssertions(check, { processExits }).map(({ status }) => status);
+  expect(
+    statuses({
+      1: { code: 0, signal: null },
+      2: { code: null, signal: "SIGKILL" },
+    })
+  ).toEqual(["pass"]);
+  expect(statuses({ 1: { code: null, signal: "SIGKILL" } })).toEqual(["fail"]);
+  expect(statuses({ 2: { code: 0, signal: null } })).toEqual(["fail"]);
+  expect(statuses({ 2: { code: 1, signal: "SIGKILL" } })).toEqual(["fail"]);
+});

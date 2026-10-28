@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 
+import Ajv2020 from "ajv/dist/2020.js";
+
 import {
   evaluateCertificationRules,
   parseOperationCatalog,
@@ -150,6 +152,79 @@ test("arrival assertions can read only existing runner-recorded step arrivals", 
   expect(
     evaluateCertificationRules(plan, catalog).some(
       (violation) => violation.rule === "observation-path"
+    )
+  ).toBe(true);
+});
+
+test("processExit requires an epoch and an exit expectation on a supervised trace", async () => {
+  const schema = JSON.parse(
+    await readFile("tools/schemas/conformance-plan.schema.json", "utf8")
+  );
+  const validate = new Ajv2020({ strict: false }).compile(schema);
+  const { plan } = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
+  );
+  const check = plan.checks[0];
+  if (check === undefined) {
+    throw new Error("missing reopen check");
+  }
+  check.assertions.push({ kind: "processExit", epoch: 1, code: 0 });
+  expect(validate(plan), JSON.stringify(validate.errors)).toBe(true);
+  expect(
+    evaluateCertificationRules(plan, catalog).filter((v) =>
+      v.message.includes("processExit")
+    )
+  ).toEqual([]);
+  for (const invalid of [
+    { kind: "processExit", signal: "SIGKILL" },
+    { kind: "processExit", epoch: 0, signal: "SIGKILL" },
+    { kind: "processExit", epoch: 1 },
+    { kind: "processExit", epoch: 1, signal: 2 },
+  ]) {
+    const altered = structuredClone(plan);
+    const target = altered.checks[0];
+    if (target === undefined) {
+      throw new Error("missing reopen check");
+    }
+    target.assertions[target.assertions.length - 1] = invalid as never;
+    expect(validate(altered), JSON.stringify(invalid)).toBe(false);
+  }
+  const { plan: unsupervised } = await loadConformancePlan(planPath);
+  const ordinary = unsupervised.checks[0];
+  if (ordinary === undefined) {
+    throw new Error("missing race check");
+  }
+  ordinary.assertions.push({
+    kind: "processExit",
+    epoch: 1,
+    signal: "SIGKILL",
+  });
+  expect(
+    evaluateCertificationRules(unsupervised, catalog).some((v) =>
+      v.message.includes("processExit")
+    )
+  ).toBe(true);
+});
+
+test("processExit on a lifecycle step selects the epoch that step terminates", async () => {
+  const { plan } = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
+  );
+  const steps = plan.checks[0]?.steps;
+  const restart = steps?.find((step) => step.action === "restart");
+  if (restart === undefined) {
+    throw new Error("missing restart");
+  }
+  restart.assertions = [{ kind: "processExit", epoch: 1, code: 0 }];
+  expect(
+    evaluateCertificationRules(plan, catalog).filter((v) =>
+      v.message.includes("processExit")
+    )
+  ).toEqual([]);
+  restart.assertions = [{ kind: "processExit", epoch: 2, code: 0 }];
+  expect(
+    evaluateCertificationRules(plan, catalog).some((v) =>
+      v.message.includes("processExit")
     )
   ).toBe(true);
 });

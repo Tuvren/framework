@@ -239,6 +239,50 @@ describe("conformance evidence contract", () => {
     expect(original.details.fault.armed[0]?.token).toBe("random-first");
   });
 
+  test("checked-in process-crash evidence retains epoch exits without transient process IDs", () => {
+    const check = (pid: number) => ({
+      ...createCheckResult("sample.crash", [
+        createAssertionResult("sample.crash.1.processExit", true),
+      ]),
+      details: {
+        process: {
+          epochs: [
+            {
+              epoch: 1,
+              pid,
+              executableDigest: "sha256:fixed",
+              signal: "SIGKILL",
+              exit: { code: null, signal: "SIGKILL" },
+            },
+            {
+              epoch: 2,
+              pid: pid + 1,
+              executableDigest: "sha256:fixed",
+              exit: { code: 0, signal: null },
+            },
+          ],
+        },
+      },
+    });
+    const compact = toCheckedInCheckResult(check(200));
+    expect(compact).toEqual(toCheckedInCheckResult(check(300)));
+    expect(compact.details?.process).toEqual({
+      epochs: [
+        {
+          epoch: 1,
+          executableDigest: "sha256:fixed",
+          signal: "SIGKILL",
+          exit: { code: null, signal: "SIGKILL" },
+        },
+        {
+          epoch: 2,
+          executableDigest: "sha256:fixed",
+          exit: { code: 0, signal: null },
+        },
+      ],
+    });
+  });
+
   test("checked-in failure checks accept evidence that predates failure artifacts", () => {
     expect(
       findCheckedInFailureViolations(runnerEvidence().checkResults)

@@ -159,10 +159,6 @@ const readAdapterConfig = (args: readonly string[]): KernelAdapterConfig => {
     }
   }
 
-  if (mutantId !== undefined && backend !== "memory") {
-    throw new Error("kernel mutants wrap the reference memory backend only");
-  }
-
   return Object.freeze({
     adapterId,
     backend,

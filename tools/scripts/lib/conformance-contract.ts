@@ -753,12 +753,30 @@ export const toCheckedInCheckResult = (
     }
     return value;
   };
-  const normalizedDetails =
+  let normalizedDetails =
     details === undefined || aliases.size === 0
       ? details
       : Object.fromEntries(
           Object.entries(details).map(([key, value]) => [key, normalize(value)])
         );
+  if (
+    isRecord(normalizedDetails?.process) &&
+    Array.isArray(normalizedDetails.process.epochs)
+  ) {
+    normalizedDetails = {
+      ...normalizedDetails,
+      process: {
+        ...normalizedDetails.process,
+        epochs: normalizedDetails.process.epochs.map((epoch: unknown) => {
+          if (!isRecord(epoch)) {
+            return epoch;
+          }
+          const { pid: _pid, ...stable } = epoch;
+          return stable;
+        }),
+      },
+    };
+  }
   const failure = checkResult.failure;
   return {
     ...checkResult,

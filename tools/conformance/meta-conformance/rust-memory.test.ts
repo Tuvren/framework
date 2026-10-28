@@ -65,9 +65,13 @@ test("Rust memory controls count supported mutations and report unsupported ones
   ) {
     throw new TypeError("invalid control manifest");
   }
-  expect(report.mutants).toHaveLength(manifest.controls.length);
+  const memoryControls = manifest.controls.filter(
+    (control: { profiles?: string[] }) =>
+      control.profiles?.includes("kernel.memory")
+  );
+  expect(report.mutants).toHaveLength(memoryControls.length);
   expect(report.totals.killed).toBe(3);
-  expect(report.totals.unsupported).toBe(manifest.controls.length - 3);
+  expect(report.totals.unsupported).toBe(memoryControls.length - 3);
   for (const mutant of report.mutants) {
     if (mutant.outcome === "unsupported") {
       expect(mutant.reason).toContain(

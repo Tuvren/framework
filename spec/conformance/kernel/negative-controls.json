@@ -77,18 +77,37 @@
       "claimIds": [
         "kernel.syscall.logical.recovery_state",
         "kernel.crash-recovery.in_process_fault_points",
-        "kernel.syscall.crash-recovery.before_commit"
+        "kernel.syscall.crash-recovery.before_commit",
+        "kernel.syscall.reopen.pending_state",
+        "kernel.syscall.reopen.pending_count"
       ],
       "activation": {
         "precondition": "run.recover returns at least one uncommitted staged result",
         "signal": "mutant.drop-uncommitted-staged-result-on-recovery.entered"
       },
-      "profiles": ["kernel.memory"],
+      "profiles": ["kernel.memory", "kernel.persistent-reopen"],
       "designatedAssertions": [
         "kernel.syscall.logical.recovery_state.3.resultField",
         "kernel.crash-recovery.in_process_fault_points.5.resultField",
         "kernel.syscall.crash-recovery.before_commit.6.resultField",
-        "kernel.syscall.crash-recovery.before_commit.12.resultField"
+        "kernel.syscall.crash-recovery.before_commit.12.resultField",
+        "kernel.syscall.reopen.close_reopen_checkpoint.10.resultField",
+        "kernel.syscall.reopen.close_reopen_checkpoint.17.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.expose-incomplete-checkpoint",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
+      "claimIds": ["kernel.syscall.process-crash.after_commit_before_ack"],
+      "activation": {
+        "precondition": "a later checkpoint advances the head without clearing its consumed staged results",
+        "signal": "mutant.expose-incomplete-checkpoint.entered"
+      },
+      "profiles": ["kernel.process-crash"],
+      "designatedAssertions": [
+        "kernel.syscall.process-crash.after_commit_before_ack.11.resultField",
+        "kernel.syscall.process-crash.after_commit_before_ack.12.resultField"
       ]
     },
     {

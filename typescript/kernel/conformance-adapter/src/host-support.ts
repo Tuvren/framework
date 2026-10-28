@@ -324,7 +324,7 @@ export const createConfiguredBackend = async (
     });
 
     return {
-      backend,
+      backend: conformanceBackend(config, backend),
       cleanup: async () => {
         await backend.close();
       },
@@ -353,7 +353,7 @@ export const createConfiguredBackend = async (
       ...clock,
     });
     return {
-      backend,
+      backend: conformanceBackend(config, backend),
       cleanup: async () => {
         await backend.close();
       },

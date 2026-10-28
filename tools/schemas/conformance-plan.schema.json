@@ -294,6 +294,7 @@
             "identity",
             "referenceWalk",
             "faultActivated",
+            "processExit",
             "arrival"
           ]
         },
@@ -302,6 +303,9 @@
         "field": { "type": "string", "minLength": 1 },
         "secretsPath": { "type": "string", "minLength": 1 },
         "eventType": { "type": "string", "minLength": 1 },
+        "epoch": { "type": "integer", "minimum": 1 },
+        "signal": { "type": ["string", "null"], "minLength": 1 },
+        "code": { "type": ["integer", "null"] },
         "recordType": {
           "enum": ["opaque-object", "turn-node", "turn-tree", "schema"]
         },
@@ -315,6 +319,52 @@
         "when": { "$ref": "#/$defs/when" }
       },
       "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "processExit" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["epoch"],
+            "anyOf": [{ "required": ["signal"] }, { "required": ["code"] }],
+            "not": {
+              "anyOf": [
+                { "required": ["when"] },
+                { "required": ["path"] },
+                { "required": ["field"] },
+                { "required": ["equals"] },
+                { "required": ["equalsPath"] },
+                { "required": ["notEquals"] },
+                { "required": ["notEqualsPath"] },
+                { "required": ["contains"] },
+                { "required": ["containsPath"] },
+                { "required": ["matches"] },
+                { "required": ["every"] },
+                { "required": ["some"] },
+                { "required": ["length"] },
+                { "required": ["present"] },
+                { "required": ["greaterThan"] },
+                { "required": ["greaterThanOrEqual"] },
+                { "required": ["lessThan"] },
+                { "required": ["lessThanOrEqual"] },
+                { "required": ["schema"] },
+                { "required": ["secretsPath"] },
+                { "required": ["eventType"] },
+                { "required": ["recordType"] },
+                { "required": ["references"] }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                { "required": ["epoch"] },
+                { "required": ["signal"] },
+                { "required": ["code"] }
+              ]
+            }
+          }
+        },
         {
           "if": {
             "properties": { "kind": { "const": "faultActivated" } },

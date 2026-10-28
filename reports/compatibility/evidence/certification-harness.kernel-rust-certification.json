@@ -594,7 +594,8 @@
                 "branchId": "branch_main"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -672,7 +673,8 @@
                 "branchId": "branch_main"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -5687,7 +5689,8 @@
                 "operation": "checkpoint"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -5971,7 +5974,8 @@
                 "operation": "checkpoint"
               }
             }
-          ]
+          ],
+          "receipts": []
         }
       },
       "status": "pass"
@@ -6729,6 +6733,10 @@
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
     "kernel.syscall.reopen.close_reopen_checkpoint",
+    "kernel.syscall.process-crash.after_commit_before_ack",
+    "kernel.syscall.process-crash.after_head_move_before_staging_clear",
+    "kernel.syscall.process-crash.after_turn_node_write_before_head",
+    "kernel.syscall.process-crash.before_commit",
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
     "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
     "kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -6753,9 +6761,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 123,
-    "totalChecks": 140,
+    "totalChecks": 144,
     "applicableChecks": 123,
-    "nonApplicableChecks": 17
+    "nonApplicableChecks": 21
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

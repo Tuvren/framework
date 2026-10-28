@@ -35,6 +35,9 @@ import { valuesAreEqual } from "./value-comparison.js";
 
 export interface AssertionContext {
   arrivals?: Readonly<Record<string, number>>;
+  processExits?: Readonly<
+    Record<number, { code: number | null; signal: string | null }>
+  >;
   capture?: Readonly<Record<string, unknown>>;
   faultActivations?: readonly string[];
   events?: readonly unknown[];
@@ -516,6 +519,25 @@ const evaluateAssertion = (
   context: AssertionContext
 ): boolean => {
   switch (assertion.kind) {
+    case "processExit": {
+      if (
+        assertion.epoch === undefined ||
+        !(
+          Object.hasOwn(assertion, "signal") || Object.hasOwn(assertion, "code")
+        )
+      ) {
+        throw new Error(
+          "processExit requires an epoch and an exit expectation"
+        );
+      }
+      const exit = context.processExits?.[assertion.epoch];
+      return (
+        exit !== undefined &&
+        (!Object.hasOwn(assertion, "signal") ||
+          exit.signal === assertion.signal) &&
+        (!Object.hasOwn(assertion, "code") || exit.code === assertion.code)
+      );
+    }
     case "arrival": {
       if (
         assertion.path === undefined ||
@@ -648,6 +670,15 @@ const readSubject = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
 ): { actual: unknown; path: string } => {
+  if (assertion.kind === "processExit") {
+    return {
+      actual:
+        assertion.epoch === undefined
+          ? undefined
+          : context.processExits?.[assertion.epoch],
+      path: `$.processExits.${String(assertion.epoch)}`,
+    };
+  }
   const fieldRoot = FIELD_ROOTS[assertion.kind];
 
   if (fieldRoot !== undefined) {
@@ -792,6 +823,21 @@ const describeOperands = (
   context: AssertionContext
 ): AssertionOperand[] => {
   const subject = readSubject(assertion, context);
+
+  if (assertion.kind === "processExit") {
+    return [
+      {
+        ...subject,
+        expected: {
+          ...(Object.hasOwn(assertion, "signal")
+            ? { signal: assertion.signal }
+            : {}),
+          ...(Object.hasOwn(assertion, "code") ? { code: assertion.code } : {}),
+        },
+        expectedSource: "processExit: plan",
+      },
+    ];
+  }
 
   if (assertion.kind === "secretAbsence") {
     // Configured secrets never leave the plan context.

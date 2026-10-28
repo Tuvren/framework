@@ -73,6 +73,10 @@
     {
       "path": "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json",
+      "format": "conformance-plan"
     }
   ],
   "conformancePlans": [
@@ -145,6 +149,11 @@
       "planId": "tuvren.kernel.close-reopen.syscall",
       "planVersion": "0.1.0",
       "path": "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.process-crash.syscall",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json"
     }
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
@@ -251,6 +260,10 @@
     {
       "kind": "conformance-plan",
       "target": "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json"
     }
   ],
   "operationCatalog": "spec/conformance/kernel/operations.json",

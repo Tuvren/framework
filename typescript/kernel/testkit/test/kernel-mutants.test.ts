@@ -55,6 +55,7 @@ const EXPECTED_MUTANTS = [
   ["kernel.accept-stale-owner-after-takeover", "implementation"],
   ["kernel.delete-object-reachable-through-live-root", "implementation"],
   ["kernel.drop-uncommitted-staged-result-on-recovery", "implementation"],
+  ["kernel.expose-incomplete-checkpoint", "implementation"],
   ["kernel.fault-seam-never-fires", "instrumentation"],
   ["kernel.lease-takeover-before-expiry", "implementation"],
   ["kernel.never-sweep-eligible-objects", "implementation"],
@@ -225,7 +226,7 @@ const fakeBackend: RuntimeBackend = {
 const referenceFaultFactory: FaultInjectingBackendFactory = (inner) => inner;
 
 describe("kernel mutant registry", () => {
-  test("registers exactly the memory-applicable ADR-0079 mutant set", () => {
+  test("registers the ADR-0079 mutant set", () => {
     expect(
       listKernelMutants().map(({ kind, mutantId }) => [mutantId, kind])
     ).toEqual(EXPECTED_MUTANTS.map(([mutantId, kind]) => [mutantId, kind]));
@@ -334,12 +335,21 @@ describe("kernel negative-control manifest", () => {
     expect(controls.map((control) => control.mutantId).toSorted()).toEqual(
       [...registered.keys()].toSorted()
     );
+    const additionalProfiles: Readonly<Record<string, string[]>> = {
+      "kernel.drop-uncommitted-staged-result-on-recovery": [
+        "kernel.memory",
+        "kernel.persistent-reopen",
+      ],
+      "kernel.expose-incomplete-checkpoint": ["kernel.process-crash"],
+    };
     for (const control of controls) {
       const mutant = registered.get(control.mutantId);
       expect(control.kind).toBe(mutant?.kind ?? "unregistered");
       expect(control.activation.signal).toBe(mutant?.signal ?? "unregistered");
       expect(control.activation.precondition.length).toBeGreaterThan(0);
-      expect(control.profiles).toEqual(["kernel.memory"]);
+      expect(control.profiles).toEqual(
+        additionalProfiles[control.mutantId] ?? ["kernel.memory"]
+      );
     }
   });
 

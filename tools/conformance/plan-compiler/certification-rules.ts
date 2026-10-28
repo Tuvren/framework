@@ -451,6 +451,7 @@ type AssertionScope =
       kind: "trace";
       stepOperations: ReadonlyMap<string, string>;
       arrivalSteps?: ReadonlySet<string>;
+      processExitEpochs?: ReadonlySet<number>;
     };
 
 type PathTarget =
@@ -554,6 +555,7 @@ const assertionActualPath = (
     }
     case "arrival":
     case "faultActivated":
+    case "processExit":
     case "digest":
     case "canonicalCbor":
     case "identity":
@@ -1013,6 +1015,24 @@ const referenceNodes = (
   return nodes;
 };
 
+const checkProcessExit = (
+  context: RuleContext,
+  scope: AssertionScope,
+  assertion: ConformancePlanAssertion
+): void => {
+  if (
+    scope.kind !== "trace" ||
+    assertion.epoch === undefined ||
+    !scope.processExitEpochs?.has(assertion.epoch)
+  ) {
+    report(
+      context,
+      "observation-path",
+      "processExit requires a terminated supervisor epoch in the trace"
+    );
+  }
+};
+
 const checkAssertion = (
   context: RuleContext,
   scope: AssertionScope,
@@ -1021,6 +1041,10 @@ const checkAssertion = (
   forwarded: readonly (readonly PathSegment[])[]
 ): void => {
   const label = `assertion ${index} (${assertion.kind})`;
+  if (assertion.kind === "processExit") {
+    checkProcessExit(context, scope, assertion);
+    return;
+  }
   if (assertion.kind === "arrival") {
     for (const node of operatorNodes(
       assertion,
@@ -1211,6 +1235,31 @@ const checkInstanceInputReferences = (
   }
 };
 
+const checkStepProcessExit = (
+  context: RuleContext,
+  check: ConformancePlanCheck,
+  step: ConformancePlanStep,
+  assertion: ConformancePlanAssertion
+): void => {
+  const prior = (check.steps ?? []).slice(0, (check.steps ?? []).indexOf(step));
+  const epoch =
+    1 +
+    prior.filter(
+      (entry) => entry.action === "restart" || entry.action === "respawn"
+    ).length;
+  const exited =
+    step.action === "restart" || step.action === "kill" ? [epoch] : [];
+  checkProcessExit(
+    context,
+    {
+      kind: "trace",
+      stepOperations: new Map(),
+      processExitEpochs: new Set(exited),
+    },
+    assertion
+  );
+};
+
 const checkStep = (
   context: RuleContext,
   check: ConformancePlanCheck,
@@ -1276,6 +1325,10 @@ const checkStep = (
   const forwarded = forwardedPaths(check, step);
 
   for (const [index, assertion] of (step.assertions ?? []).entries()) {
+    if (assertion.kind === "processExit") {
+      checkStepProcessExit(context, check, step, assertion);
+      continue;
+    }
     checkAssertion(context, scope, assertion, index, forwarded);
   }
 };
@@ -1331,12 +1384,23 @@ const checkCheck = (
     checkInstanceInputReferences(context, check);
   }
 
+  let epoch = 1;
+  const processExitEpochs = new Set<number>();
+  for (const step of steps) {
+    if (step.action === "kill" || step.action === "restart") {
+      processExitEpochs.add(epoch);
+    }
+    if (step.action === "respawn" || step.action === "restart") {
+      epoch += 1;
+    }
+  }
   const scope: AssertionScope =
     steps.length === 0
       ? { kind: "operation", operationId: check.operation }
       : {
           kind: "trace",
           arrivalSteps: new Set(steps.map((step) => step.stepId)),
+          processExitEpochs,
           stepOperations: new Map(
             steps
               .filter(
