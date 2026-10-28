@@ -511,6 +511,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -526,14 +528,44 @@
             {
               "token": "fault-token-1",
               "phase": "after-commit-before-ack",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -542,7 +574,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -823,6 +855,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-head-move-before-staging-clear",
@@ -838,14 +872,44 @@
             {
               "token": "fault-token-1",
               "phase": "after-head-move-before-staging-clear",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -854,7 +918,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1135,6 +1199,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-turn-node-write-before-head",
@@ -1150,14 +1216,44 @@
             {
               "token": "fault-token-1",
               "phase": "after-turn-node-write-before-head",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1166,7 +1262,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1447,6 +1543,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -1462,14 +1560,44 @@
             {
               "token": "fault-token-1",
               "phase": "before-commit",
-              "processEpoch": 1
+              "processEpoch": 1,
+              "process": "primary"
             }
           ]
         },
+        "processes": [
+          {
+            "name": "primary",
+            "epochs": [
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 1,
+                "signal": "SIGKILL",
+                "exit": {
+                  "code": null,
+                  "signal": "SIGKILL"
+                }
+              },
+              {
+                "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
+                "epoch": 2,
+                "signal": null,
+                "exit": {
+                  "code": 0,
+                  "signal": null
+                }
+              }
+            ],
+            "exit": {
+              "code": 0,
+              "signal": null
+            }
+          }
+        ],
         "process": {
           "epochs": [
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1478,7 +1606,7 @@
               }
             },
             {
-              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
+              "executableDigest": "550d9fbd6f8e36c2324b0df5162bf0b917c7fdd95d5448906b73e1d881149a95",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1780,6 +1908,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -1859,6 +1989,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -7574,6 +7706,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -7859,6 +7993,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -8731,9 +8867,12 @@
   "exitCode": 0,
   "implementationId": "typescript-kernel-sqlite",
   "nonApplicableCheckIds": [
+    "kernel.syscall.clock_skew.preemption",
     "kernel.syscall.concurrent_writer.a_first",
     "kernel.syscall.concurrent_writer.b_first",
-    "kernel.run-liveness.clock_skew_preemption"
+    "kernel.run-liveness.clock_skew_preemption",
+    "kernel.syscall.shared_writer.a_first",
+    "kernel.syscall.shared_writer.b_first"
   ],
   "project": "kernel-typescript-sqlite-certification",
   "reportLabel": "TypeScript SQLite durable kernel",
@@ -8742,9 +8881,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 141,
-    "totalChecks": 144,
+    "totalChecks": 147,
     "applicableChecks": 141,
-    "nonApplicableChecks": 3
+    "nonApplicableChecks": 6
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

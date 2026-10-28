@@ -109,6 +109,10 @@ export class ProcessSupervisor {
     return supervisor;
   }
 
+  async fork(): Promise<ProcessSupervisor> {
+    return await ProcessSupervisor.start(this.options);
+  }
+
   get client(): JsonRpcAdapterClient {
     if (this.active === undefined) {
       throw new Error("adapter process is not running");

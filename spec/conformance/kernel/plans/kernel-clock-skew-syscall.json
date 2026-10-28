@@ -1,0 +1,369 @@
+{
+  "planId": "tuvren.kernel.clock-skew.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": [
+      "kernel.syscall",
+      "kernel.run-liveness",
+      "kernel.shared-lease-clock",
+      "clock.backend-server",
+      "kernel-protocol.thread.enumeration"
+    ]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.clock_skew.preemption",
+      "claimIds": [
+        "kernel.syscall.clock_skew.live",
+        "kernel.syscall.clock_skew.expired"
+      ],
+      "operation": "kernel.runLiveness.preemptExpired",
+      "steps": [
+        {
+          "stepId": "serverClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "source": "server"
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "workerBase",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "run_liveness",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadrenewal",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadrenewal",
+            "schemaId": "run_liveness",
+            "initialBranchId": "branchrenewal"
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadrenewal",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backendNow",
+          "operation": "kernel.thread.list",
+          "arguments": {},
+          "capture": [
+            {
+              "name": "backendNow",
+              "path": "result.threads.0.createdAtMs"
+            }
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threads",
+              "length": 1
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ]
+        },
+        {
+          "stepId": "turnrenewal",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnrenewal",
+            "threadId": "threadrenewal",
+            "branchId": "branchrenewal",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadrenewal.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnrenewal",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "liveLease",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runrenewal",
+              "turnId": "turnrenewal",
+              "branchId": "branchrenewal",
+              "schemaId": "run_liveness",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadrenewal.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 3600000
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.leaseExpiresAtMs",
+              "greaterThan": "$.capture.backendNow"
+            }
+          ],
+          "capture": [
+            {
+              "name": "liveLease",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadexpired",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadexpired",
+            "schemaId": "run_liveness",
+            "initialBranchId": "branchexpired"
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadexpired",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnexpired",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnexpired",
+            "threadId": "threadexpired",
+            "branchId": "branchexpired",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadexpired.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnexpired",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "expiredLease",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runexpired",
+              "turnId": "turnexpired",
+              "branchId": "branchexpired",
+              "schemaId": "run_liveness",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadexpired.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 0
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "expiredLease",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "workerAhead",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": {
+              "$ref": "capture.liveLease.leaseExpiresAtMs"
+            }
+          },
+          "assertions": [],
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ]
+        },
+        {
+          "stepId": "livePreempt",
+          "operation": "kernel.runLiveness.preemptExpired",
+          "arguments": {
+            "runId": "runrenewal",
+            "preemptingOwnerId": "other",
+            "nowMs": {
+              "$ref": "capture.liveLease.leaseExpiresAtMs"
+            },
+            "reason": "clock_skew"
+          },
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_run_lease_not_expired"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ]
+        },
+        {
+          "stepId": "expiredPreempt",
+          "operation": "kernel.runLiveness.preemptExpired",
+          "arguments": {
+            "runId": "runexpired",
+            "preemptingOwnerId": "other",
+            "nowMs": { "$ref": "capture.liveLease.leaseExpiresAtMs" },
+            "reason": "clock_skew"
+          },
+          "capture": [
+            {
+              "name": "preempt",
+              "path": "result"
+            }
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.lastTurnNodeHash",
+              "notEqualsPath": "$.capture.threadexpired.rootTurnNodeHash"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ]
+        },
+        {
+          "stepId": "expiredHead",
+          "operation": "kernel.branch.get",
+          "arguments": { "branchId": "branchexpired" },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.headTurnNodeHash",
+              "equalsPath": "$.capture.preempt.lastTurnNodeHash"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.liveLease.result.leaseExpiresAtMs",
+          "greaterThan": "$.capture.backendNow"
+        }
+      ],
+      "evidence": [
+        "trace.backendNow.result",
+        "trace.livePreempt.state.adapterError",
+        "trace.expiredPreempt.result"
+      ]
+    }
+  ]
+}

@@ -451,7 +451,7 @@ type AssertionScope =
       kind: "trace";
       stepOperations: ReadonlyMap<string, string>;
       arrivalSteps?: ReadonlySet<string>;
-      processExitEpochs?: ReadonlySet<number>;
+      processExitEpochs?: ReadonlyMap<string, ReadonlySet<number>>;
     };
 
 type PathTarget =
@@ -668,6 +668,26 @@ export const nativeErrorAsserted = (
       )
     );
   const steps = check.steps ?? [];
+  if (
+    step?.action === "await" &&
+    steps.some(
+      (current) =>
+        current.action === "collect" &&
+        current.participants?.includes(step.stepId) === true &&
+        (current.assertions ?? []).some(
+          (assertion) =>
+            assertion.kind === "resultField" &&
+            assertion.field === "$.byKind.error" &&
+            assertion.when === undefined &&
+            typeof assertion.length === "number" &&
+            assertion.length > 0 &&
+            assertion.every?.field === "$.error.code" &&
+            typeof assertion.every.equals === "string"
+        )
+    )
+  ) {
+    return true;
+  }
   for (const current of steps) {
     for (const capture of current.capture ?? []) {
       captures.set(capture.name, {
@@ -1023,7 +1043,9 @@ const checkProcessExit = (
   if (
     scope.kind !== "trace" ||
     assertion.epoch === undefined ||
-    !scope.processExitEpochs?.has(assertion.epoch)
+    !scope.processExitEpochs
+      ?.get(assertion.process ?? "primary")
+      ?.has(assertion.epoch)
   ) {
     report(
       context,
@@ -1242,10 +1264,13 @@ const checkStepProcessExit = (
   assertion: ConformancePlanAssertion
 ): void => {
   const prior = (check.steps ?? []).slice(0, (check.steps ?? []).indexOf(step));
+  const process = step.process ?? "primary";
   const epoch =
     1 +
     prior.filter(
-      (entry) => entry.action === "restart" || entry.action === "respawn"
+      (entry) =>
+        (entry.process ?? "primary") === process &&
+        (entry.action === "restart" || entry.action === "respawn")
     ).length;
   const exited =
     step.action === "restart" || step.action === "kill" ? [epoch] : [];
@@ -1254,7 +1279,7 @@ const checkStepProcessExit = (
     {
       kind: "trace",
       stepOperations: new Map(),
-      processExitEpochs: new Set(exited),
+      processExitEpochs: new Map([[process, new Set(exited)]]),
     },
     assertion
   );
@@ -1384,14 +1409,18 @@ const checkCheck = (
     checkInstanceInputReferences(context, check);
   }
 
-  let epoch = 1;
-  const processExitEpochs = new Set<number>();
+  const epochs = new Map<string, number>();
+  const processExitEpochs = new Map<string, Set<number>>();
   for (const step of steps) {
+    const process = step.process ?? "primary";
+    const epoch = epochs.get(process) ?? 1;
     if (step.action === "kill" || step.action === "restart") {
-      processExitEpochs.add(epoch);
+      const exited = processExitEpochs.get(process) ?? new Set<number>();
+      exited.add(epoch);
+      processExitEpochs.set(process, exited);
     }
     if (step.action === "respawn" || step.action === "restart") {
-      epoch += 1;
+      epochs.set(process, epoch + 1);
     }
   }
   const scope: AssertionScope =

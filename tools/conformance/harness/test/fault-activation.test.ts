@@ -81,7 +81,9 @@ test("a blocked fault activates only after a matching receipt and forced death i
   faults.arm(
     { mode: "block", occurrence: 1, point: "before-commit", selector: {} },
     { kind: "result", value: { result: { token: "armed" } } },
-    "storage_interrupted"
+    "storage_interrupted",
+    "primary",
+    3
   );
   expect(faults.missing()).toEqual(["armed"]);
   expect(
@@ -110,5 +112,62 @@ test("a blocked fault activates only after a matching receipt and forced death i
   faults.death(3, { code: 0, signal: null });
   expect(faults.missing()).toEqual(["armed"]);
   faults.death(3, { code: null, signal: "SIGKILL" });
+  expect(faults.missing()).toEqual([]);
+});
+
+test("fault receipts and process death do not alias across processes with the same token and epoch", () => {
+  const faults = createFaultActivationTracker();
+  const input = {
+    mode: "block",
+    occurrence: 1,
+    point: "before-commit",
+    selector: {},
+  };
+  const outcome = {
+    kind: "result" as const,
+    value: { result: { token: "fault-1" } },
+  };
+  faults.arm(input, outcome, "storage_interrupted", "primary");
+  faults.arm(input, outcome, "storage_interrupted", "second");
+  const receipt = { token: "fault-1", phase: "before-commit", processEpoch: 1 };
+  expect(faults.receipt(receipt, 1, "primary")).toBe(true);
+  expect(faults.receipt(receipt, 1, "second")).toBe(true);
+  faults.death(1, { code: null, signal: "SIGKILL" }, "primary");
+  expect(faults.missing()).toEqual(["second:fault-1"]);
+  faults.death(1, { code: null, signal: "SIGKILL" }, "second");
+  expect(faults.missing()).toEqual([]);
+});
+
+test("fault tokens can recur after respawn without confusing process epochs", () => {
+  const faults = createFaultActivationTracker();
+  const input = {
+    mode: "block",
+    occurrence: 1,
+    point: "before-commit",
+    selector: {},
+  };
+  const outcome = {
+    kind: "result" as const,
+    value: { result: { token: "fault-1" } },
+  };
+  faults.arm(input, outcome, "storage_interrupted", "second", 1);
+  faults.arm(input, outcome, "storage_interrupted", "second", 2);
+  expect(
+    faults.receipt(
+      { token: "fault-1", phase: "before-commit", processEpoch: 1 },
+      1,
+      "second"
+    )
+  ).toBe(true);
+  expect(
+    faults.receipt(
+      { token: "fault-1", phase: "before-commit", processEpoch: 2 },
+      2,
+      "second"
+    )
+  ).toBe(true);
+  faults.death(1, { code: null, signal: "SIGKILL" }, "second");
+  expect(faults.missing()).toEqual(["second:2:fault-1"]);
+  faults.death(2, { code: null, signal: "SIGKILL" }, "second");
   expect(faults.missing()).toEqual([]);
 });

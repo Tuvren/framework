@@ -7,6 +7,58 @@ import type { StdioConformanceAdapter } from "../../../../tools/conformance/adap
 import * as hostSupport from "../src/host-support.ts";
 import { createSyscallBindings } from "../src/host-syscalls.ts";
 
+test("setClock protocol forwards source and preserves unsupported errors", async () => {
+  const bridge = createSyscallBindings({
+    adapterId: "clock-protocol",
+    backend: "memory",
+    capabilities: ["kernel.syscall"],
+  });
+  const instance = await bridge.createInstance();
+  const adapter = {
+    ...bridge,
+    dispatch: async (
+      operation: string,
+      input: unknown,
+      _controls: unknown,
+      handle: unknown
+    ) => await bridge.dispatch(operation, input, handle),
+    initialize: (packetId: string, planVersion: string) => ({
+      adapterId: "clock-protocol",
+      capabilities: [],
+      packetId,
+      planVersion,
+    }),
+    setClock: async (params: Record<string, unknown>) =>
+      await bridge.dispatch("kernel.clock.set", params, params.instance),
+  };
+  try {
+    expect(
+      await handleStdioAdapterLine(
+        adapter,
+        JSON.stringify({
+          id: 1,
+          jsonrpc: "2.0",
+          method: "setClock",
+          params: { domain: "worker", instance, nowMs: 123 },
+        })
+      )
+    ).toMatchObject({ id: 1, result: {} });
+    expect(
+      await handleStdioAdapterLine(
+        adapter,
+        JSON.stringify({
+          id: 2,
+          jsonrpc: "2.0",
+          method: "setClock",
+          params: { domain: "backend", instance, source: "server" },
+        })
+      )
+    ).toMatchObject({ error: { code: "clock_source_unsupported" }, id: 2 });
+  } finally {
+    await bridge.destroyInstance(instance);
+  }
+});
+
 test("unsupported 0.2 method families return typed protocol errors", async () => {
   const bridge = createSyscallBindings({
     adapterId: "unsupported-methods",

@@ -37,6 +37,7 @@ export interface OpenInstanceOptions {
 
 export interface StdioConformanceAdapter {
   armFault?: (params: Record<string, unknown>) => Promise<OperationOutcome>;
+  setClock?: (params: Record<string, unknown>) => Promise<OperationOutcome>;
   setNotificationSink?: (
     sink: (
       method: "faultReached",
@@ -293,6 +294,35 @@ const dispatchOperationMethod = async (
   }
 };
 
+const dispatchControl = async (
+  method: "armFault" | "setClock",
+  adapter: StdioConformanceAdapter,
+  params: Record<string, unknown>
+): Promise<unknown> => {
+  const control = adapter[method];
+  if (control === undefined) {
+    throw new AdapterProtocolError(
+      "adapter_method_not_implemented",
+      `adapter does not support ${method}`
+    );
+  }
+  const outcome = await control.call(adapter, params);
+  if (outcome.kind === "error") {
+    throw new AdapterControlError(outcome.error);
+  }
+  const value = isRecord(outcome.value) ? outcome.value.result : undefined;
+  if (!isRecord(value)) {
+    throw new Error(`${method} returned an invalid result`);
+  }
+  if (method === "armFault" && typeof value.token !== "string") {
+    throw new Error("armFault returned an invalid token");
+  }
+  if (method === "setClock" && Object.keys(value).length !== 0) {
+    throw new Error("setClock returned an invalid result");
+  }
+  return value;
+};
+
 const dispatchMethod = async (
   adapter: StdioConformanceAdapter,
   method: string,
@@ -321,22 +351,9 @@ const dispatchMethod = async (
         paramObject.instance
       );
     }
-    case "armFault": {
-      if (adapter.armFault === undefined) {
-        throw new AdapterProtocolError(
-          "adapter_method_not_implemented",
-          "adapter does not support armFault"
-        );
-      }
-      const outcome = await adapter.armFault(paramObject);
-      if (outcome.kind === "error") {
-        throw new AdapterControlError(outcome.error);
-      }
-      const value = isRecord(outcome.value) ? outcome.value.result : undefined;
-      if (!isRecord(value) || typeof value.token !== "string") {
-        throw new Error("armFault returned an invalid token");
-      }
-      return value;
+    case "armFault":
+    case "setClock": {
+      return await dispatchControl(method, adapter, paramObject);
     }
     case "startOperation":
     case "awaitOperation":

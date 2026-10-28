@@ -170,6 +170,14 @@ test("processExit requires an epoch and an exit expectation on a supervised trac
   }
   check.assertions.push({ kind: "processExit", epoch: 1, code: 0 });
   expect(validate(plan), JSON.stringify(validate.errors)).toBe(true);
+  const misplaced = structuredClone(plan);
+  misplaced.checks[0]?.assertions.push({
+    kind: "resultField",
+    field: "$",
+    process: "second",
+    present: true,
+  });
+  expect(validate(misplaced)).toBe(false);
   expect(
     evaluateCertificationRules(plan, catalog).filter((v) =>
       v.message.includes("processExit")
@@ -252,4 +260,60 @@ test("outcome branches expose only the runner's protocol kind", async () => {
       )
     ).toBe(true);
   }
+});
+
+test("collect accepts only awaited barrier participants with receipts before release", async () => {
+  const { plan } = await loadConformancePlan(planPath);
+  const check = plan.checks[0];
+  if (check?.steps === undefined) {
+    throw new Error("missing writer trace");
+  }
+  check.steps.push({
+    action: "collect" as never,
+    operation: "kernel.harness.collect",
+    participants: ["firstOutcome", "secondOutcome"],
+    stepId: "collect",
+  });
+  const collectProblems = (candidate: typeof check) =>
+    evaluateCertificationRules(
+      { ...plan, checks: [candidate] },
+      catalog
+    ).filter(
+      (violation) =>
+        violation.rule === "barrier-schedule" && violation.stepId === "collect"
+    );
+  expect(collectProblems(check)).toEqual([]);
+
+  for (const missing of ["firstReceipt", "secondReceipt", "release", "arm"]) {
+    const altered = structuredClone(check);
+    const steps = altered.steps;
+    if (steps === undefined) {
+      throw new Error("missing writer steps");
+    }
+    const index = steps.findIndex((step) => step.stepId === missing);
+    if (index < 0) {
+      throw new Error(`missing ${missing}`);
+    }
+    steps.splice(index, 1);
+    expect(collectProblems(altered).length, missing).toBeGreaterThan(0);
+  }
+  const sequential = structuredClone(check);
+  const release = sequential.steps?.find((step) => step.action === "release");
+  const secondReceipt = sequential.steps?.find(
+    (step) => step.stepId === "secondReceipt"
+  );
+  if (
+    sequential.steps === undefined ||
+    release === undefined ||
+    secondReceipt === undefined
+  ) {
+    throw new Error("missing race steps");
+  }
+  sequential.steps.splice(sequential.steps.indexOf(secondReceipt), 1);
+  sequential.steps.splice(
+    sequential.steps.indexOf(release) + 1,
+    0,
+    secondReceipt
+  );
+  expect(collectProblems(sequential).length).toBeGreaterThan(0);
 });

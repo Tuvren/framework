@@ -133,6 +133,56 @@ test("process-crash claims are covered by a designated detector or a documented 
   expect(claims.every((claim) => !memory?.claimIds.includes(claim))).toBe(true);
 });
 
+test("shared-backend race and clock claims are designated or have explicit gaps", async () => {
+  const plans = await Promise.all([
+    loadConformancePlan(
+      "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
+    ),
+    loadConformancePlan(
+      "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
+    ),
+  ]);
+  const controls = JSON.parse(
+    await readFile("spec/conformance/kernel/negative-controls.json", "utf8")
+  ).controls;
+  const reasons = JSON.parse(
+    await readFile(
+      "spec/conformance/kernel/kernel-shared-backend-undetected.json",
+      "utf8"
+    )
+  );
+  const checks = plans.flatMap((plan) =>
+    plan.checks.map(({ check }) => ({ assertions: claimAssertions(check) }))
+  );
+  const claims = [
+    ...new Set(
+      plans.flatMap((plan) =>
+        plan.checks.flatMap(({ check }) => check.claimIds ?? [])
+      )
+    ),
+  ];
+  expect(claims).toHaveLength(4);
+  expect(() =>
+    assertClaimCoverage(
+      "kernel.shared-backend",
+      claims,
+      controls,
+      reasons,
+      checks
+    )
+  ).not.toThrow();
+  reasons["kernel.syscall.shared_writer.a_first"] = "";
+  expect(() =>
+    assertClaimCoverage(
+      "kernel.shared-backend",
+      claims,
+      controls,
+      reasons,
+      checks
+    )
+  ).toThrow("kernel.syscall.shared_writer.a_first");
+});
+
 test("pending process-crash node fixture matches the independent identity encoder", async () => {
   const fixture = JSON.parse(
     await readFile(

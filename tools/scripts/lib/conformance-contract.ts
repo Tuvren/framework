@@ -717,6 +717,26 @@ export const createCheckResult = (
   };
 };
 
+const stableProcessEvidence = (value: unknown): unknown => {
+  if (!isRecord(value)) {
+    return value;
+  }
+  const { pid: _pid, stderrTail: _stderrTail, ...stable } = value;
+  if (!Array.isArray(stable.epochs)) {
+    return stable;
+  }
+  return {
+    ...stable,
+    epochs: stable.epochs.map((epoch: unknown) => {
+      if (!isRecord(epoch)) {
+        return epoch;
+      }
+      const { pid: _epochPid, ...stableEpoch } = epoch;
+      return stableEpoch;
+    }),
+  };
+};
+
 /**
  * Checked-in evidence keeps only the classification and replay of a failure;
  * raw arguments, observations, operands, frames, and stderr stay in the run
@@ -765,16 +785,13 @@ export const toCheckedInCheckResult = (
   ) {
     normalizedDetails = {
       ...normalizedDetails,
-      process: {
-        ...normalizedDetails.process,
-        epochs: normalizedDetails.process.epochs.map((epoch: unknown) => {
-          if (!isRecord(epoch)) {
-            return epoch;
-          }
-          const { pid: _pid, ...stable } = epoch;
-          return stable;
-        }),
-      },
+      process: stableProcessEvidence(normalizedDetails.process),
+    };
+  }
+  if (Array.isArray(normalizedDetails?.processes)) {
+    normalizedDetails = {
+      ...normalizedDetails,
+      processes: normalizedDetails.processes.map(stableProcessEvidence),
     };
   }
   const failure = checkResult.failure;

@@ -587,6 +587,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -666,6 +668,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -6095,6 +6099,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "after-commit-before-ack",
@@ -6380,6 +6386,8 @@
           "activations": ["fault-token-1"],
           "armed": [
             {
+              "epoch": 1,
+              "process": "primary",
               "outcomeCode": "kernel_persistence_fault_injected",
               "token": "fault-token-1",
               "point": "before-commit",
@@ -7252,6 +7260,7 @@
   "exitCode": 0,
   "implementationId": "typescript-kernel-memory",
   "nonApplicableCheckIds": [
+    "kernel.syscall.clock_skew.preemption",
     "kernel.syscall.reopen.close_reopen_checkpoint",
     "kernel.syscall.process-crash.after_commit_before_ack",
     "kernel.syscall.process-crash.after_head_move_before_staging_clear",
@@ -7260,7 +7269,9 @@
     "kernel-restart-af.invalid-staged-result-reexecutes",
     "kernel.crash-recovery.durable_fault_points",
     "kernel.restart-recovery.close_reopen_checkpoint",
-    "kernel.run-liveness.clock_skew_preemption"
+    "kernel.run-liveness.clock_skew_preemption",
+    "kernel.syscall.shared_writer.a_first",
+    "kernel.syscall.shared_writer.b_first"
   ],
   "project": "kernel-typescript-certification",
   "reportLabel": "TypeScript process-local kernel baseline",
@@ -7269,9 +7280,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 135,
-    "totalChecks": 144,
+    "totalChecks": 147,
     "applicableChecks": 135,
-    "nonApplicableChecks": 9
+    "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

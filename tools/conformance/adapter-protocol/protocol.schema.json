@@ -227,9 +227,23 @@
       "properties": {
         "instance": { "$ref": "#/$defs/InstanceHandle" },
         "domain": { "enum": ["backend", "worker"] },
+        "source": { "enum": ["injected", "server"], "default": "injected" },
         "nowMs": { "$ref": "#/$defs/SafeCount" }
       },
-      "required": ["instance", "domain", "nowMs"]
+      "required": ["instance", "domain"],
+      "allOf": [
+        {
+          "if": {
+            "required": ["source"],
+            "properties": { "source": { "const": "server" } }
+          },
+          "then": {
+            "properties": { "domain": { "const": "backend" } },
+            "not": { "required": ["nowMs"] }
+          },
+          "else": { "required": ["nowMs"] }
+        }
+      ]
     },
     "EventNotificationParams": {
       "type": "object",

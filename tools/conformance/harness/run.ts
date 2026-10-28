@@ -85,12 +85,13 @@ import type {
 import { readPath } from "./assertion-engine/path.js";
 import { assertionId } from "./assertion-id.js";
 import { createBarrierSteps } from "./barrier-steps.js";
-import { selectCheck } from "./check-selection.js";
+import { needsServerClock, selectCheck } from "./check-selection.js";
 import {
   createFaultActivationTracker,
   MissingFaultActivationError,
   SeamDidNotHoldError,
 } from "./fault-activation.js";
+import { runMultiTraceCheck } from "./multi-trace.js";
 import {
   ObservationEncodingError,
   validateObservation,
@@ -150,16 +151,17 @@ interface RunResult {
   index: number;
 }
 
-interface StepObservationRecord {
+export interface StepObservationRecord {
   events?: readonly unknown[];
   inspectedState?: unknown;
   operation: string;
   outcome?: unknown;
+  process?: string;
   stepId?: string;
 }
 
 /** What one check sent and observed, kept for its failure artifact. */
-interface CheckRecorder {
+export interface CheckRecorder {
   faults: ReturnType<typeof createFaultActivationTracker>;
   arguments: {
     input: unknown;
@@ -176,8 +178,12 @@ interface CheckRecorder {
     arrivalSequence: number;
     input?: unknown;
     operation: string;
+    participants?: readonly string[];
+    process: string;
+    receipt?: unknown;
     stepId: string;
   }[];
+  processes?: Map<string, ProcessSupervisor>;
   storageIdentity?: unknown;
   thrown?: unknown;
 }
@@ -741,7 +747,9 @@ const validateTraceFaultOutcome = (
   input: unknown,
   outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>,
   operation: CatalogOperation | undefined,
-  check: ConformancePlanCheck
+  check: ConformancePlanCheck,
+  processName = "primary",
+  processEpoch = 1
 ): void => {
   const faultOutcome = operation?.faultOutcome;
   if (step.action === "armFault" && faultOutcome === undefined) {
@@ -765,13 +773,23 @@ const validateTraceFaultOutcome = (
         outcome.error.message
       );
     }
-    recorder.faults.arm(input, outcome, faultOutcome.code);
+    recorder.faults.arm(
+      input,
+      outcome,
+      faultOutcome.code,
+      processName,
+      processEpoch
+    );
   }
-  const activated = recorder.faults.observe(outcome);
+  const activated = recorder.faults.observe(outcome, processName, processEpoch);
   if (outcome.kind === "error" && !activated) {
     if (
-      recorder.faults.isFaultOutcome(outcome.error.code) &&
-      recorder.faults.armed.length > 0
+      recorder.faults.isFaultOutcome(
+        outcome.error.code,
+        processName,
+        processEpoch
+      ) &&
+      recorder.faults.armed.some((entry) => entry.process === processName)
     ) {
       throw new MissingFaultActivationError(
         "typed fault has no matching armed token and storage boundary"
@@ -795,6 +813,8 @@ interface TraceStepExecution {
   inspectQuery: unknown;
   instance: unknown;
   observed: StepObservationRecord;
+  processName?: string;
+  processEpoch?: number;
   recorder: CheckRecorder;
   startedOperations: Map<string, string>;
   step: ConformancePlanStep;
@@ -855,6 +875,8 @@ const observeTraceStep = async ({
   inspectQuery,
   instance,
   observed,
+  processName,
+  processEpoch,
   recorder,
   startedOperations,
   step,
@@ -904,7 +926,9 @@ const observeTraceStep = async ({
       input,
       outcome,
       catalogOperation,
-      check
+      check,
+      processName,
+      processEpoch
     );
   }
   const context = createAssertionContext(
@@ -953,7 +977,9 @@ const recordSchedule = (
   recorder: CheckRecorder,
   step: ConformancePlanStep,
   arrivalSequence: number,
-  input: unknown
+  input: unknown,
+  process = "primary",
+  receipt?: unknown
 ): void => {
   if (!recorder.recordCertification) {
     return;
@@ -962,10 +988,24 @@ const recordSchedule = (
     action: step.action ?? "dispatch",
     arrivalSequence,
     ...(step.action === "release" ? { input } : {}),
+    ...(step.action === "release" && step.participants !== undefined
+      ? { participants: step.participants }
+      : {}),
     operation: step.operation,
+    process,
+    ...(receipt === undefined ? {} : { receipt }),
     stepId: step.stepId,
   });
 };
+
+const barrierReceipt = (
+  step: ConformancePlanStep,
+  outcome: OperationOutcome,
+  context: AssertionContext
+): unknown =>
+  step.operation === "kernel.barrier.wait" && outcome.kind === "result"
+    ? context.result
+    : undefined;
 
 const diagnoseTraceStep = (
   check: ConformancePlanCheck,
@@ -1016,7 +1056,7 @@ const arrivalIncrement = (
   current: JsonRpcAdapterClient
 ): number => (previous === current ? 0 : previous.latestArrivalSequence());
 
-interface FaultAttempt {
+export interface FaultAttempt {
   afterSequence: number;
   operationHandle?: string;
 }
@@ -1030,8 +1070,12 @@ interface LifecycleState {
 interface LifecycleStepRequest {
   action: LifecycleAction;
   catalogOperation: CatalogOperation | undefined;
-  clocks: ReadonlyMap<string, number>;
+  clocks: ReadonlyMap<
+    string,
+    { domain: string; source?: string; nowMs?: number }
+  >;
   faultAttempts: ReadonlyMap<string, FaultAttempt>;
+  processName?: string;
   input: unknown;
   recorder: CheckRecorder;
   timeoutMs: number;
@@ -1046,13 +1090,16 @@ const killAfterFaultReceipts = async (
   supervisor: ProcessSupervisor,
   recorder: CheckRecorder,
   timeoutMs: number,
-  faultAttempts: ReadonlyMap<string, FaultAttempt>
+  faultAttempts: ReadonlyMap<string, FaultAttempt>,
+  processName = "primary"
 ): Promise<void> => {
   const epoch = supervisor.current.epoch;
   for (const arming of recorder.faults.armed.filter(
     (entry) =>
+      entry.process === processName &&
+      entry.epoch === epoch &&
       entry.mode === "block" &&
-      !recorder.faults.activations.includes(entry.token)
+      !recorder.faults.isActivated(entry.token, processName, epoch)
   )) {
     const attempt = faultAttempts.get(arming.token);
     if (attempt?.operationHandle === undefined) {
@@ -1072,7 +1119,7 @@ const killAfterFaultReceipts = async (
         `missing faultReached for ${arming.token}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-    if (!recorder.faults.receipt(receipt, epoch)) {
+    if (!recorder.faults.receipt(receipt, epoch, processName)) {
       throw new MissingFaultActivationError(
         `faultReached does not match arming and process epoch for ${arming.token}`
       );
@@ -1092,20 +1139,27 @@ const killAfterFaultReceipts = async (
   if (exit === undefined) {
     throw new Error("supervisor did not record the process exit");
   }
-  recorder.faults.death(epoch, exit);
+  recorder.faults.death(epoch, exit, processName);
 };
 
 const recordFaultAttempts = (
   step: ConformancePlanStep,
   client: JsonRpcAdapterClient,
   recorder: CheckRecorder,
-  faultAttempts: Map<string, FaultAttempt>
+  faultAttempts: Map<string, FaultAttempt>,
+  processName = "primary",
+  processEpoch = 1
 ): void => {
   if (step.action !== "start") {
     return;
   }
   for (const arming of recorder.faults.armed) {
-    if (arming.mode === "block" && !faultAttempts.has(arming.token)) {
+    if (
+      arming.process === processName &&
+      arming.epoch === processEpoch &&
+      arming.mode === "block" &&
+      !faultAttempts.has(arming.token)
+    ) {
       faultAttempts.set(arming.token, {
         afterSequence: client.nextFrameSequence(),
       });
@@ -1129,6 +1183,7 @@ const runLifecycleStep = async ({
   catalogOperation,
   clocks,
   faultAttempts,
+  processName,
   input,
   recorder,
   state,
@@ -1166,7 +1221,8 @@ const runLifecycleStep = async ({
         supervisor,
         recorder,
         timeoutMs,
-        faultAttempts
+        faultAttempts,
+        processName
       );
       instance = undefined;
       processRunning = false;
@@ -1178,11 +1234,14 @@ const runLifecycleStep = async ({
       processRunning = true;
       break;
     case "openInstance":
+      if (instance !== undefined) {
+        throw new ArgumentResolutionError("process already owns an instance");
+      }
       instance = await client.openInstance(storageRef);
-      for (const [domain, nowMs] of clocks) {
+      for (const [domain, clock] of clocks) {
         const outcome = await client.dispatch(
           "kernel.clock.set",
-          { domain, nowMs },
+          clock,
           {},
           instance
         );
@@ -1199,6 +1258,61 @@ const runLifecycleStep = async ({
   return { client, instance, processRunning };
 };
 
+const clearEpochHandles = (
+  action: ConformancePlanStep["action"],
+  started: Map<string, string>,
+  faultAttempts: Map<string, FaultAttempt>
+): void => {
+  if (action === "kill" || action === "restart" || action === "respawn") {
+    started.clear();
+    faultAttempts.clear();
+  }
+};
+
+const rememberClock = (
+  step: ConformancePlanStep,
+  outcome: OperationOutcome,
+  input: unknown,
+  clocks: Map<string, { domain: string; source?: string; nowMs?: number }>
+): void => {
+  if (
+    step.action !== "setClock" ||
+    outcome.kind !== "result" ||
+    !isRecord(input) ||
+    typeof input.domain !== "string" ||
+    (typeof input.nowMs !== "number" && input.source !== "server")
+  ) {
+    return;
+  }
+  clocks.set(input.domain, {
+    domain: input.domain,
+    ...(typeof input.nowMs === "number" ? { nowMs: input.nowMs } : {}),
+    ...(typeof input.source === "string" ? { source: input.source } : {}),
+  });
+};
+
+export interface MultiTraceDependencies {
+  appendCleanupFailure: typeof appendCleanupFailure;
+  barrierReceipt: typeof barrierReceipt;
+  bindControlInstance: typeof bindControlInstance;
+  clearEpochHandles: typeof clearEpochHandles;
+  createAdapterControls: typeof createAdapterControls;
+  createAdapterInput: typeof createAdapterInput;
+  createTraceStepRequest: typeof createTraceStepRequest;
+  diagnoseTraceStep: typeof diagnoseTraceStep;
+  isLifecycleAction: typeof isLifecycleAction;
+  observeTraceStep: typeof observeTraceStep;
+  readEvaluations: typeof readEvaluations;
+  recordFaultAttemptHandles: typeof recordFaultAttemptHandles;
+  recordFaultAttempts: typeof recordFaultAttempts;
+  recordSchedule: typeof recordSchedule;
+  rejectLegacySelectors: typeof rejectLegacySelectors;
+  rememberClock: typeof rememberClock;
+  runLifecycleStep: typeof runLifecycleStep;
+  validateStartedInput: typeof validateStartedInput;
+  withCheckCleanup: typeof withCheckCleanup;
+}
+
 const runTraceCheck = async (
   initialClient: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -1210,6 +1324,40 @@ const runTraceCheck = async (
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
   const steps = check.steps ?? [];
+  if (
+    steps.some((step) => step.action === "spawn" || step.action === "collect")
+  ) {
+    return await runMultiTraceCheck(
+      {
+        appendCleanupFailure,
+        barrierReceipt,
+        bindControlInstance,
+        clearEpochHandles,
+        createAdapterControls,
+        createAdapterInput,
+        createTraceStepRequest,
+        diagnoseTraceStep,
+        isLifecycleAction,
+        observeTraceStep,
+        readEvaluations,
+        recordFaultAttemptHandles,
+        recordFaultAttempts,
+        recordSchedule,
+        rejectLegacySelectors,
+        rememberClock,
+        runLifecycleStep,
+        validateStartedInput,
+        withCheckCleanup,
+      },
+      initialClient,
+      manifest,
+      plan,
+      compiledCheck,
+      recorder,
+      storageRef,
+      supervisor
+    );
+  }
   const projected = steps.some((step) => step.arguments !== undefined);
   if (projected) {
     rejectLegacySelectors(check.input);
@@ -1239,7 +1387,10 @@ const runTraceCheck = async (
   const captures = captureStore.values;
   const handleCaptures: Record<string, string> = Object.create(null);
   const barriers = createBarrierSteps(handleCaptures);
-  const clocks = new Map<string, number>();
+  const clocks = new Map<
+    string,
+    { domain: string; source?: string; nowMs?: number }
+  >();
   let processRunning = true;
   let arrivalOffset = 0;
   const latestArrival = (): number =>
@@ -1296,6 +1447,7 @@ const runTraceCheck = async (
         supervisor,
       }));
       arrivalOffset += arrivalIncrement(previousClient, client);
+      clearEpochHandles(step.action, startedOperations, faultAttempts);
       const outcome: OperationOutcome = {
         kind: "result",
         value: { result: {} },
@@ -1327,7 +1479,14 @@ const runTraceCheck = async (
     validateStartedInput(step, catalogOperation, input);
     if (step.action === "start" || step.action === "cancel") {
       client.setLosslessObservations(catalogOperation !== undefined);
-      recordFaultAttempts(step, client, recorder, faultAttempts);
+      recordFaultAttempts(
+        step,
+        client,
+        recorder,
+        faultAttempts,
+        "primary",
+        supervisor?.current.epoch ?? 1
+      );
       const receipt = await runOperationHandleStep(
         client,
         step,
@@ -1367,23 +1526,23 @@ const runTraceCheck = async (
       inspectQuery,
       instance,
       observed,
+      processEpoch: supervisor?.current.epoch ?? 1,
       recorder,
       startedOperations,
       step,
     });
-    if (
-      step.action === "setClock" &&
-      outcome.kind === "result" &&
-      isRecord(input) &&
-      typeof input.domain === "string" &&
-      typeof input.nowMs === "number"
-    ) {
-      clocks.set(input.domain, input.nowMs);
-    }
+    rememberClock(step, outcome, input, clocks);
     barriers.observe(step, input, outcome);
     const arrivalSequence = latestArrival();
     arrivals[step.stepId] = arrivalSequence;
-    recordSchedule(recorder, step, arrivalSequence, input);
+    recordSchedule(
+      recorder,
+      step,
+      arrivalSequence,
+      input,
+      "primary",
+      barrierReceipt(step, outcome, context)
+    );
     if (outcome.kind === "error") {
       traceAdapterErrors[step.stepId] = outcome.error;
     }
@@ -1703,7 +1862,12 @@ const createFailure = async (
   const operands = recorder.diagnoses
     .filter(({ evaluation }) => evaluation.status === "fail")
     .flatMap(({ operands: entries }) => entries);
-  const stderr = supervisor?.stderr() ?? client.stderrSince(mark);
+  const stderr =
+    recorder.processes === undefined
+      ? (supervisor?.stderr() ?? client.stderrSince(mark))
+      : [...recorder.processes]
+          .map(([name, process]) => `${name}: ${process.stderr()}`)
+          .join("\n");
   const stderrTail = stderr.slice(-STDERR_TAIL_CHARS);
 
   return {
@@ -1719,7 +1883,12 @@ const createFailure = async (
           },
         }),
     ...(exit === undefined ? {} : { exit }),
-    frameLog: supervisor?.frames() ?? client.framesSince(mark),
+    frameLog:
+      recorder.processes === undefined
+        ? (supervisor?.frames() ?? client.framesSince(mark))
+        : [...recorder.processes].flatMap(([name, process]) =>
+            process.frames().map((frame) => ({ ...frame, process: name }))
+          ),
     ...(recorder.observation.length > 0
       ? { observation: recorder.observation }
       : {}),
@@ -1765,7 +1934,9 @@ const runCheck = async (
 
   const missing = recorder.faults.missing();
   const missingBlockedFault = recorder.faults.armed.some(
-    (arming) => arming.mode === "block" && missing.includes(arming.token)
+    (arming) =>
+      arming.mode === "block" &&
+      !recorder.faults.isActivated(arming.token, arming.process, arming.epoch)
   );
   if (
     missing.length > 0 &&
@@ -1835,6 +2006,7 @@ const runCheck = async (
         action: "dispatch",
         arrivalSequence: client.latestArrivalSequence(),
         operation: compiledCheck.check.operation,
+        process: "primary",
         stepId: "dispatch",
       });
     }
@@ -1843,6 +2015,19 @@ const runCheck = async (
       details: {
         ...checkResult.details,
         schedule: recorder.schedule,
+        ...(recorder.processes === undefined
+          ? {}
+          : {
+              processes: [...recorder.processes].map(([name, process]) => ({
+                name,
+                pid: process.current.pid,
+                epochs: process.history,
+                ...(process.current.exit === undefined
+                  ? {}
+                  : { exit: process.current.exit }),
+                stderrTail: process.stderr().slice(-STDERR_TAIL_CHARS),
+              })),
+            }),
         storageIdentity: recorder.storageIdentity ?? {
           kind: manifest.storage ?? "none",
         },
@@ -1924,8 +2109,8 @@ const executeScheduledCheck = async (
   ): Promise<ConformanceCheckResult> => {
     checkStorageRef = storageRef;
     const lifecycle =
-      scheduledCheck.compiledCheck.check.steps?.some((step) =>
-        isLifecycleAction(step.action)
+      scheduledCheck.compiledCheck.check.steps?.some(
+        (step) => isLifecycleAction(step.action) || step.action === "spawn"
       ) === true;
     if (!lifecycle) {
       return await runCheck(
@@ -1978,11 +2163,36 @@ const executeScheduledCheck = async (
       scheduledCheck.compiledCheck.check.steps?.some(
         (step) => step.action === "armFault" && step.arguments?.mode === "block"
       ) === true;
+    const processDetails = checkResult.details?.processes;
+    const completedProcesses = Array.isArray(processDetails)
+      ? processDetails.map((entry: unknown) =>
+          isRecord(entry) && entry.name === "primary"
+            ? {
+                ...entry,
+                pid: supervisor.current.pid,
+                epochs: supervisor.history,
+                exit: supervisor.current.exit,
+                stderrTail: supervisor.stderr().slice(-STDERR_TAIL_CHARS),
+              }
+            : entry
+        )
+      : [
+          {
+            name: "primary",
+            pid: supervisor.current.pid,
+            epochs: supervisor.history,
+            exit: supervisor.current.exit,
+            stderrTail: supervisor.stderr().slice(-STDERR_TAIL_CHARS),
+          },
+        ];
     return recordCertification || processCrash
       ? {
           ...checkResult,
           details: {
             ...checkResult.details,
+            ...(completedProcesses === undefined
+              ? {}
+              : { processes: completedProcesses }),
             ...(recordCertification
               ? { storageIdentity: { kind: manifest.storage, storageRef } }
               : {}),
@@ -2231,6 +2441,7 @@ const selectChecks = (
       const requiredCapabilities = [
         ...plan.plan.applicability.capabilities,
         ...(check.capabilities ?? []),
+        ...(needsServerClock(check.steps) ? ["clock.backend-server"] : []),
       ];
 
       for (const capability of requiredCapabilities) {

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { TuvrenPersistenceError } from "@tuvren/core";
 import type { KernelRecord } from "@tuvren/core";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import {
@@ -75,8 +76,9 @@ const parameters = {
     arguments: ["branchId", "turnNodeHash"],
   },
   "kernel.clock.set": {
-    arguments: ["domain", "nowMs"],
+    arguments: ["domain", "nowMs", "source"],
     method: "set",
+    protocolMethod: "setClock",
     target: "clock",
   },
   "kernel.fault.arm": {
@@ -408,16 +410,23 @@ interface Instance {
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
   createKernel: () => ReturnType<typeof createConformanceRuntimeKernel>;
-  clock: ReturnType<typeof createKernelTestClock>;
+  clock: AdapterClock;
   fault:
     | ReturnType<typeof createKernelFaultControl>
     | ReturnType<typeof createDurableFaultControl>;
   barrier: ReturnType<typeof createKernelBarrierControl>;
 }
 
+interface AdapterClock {
+  backendNow: () => number;
+  backendServer: () => boolean;
+  set: (domain: unknown, nowMs: unknown, source: unknown) => Promise<void>;
+  workerNow: () => number;
+}
+
 interface InstanceState {
   config: KernelAdapterConfig;
-  clock: ReturnType<typeof createKernelTestClock>;
+  clock: AdapterClock;
   fault?: ReturnType<typeof createDurableFaultControl>;
   attachBackend?: (backend: RuntimeBackend) => void;
   opened?: Promise<Instance>;
@@ -455,8 +464,47 @@ export const createSyscallBindings = (
       throw new Error("durable storageRef is required");
     }
     const handle = randomUUID();
+    const injectedClock = createKernelTestClock();
+    let backendServer = false;
     const state: InstanceState = {
-      clock: createKernelTestClock(),
+      clock: {
+        ...injectedClock,
+        backendServer: () => backendServer,
+        set: async (domain, nowMs, source) => {
+          if (source === "server") {
+            if (domain !== "backend" || nowMs !== undefined) {
+              throw new TypeError(
+                "server source requires the backend domain and no nowMs"
+              );
+            }
+            if (
+              config.backend !== "postgres" ||
+              !config.capabilities.includes("clock.backend-server")
+            ) {
+              throw new TuvrenPersistenceError(
+                "backend server clock is unavailable",
+                {
+                  code: "clock_source_unsupported",
+                }
+              );
+            }
+          } else if (source === undefined || source === "injected") {
+            injectedClock.set(domain, nowMs);
+          } else {
+            throw new TypeError("unknown clock source");
+          }
+          const nextServer =
+            domain === "backend" ? source === "server" : backendServer;
+          if (nextServer !== backendServer && state.opened !== undefined) {
+            await Promise.allSettled(state.inFlight);
+            const opened = await state.opened;
+            opened.barrier.close();
+            await opened.cleanup();
+            delete state.opened;
+          }
+          backendServer = nextServer;
+        },
+      },
       config: { ...config, ...options },
       inFlight: new Set(),
     };
@@ -572,9 +620,10 @@ export const createSyscallBindings = (
     if (pending === undefined) {
       pending = (async () => {
         const { clock } = state;
-        const backend = await createConfiguredBackend(state.config, {
-          now: clock.backendNow,
-        });
+        const backend = await createConfiguredBackend(
+          state.config,
+          clock.backendServer() ? {} : { now: clock.backendNow }
+        );
         state.attachBackend?.(backend.backend);
         const fault =
           state.fault ??

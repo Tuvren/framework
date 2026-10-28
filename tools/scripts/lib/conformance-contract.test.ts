@@ -283,6 +283,76 @@ describe("conformance evidence contract", () => {
     });
   });
 
+  test("checked-in multi-process evidence omits process-local diagnostics", () => {
+    const check = (pid: number) => ({
+      ...createCheckResult("sample.race", [
+        createAssertionResult("sample.race.1.resultField", true),
+      ]),
+      details: {
+        processes: [
+          {
+            name: "primary",
+            pid,
+            stderrTail: `process ${pid}`,
+            exit: { code: 0, signal: null },
+            epochs: [
+              {
+                epoch: 1,
+                pid,
+                executableDigest: "fixed",
+                exit: { code: 0, signal: null },
+              },
+            ],
+          },
+          {
+            name: "second",
+            pid: pid + 1,
+            stderrTail: `process ${pid + 1}`,
+            exit: { code: 0, signal: null },
+            epochs: [
+              {
+                epoch: 1,
+                pid: pid + 1,
+                executableDigest: "fixed",
+                exit: { code: 0, signal: null },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const original = check(100);
+    const compact = toCheckedInCheckResult(original);
+    expect(compact).toEqual(toCheckedInCheckResult(check(200)));
+    expect(compact.details).toEqual({
+      processes: [
+        {
+          name: "primary",
+          exit: { code: 0, signal: null },
+          epochs: [
+            {
+              epoch: 1,
+              executableDigest: "fixed",
+              exit: { code: 0, signal: null },
+            },
+          ],
+        },
+        {
+          name: "second",
+          exit: { code: 0, signal: null },
+          epochs: [
+            {
+              epoch: 1,
+              executableDigest: "fixed",
+              exit: { code: 0, signal: null },
+            },
+          ],
+        },
+      ],
+    });
+    expect(original.details.processes[0]?.pid).toBe(100);
+  });
+
   test("checked-in failure checks accept evidence that predates failure artifacts", () => {
     expect(
       findCheckedInFailureViolations(runnerEvidence().checkResults)

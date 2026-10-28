@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.kernel.protocol",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "boundary": "kernel",
   "surface": "protocol",
   "humanAuthorityRefs": [
@@ -76,6 +76,14 @@
     },
     {
       "path": "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json",
       "format": "conformance-plan"
     }
   ],
@@ -154,6 +162,16 @@
       "planId": "tuvren.kernel.process-crash.syscall",
       "planVersion": "0.1.0",
       "path": "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.shared-writer.syscall",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.clock-skew.syscall",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
     }
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
@@ -264,6 +282,14 @@
     {
       "kind": "conformance-plan",
       "target": "spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
     }
   ],
   "operationCatalog": "spec/conformance/kernel/operations.json",

@@ -93,7 +93,7 @@ export const createKernelBarrierControl = (inner: RuntimeBackend) => {
       if (
         seam !== "kernel.persistence.before-transact" ||
         !Array.isArray(participants) ||
-        participants.length < 2 ||
+        participants.length < 1 ||
         participants.some(
           (value) => typeof value !== "string" || value.length === 0
         ) ||

@@ -381,11 +381,13 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/adapter-protocol/protocol-contract.test.ts",
   "tools/conformance/certification/certification-manifest.test.ts",
   "tools/conformance/certification/conformance-gate.test.ts",
+  "tools/conformance/certification/profile.test.ts",
   "tools/conformance/certification/provenance.test.ts",
   "tools/conformance/harness/test/adapter-client.test.ts",
   "tools/conformance/harness/test/assertion-engine.test.ts",
   "tools/conformance/harness/test/assertion-operators.test.ts",
   "tools/conformance/harness/test/barrier-steps.test.ts",
+  "tools/conformance/harness/test/collect-steps.test.ts",
   "tools/conformance/harness/test/fault-activation.test.ts",
   "tools/conformance/harness/test/step-arguments.test.ts",
   "tools/conformance/harness/test/kernel-integrity.test.ts",
@@ -412,6 +414,7 @@ export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/run.test.ts",
   "tools/conformance/harness/test/operation-handles.test.ts",
   "tools/conformance/harness/test/durable-instance.test.ts",
+  "tools/conformance/harness/test/shared-backend.test.ts",
   "tools/conformance/harness/test/storage-runner.test.ts",
 ];
 
