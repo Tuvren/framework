@@ -118,6 +118,7 @@
   },
   "properties": {
     "adapterId": { "$ref": "#/$defs/nonEmptyString" },
+    "runId": { "$ref": "#/$defs/nonEmptyString" },
     "boundary": { "$ref": "#/$defs/nonEmptyString" },
     "capabilities": { "$ref": "#/$defs/idList" },
     "checkResults": {
@@ -221,7 +222,13 @@
     }
   },
   "then": {
-    "required": ["digests", "environment", "negativeControlRunId", "selection"],
+    "required": [
+      "runId",
+      "digests",
+      "environment",
+      "negativeControlRunId",
+      "selection"
+    ],
     "properties": {
       "certificate": {
         "required": ["complete"],

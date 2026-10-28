@@ -21,6 +21,31 @@ const object = (value: unknown): Record<string, unknown> | undefined =>
     ? Object.fromEntries(Object.entries(value))
     : undefined;
 
+export const profileControlReport = (
+  value: unknown,
+  profile: string
+): { controlRun: unknown; reports: unknown[] } | undefined => {
+  const document = object(value);
+  if (!Array.isArray(document?.reports)) {
+    return undefined;
+  }
+  if (Array.isArray(document.controlRuns)) {
+    const runs = document.controlRuns.filter(
+      (run: unknown) => object(run)?.profile === profile
+    );
+    if (runs.length !== 1) {
+      return undefined;
+    }
+    return {
+      controlRun: runs[0],
+      reports: document.reports.filter(
+        (report: unknown) => object(report)?.profile === profile
+      ),
+    };
+  }
+  return { controlRun: document.controlRun, reports: document.reports };
+};
+
 export const controlOutcomes = (reports: readonly unknown[]): unknown[] =>
   reports.map((value) => {
     const report = object(value);
@@ -227,7 +252,7 @@ export const matchesControlRun = (
   value: unknown,
   expected: ControlExpectation
 ): string | undefined => {
-  const document = object(value);
+  const document = profileControlReport(value, expected.profile);
   const run = object(document?.controlRun);
   const actualDigests = object(run?.verifierDigests);
   if (

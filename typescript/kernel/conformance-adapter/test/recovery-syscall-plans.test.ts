@@ -154,8 +154,10 @@ test.each([
 );
 
 test("recovery mutants activate and are detected by the promoted recovery claims", async () => {
-  const { NEGATIVE_CONTROL_PORTS, runNegativeControls } =
+  const { runNegativeControls } =
     await import("../../../../tools/conformance/meta-conformance/negative-controls.ts");
+  const { NEGATIVE_CONTROL_PORTS } =
+    await import("../../../../tools/conformance/meta-conformance/negative-control-config.ts");
   const config = NEGATIVE_CONTROL_PORTS.find((port) => port.port === "kernel");
   if (config === undefined) {
     throw new Error("missing kernel negative-control configuration");

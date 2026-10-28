@@ -154,8 +154,12 @@ export const readPlans = async (
         ? authority
         : await loadCertificationAuthority();
       if (
-        assessConformancePlan(compiled.plan, planPath, enforcementAuthority)
-          .mode === "enforcing"
+        assessConformancePlan(
+          compiled.plan,
+          planPath,
+          enforcementAuthority,
+          compiled.fixtures
+        ).mode === "enforcing"
       ) {
         throw new Error(
           `verification: enforcing plan ${compiled.plan.planId} requires the operation catalog for packet ${compiled.plan.packetId}; load its authority packet`
@@ -165,7 +169,8 @@ export const readPlans = async (
     const assessment = assessConformancePlan(
       compiled.plan,
       planPath,
-      authority
+      authority,
+      compiled.fixtures
     );
     assertCertificationEnforcement([
       assessment.profileIds.length > 0

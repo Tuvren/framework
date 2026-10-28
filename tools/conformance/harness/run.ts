@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import nodePath from "node:path";
 import process from "node:process";
 
@@ -35,21 +35,24 @@ import type {
   AdapterControls,
   OperationOutcome,
 } from "../adapter-protocol/index.js";
-import {
-  beginCertificate,
-  finishCertificate,
-} from "../certification/bundle.js";
+import { beginCertificate } from "../certification/bundle.js";
 import {
   CERTIFICATION_MANIFEST_PATH,
   findCertifiedEntriesForAdapter,
   readCertificationManifest,
 } from "../certification/certification-manifest.js";
+import { finalizeProfileBundles } from "../certification/profile-bundles.js";
 import {
   assertKernelMemoryClaimInventory,
   findProfileSelectionFailures,
   readClaimedProfiles,
 } from "../certification/profile.js";
 import type { CertificationProfile } from "../certification/profile.js";
+import {
+  certifiedSelectionPassed,
+  requiredCertificatesPassed,
+  writeRunOutput,
+} from "../certification/run-output.js";
 import { nativeErrorAsserted } from "../plan-compiler/certification-rules.js";
 import type { CatalogOperation } from "../plan-compiler/certification-rules.js";
 import {
@@ -101,6 +104,7 @@ import {
   recordHandleCapture,
   runOperationHandleStep,
 } from "./operation-steps.js";
+import { assertsNativeErrorOutcome } from "./outcome-assertion.js";
 import { ProcessStartError, ProcessSupervisor } from "./process-supervisor.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
@@ -120,6 +124,7 @@ import {
 interface CliOptions {
   adapter: string;
   allowFailingEvidence: boolean;
+  captureObservations: boolean;
   capabilities: string[];
   certificationManifest: string;
   checks: string[];
@@ -231,6 +236,7 @@ const parseArgs = (args: readonly string[]): CliOptions => {
   const options: CliOptions = {
     adapter: "",
     allowFailingEvidence: false,
+    captureObservations: false,
     capabilities: [],
     certificationManifest: CERTIFICATION_MANIFEST_PATH,
     checks: [],
@@ -298,6 +304,10 @@ const parseArgs = (args: readonly string[]): CliOptions => {
       }
       case "--allow-failing-evidence": {
         options.allowFailingEvidence = true;
+        break;
+      }
+      case "--capture-observations": {
+        options.captureObservations = true;
         break;
       }
       case "--require-certified": {
@@ -748,6 +758,7 @@ const validateTraceFaultOutcome = (
   outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>,
   operation: CatalogOperation | undefined,
   check: ConformancePlanCheck,
+  context: Record<string, unknown>,
   processName = "primary",
   processEpoch = 1
 ): void => {
@@ -798,7 +809,8 @@ const validateTraceFaultOutcome = (
     validateNativeError(
       outcome.error,
       operation,
-      nativeErrorAsserted(check, step)
+      nativeErrorAsserted(check, step) ||
+        assertsNativeErrorOutcome(check, step, context, operation)
     );
   }
 };
@@ -927,6 +939,7 @@ const observeTraceStep = async ({
       outcome,
       catalogOperation,
       check,
+      contextInput,
       processName,
       processEpoch
     );
@@ -2015,6 +2028,7 @@ const runCheck = async (
       details: {
         ...checkResult.details,
         schedule: recorder.schedule,
+        traceObservations: recorder.observation,
         ...(recorder.processes === undefined
           ? {}
           : {
@@ -2613,6 +2627,14 @@ const main = async (): Promise<void> => {
       ? options.packets
       : adapterManifest.authorityPackets
   );
+  const certifiedProfiles = profiles.filter((profile) =>
+    certifiedEntries.some((entry) => entry.profile === profile.profileId)
+  );
+  const missingCertifiedProfiles = certifiedEntries.filter(
+    (entry) =>
+      entry.profile !== adapterManifest.suiteId &&
+      !certifiedProfiles.some((profile) => profile.profileId === entry.profile)
+  );
   const profileFindings = collectProfileFindings(
     profiles,
     plans,
@@ -2658,9 +2680,10 @@ const main = async (): Promise<void> => {
   const digestsBefore = await beginCertificate(
     options,
     adapterManifest,
-    profiles
+    certifiedProfiles
   );
-  const recordCertification = digestsBefore !== undefined;
+  const recordCertification =
+    digestsBefore !== undefined || options.captureObservations;
   const results = await runScheduledChecks(
     adapterManifest,
     scheduled,
@@ -2705,6 +2728,7 @@ const main = async (): Promise<void> => {
   };
   const evidence: ConformanceEvidence = {
     adapterId: adapterManifest.adapterId,
+    ...(certifiedProfiles.length === 0 ? {} : { runId: randomUUID() }),
     boundary: adapterManifest.boundary,
     capabilities: [...adapterManifest.capabilities].toSorted(),
     checkResults,
@@ -2717,16 +2741,14 @@ const main = async (): Promise<void> => {
     suiteVersion: adapterManifest.suiteVersion,
     summary,
   };
-  const bundle = await finishCertificate(
+  const bundles = await finalizeProfileBundles(
     options,
     adapterManifest,
-    profiles[0],
+    certifiedProfiles,
     plans,
-    checkResults,
-    evidence.status,
+    evidence,
     digestsBefore
   );
-  const certificate = bundle.certificate;
   if (summary.failedChecks > 0) {
     process.stderr.write(
       `conformance failure artifacts retained at ${await retainFailureArtifacts(
@@ -2735,59 +2757,27 @@ const main = async (): Promise<void> => {
     );
   }
 
-  const text = `${JSON.stringify(
-    {
-      ...evidence,
-      ...bundle,
-      checkResults: checkResults.map(previewFailure),
-    },
-    null,
-    2
-  )}\n`;
-
-  if (options.evidenceOut !== undefined) {
-    const evidencePath = nodePath.resolve(REPO_ROOT, options.evidenceOut);
-    await mkdir(nodePath.dirname(evidencePath), { recursive: true });
-    await writeFile(evidencePath, text);
-  }
-
-  if (options.summaryOnly) {
-    process.stdout.write(
-      `${JSON.stringify(
-        {
-          adapterId: evidence.adapterId,
-          implementationId: evidence.implementationId,
-          ...(certificate === undefined ? {} : { certificate }),
-          status: evidence.status,
-          suiteId: evidence.suiteId,
-          suiteVersion: evidence.suiteVersion,
-          summary: evidence.summary,
-        },
-        null,
-        2
-      )}\n`
-    );
-  } else {
-    process.stdout.write(text);
-  }
+  await writeRunOutput(
+    options,
+    adapterManifest,
+    evidence,
+    bundles,
+    previewFailure
+  );
 
   if (evidence.status === "fail" && !options.allowFailingEvidence) {
     process.exitCode = 1;
   }
-
-  if (options.requireCertified && certificate?.status !== "certified") {
-    process.stderr.write(
-      "the requested certificate is incomplete or lacks a matching passing control run\n"
-    );
+  if (
+    !requiredCertificatesPassed(
+      options.requireCertified,
+      bundles,
+      missingCertifiedProfiles
+    )
+  ) {
     process.exitCode = 1;
   }
-
-  if (certifiedEntries.length > 0 && selected.applicable.length === 0) {
-    for (const entry of certifiedEntries) {
-      process.stderr.write(
-        `certified project ${entry.project} (profile ${entry.profile}) selected zero applicable checks; a certified run must exercise its profile\n`
-      );
-    }
+  if (!certifiedSelectionPassed(certifiedEntries, selected.applicable.length)) {
     process.exitCode = 1;
   }
 };

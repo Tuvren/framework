@@ -193,7 +193,8 @@ const collectPlanClaimIds = (plan: ConformancePlan): Set<string> =>
 export const assessConformancePlan = (
   plan: ConformancePlan,
   planPath: string,
-  authority: CertificationAuthority
+  authority: CertificationAuthority,
+  fixtures?: ReadonlyMap<string, unknown>
 ): PlanCertificationAssessment => {
   const packet = authority.packets.get(plan.packetId);
   const catalog = packet?.catalog;
@@ -223,7 +224,7 @@ export const assessConformancePlan = (
     syscallPlan
       ? "enforcing"
       : "report";
-  const violations = evaluateCertificationRules(plan, catalog);
+  const violations = evaluateCertificationRules(plan, catalog, fixtures);
 
   if (mode === "enforcing" && catalog === undefined) {
     violations.unshift({
@@ -250,7 +251,12 @@ export const assessConformancePlans = async (
   await Promise.all(
     planPaths.map(async (planPath) => {
       const compiled = await loadConformancePlan(planPath);
-      return assessConformancePlan(compiled.plan, planPath, authority);
+      return assessConformancePlan(
+        compiled.plan,
+        planPath,
+        authority,
+        compiled.fixtures
+      );
     })
   );
 

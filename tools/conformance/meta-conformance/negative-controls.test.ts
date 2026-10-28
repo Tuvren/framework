@@ -23,6 +23,7 @@ import type {
   ConformanceCheckResult,
   ConformanceFailureClassification,
 } from "../../scripts/lib/conformance-contract.ts";
+import type { NegativeControlPortConfig } from "./negative-control-config.ts";
 import {
   classifyMutantRun,
   runBranchControl,
@@ -31,7 +32,6 @@ import {
 import type {
   HarnessRun,
   MutantReport,
-  NegativeControlPortConfig,
   NegativeControlReport,
 } from "./negative-controls.ts";
 

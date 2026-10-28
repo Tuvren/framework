@@ -141,6 +141,23 @@ test("certificate links require passing, provenance-bound fleet branch observati
   };
   const passing = makeRun("pass", true, "applied");
   expect(matchesControlRun(passing, expected)).toBe(passing.controlRun.id);
+  const other = makeRun("pass", true, "applied");
+  const multiProfileReport = {
+    reports: [
+      ...passing.reports,
+      ...other.reports.map((report) => ({
+        ...report,
+        profile: "other.profile",
+      })),
+    ],
+    controlRuns: [
+      passing.controlRun,
+      { ...other.controlRun, profile: "other.profile" },
+    ],
+  };
+  expect(matchesControlRun(multiProfileReport, expected)).toBe(
+    passing.controlRun.id
+  );
   expect(
     matchesControlRun(makeRun("fail", true, "applied"), expected)
   ).toBeUndefined();
@@ -515,6 +532,8 @@ test("real fleet controls certify both complete bundles and reject changed verif
       "tools/conformance/meta-conformance/negative-controls.ts",
       "--port",
       "kernel",
+      "--profile",
+      "kernel.memory",
       "--report-out",
       reportPath,
     ]);

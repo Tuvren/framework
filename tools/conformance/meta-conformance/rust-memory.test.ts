@@ -23,10 +23,8 @@ import { spawn } from "bun";
 
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
 import { readAdapterManifest } from "../harness/run-plans.ts";
-import {
-  NEGATIVE_CONTROL_PORTS,
-  runNegativeControls,
-} from "./negative-controls.ts";
+import { NEGATIVE_CONTROL_PORTS } from "./negative-control-config.ts";
+import { runNegativeControls } from "./negative-controls.ts";
 
 const exploratoryAdapter = async (directory: string): Promise<string> => {
   const path = nodePath.join(directory, "rust-exploratory.json");

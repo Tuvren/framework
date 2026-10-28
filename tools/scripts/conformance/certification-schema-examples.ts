@@ -377,6 +377,7 @@ export const PINNED_NEGATIVE_CONTROLS = {
 
 export const PINNED_CERTIFICATION_EVIDENCE = {
   adapterId: "typescript-kernel",
+  runId: "run-1",
   boundary: "kernel",
   capabilities: ["kernel.run", "kernel.store"],
   certificate: {

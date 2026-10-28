@@ -185,8 +185,10 @@ test("memory lifecycle traces enforce certification through catalogued observati
 });
 
 test("lease controls activate and fail designated run-liveness syscall assertions", async () => {
-  const { NEGATIVE_CONTROL_PORTS, runNegativeControls } =
+  const { runNegativeControls } =
     await import("../../../../tools/conformance/meta-conformance/negative-controls.ts");
+  const { NEGATIVE_CONTROL_PORTS } =
+    await import("../../../../tools/conformance/meta-conformance/negative-control-config.ts");
   const config = NEGATIVE_CONTROL_PORTS.find((port) => port.port === "kernel");
   if (config === undefined) {
     throw new Error("missing kernel negative-control configuration");
@@ -237,8 +239,10 @@ test("lease error expectations stay outside instance input and operation argumen
 });
 
 test("reclamation controls activate and fail designated syscall assertions", async () => {
-  const { NEGATIVE_CONTROL_PORTS, runNegativeControls } =
+  const { runNegativeControls } =
     await import("../../../../tools/conformance/meta-conformance/negative-controls.ts");
+  const { NEGATIVE_CONTROL_PORTS } =
+    await import("../../../../tools/conformance/meta-conformance/negative-control-config.ts");
   const config = NEGATIVE_CONTROL_PORTS.find((port) => port.port === "kernel");
   if (config === undefined) {
     throw new Error("missing kernel negative-control configuration");

@@ -102,6 +102,7 @@ try {
     "inventory" in parsedManifest && Array.isArray(parsedManifest.inventory)
       ? parsedManifest.inventory
       : [];
+  const completedProjects = new Set<string>();
   if (exitCode === 0) {
     for (const entry of certified) {
       if (
@@ -109,7 +110,8 @@ try {
         entry === null ||
         !("profile" in entry) ||
         typeof entry.profile !== "string" ||
-        !("project" in entry)
+        !("project" in entry) ||
+        typeof entry.project !== "string"
       ) {
         continue;
       }
@@ -194,6 +196,10 @@ try {
           `${match.adapter} does not claim required profile ${entry.profile}`
         );
       }
+      if (completedProjects.has(entry.project)) {
+        continue;
+      }
+      completedProjects.add(entry.project);
       const certificate = spawnSync(
         "bun",
         [
@@ -203,6 +209,8 @@ try {
           "--control-report",
           report,
           "--require-certified",
+          "--evidence-out",
+          path.join(directory, entry.project, "evidence.json"),
           "--concurrency",
           "4",
           "--summary-only",
