@@ -325,6 +325,30 @@ fn controls_require_explicit_clocks_before_kernel_initialization() {
 }
 
 #[test]
+fn server_clock_source_is_a_catalogued_unsupported_error() {
+    let mut adapter = Adapter::new();
+    let instance = adapter.instance();
+    let dispatch = adapter.call(
+        &instance,
+        "kernel.clock.set",
+        json!({"domain":"backend","source":"server"}),
+    );
+    assert_eq!(dispatch["result"]["kind"], "error", "{dispatch}");
+    assert_eq!(
+        dispatch["result"]["error"]["code"], "clock_source_unsupported",
+        "{dispatch}"
+    );
+    let protocol = adapter.request(
+        "setClock",
+        json!({"instance":instance,"domain":"backend","source":"server"}),
+    );
+    assert_eq!(
+        protocol["error"]["code"], "clock_source_unsupported",
+        "{protocol}"
+    );
+}
+
+#[test]
 fn invalid_clock_inputs_are_protocol_errors() {
     let mut adapter = Adapter::new();
     let instance = adapter.instance();

@@ -802,6 +802,22 @@ const PROTOCOL_CONTROLS: &[(&str, (ControlBinding, bool))] = routing![
 fn set_clock(instance: &Instance, a: &Value) -> CallResult {
     let domain: ClockDomain = serde_json::from_value(field(a, "domain")?.clone())
         .map_err(|_| invalid("invalid clock domain"))?;
+    match a.get("source") {
+        None => {}
+        Some(Value::String(source)) if source == "injected" => {}
+        Some(Value::String(source)) if source == "server" => {
+            if !matches!(domain, ClockDomain::Backend) || a.get("nowMs").is_some() {
+                return Err(invalid("server source requires backend without nowMs").into());
+            }
+            return Err(KernelError::new(
+                "clock_source_unsupported",
+                "backend server clock is unavailable",
+                None,
+            )
+            .into());
+        }
+        Some(_) => return Err(invalid("invalid clock source").into()),
+    }
     instance
         .controls
         .set_clock(domain, number(a, "nowMs")?)
