@@ -31,6 +31,13 @@ import {
   nativeErrorAsserted,
   parseOperationCatalog,
 } from "./certification-rules.ts";
+import type {
+  ConformancePlan,
+  ConformancePlanAssertion,
+  ConformancePlanCheck,
+  ConformancePlanStep,
+} from "./index.ts";
+import { findConformancePlans } from "./index.ts";
 
 test("collected native errors count only when every error code is asserted unconditionally", () => {
   const awaited: ConformancePlanStep = {
@@ -76,13 +83,6 @@ test("collected native errors count only when every error code is asserted uncon
   collect.participants = ["other"];
   expect(nativeErrorAsserted(check, awaited)).toBe(false);
 });
-import type {
-  ConformancePlan,
-  ConformancePlanAssertion,
-  ConformancePlanCheck,
-  ConformancePlanStep,
-} from "./index.ts";
-import { findConformancePlans } from "./index.ts";
 
 const FIXTURE_DIR =
   "tools/conformance/plan-compiler/__fixtures__/certification";

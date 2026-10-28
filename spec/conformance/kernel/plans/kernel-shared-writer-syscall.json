@@ -4,11 +4,7 @@
   "packetId": "tuvren.kernel.protocol",
   "certificationRules": "enforcing",
   "applicability": {
-    "capabilities": [
-      "kernel.syscall",
-      "kernel.persistence.durable",
-      "clock.backend-server"
-    ]
+    "capabilities": ["kernel.syscall", "kernel.persistence.durable"]
   },
   "checks": [
     {
