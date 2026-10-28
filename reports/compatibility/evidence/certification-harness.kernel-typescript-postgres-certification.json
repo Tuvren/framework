@@ -482,26 +482,66 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.syscall.controls.after_commit_before_ack.nativeError",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
           "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.controls.after_commit_before_ack.1.faultActivated",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "kernel.syscall.controls.after_commit_before_ack",
       "details": {
-        "adapterError": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
         "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.protocol.core.syscall"
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "after-commit-before-ack",
+              "token": "fault-token-1"
+            },
+            "message": "injected after-commit-before-ack persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginFirst",
+          "completeFirst",
+          "beginSecond",
+          "consumed",
+          "arm",
+          "faultedCheckpoint"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "after-commit-before-ack",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "operation": "checkpoint",
+                "branchId": "branch_main"
+              }
+            }
+          ]
+        }
       },
       "status": "fail",
       "failure": {
@@ -512,26 +552,66 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.syscall.controls.before_commit.nativeError",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
+          "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
           "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.controls.before_commit.1.faultActivated",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "kernel.syscall.controls.before_commit",
       "details": {
-        "adapterError": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
         "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.protocol.core.syscall"
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "before-commit",
+              "token": "fault-token-1"
+            },
+            "message": "injected before-commit persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginFirst",
+          "completeFirst",
+          "beginSecond",
+          "consumed",
+          "arm",
+          "faultedCheckpoint"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "before-commit",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "operation": "checkpoint",
+                "branchId": "branch_main"
+              }
+            }
+          ]
+        }
       },
       "status": "fail",
       "failure": {
@@ -5948,522 +6028,594 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.nativeError",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingMessages.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.faultedCheckpoint.2.stateField",
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.1.faultActivated",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.2.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.3.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.4.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.5.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.6.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.7.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.8.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.9.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.10.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.11.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.12.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.13.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.14.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.15.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.16.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.17.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.18.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.19.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.20.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.baselineMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.baselineMessages.result.0",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.consumedStagedResults",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.hash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.previousTurnNodeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.turnTreeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.lineage.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.lineage.result.1",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.lineage.result.2.hash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingMessages.result.0",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingMessages.result.1",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingStaging.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingStaging.result.0",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.consumedStagedResults",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.stepSequence",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.staging.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.visibleMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.durableNode.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.faultedCheckpoint.state.adapterError.code",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.lineage.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.recover.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.recoveredHead.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.staging.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.visibleMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "kernel.syscall.crash-recovery.after_commit_before_ack",
       "details": {
-        "adapterError": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
         "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.restart-recovery.syscall"
+        "planId": "tuvren.kernel.restart-recovery.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "after-commit-before-ack",
+              "token": "fault-token-1"
+            },
+            "message": "injected after-commit-before-ack persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "pendingTree",
+          "pendingMessages",
+          "arm",
+          "faultedCheckpoint",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "after-commit-before-ack",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ]
+        }
       },
-      "status": "fail",
-      "failure": {
-        "classification": "implementation",
-        "replay": "bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --check kernel.syscall.crash-recovery.after_commit_before_ack"
-      }
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.syscall.crash-recovery.before_commit.nativeError",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingMessages.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.faultedCheckpoint.2.stateField",
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.1.faultActivated",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.2.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.3.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.4.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.5.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.6.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.7.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.8.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.9.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.10.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.11.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.12.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.13.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.14.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.15.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.16.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.17.resultField",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.baselineMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.baselineMessages.result.0",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.durableNode.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.durableNode.result.hash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.lineage.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.lineage.result.1.hash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingMessages.result.0",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingMessages.result.1",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingStaging.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingStaging.result.0",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.consumedStagedResults",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.stepSequence",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.staging.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.visibleMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.durableNode.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.faultedCheckpoint.state.adapterError.code",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.lineage.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.recover.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.recoveredHead.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.staging.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.visibleMessages.result",
-          "message": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "kernel.syscall.crash-recovery.before_commit",
       "details": {
-        "adapterError": "kernel.run.completeStep emitted undeclared native error invalid_timestamp_order",
         "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.restart-recovery.syscall"
+        "planId": "tuvren.kernel.restart-recovery.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "before-commit",
+              "token": "fault-token-1"
+            },
+            "message": "injected before-commit persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "pendingTree",
+          "pendingMessages",
+          "arm",
+          "faultedCheckpoint",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "activations": ["fault-token-1"],
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-token-1",
+              "point": "before-commit",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ]
+        }
       },
-      "status": "fail",
-      "failure": {
-        "classification": "implementation",
-        "replay": "bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --check kernel.syscall.crash-recovery.before_commit"
-      }
+      "status": "pass"
     },
     {
       "assertionResults": [
@@ -7459,8 +7611,8 @@
   "reportStatus": "unexpected_fail",
   "status": "fail",
   "summary": {
-    "failedChecks": 4,
-    "passedChecks": 134,
+    "failedChecks": 2,
+    "passedChecks": 136,
     "totalChecks": 140,
     "applicableChecks": 138,
     "nonApplicableChecks": 2

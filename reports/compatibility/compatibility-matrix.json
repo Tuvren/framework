@@ -1078,8 +1078,8 @@
             "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
-            "failedChecks": 4,
-            "passedChecks": 134,
+            "failedChecks": 2,
+            "passedChecks": 136,
             "totalChecks": 140,
             "applicableChecks": 138,
             "nonApplicableChecks": 2

@@ -22,6 +22,7 @@
 // the kernel (the worker's wall clock).
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { rejects } from "node:assert/strict";
 
 import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
@@ -118,6 +119,130 @@ afterAll(async () => {
 });
 
 describe("createPostgresBackend backend-authoritative lease clock", () => {
+  test("checkpoints with a worker clock ahead of backend time", async () => {
+    const backend = createPostgresBackend(
+      createPostgresTestBackendOptions({ now: () => 100 })
+    );
+
+    try {
+      const kernel = createRuntimeKernel({ backend, now: () => 200 });
+      const schemaId = await kernel.schema.register(TEST_SCHEMA);
+      const thread = await kernel.thread.create(
+        "thread_worker_ahead",
+        schemaId,
+        "branch_worker_ahead"
+      );
+      const turn = await kernel.turn.create(
+        "turn_worker_ahead",
+        thread.threadId,
+        thread.branchId,
+        null,
+        thread.rootTurnNodeHash
+      );
+      const run = await kernel.runLiveness.createLeasedRun({
+        branchId: thread.branchId,
+        executionOwnerId: "owner_worker_ahead",
+        leaseExpiresAtMs: 250,
+        runId: "run_worker_ahead",
+        schemaId,
+        startTurnNodeHash: thread.rootTurnNodeHash,
+        steps: [{ deterministic: false, id: "checkpoint", sideEffects: false }],
+        turnId: turn.turnId,
+      });
+      expect(run.leaseExpiresAtMs).toBe(150);
+      const staged = await kernel.staging.stage(
+        "run_worker_ahead",
+        new Uint8Array([1, 2, 3]),
+        "task_worker_ahead",
+        "message",
+        "completed"
+      );
+      const checkpoint = await kernel.run.completeStep(
+        "run_worker_ahead",
+        "checkpoint"
+      );
+      if (checkpoint.turnNodeHash === undefined) {
+        throw new Error("expected checkpoint turn node");
+      }
+
+      const stored = await backend.transact(async (tx) => ({
+        branch: await tx.branches.get(thread.branchId),
+        node: await tx.turnNodes.get(checkpoint.turnNodeHash ?? ""),
+        run: await tx.runs.get("run_worker_ahead"),
+        turn: await tx.turns.get(turn.turnId),
+      }));
+      expect(staged.stagedResult.timestamp).toBe(100);
+      expect(stored.branch?.createdAtMs).toBe(100);
+      expect(stored.branch?.updatedAtMs).toBe(100);
+      expect(stored.turn?.createdAtMs).toBe(100);
+      expect(stored.turn?.updatedAtMs).toBe(100);
+      expect(stored.run?.updatedAtMs).toBe(100);
+      expect(stored.node?.createdAtMs).toBe(100);
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
+  test("rejects a backend clock that moves behind previous durable updates", async () => {
+    let backendNow = 100;
+    const backend = createPostgresBackend(
+      createPostgresTestBackendOptions({ now: () => backendNow })
+    );
+
+    try {
+      const kernel = createRuntimeKernel({ backend, now: () => 200 });
+      const schemaId = await kernel.schema.register(TEST_SCHEMA);
+      const thread = await kernel.thread.create(
+        "thread_regression",
+        schemaId,
+        "branch_regression"
+      );
+      const turn = await kernel.turn.create(
+        "turn_regression",
+        thread.threadId,
+        thread.branchId,
+        null,
+        thread.rootTurnNodeHash
+      );
+      await kernel.run.create(
+        "run_regression",
+        turn.turnId,
+        thread.branchId,
+        schemaId,
+        thread.rootTurnNodeHash,
+        [{ deterministic: false, id: "checkpoint", sideEffects: false }]
+      );
+      backendNow = 110;
+      const checkpoint = await kernel.run.completeStep(
+        "run_regression",
+        "checkpoint"
+      );
+      if (checkpoint.turnNodeHash === undefined) {
+        throw new Error("expected checkpoint turn node");
+      }
+      backendNow = 105;
+      await rejects(
+        kernel.turn.updateHead(turn.turnId, checkpoint.turnNodeHash),
+        {
+          code: "postgres_backend_turn_updated_at_regressed",
+        }
+      );
+      backendNow = 99;
+      await rejects(
+        kernel.turn.updateHead(turn.turnId, checkpoint.turnNodeHash),
+        {
+          code: "invalid_timestamp_order",
+        }
+      );
+      const stored = await backend.transact(
+        async (tx) => await tx.turns.get(turn.turnId)
+      );
+      expect(stored?.updatedAtMs).toBe(110);
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
   test("advertises shared-lease-clock support", async () => {
     const backend = createPostgresBackend(createPostgresTestBackendOptions());
 
