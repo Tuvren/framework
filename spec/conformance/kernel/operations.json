@@ -4,6 +4,32 @@
   "packetId": "tuvren.kernel.protocol",
   "operations": [
     {
+      "operationId": "kernel.backend.capabilities",
+      "kind": "syscall",
+      "capability": "kernel.protocol",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maintenance.reclamation": { "type": "boolean" },
+            "shared-lease-clock": { "type": "boolean" },
+            "thread.enumeration": { "type": "boolean" }
+          },
+          "required": ["thread.enumeration"]
+        }
+      },
+      "errors": [],
+      "handles": { "consumes": ["instance"] },
+      "binding": "typescript/kernel/protocol#RuntimeBackend.capabilities"
+    },
+    {
       "operationId": "kernel.store.put",
       "kind": "syscall",
       "capability": "kernel.protocol",

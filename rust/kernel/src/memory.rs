@@ -88,6 +88,8 @@ struct KeepClosure {
 /// ADR-0034: capability descriptor returned by InMemoryKernel::capabilities().
 #[derive(Clone, Debug)]
 pub struct BackendCapability {
+    pub maintenance_reclamation: bool,
+    pub shared_lease_clock: bool,
     pub thread_enumeration: bool,
 }
 
@@ -532,6 +534,8 @@ impl InMemoryKernel {
     /// ADR-0034: returns the capability descriptor for this backend.
     pub fn capabilities(&self) -> BackendCapability {
         BackendCapability {
+            maintenance_reclamation: true,
+            shared_lease_clock: false,
             thread_enumeration: true,
         }
     }

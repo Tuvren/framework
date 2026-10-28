@@ -43,6 +43,11 @@ interface SyscallBinding {
 }
 
 const parameters = {
+  "kernel.backend.capabilities": {
+    arguments: [],
+    method: "capabilities",
+    target: "backend",
+  },
   "kernel.barrier.arm": {
     arguments: ["barrierId", "seam", "participants"],
     method: "arm",
@@ -399,6 +404,7 @@ const requireOperationEntry = (signal: AbortSignal | undefined): void => {
 };
 
 interface Instance {
+  backend: RuntimeBackend;
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
   createKernel: () => ReturnType<typeof createConformanceRuntimeKernel>;
@@ -580,6 +586,7 @@ export const createSyscallBindings = (
           });
         try {
           return {
+            backend: barrier.backend,
             barrier,
             cleanup: backend.cleanup,
             clock,

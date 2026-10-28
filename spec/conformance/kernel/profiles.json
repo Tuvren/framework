@@ -14,6 +14,7 @@
         "kernel.syscall"
       ],
       "claimIds": [
+        "kernel.syscall.backend_capability.shared_lease_clock",
         "kernel.crash-recovery.in_process_fault_points",
         "kernel.syscall.concurrent_writer.a_first",
         "kernel.syscall.concurrent_writer.b_first",

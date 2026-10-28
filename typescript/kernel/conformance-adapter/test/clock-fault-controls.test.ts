@@ -13,6 +13,45 @@ const config = {
   capabilities: ["kernel.syscall"],
 } as const;
 
+test("backend capability observations come from the instance's backend", async () => {
+  const original = hostSupport.createConfiguredBackend;
+  let sharedLeaseClock = false;
+  const factory = spyOn(
+    hostSupport,
+    "createConfiguredBackend"
+  ).mockImplementation(async (adapterConfig, options) => {
+    const configured = await original(adapterConfig, options);
+    return {
+      ...configured,
+      backend: {
+        ...configured.backend,
+        capabilities: () => ({
+          ...configured.backend.capabilities(),
+          "shared-lease-clock": sharedLeaseClock,
+        }),
+      },
+    };
+  });
+  const bridge = createSyscallBindings(config);
+  const handle = await bridge.createInstance();
+  try {
+    const observe = async () =>
+      await bridge.dispatch("kernel.backend.capabilities", {}, handle);
+    expect(await observe()).toMatchObject({
+      kind: "result",
+      value: { result: { "shared-lease-clock": false } },
+    });
+    sharedLeaseClock = true;
+    expect(await observe()).toMatchObject({
+      kind: "result",
+      value: { result: { "shared-lease-clock": true } },
+    });
+  } finally {
+    await bridge.destroyInstance(handle);
+    factory.mockRestore();
+  }
+});
+
 for (const point of ["before-commit", "after-commit-before-ack"]) {
   test(`armed ${point} returns a token carried by the typed native fault`, async () => {
     const bridge = createSyscallBindings(config);

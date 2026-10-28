@@ -88,6 +88,7 @@ const planOperations = new Set(
   )
 );
 const SYSCALLS = [
+  "backend.capabilities",
   "store.put",
   "store.get",
   "store.has",
@@ -260,7 +261,10 @@ describe("kernel certification catalog", () => {
         method.join(".")
       );
       if (operation.kind === "syscall") {
-        expect(operation.operationId).toBe(`kernel.${method.join(".")}`);
+        const namespace = type === "RuntimeBackend" ? "backend." : "";
+        expect(operation.operationId).toBe(
+          `kernel.${namespace}${method.join(".")}`
+        );
       }
       if (operation.kind === "syscall") {
         expect(operation.handles).toEqual({ consumes: ["instance"] });

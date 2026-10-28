@@ -71,6 +71,27 @@ impl Drop for Adapter {
 }
 
 #[test]
+fn backend_capability_observation_matches_native_descriptor() {
+    let mut adapter = Adapter::new();
+    let instance = adapter.instance();
+    let descriptor = tuvren_kernel_rust::InMemoryKernel::new().capabilities();
+    let observed = adapter.result(&instance, "kernel.backend.capabilities", json!({}));
+    assert_eq!(
+        observed["maintenance.reclamation"],
+        descriptor.maintenance_reclamation
+    );
+    assert_eq!(
+        observed["thread.enumeration"],
+        descriptor.thread_enumeration
+    );
+    assert_eq!(
+        observed["shared-lease-clock"],
+        descriptor.shared_lease_clock
+    );
+    assert!(!descriptor.shared_lease_clock);
+}
+
+#[test]
 fn bytes_and_instance_lifetimes_are_native() {
     let mut adapter = Adapter::new();
     let a = adapter.instance();

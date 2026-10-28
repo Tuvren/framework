@@ -29,6 +29,9 @@ export const controlOutcomes = (reports: readonly unknown[]): unknown[] =>
       adapter: control?.adapter,
       baseline: control?.status,
       conditionalAssertions: control?.conditionalAssertions ?? [],
+      ...(control?.branchControls === undefined
+        ? {}
+        : { branchControls: control.branchControls }),
       counted: report?.counted,
       findings: report?.findings,
       mode: report?.mode,
@@ -121,9 +124,55 @@ const validMutants = (
   return expected.negativeControls.every((id) => seen.has(id));
 };
 
+const collectBranches = (
+  assertions: readonly unknown[],
+  branches: Set<string>
+): void => {
+  for (const value of assertions) {
+    const assertion = object(value);
+    if (
+      typeof assertion?.assertionId === "string" &&
+      assertion.status === "pass" &&
+      assertion.when === "applied"
+    ) {
+      branches.add(assertion.assertionId);
+    }
+  }
+};
+
+const validBranchControls = (
+  value: unknown,
+  adapters: ReadonlySet<string>,
+  branches: Set<string>
+): boolean => {
+  if (value === undefined) {
+    return true;
+  }
+  if (!Array.isArray(value)) {
+    return false;
+  }
+  const seen = new Set<string>();
+  for (const entry of value) {
+    const branch = object(entry);
+    if (
+      typeof branch?.adapter !== "string" ||
+      !adapters.has(branch.adapter) ||
+      seen.has(branch.adapter) ||
+      branch.status !== "pass" ||
+      !Array.isArray(branch.conditionalAssertions)
+    ) {
+      return false;
+    }
+    seen.add(branch.adapter);
+    collectBranches(branch.conditionalAssertions, branches);
+  }
+  return true;
+};
+
 const validReport = (
   value: unknown,
   expected: ControlExpectation,
+  adapters: ReadonlySet<string>,
   killed: Set<string>,
   branches: Set<string>
 ): boolean => {
@@ -143,23 +192,18 @@ const validReport = (
     return false;
   }
   if (Array.isArray(control.conditionalAssertions)) {
-    for (const value of control.conditionalAssertions) {
-      const assertion = object(value);
-      if (
-        typeof assertion?.assertionId === "string" &&
-        assertion.status === "pass" &&
-        assertion.when === "applied"
-      ) {
-        branches.add(assertion.assertionId);
-      }
-    }
+    collectBranches(control.conditionalAssertions, branches);
   }
-  return validMutants(report.mutants, expected, killed);
+  return (
+    validBranchControls(control.branchControls, adapters, branches) &&
+    validMutants(report.mutants, expected, killed)
+  );
 };
 
 const validFleet = (
   reports: readonly unknown[],
-  expected: ControlExpectation
+  expected: ControlExpectation,
+  adapters: readonly ControlAdapterDigest[]
 ): boolean => {
   const own = reports
     .map(object)
@@ -169,9 +213,10 @@ const validFleet = (
   }
   const killed = new Set<string>();
   const branches = new Set<string>();
+  const adapterNames = new Set(adapters.map(({ adapter }) => adapter));
   return (
     reports.every((report) =>
-      validReport(report, expected, killed, branches)
+      validReport(report, expected, adapterNames, killed, branches)
     ) &&
     expected.negativeControls.every((id) => killed.has(id)) &&
     expected.conditionalAssertions.every((id) => branches.has(id))
@@ -220,7 +265,7 @@ export const matchesControlRun = (
   };
   return JSON.stringify(run.outcomes) === JSON.stringify(identity.outcomes) &&
     controlRunId(identity) === run.id &&
-    validFleet(document.reports, expected)
+    validFleet(document.reports, expected, adapters)
     ? run.id
     : undefined;
 };
