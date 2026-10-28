@@ -725,12 +725,53 @@ export const createCheckResult = (
 export const toCheckedInCheckResult = (
   checkResult: ConformanceCheckResult
 ): ConformanceCheckResult => {
-  if (checkResult.failure === undefined) {
-    return checkResult;
+  const details = checkResult.details;
+  const fault = details?.fault;
+  const aliases = new Map<string, string>();
+  if (isRecord(fault) && Array.isArray(fault.armed)) {
+    for (const entry of fault.armed) {
+      if (
+        isRecord(entry) &&
+        typeof entry.token === "string" &&
+        !aliases.has(entry.token)
+      ) {
+        aliases.set(entry.token, `fault-token-${aliases.size + 1}`);
+      }
+    }
   }
-
-  const { classification, replay } = checkResult.failure;
-  return { ...checkResult, failure: { classification, replay } };
+  const normalize = (value: unknown): unknown => {
+    if (typeof value === "string") {
+      return aliases.get(value) ?? value;
+    }
+    if (Array.isArray(value)) {
+      return value.map(normalize);
+    }
+    if (isRecord(value)) {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, child]) => [key, normalize(child)])
+      );
+    }
+    return value;
+  };
+  const normalizedDetails =
+    details === undefined || aliases.size === 0
+      ? details
+      : Object.fromEntries(
+          Object.entries(details).map(([key, value]) => [key, normalize(value)])
+        );
+  const failure = checkResult.failure;
+  return {
+    ...checkResult,
+    ...(normalizedDetails === undefined ? {} : { details: normalizedDetails }),
+    ...(failure === undefined
+      ? {}
+      : {
+          failure: {
+            classification: failure.classification,
+            replay: failure.replay,
+          },
+        }),
+  };
 };
 
 const FAILURE_CLASSIFICATIONS: ReadonlySet<unknown> = new Set([

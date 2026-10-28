@@ -29,6 +29,15 @@ test("every durable reopen claim has an explicit detection gap and is outside th
     }
     reasons[claim] = reason;
   }
+  for (const claim of ["pending_state", "pending_count"]) {
+    const reason = reasons[`kernel.syscall.reopen.${claim}`];
+    expect(reason).toContain(
+      "kernel.drop-uncommitted-staged-result-on-recovery"
+    );
+    expect(reason).toContain("kernel.promote-staged-before-checkpoint");
+    expect(reason).toContain("no durable mutant manifest");
+    expect(reason).toContain("KRT-DF005");
+  }
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter.json"
   );

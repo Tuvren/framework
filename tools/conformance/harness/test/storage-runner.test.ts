@@ -91,6 +91,58 @@ test("the runner isolates checks and removes storage after a failed assertion", 
     for (const ref of references) {
       await expect(access(ref)).rejects.toThrow();
     }
+    const brokenCleanup = script.replace(
+      "const result = request.method",
+      `if (request.method === "destroyInstance") { process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: request.id, error: { code: "cleanup_failed", message: "destroy failed" } }) + "\\n"); continue; }\n      const result = request.method`
+    );
+    await writeFile(
+      adapter,
+      JSON.stringify({ ...manifest, command: ["bun", "--eval", brokenCleanup] })
+    );
+    const cleanupRun = spawn({
+      cmd: [
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapter,
+        "--plan",
+        plan,
+      ],
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [cleanupOutput, cleanupStderr, cleanupExit] = await Promise.all([
+      new Response(cleanupRun.stdout).text(),
+      new Response(cleanupRun.stderr).text(),
+      cleanupRun.exited,
+    ]);
+    expect(cleanupExit, cleanupStderr).toBe(1);
+    const cleanupEvidence: unknown = JSON.parse(cleanupOutput);
+    expect(cleanupEvidence).toMatchObject({
+      checkResults: [
+        {
+          status: "fail",
+          assertionResults: expect.arrayContaining([
+            expect.objectContaining({ status: "pass" }),
+            expect.objectContaining({
+              message: expect.stringContaining("destroy failed"),
+            }),
+          ]),
+        },
+        {
+          status: "fail",
+          assertionResults: expect.arrayContaining([
+            expect.objectContaining({
+              status: "fail",
+              assertionId: expect.not.stringContaining("cleanup"),
+            }),
+            expect.objectContaining({
+              message: expect.stringContaining("destroy failed"),
+            }),
+          ]),
+        },
+      ],
+    });
     await writeFile(
       adapter,
       JSON.stringify({

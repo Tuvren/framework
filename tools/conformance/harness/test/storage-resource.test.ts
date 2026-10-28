@@ -1,10 +1,24 @@
 import { expect, test } from "bun:test";
-import { execFile } from "node:child_process";
-import { access, readFile, writeFile } from "node:fs/promises";
+import { execFile, spawn } from "node:child_process";
+import { once } from "node:events";
+import {
+  access,
+  chmod,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { withCheckStorage } from "../storage-resource.js";
+import {
+  CleanupError,
+  sweepStaleDatabases,
+  withCheckStorage,
+  withCleanup,
+} from "../storage-resource.js";
 
 const exec = promisify(execFile);
 
@@ -61,5 +75,144 @@ test("PostgreSQL databases are distinct and dropped after success and failure", 
   expect(refs[0]).not.toBe(refs[1]);
   for (const ref of refs) {
     expect(await databaseExists(ref)).toBe(false);
+  }
+}, 30_000);
+
+test("cleanup failure retains both the check result and its own error", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tuvren-cleanup-"));
+  const previousTmp = process.env.TMPDIR;
+  process.env.TMPDIR = root;
+  try {
+    let failure: unknown;
+    try {
+      await withCheckStorage("sqlite-directory", async () => {
+        await chmod(root, 0o500);
+        return { status: "fail", message: "semantic failure" };
+      });
+    } catch (error: unknown) {
+      failure = error;
+    } finally {
+      await chmod(root, 0o700);
+    }
+    expect(failure).toBeInstanceOf(CleanupError);
+    if (!(failure instanceof CleanupError)) {
+      throw new Error("missing cleanup failure");
+    }
+    expect(failure.result).toEqual({
+      status: "fail",
+      message: "semantic failure",
+    });
+    expect(failure.cleanupError).toBeInstanceOf(Error);
+  } finally {
+    if (previousTmp === undefined) {
+      delete process.env.TMPDIR;
+    } else {
+      process.env.TMPDIR = previousTmp;
+    }
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("cleanup failure retains the original thrown error", async () => {
+  const primary = new Error("check failed");
+  let failure: unknown;
+  try {
+    await withCleanup(
+      () => Promise.reject(primary),
+      () => Promise.reject(new Error("cleanup failed"))
+    );
+  } catch (error: unknown) {
+    failure = error;
+  }
+  expect(failure).toBeInstanceOf(CleanupError);
+  if (!(failure instanceof CleanupError)) {
+    throw new Error("missing cleanup failure");
+  }
+  expect(failure.primaryError).toBe(primary);
+  expect(failure.message).toContain("check failed");
+  expect(failure.message).toContain("cleanup failed");
+  try {
+    await withCleanup(
+      () => Promise.reject(failure),
+      () => Promise.reject(new Error("second cleanup failed"))
+    );
+    throw new Error("expected a nested cleanup failure");
+  } catch (nested: unknown) {
+    expect(nested).toBeInstanceOf(CleanupError);
+    if (!(nested instanceof CleanupError)) {
+      throw new Error("missing nested cleanup failure");
+    }
+    expect(nested.primaryError).toBe(failure);
+    expect(nested.message).toContain("check failed");
+    expect(nested.message).toContain("cleanup failed");
+    expect(nested.message).toContain("second cleanup failed");
+  }
+});
+
+test("stale database sweep only removes old unowned certification databases", async () => {
+  const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 16);
+  const stale = `tuvren_cert_1_99999999_${suffix}`;
+  const live = `tuvren_cert_1_${process.pid}_${suffix}`;
+  const active = `tuvren_cert_1_99999999_${suffix}a`;
+  const newer = `tuvren_cert_${Date.now() + 60_000}_99999999_${suffix}`;
+  const other = `tuvren_other_${suffix}`;
+  let stopActive: (() => Promise<void>) | undefined;
+  try {
+    for (const name of [stale, live, active, newer, other]) {
+      await exec("psql", [
+        "-Xq",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-d",
+        "postgres",
+        "-c",
+        `CREATE DATABASE "${name}"`,
+      ]);
+    }
+    const connection = spawn(
+      "psql",
+      ["-Xq", "-d", active, "-c", "SELECT pg_sleep(30)"],
+      { stdio: "ignore" }
+    );
+    const closed = once(connection, "close");
+    stopActive = async () => {
+      connection.kill("SIGTERM");
+      await closed;
+    };
+    const deadline = Date.now() + 5000;
+    let connected = false;
+    while (!connected && Date.now() < deadline) {
+      const { stdout } = await exec("psql", [
+        "-XAt",
+        "-d",
+        "postgres",
+        "-c",
+        `SELECT count(*) FROM pg_stat_activity WHERE datname = '${active}'`,
+      ]);
+      connected = Number(stdout.trim()) > 0;
+      if (!connected) {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    }
+    expect(connected).toBe(true);
+    await sweepStaleDatabases(Date.now());
+    expect(await databaseExists(stale)).toBe(false);
+    expect(await databaseExists(live)).toBe(true);
+    expect(await databaseExists(active)).toBe(true);
+    expect(await databaseExists(newer)).toBe(true);
+    expect(await databaseExists(other)).toBe(true);
+  } finally {
+    await stopActive?.();
+    for (const name of [stale, live, active, newer, other]) {
+      await exec("psql", [
+        "-Xq",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-d",
+        "postgres",
+        "-c",
+        `DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`,
+      ]);
+    }
   }
 }, 30_000);

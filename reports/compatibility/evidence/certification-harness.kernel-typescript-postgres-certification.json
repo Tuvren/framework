@@ -116,10 +116,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.20.resultField",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.syscall.reopen.close_reopen_checkpoint.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
           "status": "pass"
         },
@@ -253,199 +249,7 @@
           "recoveredHead",
           "lineage",
           "visibleMessages"
-        ],
-        "storageIdentity": {
-          "kind": "postgres-database",
-          "storageRef": "tuvren_cert_982f18a66b324f60b36e891d8dc291fc"
-        },
-        "process": {
-          "epochs": [
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1579763,
-              "epoch": 1,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            },
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1579822,
-              "epoch": 2,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            }
-          ]
-        }
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineCheckpoint.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineMessages.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.baselineMessages.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.pendingStaging.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.pendingStaging.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.3.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.4.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.5.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.6.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineMessages.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.baselineMessages.result.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.pendingStaging.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.pendingStaging.result.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.visibleMessages.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.result.trace.visibleMessages.result.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.durableNode.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.lineage.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.recover.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.recoveredHead.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.staging.result",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.reopen.invalid_staged_result.requiredEvidence.trace.visibleMessages.result",
-          "status": "pass"
-        }
-      ],
-      "checkId": "kernel.syscall.reopen.invalid_staged_result",
-      "details": {
-        "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.close-reopen.syscall",
-        "traceStepIds": [
-          "backendClock",
-          "workerClock",
-          "schema",
-          "thread",
-          "turn",
-          "run",
-          "beginBaseline",
-          "baselineStaged",
-          "baselineStaging",
-          "baselineCheckpoint",
-          "baselineNode",
-          "baselineMessages",
-          "beginPending",
-          "pendingStaged",
-          "pendingStaging",
-          "restart",
-          "open",
-          "durableHead",
-          "durableNode",
-          "recover",
-          "staging",
-          "recoveredHead",
-          "lineage",
-          "visibleMessages"
-        ],
-        "storageIdentity": {
-          "kind": "postgres-database",
-          "storageRef": "tuvren_cert_cf3df1ece3f74485ae20cae566bb5cc6"
-        },
-        "process": {
-          "epochs": [
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1579762,
-              "epoch": 1,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            },
-            {
-              "executableDigest": "0f85fdaf41990d6ba2fcdcff0636d852a3410f0c555a9a0606567ca69249c6a9",
-              "pid": 1579821,
-              "epoch": 2,
-              "exit": {
-                "code": 0,
-                "signal": null
-              }
-            }
-          ]
-        }
+        ]
       },
       "status": "pass"
     },
@@ -7656,9 +7460,9 @@
   "status": "fail",
   "summary": {
     "failedChecks": 4,
-    "passedChecks": 135,
-    "totalChecks": 141,
-    "applicableChecks": 139,
+    "passedChecks": 134,
+    "totalChecks": 140,
+    "applicableChecks": 138,
     "nonApplicableChecks": 2
   },
   "suiteId": "tuvren.kernel.protocol",

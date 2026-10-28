@@ -246,6 +246,33 @@ export const computeVerifierDigests = async (
   };
 };
 
+export const typescriptImplementationInputs = async (
+  storage: AdapterManifest["storage"]
+): Promise<string[]> => {
+  const files = [
+    ...(await filesUnder(path.join(ROOT, "typescript"), true)),
+    path.join(ROOT, "bun.lock"),
+  ];
+  let backend: string | undefined;
+  if (storage === "sqlite-directory") {
+    backend = "sqlite";
+  } else if (storage === "postgres-database") {
+    backend = "postgres";
+  }
+  if (backend !== undefined) {
+    const artifact = path.join(
+      ROOT,
+      "typescript/kernel/backends",
+      backend,
+      "dist/index.js"
+    );
+    if (!files.includes(artifact)) {
+      throw new Error(`missing built ${backend} backend artifact: ${artifact}`);
+    }
+  }
+  return files;
+};
+
 export const computeImplementationDigest = async (
   manifest: AdapterManifest
 ): Promise<string> => {
@@ -262,10 +289,9 @@ export const computeImplementationDigest = async (
   if (manifest.language === "typescript") {
     return createHash("sha256")
       .update(
-        await digestWorkspaceInputs([
-          ...(await filesUnder(path.join(ROOT, "typescript"), true)),
-          path.join(ROOT, "bun.lock"),
-        ])
+        await digestWorkspaceInputs(
+          await typescriptImplementationInputs(manifest.storage)
+        )
       )
       .update(await nodeModulesDigest())
       .digest("hex");

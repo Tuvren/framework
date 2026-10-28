@@ -98,7 +98,7 @@ import {
   recordHandleCapture,
   runOperationHandleStep,
 } from "./operation-steps.js";
-import { ProcessSupervisor } from "./process-supervisor.js";
+import { ProcessStartError, ProcessSupervisor } from "./process-supervisor.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
   ArgumentResolutionError,
@@ -107,7 +107,12 @@ import {
   resolveStepArguments,
 } from "./step-arguments.js";
 import type { ArgumentRoots } from "./step-arguments.js";
-import { StorageResourceError, withCheckStorage } from "./storage-resource.js";
+import {
+  CleanupError,
+  StorageResourceError,
+  withCheckStorage,
+  withCleanup,
+} from "./storage-resource.js";
 
 interface CliOptions {
   adapter: string;
@@ -500,6 +505,62 @@ const mergeInspectedState = (
 
 const readErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+const primaryError = (error: unknown): unknown =>
+  error instanceof CleanupError && !error.hasResult
+    ? primaryError(error.primaryError)
+    : error;
+
+const withCheckCleanup = async (
+  operation: () => Promise<ConformanceCheckResult>,
+  cleanup: () => Promise<void>,
+  onCleanupFailure: (
+    result: ConformanceCheckResult,
+    error: CleanupError
+  ) => ConformanceCheckResult
+): Promise<ConformanceCheckResult> => {
+  let result: ConformanceCheckResult | undefined;
+  try {
+    return await withCleanup(async () => {
+      result = await operation();
+      return result;
+    }, cleanup);
+  } catch (error: unknown) {
+    if (error instanceof CleanupError && result !== undefined) {
+      return onCleanupFailure(result, error);
+    }
+    throw error;
+  }
+};
+
+const appendCleanupFailure = (
+  result: ConformanceCheckResult,
+  error: CleanupError,
+  replay?: string
+): ConformanceCheckResult => {
+  const failure =
+    result.failure ??
+    (replay === undefined
+      ? undefined
+      : { classification: "environment" as const, replay });
+  return {
+    ...result,
+    status: "fail",
+    assertionResults: [
+      ...result.assertionResults,
+      {
+        assertionId: `${result.checkId}.cleanup`,
+        message: readErrorMessage(error.cleanupError),
+        status: "fail",
+      },
+    ],
+    details: {
+      ...result.details,
+      cleanupError: readErrorMessage(error.cleanupError),
+    },
+    ...(failure === undefined ? {} : { failure }),
+  };
+};
 
 const readAdapterFailure = (error: unknown): unknown => {
   if (error instanceof JsonRpcAdapterError) {
@@ -925,8 +986,6 @@ interface LifecycleStepRequest {
   catalogOperation: CatalogOperation | undefined;
   clocks: ReadonlyMap<string, number>;
   input: unknown;
-  manifest: AdapterManifest;
-  plan: CompiledConformancePlan;
   state: LifecycleState;
   step: ConformancePlanStep;
   storageRef: string | undefined;
@@ -938,8 +997,6 @@ const runLifecycleStep = async ({
   catalogOperation,
   clocks,
   input,
-  manifest,
-  plan,
   state,
   step,
   storageRef,
@@ -997,18 +1054,6 @@ const runLifecycleStep = async ({
         `unknown lifecycle action ${String(action)}`
       );
   }
-  if (action === "restart" || action === "respawn") {
-    const capabilities = await client.initialize(
-      plan.plan.packetId,
-      plan.plan.planVersion
-    );
-    validateAdapterHandshake(
-      capabilities,
-      manifest,
-      plan.plan.packetId,
-      plan.plan.planVersion
-    );
-  }
   return { client, instance, processRunning };
 };
 
@@ -1065,176 +1110,182 @@ const runTraceCheck = async (
     input: check.input,
   };
 
-  try {
-    const visit = async (index: number): Promise<void> => {
-      const step = steps[index];
-      if (step === undefined) {
-        return;
-      }
-      argumentRoots.capture = { ...captures, ...handleCaptures };
-      const {
-        contextInput,
-        input: projectedInput,
-        inspectQuery,
-      } = createTraceStepRequest(step, check, baseInput, trace, argumentRoots);
-      const catalogOperation = plan.catalog?.operations.get(step.operation);
-      const controls = {
-        ...createAdapterControls(compiledCheck),
-        ...step.controls,
-      };
-      const input = bindControlInstance(
+  const visit = async (index: number): Promise<void> => {
+    const step = steps[index];
+    if (step === undefined) {
+      return;
+    }
+    argumentRoots.capture = { ...captures, ...handleCaptures };
+    const {
+      contextInput,
+      input: projectedInput,
+      inspectQuery,
+    } = createTraceStepRequest(step, check, baseInput, trace, argumentRoots);
+    const catalogOperation = plan.catalog?.operations.get(step.operation);
+    const controls = {
+      ...createAdapterControls(compiledCheck),
+      ...step.controls,
+    };
+    const input = bindControlInstance(
+      catalogOperation,
+      barriers.input(step, projectedInput),
+      instance
+    );
+    recorder.arguments.push({
+      input,
+      ...(inspectQuery === undefined ? {} : { inspectQuery }),
+      operation: step.operation,
+      stepId: step.stepId,
+    });
+    if (isLifecycleAction(step.action)) {
+      const previousClient = client;
+      ({ client, instance, processRunning } = await runLifecycleStep({
+        action: step.action,
         catalogOperation,
-        barriers.input(step, projectedInput),
-        instance
-      );
-      recorder.arguments.push({
+        clocks,
         input,
-        ...(inspectQuery === undefined ? {} : { inspectQuery }),
-        operation: step.operation,
-        stepId: step.stepId,
-      });
-      if (isLifecycleAction(step.action)) {
-        const previousClient = client;
-        ({ client, instance, processRunning } = await runLifecycleStep({
-          action: step.action,
-          catalogOperation,
-          clocks,
-          input,
-          manifest,
-          plan,
-          state: { client, instance, processRunning },
-          step,
-          storageRef,
-          supervisor,
-        }));
-        arrivalOffset += arrivalIncrement(previousClient, client);
-        const outcome: OperationOutcome = {
-          kind: "result",
-          value: { result: {} },
-        };
-        validateObservation(catalogOperation, { result: {} });
-        const context = { input: contextInput, result: {} };
-        trace[step.stepId] = { ...context, outcome };
-        recorder.observation.push({
-          operation: step.operation,
-          stepId: step.stepId,
-          outcome,
-        });
-        const arrivalSequence = latestArrival();
-        arrivals[step.stepId] = arrivalSequence;
-        recordSchedule(recorder, step, arrivalSequence, input);
-        recordStepCaptures(step.capture, context, captureStore);
-        diagnoseTraceStep(check, step, context, arrivals, captures, recorder);
-        await visit(index + 1);
-        return;
-      }
-      validateStartedInput(step, catalogOperation, input);
-      if (step.action === "start" || step.action === "cancel") {
-        client.setLosslessObservations(catalogOperation !== undefined);
-        const receipt = await runOperationHandleStep(
-          client,
-          step,
-          input,
-          instance,
-          startedOperations,
-          controls.deadlineMs
-        );
-        const arrivalSequence = latestArrival();
-        arrivals[step.stepId] = arrivalSequence;
-        recordSchedule(recorder, step, arrivalSequence, input);
-        if (receipt.kind === "started") {
-          recordHandleCapture(
-            step.handleCapture,
-            receipt.operationHandle,
-            captureStore,
-            handleCaptures
-          );
-          barriers.started(step.stepId, step.handleCapture);
-        }
-        await visit(index + 1);
-        return;
-      }
-      const observed: StepObservationRecord = {
-        operation: step.operation,
-        stepId: step.stepId,
-      };
-      recorder.observation.push(observed);
-      const { context, extraEvents, outcome } = await observeTraceStep({
-        catalogOperation,
-        check,
-        client,
-        contextInput,
-        controls,
-        input,
-        inspectQuery,
-        instance,
-        observed,
-        recorder,
-        startedOperations,
+        state: { client, instance, processRunning },
         step,
+        storageRef,
+        supervisor,
+      }));
+      arrivalOffset += arrivalIncrement(previousClient, client);
+      const outcome: OperationOutcome = {
+        kind: "result",
+        value: { result: {} },
+      };
+      validateObservation(catalogOperation, { result: {} });
+      const context = { input: contextInput, result: {} };
+      trace[step.stepId] = { ...context, outcome };
+      recorder.observation.push({
+        operation: step.operation,
+        stepId: step.stepId,
+        outcome,
       });
-      if (
-        step.action === "setClock" &&
-        outcome.kind === "result" &&
-        isRecord(input) &&
-        typeof input.domain === "string" &&
-        typeof input.nowMs === "number"
-      ) {
-        clocks.set(input.domain, input.nowMs);
-      }
-      barriers.observe(step, input, outcome);
       const arrivalSequence = latestArrival();
       arrivals[step.stepId] = arrivalSequence;
       recordSchedule(recorder, step, arrivalSequence, input);
-      if (outcome.kind === "error") {
-        traceAdapterErrors[step.stepId] = outcome.error;
-      }
-
-      trace[step.stepId] = { ...context, outcome };
-      recordStepCaptures(
-        step.capture,
-        { ...context, events: context.events ?? extraEvents },
-        captureStore
-      );
-
+      recordStepCaptures(step.capture, context, captureStore);
       diagnoseTraceStep(check, step, context, arrivals, captures, recorder);
       await visit(index + 1);
-    };
-    await visit(0);
-  } finally {
-    if (processRunning && instance !== undefined) {
-      await client.destroyInstance(instance);
+      return;
     }
-  }
+    validateStartedInput(step, catalogOperation, input);
+    if (step.action === "start" || step.action === "cancel") {
+      client.setLosslessObservations(catalogOperation !== undefined);
+      const receipt = await runOperationHandleStep(
+        client,
+        step,
+        input,
+        instance,
+        startedOperations,
+        controls.deadlineMs
+      );
+      const arrivalSequence = latestArrival();
+      arrivals[step.stepId] = arrivalSequence;
+      recordSchedule(recorder, step, arrivalSequence, input);
+      if (receipt.kind === "started") {
+        recordHandleCapture(
+          step.handleCapture,
+          receipt.operationHandle,
+          captureStore,
+          handleCaptures
+        );
+        barriers.started(step.stepId, step.handleCapture);
+      }
+      await visit(index + 1);
+      return;
+    }
+    const observed: StepObservationRecord = {
+      operation: step.operation,
+      stepId: step.stepId,
+    };
+    recorder.observation.push(observed);
+    const { context, extraEvents, outcome } = await observeTraceStep({
+      catalogOperation,
+      check,
+      client,
+      contextInput,
+      controls,
+      input,
+      inspectQuery,
+      instance,
+      observed,
+      recorder,
+      startedOperations,
+      step,
+    });
+    if (
+      step.action === "setClock" &&
+      outcome.kind === "result" &&
+      isRecord(input) &&
+      typeof input.domain === "string" &&
+      typeof input.nowMs === "number"
+    ) {
+      clocks.set(input.domain, input.nowMs);
+    }
+    barriers.observe(step, input, outcome);
+    const arrivalSequence = latestArrival();
+    arrivals[step.stepId] = arrivalSequence;
+    recordSchedule(recorder, step, arrivalSequence, input);
+    if (outcome.kind === "error") {
+      traceAdapterErrors[step.stepId] = outcome.error;
+    }
 
-  const finalContext: RunnerContext = {
-    arrivals,
-    capture: captures,
-    evidence: { trace },
-    faultActivations: recorder.faults.activations,
-    fixture: baseInput.fixture,
-    input: baseInput.checkInput,
-    result: { trace },
-    scenario: baseInput.scenario,
-    state: { trace },
+    trace[step.stepId] = { ...context, outcome };
+    recordStepCaptures(
+      step.capture,
+      { ...context, events: context.events ?? extraEvents },
+      captureStore
+    );
+
+    diagnoseTraceStep(check, step, context, arrivals, captures, recorder);
+    await visit(index + 1);
   };
-  recorder.diagnoses.push(
-    ...diagnoseAssertions(check, finalContext),
-    ...diagnoseRequiredEvidence(
-      compiledCheck,
-      finalContext,
-      plan.catalog?.operations.has(check.operation) === true
-    )
-  );
+  return await withCheckCleanup(
+    async () => {
+      await visit(0);
+      const finalContext: RunnerContext = {
+        arrivals,
+        capture: captures,
+        evidence: { trace },
+        faultActivations: recorder.faults.activations,
+        fixture: baseInput.fixture,
+        input: baseInput.checkInput,
+        result: { trace },
+        scenario: baseInput.scenario,
+        state: { trace },
+      };
+      recorder.diagnoses.push(
+        ...diagnoseAssertions(check, finalContext),
+        ...diagnoseRequiredEvidence(
+          compiledCheck,
+          finalContext,
+          plan.catalog?.operations.has(check.operation) === true
+        )
+      );
 
-  return createCheckResult(check.checkId, readEvaluations(recorder), {
-    adapterId: manifest.adapterId,
-    planId: plan.plan.planId,
-    ...(Object.keys(traceAdapterErrors).length > 0
-      ? { adapterErrors: traceAdapterErrors }
-      : {}),
-    traceStepIds: Object.keys(trace),
-  });
+      return createCheckResult(check.checkId, readEvaluations(recorder), {
+        adapterId: manifest.adapterId,
+        planId: plan.plan.planId,
+        ...(Object.keys(traceAdapterErrors).length > 0
+          ? { adapterErrors: traceAdapterErrors }
+          : {}),
+        traceStepIds: Object.keys(trace),
+      });
+    },
+    async () => {
+      if (processRunning && instance !== undefined) {
+        await client.destroyInstance(instance);
+      }
+    },
+    (result, error) => {
+      if (result.status !== "fail") {
+        recorder.thrown = error;
+      }
+      return appendCleanupFailure(result, error);
+    }
+  );
 };
 
 const executeCheck = async (
@@ -1250,16 +1301,18 @@ const executeCheck = async (
 
   try {
     client.setLosslessObservations(false);
-    const capabilities = await client.initialize(
-      plan.plan.packetId,
-      plan.plan.planVersion
-    );
-    validateAdapterHandshake(
-      capabilities,
-      manifest,
-      plan.plan.packetId,
-      plan.plan.planVersion
-    );
+    if (supervisor === undefined) {
+      const capabilities = await client.initialize(
+        plan.plan.packetId,
+        plan.plan.planVersion
+      );
+      validateAdapterHandshake(
+        capabilities,
+        manifest,
+        plan.plan.packetId,
+        plan.plan.planVersion
+      );
+    }
 
     if (Array.isArray(check.steps) && check.steps.length > 0) {
       return await runTraceCheck(
@@ -1278,92 +1331,101 @@ const executeCheck = async (
       storageRef === undefined
         ? undefined
         : await client.createInstance(input, { storageRef });
-    try {
-      const controls = createAdapterControls(compiledCheck);
-      const timeoutMs = controls.deadlineMs;
-      recorder.arguments.push({ input, operation: check.operation });
-      const observed: StepObservationRecord = { operation: check.operation };
-      recorder.observation.push(observed);
-      const catalogOperation = plan.catalog?.operations.get(check.operation);
-      if (catalogOperation?.faultOutcome !== undefined) {
-        throw new ArgumentResolutionError(
-          "fault arming requires an armFault trace step"
+    return await withCheckCleanup(
+      async () => {
+        const controls = createAdapterControls(compiledCheck);
+        const timeoutMs = controls.deadlineMs;
+        recorder.arguments.push({ input, operation: check.operation });
+        const observed: StepObservationRecord = { operation: check.operation };
+        recorder.observation.push(observed);
+        const catalogOperation = plan.catalog?.operations.get(check.operation);
+        if (catalogOperation?.faultOutcome !== undefined) {
+          throw new ArgumentResolutionError(
+            "fault arming requires an armFault trace step"
+          );
+        }
+        client.setLosslessObservations(catalogOperation !== undefined);
+        const outcome = await client.dispatch(
+          check.operation,
+          input,
+          controls,
+          instance,
+          timeoutMs
         );
-      }
-      client.setLosslessObservations(catalogOperation !== undefined);
-      const outcome = await client.dispatch(
-        check.operation,
-        input,
-        controls,
-        instance,
-        timeoutMs
-      );
-      observed.outcome = outcome;
-      if (outcome.kind === "error") {
-        recorder.operationErrors.push(outcome.error);
-        validateNativeError(
-          outcome.error,
-          catalogOperation,
-          nativeErrorAsserted(check)
-        );
-      }
-      const context = createAssertionContext(
-        outcome,
-        input,
-        catalogOperation !== undefined
-      );
-      validateObservation(
-        catalogOperation,
-        outcome.kind === "result" ? context : {},
-        outcome.kind === "result"
-      );
-      const extraEvents = await client.events(
-        check.operation,
-        input,
-        controls,
-        instance,
-        timeoutMs
-      );
-      observed.events = extraEvents;
-      validateObservation(catalogOperation, { events: extraEvents });
-
-      if (context.events === undefined && extraEvents.length > 0) {
-        context.events = extraEvents;
-      }
-
-      const inspectedState = await client.inspectState(
-        {
-          operation: check.operation,
-        },
-        instance,
-        timeoutMs
-      );
-      observed.inspectedState = inspectedState;
-      validateObservation(catalogOperation, { state: inspectedState });
-
-      mergeInspectedState(context, inspectedState, outcome);
-
-      recorder.diagnoses.push(
-        ...diagnoseAssertions(check, context),
-        ...diagnoseRequiredEvidence(
-          compiledCheck,
-          context,
+        observed.outcome = outcome;
+        if (outcome.kind === "error") {
+          recorder.operationErrors.push(outcome.error);
+          validateNativeError(
+            outcome.error,
+            catalogOperation,
+            nativeErrorAsserted(check)
+          );
+        }
+        const context = createAssertionContext(
+          outcome,
+          input,
           catalogOperation !== undefined
-        )
-      );
+        );
+        validateObservation(
+          catalogOperation,
+          outcome.kind === "result" ? context : {},
+          outcome.kind === "result"
+        );
+        const extraEvents = await client.events(
+          check.operation,
+          input,
+          controls,
+          instance,
+          timeoutMs
+        );
+        observed.events = extraEvents;
+        validateObservation(catalogOperation, { events: extraEvents });
 
-      return createCheckResult(check.checkId, readEvaluations(recorder), {
-        // Adapter-declared operation errors stay isolated from $.result.error,
-        // but persisted evidence still records the native error for diagnosis.
-        ...(outcome.kind === "error" ? { adapterError: outcome.error } : {}),
-        adapterId: manifest.adapterId,
-        planId: plan.plan.planId,
-      });
-    } finally {
-      if (instance !== undefined) {
-        await client.destroyInstance(instance);
+        if (context.events === undefined && extraEvents.length > 0) {
+          context.events = extraEvents;
+        }
+
+        const inspectedState = await client.inspectState(
+          {
+            operation: check.operation,
+          },
+          instance,
+          timeoutMs
+        );
+        observed.inspectedState = inspectedState;
+        validateObservation(catalogOperation, { state: inspectedState });
+
+        mergeInspectedState(context, inspectedState, outcome);
+
+        recorder.diagnoses.push(
+          ...diagnoseAssertions(check, context),
+          ...diagnoseRequiredEvidence(
+            compiledCheck,
+            context,
+            catalogOperation !== undefined
+          )
+        );
+
+        return createCheckResult(check.checkId, readEvaluations(recorder), {
+          // Adapter-declared operation errors stay isolated from $.result.error,
+          // but persisted evidence still records the native error for diagnosis.
+          ...(outcome.kind === "error" ? { adapterError: outcome.error } : {}),
+          adapterId: manifest.adapterId,
+          planId: plan.plan.planId,
+        });
+      },
+      async () => {
+        if (instance !== undefined) {
+          await client.destroyInstance(instance);
+        }
+      },
+      (result, error) => {
+        if (result.status !== "fail") {
+          recorder.thrown = error;
+        }
+        return appendCleanupFailure(result, error);
       }
-    }
+    );
   } catch (error: unknown) {
     recorder.thrown = error;
     const message = readErrorMessage(error);
@@ -1421,7 +1483,14 @@ const classifyFailure = (
   recorder: CheckRecorder,
   checkStderr: string
 ): ConformanceFailureClassification => {
-  const { thrown } = recorder;
+  const thrown = primaryError(recorder.thrown);
+
+  if (
+    thrown instanceof ProcessStartError ||
+    thrown instanceof StorageResourceError
+  ) {
+    return "environment";
+  }
 
   if (
     thrown instanceof ArgumentResolutionError ||
@@ -1516,7 +1585,7 @@ const runCheck = async (
     observation: [],
     operationErrors: [],
     recordCertification,
-    ...(storageRef === undefined
+    ...(!recordCertification || storageRef === undefined
       ? {}
       : { storageIdentity: { kind: manifest.storage, storageRef } }),
     schedule: [],
@@ -1694,42 +1763,74 @@ const executeScheduledCheck = async (
       cwd: REPO_ROOT,
       packetId: scheduledCheck.plan.plan.packetId,
       planVersion: scheduledCheck.plan.plan.planVersion,
+      validateHandshake: (capabilities) =>
+        validateAdapterHandshake(
+          capabilities,
+          manifest,
+          scheduledCheck.plan.plan.packetId,
+          scheduledCheck.plan.plan.planVersion
+        ),
     });
     supervision = supervisor;
-    let checkResult: ConformanceCheckResult;
-    try {
-      checkResult = await runCheck(
-        supervisor.client,
-        manifest,
-        scheduledCheck.plan,
-        scheduledCheck.compiledCheck,
-        replayFor(scheduledCheck.compiledCheck.check.checkId),
-        recordCertification,
-        storageRef,
-        supervisor
-      );
-    } finally {
-      await supervisor.close();
-    }
-    return {
-      ...checkResult,
-      details: {
-        ...checkResult.details,
-        storageIdentity: { kind: manifest.storage, storageRef },
-        process: { epochs: supervisor.history },
-      },
-    };
+    const checkResult = await withCheckCleanup(
+      async () =>
+        await runCheck(
+          supervisor.client,
+          manifest,
+          scheduledCheck.plan,
+          scheduledCheck.compiledCheck,
+          replayFor(scheduledCheck.compiledCheck.check.checkId),
+          recordCertification,
+          storageRef,
+          supervisor
+        ),
+      async () => await supervisor.close(),
+      (result, error) =>
+        appendCleanupFailure(result, error, replayFor(result.checkId))
+    );
+    return recordCertification
+      ? {
+          ...checkResult,
+          details: {
+            ...checkResult.details,
+            storageIdentity: { kind: manifest.storage, storageRef },
+            process: { epochs: supervisor.history },
+          },
+        }
+      : checkResult;
   };
   let checkResult: ConformanceCheckResult;
   try {
+    let resultBeforeStorageCleanup: ConformanceCheckResult | undefined;
+    const trackedExecute = async (
+      ref?: string
+    ): Promise<ConformanceCheckResult> => {
+      resultBeforeStorageCleanup = await execute(ref);
+      return resultBeforeStorageCleanup;
+    };
     checkResult =
       manifest.storage === "sqlite-directory" ||
       manifest.storage === "postgres-database"
-        ? await withCheckStorage(manifest.storage, execute)
-        : await execute();
+        ? await withCheckStorage(manifest.storage, trackedExecute).catch(
+            (error: unknown) => {
+              if (
+                error instanceof CleanupError &&
+                resultBeforeStorageCleanup !== undefined
+              ) {
+                return appendCleanupFailure(
+                  resultBeforeStorageCleanup,
+                  error,
+                  replayFor(resultBeforeStorageCleanup.checkId)
+                );
+              }
+              throw error;
+            }
+          )
+        : await trackedExecute();
   } catch (error: unknown) {
     const checkId = scheduledCheck.compiledCheck.check.checkId;
     const message = readErrorMessage(error);
+    const cause = primaryError(error);
     checkResult = {
       ...createCheckResult(
         checkId,
@@ -1737,14 +1838,15 @@ const executeScheduledCheck = async (
         {
           adapterId: manifest.adapterId,
           planId: scheduledCheck.plan.plan.planId,
-          ...(supervision === undefined
+          ...(!recordCertification || supervision === undefined
             ? {}
             : { process: { epochs: supervision.history } }),
         }
       ),
       failure: {
         classification:
-          error instanceof StorageResourceError
+          cause instanceof StorageResourceError ||
+          cause instanceof ProcessStartError
             ? "environment"
             : "adapter_protocol",
         replay: replayFor(checkId),
@@ -1775,53 +1877,65 @@ const runScheduledChecks = async (
     });
 
     const owned: RunResult[] = [];
-    try {
-      const visit = async (): Promise<void> => {
-        if (nextIndex >= scheduled.length) {
-          return;
-        }
-        // Each worker owns one adapter process and runs checks serially inside
-        // that process, preventing stateful adapters from racing inspectState.
-        const scheduledCheck = scheduled[nextIndex];
-        nextIndex += 1;
+    const visit = async (): Promise<void> => {
+      if (nextIndex >= scheduled.length) {
+        return;
+      }
+      // Each worker owns one adapter process and runs checks serially inside
+      // that process, preventing stateful adapters from racing inspectState.
+      const scheduledCheck = scheduled[nextIndex];
+      nextIndex += 1;
 
-        if (scheduledCheck === undefined) {
-          return;
-        }
+      if (scheduledCheck === undefined) {
+        return;
+      }
 
-        const checkResult = await executeScheduledCheck(
-          client,
-          manifest,
-          scheduledCheck,
-          replayFor,
-          recordCertification
-        );
-        const result = {
-          checkResult,
-          index: scheduledCheck.index,
-        };
-        results.push(result);
-        owned.push(result);
-        await visit();
+      const checkResult = await executeScheduledCheck(
+        client,
+        manifest,
+        scheduledCheck,
+        replayFor,
+        recordCertification
+      );
+      const result = {
+        checkResult,
+        index: scheduledCheck.index,
       };
+      results.push(result);
+      owned.push(result);
       await visit();
-    } finally {
-      await client.shutdown();
-      if (recordCertification) {
-        const exit = await client.terminationStatus();
-        for (const result of owned) {
-          result.checkResult = {
-            ...result.checkResult,
-            details: {
-              ...result.checkResult.details,
-              process: result.checkResult.details?.process ?? {
-                pid: client.processId(),
-                exit: exit ?? null,
-                supervisorTerminated: client.wasTerminatedBySupervisor(),
-              },
+    };
+    try {
+      await withCleanup(visit, async () => await client.shutdown());
+    } catch (error: unknown) {
+      if (
+        !(error instanceof CleanupError && error.hasResult) ||
+        owned.length === 0
+      ) {
+        throw error;
+      }
+      for (const result of owned) {
+        result.checkResult = appendCleanupFailure(
+          result.checkResult,
+          error,
+          replayFor(result.checkResult.checkId)
+        );
+      }
+    }
+    if (recordCertification) {
+      const exit = await client.terminationStatus();
+      for (const result of owned) {
+        result.checkResult = {
+          ...result.checkResult,
+          details: {
+            ...result.checkResult.details,
+            process: result.checkResult.details?.process ?? {
+              pid: client.processId(),
+              exit: exit ?? null,
+              supervisorTerminated: client.wasTerminatedBySupervisor(),
             },
-          };
-        }
+          },
+        };
       }
     }
   });
