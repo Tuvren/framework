@@ -16,6 +16,10 @@ export class MissingFaultActivationError extends Error {
   readonly code = "missing_fault_activation";
 }
 
+export class SeamDidNotHoldError extends Error {
+  readonly code = "seam_did_not_hold";
+}
+
 export const createFaultActivationTracker = () => {
   const armed: Arming[] = [];
   const activations: string[] = [];

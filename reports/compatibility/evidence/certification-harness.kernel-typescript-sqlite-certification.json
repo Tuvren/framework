@@ -283,6 +283,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.recoveredHead.1.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.1.faultActivated",
           "status": "pass"
         },
@@ -529,7 +533,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -538,7 +542,7 @@
               }
             },
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -579,6 +583,10 @@
         },
         {
           "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.kill.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.pendingNode.1.resultField",
           "status": "pass"
         },
         {
@@ -702,6 +710,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.pendingNode.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.result.trace.pendingStaging.result",
           "status": "pass"
         },
@@ -754,6 +766,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.pendingNode.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.process-crash.after_head_move_before_staging_clear.requiredEvidence.trace.recover.result",
           "status": "pass"
         },
@@ -797,6 +813,7 @@
           "durableHead",
           "durableNode",
           "recover",
+          "pendingNode",
           "staging",
           "recoveredHead",
           "lineage",
@@ -828,7 +845,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -837,7 +854,7 @@
               }
             },
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -878,6 +895,10 @@
         },
         {
           "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.kill.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.pendingNode.1.resultField",
           "status": "pass"
         },
         {
@@ -1001,6 +1022,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.pendingNode.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.result.trace.pendingStaging.result",
           "status": "pass"
         },
@@ -1053,6 +1078,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.pendingNode.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.process-crash.after_turn_node_write_before_head.requiredEvidence.trace.recover.result",
           "status": "pass"
         },
@@ -1096,6 +1125,7 @@
           "durableHead",
           "durableNode",
           "recover",
+          "pendingNode",
           "staging",
           "recoveredHead",
           "lineage",
@@ -1127,7 +1157,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1136,7 +1166,7 @@
               }
             },
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1177,6 +1207,10 @@
         },
         {
           "assertionId": "kernel.syscall.process-crash.before_commit.kill.2.processExit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.process-crash.before_commit.pendingNode.1.resultField",
           "status": "pass"
         },
         {
@@ -1300,6 +1334,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.pendingNode.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.result.trace.pendingStaging.result",
           "status": "pass"
         },
@@ -1352,6 +1390,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.pendingNode.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.process-crash.before_commit.requiredEvidence.trace.recover.result",
           "status": "pass"
         },
@@ -1395,6 +1437,7 @@
           "durableHead",
           "durableNode",
           "recover",
+          "pendingNode",
           "staging",
           "recoveredHead",
           "lineage",
@@ -1426,7 +1469,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1435,7 +1478,7 @@
               }
             },
             {
-              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
+              "executableDigest": "db592864f2e15fe03fd339b1b28657f416415d58a18f48d17e22b86cdf54642d",
               "epoch": 2,
               "signal": null,
               "exit": {

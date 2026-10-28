@@ -176,6 +176,12 @@ const isOperationOutcome = (value: unknown): value is OperationOutcome => {
   return value.kind === "error" && isAdapterErrorEnvelope(value.error);
 };
 
+export class AdapterRequestTimeoutError extends Error {
+  constructor(method: string) {
+    super(`adapter request timed out: ${method}`);
+  }
+}
+
 export class JsonRpcAdapterClient {
   private readonly child: ChildProcessWithoutNullStreams;
   private readonly lines: Interface;
@@ -698,7 +704,7 @@ export class JsonRpcAdapterClient {
     // write callback so an adapter reply or timeout can settle immediately.
     const timer = setTimeout(() => {
       this.pending.delete(id);
-      response.reject(new Error(`adapter request timed out: ${method}`));
+      response.reject(new AdapterRequestTimeoutError(method));
     }, timeoutMs);
     this.pending.set(id, {
       lossless: this.losslessObservations,
