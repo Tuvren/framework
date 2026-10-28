@@ -32,19 +32,53 @@ const run = async (args: string[]) => {
   return { code, stdout, stderr };
 };
 
-test("durable manifests claim only their supported profiles", async () => {
-  const sqliteManifest = object(JSON.parse(await readFile(sqlite, "utf8")));
-  const postgresManifest = object(JSON.parse(await readFile(postgres, "utf8")));
-  expect(sqliteManifest.profiles).toEqual([
-    "kernel.persistent-reopen",
-    "kernel.process-crash",
+test("a control report requires an explicit bundle destination", async () => {
+  const result = await run([
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    sqlite,
+    "--control-report",
+    "missing-report.json",
   ]);
-  expect(postgresManifest.profiles).toEqual([
-    "kernel.persistent-reopen",
-    "kernel.process-crash",
-    "kernel.shared-backend",
-  ]);
+  expect(result.code).toBe(1);
+  expect(result.stderr).toContain("--control-report requires --evidence-out");
 });
+
+test("a SQLite adapter cannot claim the shared-backend profile without its server clock", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "df005-shared-profile-"));
+  try {
+    const manifest = object(JSON.parse(await readFile(sqlite, "utf8")));
+    if (!Array.isArray(manifest.profiles)) {
+      throw new TypeError("missing profiles");
+    }
+    manifest.profiles.push("kernel.shared-backend");
+    const adapter = path.join(directory, "adapter.json");
+    const evidence = path.join(directory, "evidence.json");
+    await writeFile(adapter, JSON.stringify(manifest));
+    const result = await run([
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapter,
+      "--evidence-out",
+      evidence,
+      "--summary-only",
+    ]);
+    expect(result.code).toBe(1);
+    const bundle = object(JSON.parse(await readFile(evidence, "utf8")));
+    expect(bundle.status).toBe("fail");
+    expect(bundle.checkResults).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          checkId:
+            "profile.kernel.shared-backend.capability.clock.backend-server",
+          status: "fail",
+        }),
+      ])
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 120_000);
 
 test("compatibility records each certified backend and profile separately", async () => {
   const matrix = object(
@@ -275,6 +309,18 @@ test("durable certificates share a run and link to matching profile control gate
             selected: false,
             reason: "outside-profile",
           });
+          const outsideCount = bundle.selection.filter(
+            (entry: unknown) => object(entry).reason === "outside-profile"
+          ).length;
+          expect(object(bundle.summary).outsideProfileChecks).toBe(
+            outsideCount
+          );
+          expect(outsideCount).toBeGreaterThan(0);
+          const nonApplicable = bundle.nonApplicableCheckIds;
+          if (!Array.isArray(nonApplicable)) {
+            throw new TypeError("missing non-applicable checks");
+          }
+          expect(nonApplicable).not.toContain(outside);
           return bundle;
         })
       );

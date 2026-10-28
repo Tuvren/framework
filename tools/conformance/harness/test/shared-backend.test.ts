@@ -178,44 +178,6 @@ test("postgres clock skew uses the server clock for both preemption decisions", 
   ).toBe("pass");
 }, 60_000);
 
-test("an unconstrained outcome schema cannot admit an unexpected native error", async () => {
-  const manifest = await readAdapterManifest(
-    "typescript/kernel/conformance-adapter/adapter-postgres.json"
-  );
-  const plan = await loadConformancePlan(
-    "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
-  );
-  plan.catalog = parseOperationCatalog(
-    JSON.parse(
-      await readFile("spec/conformance/kernel/operations.json", "utf8")
-    ),
-    "kernel catalog"
-  );
-  plan.fixtures = new Map([
-    ["errors", { expected: { liveLeaseErrorOutcome: true } }],
-  ]);
-  const compiledCheck = plan.checks[0];
-  if (compiledCheck === undefined) {
-    throw new Error("missing clock skew check");
-  }
-  const [entry] = await runScheduledChecks(
-    manifest,
-    [{ plan, compiledCheck, index: 0 }],
-    1,
-    () => "replay",
-    false
-  );
-  expect(entry?.checkResult.status).toBe("fail");
-  expect(entry?.checkResult.assertionResults).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({
-        status: "fail",
-        message: expect.stringContaining("has no adapterError assertion"),
-      }),
-    ])
-  );
-}, 60_000);
-
 test("a restarted PostgreSQL process restores the server and worker clock sources", async () => {
   const manifest = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-postgres.json"
@@ -277,6 +239,83 @@ test("a restarted PostgreSQL process restores the server and worker clock source
     ])
   );
 }, 60_000);
+
+test("the stale-head mutant leaves the shared-writer collect checks passing", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "shared-stale-probe-"));
+  try {
+    const manifest = await readAdapterManifest(
+      "typescript/kernel/conformance-adapter/adapter-postgres-mutant.json"
+    );
+    const wrapped = {
+      ...manifest,
+      executable: "/usr/bin/env",
+      command: [
+        "/usr/bin/env",
+        "TUVREN_KERNEL_MUTANT=kernel.accept-stale-head-update",
+        "bun",
+        "tools/conformance/meta-conformance/activation-probe.ts",
+        "--record",
+        directory,
+        "--operation",
+        "kernel.mutant.activation",
+        "--",
+        ...manifest.command,
+      ],
+    };
+    const plan = await loadConformancePlan(
+      "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
+    );
+    plan.catalog = parseOperationCatalog(
+      JSON.parse(
+        await readFile("spec/conformance/kernel/operations.json", "utf8")
+      ),
+      "kernel catalog"
+    );
+    for (const [index, compiledCheck] of plan.checks.entries()) {
+      const [entry] = await runScheduledChecks(
+        wrapped,
+        [{ plan, compiledCheck, index }],
+        1,
+        () => "replay",
+        true
+      );
+      expect(
+        entry?.checkResult.status,
+        JSON.stringify(entry?.checkResult.assertionResults)
+      ).toBe("pass");
+      expect(entry?.checkResult.assertionResults).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            assertionId: expect.stringContaining(".collect."),
+            status: "pass",
+          }),
+        ])
+      );
+    }
+    const records = await Promise.all(
+      (await readdir(directory)).map(async (file) =>
+        JSON.parse(await readFile(path.join(directory, file), "utf8"))
+      )
+    );
+    expect(records.length).toBeGreaterThan(0);
+    expect(
+      records.some(
+        (record) =>
+          record.reply?.result?.value?.result?.activation?.activated === true
+      ),
+      JSON.stringify(records)
+    ).toBe(true);
+    expect(
+      records.some(
+        (record) =>
+          record.reply?.result?.value?.result?.activation?.activated === false
+      ),
+      JSON.stringify(records)
+    ).toBe(true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 120_000);
 
 test.each([
   {

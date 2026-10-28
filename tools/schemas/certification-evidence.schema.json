@@ -145,6 +145,7 @@
         "applicableChecks": { "$ref": "#/$defs/count" },
         "failedChecks": { "$ref": "#/$defs/count" },
         "nonApplicableChecks": { "$ref": "#/$defs/count" },
+        "outsideProfileChecks": { "$ref": "#/$defs/count" },
         "passedChecks": { "$ref": "#/$defs/count" },
         "totalChecks": { "$ref": "#/$defs/count" },
         "unsupportedChecks": { "$ref": "#/$defs/count" }

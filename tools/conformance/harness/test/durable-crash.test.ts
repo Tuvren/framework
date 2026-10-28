@@ -223,6 +223,81 @@ for (const backend of ["sqlite", "postgres"]) {
     }
   }, 90_000);
 
+  test(`${backend} before-commit crash rolls back the incomplete-checkpoint mutation`, async () => {
+    const directory = await mkdtemp(
+      path.resolve(".cache/df-m4-before-commit-")
+    );
+    try {
+      const manifest = JSON.parse(
+        await readFile(
+          `typescript/kernel/conformance-adapter/adapter-${backend}-mutant.json`,
+          "utf8"
+        )
+      );
+      const executable = manifest.executable;
+      const wrapped = {
+        ...manifest,
+        executable: process.execPath,
+        command: [
+          process.execPath,
+          "tools/conformance/meta-conformance/activation-probe.ts",
+          "--record",
+          directory,
+          "--operation",
+          "kernel.mutant.activation",
+          "--",
+          executable,
+          ...manifest.command.slice(1),
+        ],
+      };
+      const manifestPath = path.join(directory, "adapter.json");
+      await writeFile(manifestPath, JSON.stringify(wrapped));
+      const child = spawn({
+        cmd: [
+          "bun",
+          "tools/conformance/harness/run.ts",
+          "--adapter",
+          manifestPath,
+          "--check",
+          "kernel.syscall.process-crash.before_commit",
+        ],
+        env: {
+          ...process.env,
+          TUVREN_KERNEL_MUTANT: "kernel.expose-incomplete-checkpoint",
+        },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const [stdout, stderr, exit] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      expect(exit, stderr).toBe(0);
+      const evidence: unknown = JSON.parse(stdout);
+      assertConformanceEvidence(evidence, "before-commit mutant observation");
+      expect(evidence.checkResults[0]?.status).toBe("pass");
+      const records = await Promise.all(
+        (await readdir(directory))
+          .filter((name) => name !== "adapter.json")
+          .map(async (name) =>
+            JSON.parse(await readFile(path.join(directory, name), "utf8"))
+          )
+      );
+      const reached = records.find(
+        (record) =>
+          record.trigger === "faultReached" && record.processEpoch === 1
+      );
+      expect(reached?.reply?.result?.value?.result?.activation).toMatchObject({
+        mutantId: "kernel.expose-incomplete-checkpoint",
+        activated: true,
+        activationCount: expect.any(Number),
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }, 90_000);
+
   test(`${backend} reopen detects an activated dropped uncommitted result`, async () => {
     const directory = await mkdtemp(path.resolve(".cache/df004-reopen-probe-"));
     try {

@@ -239,7 +239,7 @@ afterAll(async () => {
 });
 
 describe("negative-control runner", () => {
-  test("uses generic or configured reasons for unsupported mutants", async () => {
+  test("requires configured reasons for unsupported mutants", async () => {
     for (const reason of [
       undefined,
       "synthetic port has no reproduction; not run",
@@ -255,10 +255,10 @@ describe("negative-control runner", () => {
         { logDirectory, mutants: ["synthetic.wrong-alpha"] }
       );
       expect(limited.mutants[0]).toMatchObject({
-        outcome: "unsupported",
+        outcome: reason === undefined ? "invalid" : "unsupported",
         reason:
           reason ??
-          "mutant is not supported by this port configuration; not run",
+          "mutant is not supported and has no recorded per-port reason",
       });
     }
   });
@@ -379,10 +379,10 @@ describe("negative-control runner", () => {
     expect(report.totals).toEqual({
       activated: 4,
       equivalent: 0,
-      invalid: 2,
+      invalid: 3,
       killed: 2,
       survived: 2,
-      unsupported: 2,
+      unsupported: 1,
     });
   });
 
@@ -549,6 +549,6 @@ describe("mutant run classification", () => {
         },
         run
       ).outcome
-    ).toBe("unsupported");
+    ).toBe("invalid");
   });
 });

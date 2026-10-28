@@ -98,7 +98,7 @@ export const assertClaimCoverage = (
 
 interface GateReport {
   counted: boolean;
-  mutants: readonly { mutantId: string; outcome: string }[];
+  mutants: readonly { mutantId: string; outcome: string; reason?: string }[];
 }
 
 export const assertConditionalBranchCoverage = (
@@ -136,13 +136,14 @@ export const assertNegativeControlGate = (
     throw new Error(`${profile} negative-control baseline did not pass`);
   }
   for (const id of required) {
-    const outcomes = reports.flatMap((report) =>
-      report.mutants
-        .filter((mutant) => mutant.mutantId === id)
-        .map((mutant) => mutant.outcome)
+    const mutants = reports.flatMap((report) =>
+      report.mutants.filter((mutant) => mutant.mutantId === id)
     );
-    const bad = outcomes.filter(
-      (outcome) => outcome !== "killed" && outcome !== "unsupported"
+    const outcomes = mutants.map((mutant) => mutant.outcome);
+    const bad = mutants.filter(
+      (mutant) =>
+        mutant.outcome !== "killed" &&
+        !(mutant.outcome === "unsupported" && mutant.reason?.trim())
     );
     if (bad.length > 0 || !outcomes.includes("killed")) {
       throw new Error(

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { NEGATIVE_CONTROL_PORTS } from "../meta-conformance/negative-control-config.js";
 import type { VerifierDigests } from "./provenance.js";
 
 export interface ControlAdapterDigest {
@@ -117,7 +118,8 @@ const parseAdapters = (
 const validMutants = (
   values: readonly unknown[],
   expected: ControlExpectation,
-  killed: Set<string>
+  killed: Set<string>,
+  unsupportedReasons: Readonly<Record<string, string>>
 ): boolean => {
   const seen = new Set<string>();
   for (const value of values) {
@@ -127,7 +129,12 @@ const validMutants = (
     }
     seen.add(mutant.mutantId);
     if (mutant.outcome === "unsupported") {
-      if (typeof mutant.reason !== "string" || mutant.reason.length === 0) {
+      const reason = unsupportedReasons[mutant.mutantId];
+      if (
+        typeof reason !== "string" ||
+        !reason.trim() ||
+        mutant.reason !== reason
+      ) {
         return false;
       }
       continue;
@@ -221,7 +228,16 @@ const validReport = (
   }
   return (
     validBranchControls(control.branchControls, adapters, branches) &&
-    validMutants(report.mutants, expected, killed)
+    validMutants(
+      report.mutants,
+      expected,
+      killed,
+      NEGATIVE_CONTROL_PORTS.find(
+        (config) =>
+          config.profile === expected.profile &&
+          config.controlAdapter === control.adapter
+      )?.unsupportedReasons ?? {}
+    )
   );
 };
 

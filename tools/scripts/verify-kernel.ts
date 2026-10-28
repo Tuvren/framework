@@ -197,7 +197,6 @@ export const createKernelVerificationPhases = (options: {
               "tools/conformance/certification/durable-bundle-contract.test.ts",
               "tools/conformance/certification/provenance.test.ts",
               "tools/conformance/meta-conformance/claim-coverage.test.ts",
-              "tools/conformance/plan-compiler/outcome-schema.test.ts",
             ],
             id: "kernel certificate and negative-control contracts",
           },

@@ -54,6 +54,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.clock_skew.preemption.3.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.backendNow.result.threads",
           "status": "pass"
         },
@@ -79,6 +83,10 @@
         },
         {
           "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.livePreempt.outcome",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.clock_skew.preemption.requiredEvidence.result.trace.livePreempt.outcome.kind",
           "status": "pass"
         },
         {

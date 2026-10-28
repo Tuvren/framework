@@ -57,14 +57,24 @@ const scopedEvidence = (
   );
   const nonApplicableCheckIds = selection
     .filter(
-      (entry) => !(entry.selected || entry.reason?.startsWith("not run:"))
+      (entry) =>
+        !(
+          entry.selected ||
+          entry.reason === "outside-profile" ||
+          entry.reason?.startsWith("not run:")
+        )
     )
     .map((entry) => entry.checkId);
+  const outsideProfileChecks = selection.filter(
+    (entry) => entry.reason === "outside-profile"
+  ).length;
   const summary = {
     ...createConformanceEvidenceSummary(checkResults),
     applicableChecks: checkResults.length,
     nonApplicableChecks: nonApplicableCheckIds.length,
-    totalChecks: checkResults.length + nonApplicableCheckIds.length,
+    outsideProfileChecks,
+    totalChecks:
+      checkResults.length + nonApplicableCheckIds.length + outsideProfileChecks,
   };
   return {
     ...evidence,

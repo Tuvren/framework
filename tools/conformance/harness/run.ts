@@ -44,6 +44,7 @@ import {
 import { finalizeProfileBundles } from "../certification/profile-bundles.js";
 import {
   assertKernelMemoryClaimInventory,
+  assertProfileClaimInventory,
   findProfileSelectionFailures,
   readClaimedProfiles,
 } from "../certification/profile.js";
@@ -104,7 +105,6 @@ import {
   recordHandleCapture,
   runOperationHandleStep,
 } from "./operation-steps.js";
-import { assertsNativeErrorOutcome } from "./outcome-assertion.js";
 import { ProcessStartError, ProcessSupervisor } from "./process-supervisor.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
@@ -758,7 +758,6 @@ const validateTraceFaultOutcome = (
   outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>,
   operation: CatalogOperation | undefined,
   check: ConformancePlanCheck,
-  context: Record<string, unknown>,
   processName = "primary",
   processEpoch = 1
 ): void => {
@@ -809,8 +808,7 @@ const validateTraceFaultOutcome = (
     validateNativeError(
       outcome.error,
       operation,
-      nativeErrorAsserted(check, step) ||
-        assertsNativeErrorOutcome(check, step, context, operation)
+      nativeErrorAsserted(check, step)
     );
   }
 };
@@ -939,7 +937,6 @@ const observeTraceStep = async ({
       outcome,
       catalogOperation,
       check,
-      contextInput,
       processName,
       processEpoch
     );
@@ -2587,6 +2584,7 @@ const collectProfileFindings = (
     return findings;
   }
   for (const profile of profiles) {
+    assertProfileClaimInventory(profile, plans);
     if (profile.profileId === "kernel.memory") {
       assertKernelMemoryClaimInventory(profile, plans);
     }
@@ -2610,6 +2608,14 @@ const collectProfileFindings = (
 
 const main = async (): Promise<void> => {
   const options = parseArgs(process.argv.slice(2));
+  if (
+    options.controlReport !== undefined &&
+    options.evidenceOut === undefined
+  ) {
+    throw new Error(
+      "--control-report requires --evidence-out for certificate bundles"
+    );
+  }
   const adapterManifest = await readAdapterManifest(options.adapter);
   const certificationManifest = await readCertificationManifest(
     nodePath.resolve(REPO_ROOT, options.certificationManifest)
@@ -2757,13 +2763,7 @@ const main = async (): Promise<void> => {
     );
   }
 
-  await writeRunOutput(
-    options,
-    adapterManifest,
-    evidence,
-    bundles,
-    previewFailure
-  );
+  await writeRunOutput(options, evidence, bundles, previewFailure);
 
   if (evidence.status === "fail" && !options.allowFailingEvidence) {
     process.exitCode = 1;

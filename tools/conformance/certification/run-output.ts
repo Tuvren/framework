@@ -6,7 +6,6 @@ import type {
   ConformanceCheckResult,
   ConformanceEvidence,
 } from "../../scripts/lib/conformance-contract.js";
-import type { AdapterManifest } from "../harness/adapter-client.js";
 import type { CertifiedEntry } from "./certification-manifest.js";
 import type { ProfileBundle } from "./profile-bundles.js";
 
@@ -21,7 +20,6 @@ const ROOT = path.resolve(import.meta.dirname, "../../..");
 
 export const writeRunOutput = async (
   options: OutputOptions,
-  manifest: AdapterManifest,
   evidence: ConformanceEvidence,
   bundles: readonly ProfileBundle[],
   previewFailure: (result: ConformanceCheckResult) => ConformanceCheckResult
@@ -45,23 +43,11 @@ export const writeRunOutput = async (
     await mkdir(path.dirname(destination), { recursive: true });
     await writeFile(destination, text);
   }
-  if (
-    bundles.length > 0 &&
-    (options.evidenceOut !== undefined || options.controlReport !== undefined)
-  ) {
-    const directory =
-      options.evidenceOut === undefined
-        ? path.resolve(
-            ROOT,
-            ".cache/certification",
-            manifest.implementationId,
-            evidence.runId ?? "run",
-            "certificates"
-          )
-        : path.join(
-            path.dirname(path.resolve(ROOT, options.evidenceOut)),
-            "certificates"
-          );
+  if (bundles.length > 0 && options.evidenceOut !== undefined) {
+    const directory = path.join(
+      path.dirname(path.resolve(ROOT, options.evidenceOut)),
+      "certificates"
+    );
     await mkdir(directory, { recursive: true });
     for (const bundle of bundles) {
       await writeFile(

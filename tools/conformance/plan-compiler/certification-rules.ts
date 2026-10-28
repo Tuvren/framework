@@ -38,10 +38,6 @@ import type {
   ConformancePlanStep,
   ConformancePlanValueOperators,
 } from "./index.js";
-import {
-  isDeclaredErrorOutcomeSchema,
-  resolveExpectedSchema,
-} from "./outcome-schema.js";
 
 /** ADR-0075 decisions 4 and 5, plus ADR-0030's evidence rule. */
 export const CERTIFICATION_RULE_IDS = [
@@ -829,8 +825,7 @@ const checkObservationPath = (
   segments: PathSegment[] | undefined,
   label: string,
   allowExternal: boolean,
-  equals?: unknown,
-  allowOutcome = false
+  equals?: unknown
 ): boolean => {
   if (context.catalog === undefined) {
     return true;
@@ -859,10 +854,7 @@ const checkObservationPath = (
       ? undefined
       : `reads outcome kind of uncatalogued operation ${target.operationId}`;
   } else if (target.kind === "outcome") {
-    problem =
-      allowOutcome && context.catalog.operations.has(target.operationId)
-        ? undefined
-        : "whole outcomes are available only to schemaValid assertions on catalogued operations";
+    problem = "whole outcomes are outside the declared observation schema";
   } else {
     problem =
       observationProblem(context.catalog, target) ??
@@ -1072,26 +1064,6 @@ const checkProcessExit = (
   }
 };
 
-const allowsErrorOutcome = (
-  context: RuleContext,
-  scope: AssertionScope,
-  assertion: ConformancePlanAssertion,
-  actual: PathSegment[] | undefined
-): boolean => {
-  const outcome = actual === undefined ? undefined : locatePath(actual, scope);
-  return (
-    scope.kind === "trace" &&
-    actual?.[0] === "result" &&
-    assertion.kind === "schemaValid" &&
-    assertion.when === undefined &&
-    outcome?.kind === "outcome" &&
-    isDeclaredErrorOutcomeSchema(
-      resolveExpectedSchema(context.fixture, assertion.schema),
-      context.catalog?.operations.get(outcome.operationId)?.errors ?? []
-    )
-  );
-};
-
 const checkAssertion = (
   context: RuleContext,
   scope: AssertionScope,
@@ -1140,7 +1112,6 @@ const checkAssertion = (
     );
   }
   const actual = assertionActualPath(assertion);
-  const allowOutcome = allowsErrorOutcome(context, scope, assertion, actual);
   const nodes = operatorNodes(assertion, actual, label);
   nodes.push(...referenceNodes(context, scope, assertion, actual, label));
   let actualResolves = true;
@@ -1153,8 +1124,7 @@ const checkAssertion = (
         node.actual,
         node.label,
         assertion.kind === "faultActivated",
-        node.operators.equals,
-        allowOutcome
+        node.operators.equals
       );
     }
 
