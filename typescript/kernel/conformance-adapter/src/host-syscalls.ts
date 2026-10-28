@@ -487,7 +487,11 @@ export const createSyscallBindings = (
         },
         transact: async (work) => await requireBackend().transact(work),
       };
-      state.fault = createDurableFaultControl(deferred, reached);
+      state.fault = createDurableFaultControl(
+        deferred,
+        reached,
+        config.mutant?.wrapFaultInjection
+      );
       state.attachBackend = (backend) => {
         attached = backend;
       };

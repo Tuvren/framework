@@ -307,7 +307,12 @@ const readProfileObligations = async (
   config: NegativeControlPortConfig,
   controls: readonly ControlEntry[]
 ): Promise<
-  { negativeControls: string[]; conditionalAssertions: string[] } | undefined
+  | {
+      negativeControls: string[];
+      conditionalAssertions: string[];
+      branchChecks: string[];
+    }
+  | undefined
 > => {
   const packet = await readJson(config.packet);
   if (!isRecord(packet) || typeof packet.certificationProfiles !== "string") {
@@ -384,7 +389,17 @@ const readProfileObligations = async (
     readStrings(profile.claimIds),
     plans
   );
-  return { negativeControls, conditionalAssertions };
+  const required = new Set(conditionalAssertions);
+  const branchChecks = plans.flatMap(({ checks: compiled }) =>
+    compiled.flatMap(({ check }) =>
+      claimAssertions(check).some(({ assertionId }) =>
+        required.has(assertionId)
+      )
+        ? [check.checkId]
+        : []
+    )
+  );
+  return { negativeControls, conditionalAssertions, branchChecks };
 };
 
 const readAdapterManifest = async (
@@ -662,9 +677,10 @@ const runHarness = async (
   }
 };
 
-const runBranchControl = async (
+export const runBranchControl = async (
   config: NegativeControlPortConfig,
   adapter: string,
+  checks: readonly string[],
   directory: string,
   options: NegativeControlRunOptions
 ): Promise<
@@ -683,6 +699,8 @@ const runBranchControl = async (
       adapter,
       "--packet",
       config.packet,
+      ...checks.flatMap((check) => ["--check", check]),
+      "--allow-failing-evidence",
       "--concurrency",
       String(options.concurrency ?? 4),
       "--evidence-out",
@@ -712,7 +730,15 @@ const runBranchControl = async (
           (assertion) => assertion.when !== undefined
         )
       ),
-      status: evidence.status,
+      status:
+        checks.length > 0 &&
+        checks.every((id) =>
+          evidence.checkResults.some(
+            (check) => check.checkId === id && check.status === "pass"
+          )
+        )
+          ? "pass"
+          : "fail",
     };
   } catch (error: unknown) {
     return {
@@ -953,11 +979,13 @@ const runBranchControls = async (
   config: NegativeControlPortConfig,
   options: NegativeControlRunOptions,
   workDirectory: string,
-  selected: readonly { mutantId: string }[]
+  selected: readonly { mutantId: string }[],
+  checks: readonly string[]
 ): Promise<boolean> => {
   if (
     report.mode !== "enforcing" ||
-    (config.branchAdapters?.length ?? 0) === 0
+    (config.branchAdapters?.length ?? 0) === 0 ||
+    checks.length === 0
   ) {
     return true;
   }
@@ -967,6 +995,7 @@ const runBranchControls = async (
       await runBranchControl(
         config,
         adapter,
+        checks,
         nodePath.join(workDirectory, `branch-${index}`),
         options
       )
@@ -1120,7 +1149,8 @@ export const runNegativeControls = async (
         config,
         options,
         workDirectory,
-        selected
+        selected,
+        obligations?.branchChecks ?? []
       ))
     ) {
       return report;

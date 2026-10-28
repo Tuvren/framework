@@ -207,6 +207,7 @@ export class JsonRpcAdapterClient {
   private supervisorTerminated = false;
   private clientClosed = false;
   private readonly closed: Promise<void>;
+  private readonly exitObserved: Promise<void>;
   private readonly timeoutMs: number;
   private readonly processGroup: boolean;
 
@@ -239,6 +240,8 @@ export class JsonRpcAdapterClient {
     });
     const closed = Promise.withResolvers<void>();
     this.closed = closed.promise;
+    const exitObserved = Promise.withResolvers<void>();
+    this.exitObserved = exitObserved.promise;
     this.child.on("close", () => {
       closed.resolve();
     });
@@ -248,6 +251,7 @@ export class JsonRpcAdapterClient {
     this.child.on("exit", (code, signal) => {
       this.exited = true;
       this.exit = { code, signal };
+      exitObserved.resolve();
       const message = `adapter process exited before completing all requests: code=${String(
         code
       )} signal=${String(signal)}${this.stderr.length > 0 ? ` stderr=${this.stderr}` : ""}`;
@@ -632,7 +636,7 @@ export class JsonRpcAdapterClient {
   async terminationStatus(graceMs = 2000): Promise<AdapterExit | undefined> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     await Promise.race([
-      this.closed,
+      this.exitObserved,
       new Promise<void>((resolve) => {
         timer = setTimeout(resolve, graceMs);
       }),
@@ -643,6 +647,21 @@ export class JsonRpcAdapterClient {
 
   processId(): number | undefined {
     return this.child.pid;
+  }
+
+  signalProcessGroup(signal: NodeJS.Signals): void {
+    if (!this.processGroup || this.child.pid === undefined) {
+      return;
+    }
+    try {
+      process.kill(-this.child.pid, signal);
+    } catch (error: unknown) {
+      if (
+        !(error instanceof Error && "code" in error && error.code === "ESRCH")
+      ) {
+        throw error;
+      }
+    }
   }
 
   wasTerminatedBySupervisor(): boolean {

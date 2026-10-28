@@ -2008,7 +2008,7 @@ const executeScheduledCheck = async (
   return checkResult;
 };
 
-const runScheduledChecks = async (
+export const runScheduledChecks = async (
   manifest: AdapterManifest,
   scheduled: readonly ScheduledCheck[],
   concurrency: number,
@@ -2537,4 +2537,6 @@ const main = async (): Promise<void> => {
   }
 };
 
-await main();
+if (import.meta.main) {
+  await main();
+}

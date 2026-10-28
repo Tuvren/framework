@@ -355,9 +355,17 @@ export const createRuntimeKernel = (
             { code: "kernel_capability_unsupported" }
           );
         }
-        return await backend.reclaim({
-          nowMs: reclamationOptions?.nowMs ?? now(),
-        });
+        const nowMs =
+          reclamationOptions?.nowMs ??
+          (sharedLeaseClock
+            ? await backend.transact(
+                async (tx) =>
+                  await Promise.resolve(
+                    resolveTransactionClock(true, now, tx)()
+                  )
+              )
+            : now());
+        return await backend.reclaim({ nowMs });
       },
     },
 

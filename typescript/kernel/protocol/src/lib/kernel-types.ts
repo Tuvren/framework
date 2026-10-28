@@ -862,12 +862,11 @@ export interface StagedResultRepository {
 export interface RuntimeBackendTx {
   branches: BranchRepository;
   /**
-   * Per-transaction authoritative clock (epoch ms). Backends that advertise the
-   * `shared-lease-clock` BackendCapability expose the backend's own clock here so
-   * the kernel can stamp and compare run-lease expiry in backend time within the
-   * transaction (ADR-0050, kernel spec §5.2). Backends that do not advertise
-   * shared-lease-clock MAY omit it; the kernel falls back to its injected clock
-   * for those backends.
+   * Per-transaction clock in epoch milliseconds. Backends advertising
+   * `shared-lease-clock` provide their own clock for every kernel-stamped
+   * durable timestamp and lease comparison (OD-20, ADR-0050). If such a backend
+   * omits this clock, the kernel reports `kernel_capability_unsupported`.
+   * Other backends may omit it; the kernel uses its injected clock instead.
    */
   now?: () => EpochMs;
   objects: ObjectRepository;
@@ -929,8 +928,8 @@ export interface BackendCapability {
 export interface ReclamationOptions {
   /**
    * Clock reference (epoch ms) a backend consults while evaluating the grace
-   * window. The kernel supplies its own `now()` so any wall-clock comparison
-   * stays consistent with the rest of the syscall surface. The grace horizon's
+   * window. When omitted, the kernel uses the backend transaction clock on
+   * shared-clock backends and its injected clock on other backends. The grace horizon's
    * pinning value is still derived structurally from the constructing Scope's
    * own active runs (the oldest active execution lease / in-flight write
    * horizon): every reference backend retains everything at or after that

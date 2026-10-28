@@ -232,7 +232,35 @@ const hasProfileEvidence = (
   return paths.every((path) => satisfied.has(path));
 };
 
-const completedProcess = (value: unknown): boolean => {
+const completedProcess = (value: unknown, schedule: unknown): boolean => {
+  if (isRecord(value) && Array.isArray(value.epochs)) {
+    if (!Array.isArray(schedule)) {
+      return false;
+    }
+    const endings = schedule.flatMap((step: unknown) =>
+      isRecord(step) && (step.action === "restart" || step.action === "kill")
+        ? [step.action]
+        : []
+    );
+    if (value.epochs.length !== endings.length + 1) {
+      return false;
+    }
+    return value.epochs.every((epoch: unknown, index: number) => {
+      if (
+        !(isRecord(epoch) && isRecord(epoch.exit)) ||
+        typeof epoch.pid !== "number" ||
+        !Number.isSafeInteger(epoch.pid) ||
+        epoch.pid <= 0 ||
+        epoch.epoch !== index + 1 ||
+        epoch.signal !== epoch.exit.signal
+      ) {
+        return false;
+      }
+      return endings[index] === "kill"
+        ? epoch.exit.code === null && epoch.exit.signal === "SIGKILL"
+        : epoch.exit.code === 0 && epoch.exit.signal === null;
+    });
+  }
   if (!(isRecord(value) && isRecord(value.exit))) {
     return false;
   }
@@ -375,7 +403,7 @@ export const finishCertificate = async (
     profilePassed(profile, plans, results) &&
     results.every(
       (result) =>
-        completedProcess(result.details?.process) &&
+        completedProcess(result.details?.process, result.details?.schedule) &&
         result.details?.schedule !== undefined &&
         result.details?.storageIdentity !== undefined
     );

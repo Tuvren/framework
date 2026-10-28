@@ -12,13 +12,13 @@ import type {
   AdapterFrame,
   AdapterTranscriptMark,
 } from "./adapter-client.js";
-import { CleanupError } from "./storage-resource.js";
+import { CleanupError, withCleanup } from "./storage-resource.js";
 
 export interface SupervisedProcess {
   executableDigest: string;
   pid: number;
   epoch: number;
-  signal?: string;
+  signal: string | null;
   exit?: AdapterExit;
 }
 
@@ -129,15 +129,28 @@ export class ProcessSupervisor {
     const pid = this.current.pid;
     const descendants = await descendantPids(pid);
     try {
-      this.current.exit = await client.terminate("SIGKILL");
-      await client.shutdown();
+      await withCleanup(
+        async () => {
+          this.current.exit = await client.terminate("SIGKILL");
+          this.current.signal = this.current.exit.signal;
+          await client.shutdown();
+        },
+        async () => await this.ensureNoSurvivors(client, pid, descendants)
+      );
     } finally {
       this.active = undefined;
     }
-    if (this.current.exit.signal !== "SIGKILL") {
+    if (this.current.exit?.signal !== "SIGKILL") {
       throw new Error("adapter did not exit from SIGKILL");
     }
-    this.current.signal = "SIGKILL";
+  }
+
+  private async ensureNoSurvivors(
+    client: JsonRpcAdapterClient,
+    pid: number,
+    descendants: readonly number[]
+  ): Promise<void> {
+    client.signalProcessGroup("SIGKILL");
     const deadline = performance.now() + 2000;
     let survivors = (await processEntries()).filter(
       (entry) => entry.group === pid || descendants.includes(entry.pid)
@@ -194,6 +207,7 @@ export class ProcessSupervisor {
       executableDigest,
       pid,
       epoch: this.history.length + 1,
+      signal: null,
     });
     try {
       const capabilities = await client.initialize(
@@ -244,15 +258,23 @@ export class ProcessSupervisor {
       return;
     }
     const client = this.active;
-    await client.shutdown();
-    const exit = await client.terminationStatus();
-    if (exit === undefined) {
-      throw new Error("adapter process did not exit");
+    const pid = this.current.pid;
+    const descendants = await descendantPids(pid);
+    try {
+      await withCleanup(
+        async () => {
+          await client.shutdown();
+          const exit = await client.terminationStatus();
+          if (exit === undefined) {
+            throw new Error("adapter process did not exit");
+          }
+          this.current.exit = exit;
+          this.current.signal = exit.signal;
+        },
+        async () => await this.ensureNoSurvivors(client, pid, descendants)
+      );
+    } finally {
+      this.active = undefined;
     }
-    this.current.exit = exit;
-    if (exit.signal !== null) {
-      this.current.signal = exit.signal;
-    }
-    this.active = undefined;
   }
 }

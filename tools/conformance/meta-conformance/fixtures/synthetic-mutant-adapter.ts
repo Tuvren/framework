@@ -57,6 +57,7 @@ const mutantId =
     ? undefined
     : selectedMutant;
 const brokenControl = args.includes("--broken");
+const brokenField = readFlag("--broken-field");
 
 if (mutantId === "synthetic.crash-at-startup") {
   process.stderr.write("synthetic adapter crashed at startup\n");
@@ -77,7 +78,10 @@ const observe = (field: string): OperationOutcome => {
   }
   const reference = REFERENCE_VALUES[field] ?? 0;
   const projection = {
-    [field]: brokenControl ? reference + 1 : (mutated ?? reference),
+    [field]:
+      brokenControl || brokenField === field
+        ? reference + 1
+        : (mutated ?? reference),
   };
   return {
     kind: "result",

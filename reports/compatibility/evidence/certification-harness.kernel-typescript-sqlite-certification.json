@@ -529,17 +529,18 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 1,
+              "signal": "SIGKILL",
               "exit": {
                 "code": null,
                 "signal": "SIGKILL"
-              },
-              "signal": "SIGKILL"
+              }
             },
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 2,
+              "signal": null,
               "exit": {
                 "code": 0,
                 "signal": null
@@ -827,17 +828,18 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 1,
+              "signal": "SIGKILL",
               "exit": {
                 "code": null,
                 "signal": "SIGKILL"
-              },
-              "signal": "SIGKILL"
+              }
             },
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 2,
+              "signal": null,
               "exit": {
                 "code": 0,
                 "signal": null
@@ -1125,17 +1127,18 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 1,
+              "signal": "SIGKILL",
               "exit": {
                 "code": null,
                 "signal": "SIGKILL"
-              },
-              "signal": "SIGKILL"
+              }
             },
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 2,
+              "signal": null,
               "exit": {
                 "code": 0,
                 "signal": null
@@ -1423,17 +1426,18 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 1,
+              "signal": "SIGKILL",
               "exit": {
                 "code": null,
                 "signal": "SIGKILL"
-              },
-              "signal": "SIGKILL"
+              }
             },
             {
-              "executableDigest": "59e6f63a3f1d4881a5a6930cfc45536557eeb0de09a4a6744d66f0bfa2110ba0",
+              "executableDigest": "8155ece3d0f81bde30ff6a9769ba4c46580774d734f2e6f185a8bf3ce2c137e1",
               "epoch": 2,
+              "signal": null,
               "exit": {
                 "code": 0,
                 "signal": null

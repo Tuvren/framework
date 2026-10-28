@@ -46,6 +46,7 @@
       "required": ["name", "path"],
       "additionalProperties": false,
       "properties": {
+        "default": {},
         "name": { "type": "string", "pattern": "^[^.]+$" },
         "path": {
           "type": "string",

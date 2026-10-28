@@ -5,6 +5,7 @@ import { TuvrenPersistenceError } from "@tuvren/core";
 import type { RuntimeBackend, RuntimeBackendTx } from "@tuvren/kernel-protocol";
 
 import type { FaultPoint } from "./fault-injecting-backend.js";
+import type { FaultInjectingBackendFactory } from "./kernel-mutant-types.js";
 
 interface FaultSelector {
   branchId?: string;
@@ -35,14 +36,17 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 export const createDurableFaultControl = (
   inner: RuntimeBackend,
-  reached: (receipt: { token: string; phase: FaultPoint }) => Promise<void>
+  reached: (receipt: { token: string; phase: FaultPoint }) => Promise<void>,
+  wrapFactory?: (
+    factory: FaultInjectingBackendFactory
+  ) => FaultInjectingBackendFactory
 ) => {
   const checkpointContext = new AsyncLocalStorage<boolean>();
   let armed: ArmedFault | undefined;
 
   const activate = async (
     point: FaultPoint,
-    branchId: string
+    branchId: string | undefined
   ): Promise<void> => {
     const plan = armed;
     if (
@@ -71,7 +75,7 @@ export const createDurableFaultControl = (
     await Promise.withResolvers<undefined>().promise;
   };
 
-  const backend: RuntimeBackend = {
+  const instrumented: RuntimeBackend = {
     capabilities: () => inner.capabilities(),
     health: async () => await inner.health(),
     ...(inner.reclaim === undefined
@@ -83,11 +87,16 @@ export const createDurableFaultControl = (
     transact: async <T>(
       work: (tx: RuntimeBackendTx) => Promise<T>
     ): Promise<T> => {
-      if (checkpointContext.getStore() !== true) {
+      if (
+        armed === undefined ||
+        (armed.selector.operation === "checkpoint" &&
+          checkpointContext.getStore() !== true)
+      ) {
         return await inner.transact(work);
       }
       let runBranch: string | undefined;
       let checkpointBranch: string | undefined;
+      const branches = new Set<string>();
       const value = await inner.transact(async (tx) => {
         const recording: RuntimeBackendTx = {
           ...tx,
@@ -95,13 +104,17 @@ export const createDurableFaultControl = (
             ...tx.branches,
             async get(branchId) {
               const branch = await tx.branches.get(branchId);
+              branches.add(branchId);
               if (branch !== null && branchId === runBranch) {
                 checkpointBranch = branchId;
-                await activate("before-commit", branchId);
+                if (checkpointContext.getStore() === true) {
+                  await activate("before-commit", branchId);
+                }
               }
               return branch;
             },
             async set(branch) {
+              branches.add(branch.branchId);
               await tx.branches.set(branch);
               if (checkpointBranch === branch.branchId) {
                 await activate(
@@ -133,15 +146,47 @@ export const createDurableFaultControl = (
               }
             },
           },
+          turns: {
+            ...tx.turns,
+            async set(turn) {
+              branches.add(turn.branchId);
+              await tx.turns.set(turn);
+            },
+          },
         };
-        return await work(recording);
+        const result = await work(recording);
+        if (armed?.selector.operation === undefined) {
+          const branch = armed?.selector.branchId;
+          if (branch === undefined || branches.has(branch)) {
+            await activate("before-commit", branch);
+          }
+        }
+        return result;
       });
-      if (checkpointBranch !== undefined) {
+      if (armed?.selector.operation === undefined) {
+        const branch = armed?.selector.branchId;
+        if (branch === undefined || branches.has(branch)) {
+          await activate("after-commit-before-ack", branch);
+        }
+      } else if (checkpointBranch !== undefined) {
         await activate("after-commit-before-ack", checkpointBranch);
       }
       return value;
     },
   };
+  let current = inner;
+  const backend: RuntimeBackend = {
+    capabilities: () => inner.capabilities(),
+    health: async () => await inner.health(),
+    ...(inner.reclaim === undefined
+      ? {}
+      : { reclaim: inner.reclaim.bind(inner) }),
+    ...(inner.purgeScope === undefined
+      ? {}
+      : { purgeScope: inner.purgeScope.bind(inner) }),
+    transact: async (work) => await current.transact(work),
+  };
+  const factory: FaultInjectingBackendFactory = () => instrumented;
 
   return {
     arm(
@@ -197,6 +242,13 @@ export const createDurableFaultControl = (
         },
         token,
       };
+      current = (wrapFactory?.(factory) ?? factory)(inner, {
+        match: armed.selector,
+        occurrence,
+        point,
+        policy: "once",
+        token,
+      });
       return { token };
     },
     backend,

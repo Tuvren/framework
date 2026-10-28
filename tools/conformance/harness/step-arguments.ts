@@ -137,32 +137,40 @@ export const createCaptureStore = (): CaptureStore => ({
 });
 
 /**
- * A capture whose path is absent from the observation is not recorded, so any
- * later `$ref` or assertion operand that reads it fails as unresolved. Its name
- * still counts as declared.
+ * A missing property on an existing parent uses an explicit default, if any.
+ * Otherwise an absent capture is unresolved, but its name counts as declared.
  */
 export const recordStepCaptures = (
   captures: readonly ConformancePlanCapture[] | undefined,
   observation: StepObservation,
   store: CaptureStore
 ): void => {
-  for (const { name, path } of captures ?? []) {
+  for (const capture of captures ?? []) {
+    const { name, path } = capture;
     if (store.declared.has(name)) {
       throw new ArgumentResolutionError(`capture ${name} is already defined`);
     }
 
     store.declared.add(name);
-    const value = readOwnSegments(
-      {
-        events: observation.events,
-        result: observation.result,
-        state: observation.state,
-      },
-      path.split(".")
-    );
+    const root = {
+      events: observation.events,
+      result: observation.result,
+      state: observation.state,
+    };
+    const segments = path.split(".");
+    const value = readOwnSegments(root, segments);
+    const parent = readOwnSegments(root, segments.slice(0, -1));
+    const leaf = segments.at(-1);
+    const missingProperty =
+      leaf !== undefined &&
+      (isRecord(parent) || Array.isArray(parent)) &&
+      !Object.hasOwn(parent, leaf);
 
-    if (value !== undefined) {
-      store.values[name] = value;
+    if (
+      value !== undefined ||
+      (missingProperty && Object.hasOwn(capture, "default"))
+    ) {
+      store.values[name] = value === undefined ? capture.default : value;
     }
   }
 };
