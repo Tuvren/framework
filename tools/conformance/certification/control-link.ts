@@ -98,9 +98,6 @@ const validMutants = (
       return false;
     }
     seen.add(mutant.mutantId);
-    if (!expected.negativeControls.includes(mutant.mutantId)) {
-      continue;
-    }
     if (mutant.outcome === "unsupported") {
       if (typeof mutant.reason !== "string" || mutant.reason.length === 0) {
         return false;

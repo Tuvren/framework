@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -103,77 +103,154 @@ test("certificate environment identifies the adapter storage backend", async () 
   }
 }, 120_000);
 
-test("certificate matching enforces required controls and permits legacy fleet outcomes", () => {
-  const digest = "a".repeat(64);
-  const verifierDigests: VerifierDigests = {
-    harness: digest,
-    packet: digest,
-    plans: digest,
-    catalogs: digest,
-    fixtures: digest,
-    profiles: digest,
-    controls: digest,
-    verifierAuthority: digest,
-  };
-  const adapterIdentity = {
-    adapter: "adapter.json",
-    adapterManifest: digest,
-    implementation: digest,
-  };
-  const adapters = [adapterIdentity];
-  const makeReport = (requiredOutcome: string, legacyOutcome: string) => {
-    const reports = [
+test("a survived tagged control leaves the certificate uncertified", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "de006-control-link-"));
+  try {
+    const adapter = adapters[0];
+    const manifest = await readAdapterManifest(adapter);
+    const digests = await computeCertificateDigests(manifest, adapter);
+    const { adapterManifest, implementation, ...verifierDigests } = digests;
+    const adapterIdentity = { adapter, adapterManifest, implementation };
+    const profile = {
+      profileId: "synthetic.profile",
+      claimIds: ["synthetic.claim"],
+      faultPoints: [],
+      negativeControls: ["required"],
+      requiredCapabilities: [],
+      requiredEvidence: [],
+    };
+    const check = {
+      assertions: [],
+      checkId: "synthetic.check",
+      claimIds: ["synthetic.claim"],
+      operation: "synthetic.operation",
+    };
+    const plan = {
+      applicability: { capabilities: [] },
+      checks: [check],
+      packetId: "synthetic",
+      planId: "synthetic.plan",
+      planVersion: "0.1.0",
+    };
+    const plans = [
       {
-        control: {
-          adapter: "adapter.json",
-          status: "pass",
-          conditionalAssertions: [],
-        },
-        counted: true,
-        findings: [],
-        mode: "enforcing",
-        notRun: [],
-        profile: "profile",
-        mutants: [
-          {
-            mutantId: "required",
-            kind: "implementation",
-            outcome: requiredOutcome,
-            activated: true,
-            designatedFailures: ["assertion"],
-          },
-          {
-            mutantId: "legacy",
-            kind: "implementation",
-            outcome: legacyOutcome,
-            activated: true,
-            designatedFailures: [],
-          },
-        ],
+        checks: [{ check, requiredEvidence: [] }],
+        fixtures: new Map(),
+        path: "synthetic.plan.json",
+        plan,
+        scenarios: new Map(),
       },
     ];
-    const identity = {
-      profile: "profile",
-      status: "pass" as const,
-      verifierDigests,
-      adapters,
-      outcomes: controlOutcomes(reports),
+    const results = [
+      {
+        assertionResults: [],
+        checkId: check.checkId,
+        details: {
+          process: { pid: 1, exit: { code: 0 } },
+          schedule: [],
+          storageIdentity: {},
+        },
+        status: "pass" as const,
+      },
+    ];
+    const makeReport = (requiredOutcome: string, taggedOutcome: string) => {
+      const reports = [
+        {
+          control: { adapter, status: "pass", conditionalAssertions: [] },
+          counted: true,
+          findings: [],
+          mode: "enforcing",
+          notRun: [],
+          profile: profile.profileId,
+          mutants: [
+            {
+              mutantId: "required",
+              kind: "implementation",
+              outcome: requiredOutcome,
+              activated: true,
+              designatedFailures:
+                requiredOutcome === "killed" ? ["assertion"] : [],
+            },
+            {
+              mutantId: "tagged",
+              kind: "implementation",
+              outcome: taggedOutcome,
+              activated: true,
+              designatedFailures:
+                taggedOutcome === "killed" ? ["assertion"] : [],
+            },
+          ],
+        },
+      ];
+      const identity = {
+        profile: profile.profileId,
+        status: "pass" as const,
+        verifierDigests,
+        adapters: [adapterIdentity],
+        outcomes: controlOutcomes(reports),
+      };
+      return {
+        reports,
+        controlRun: { ...identity, id: controlRunId(identity) },
+      };
     };
-    return { reports, controlRun: { ...identity, id: controlRunId(identity) } };
-  };
-  const expected = {
-    ...adapterIdentity,
-    profile: "profile",
-    verifierDigests,
-    negativeControls: ["required"],
-    conditionalAssertions: [],
-  };
-  const passing = makeReport("killed", "survived");
-  expect(matchesControlRun(passing, expected)).toBe(passing.controlRun.id);
-  expect(
-    matchesControlRun(makeReport("survived", "killed"), expected)
-  ).toBeUndefined();
-});
+    const expected = {
+      ...adapterIdentity,
+      profile: profile.profileId,
+      verifierDigests,
+      negativeControls: profile.negativeControls,
+      conditionalAssertions: [],
+    };
+    const reportPath = path.join(directory, "controls.json");
+    const options = {
+      adapter,
+      controlReport: reportPath,
+      capabilities: [],
+      checks: [],
+      packets: [],
+      plans: [],
+    };
+    const passing = makeReport("killed", "killed");
+    await writeFile(reportPath, JSON.stringify(passing));
+    expect(matchesControlRun(passing, expected)).toBe(passing.controlRun.id);
+    const certified = await finishCertificate(
+      options,
+      manifest,
+      profile,
+      plans,
+      results,
+      "pass",
+      digests
+    );
+    expect(certified.certificate).toEqual({
+      complete: true,
+      profile: profile.profileId,
+      status: "certified",
+    });
+    expect(
+      matchesControlRun(makeReport("survived", "killed"), expected)
+    ).toBeUndefined();
+    const survived = makeReport("killed", "survived");
+    await writeFile(reportPath, JSON.stringify(survived));
+    const uncertified = await finishCertificate(
+      options,
+      manifest,
+      profile,
+      plans,
+      results,
+      "pass",
+      digests
+    );
+    expect(uncertified.certificate).toEqual({
+      complete: false,
+      profile: profile.profileId,
+      status: "uncertified",
+    });
+    expect(matchesControlRun(survived, expected)).toBeUndefined();
+  } finally {
+    await rm(directory, { force: true, recursive: true });
+  }
+}, 120_000);
 
 const checkDesignatedFailures = (report: unknown, manifest: unknown): void => {
   const reports = record(report).reports;
