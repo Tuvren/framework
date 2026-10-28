@@ -83,6 +83,11 @@ tickets:
         justification: "Real-adapter suites must run after the targeted builds and new suites must be registered; the kernel certification authority test must recognize lifecycle controls, which requires a changeset for its publishable package."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence for every kernel adapter is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
+      - files:
+          - tools/conformance/certification/provenance.ts
+          - tools/scripts/lib/conformance-contract.ts
+          - tools/scripts/lib/conformance-contract.test.ts
+        justification: "Review required implementation provenance to cover the durable backend code the adapter imports, and compatibility evidence to normalize per-run process, storage, and token values so refreshes are deterministic and leak no local paths."
     status: planned
   - id: KRT-DF003
     title: Add blocking fault seams with receipts to the SQLite and PostgreSQL backends
@@ -107,6 +112,34 @@ tickets:
       evidence: "Assert each supported point emits exactly one receipt with the arming token before blocking, unsupported points report unsupported, and production construction paths cannot reach the hooks."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
+    deviations:
+      - files:
+          - tools/conformance/adapter-protocol/stdio-host.ts
+          - tools/conformance/harness/adapter-client.ts
+          - tools/conformance/harness/process-supervisor.ts
+          - tools/conformance/harness/test
+        justification: "armFault, the faultReached notification, and the supervisor's process epoch travel through the shared stdio transport and harness client; real-database fault tests live with the harness."
+      - files:
+          - typescript/kernel/runtime
+          - .changeset/durable-transaction-clock.md
+        justification: "Arming the fault capability exposed the PostgreSQL clock-domain defect; the OD-20 interim fix lives in the kernel runtime's transaction bodies and needs a changeset for @tuvren/kernel-runtime."
+      - files:
+          - spec/conformance/kernel/operations.json
+          - spec/conformance/kernel/profiles.json
+          - spec/conformance/kernel/kernel-memory-undetected.json
+          - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
+          - rust/kernel/src/memory.rs
+          - rust/kernel-conformance-adapter
+          - typescript/kernel/protocol/test/kernel-certification-authority.test.ts
+          - tools/conformance/certification
+          - tools/conformance/meta-conformance/negative-controls.ts
+        justification: "The controls checks asserted the memory kernel's clock domain for every backend; selecting the expectation from the observed BackendCapability descriptor needed a catalogued observation, a kernel.memory claim, bindings in every adapter that runs the plan including Rust, and fleet branch provenance for conditional coverage."
+      - files:
+          - tools/scripts/verify.ts
+          - tools/scripts/verify-kernel.ts
+        justification: "Real-adapter fault and certificate suites must be registered after the build phase."
+      - files: [reports/compatibility]
+        justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
     status: planned
   - id: KRT-DF004
     title: Certify process-crash recovery on SQLite and PostgreSQL
