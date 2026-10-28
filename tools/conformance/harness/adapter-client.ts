@@ -61,6 +61,7 @@ export const adapterCommand = (
 export interface JsonRpcClientOptions {
   command: readonly string[];
   cwd: string;
+  env?: NodeJS.ProcessEnv;
   timeoutMs?: number;
 }
 
@@ -211,6 +212,7 @@ export class JsonRpcAdapterClient {
     this.timeoutMs = options.timeoutMs ?? 30_000;
     this.child = spawn(command, args, {
       cwd: options.cwd,
+      ...(options.env === undefined ? {} : { env: options.env }),
       stdio: ["pipe", "pipe", "pipe"],
     });
     this.lines = createInterface({ input: this.child.stdout });
@@ -368,6 +370,31 @@ export class JsonRpcAdapterClient {
       );
     }
     return { operationHandle: value.operationHandle };
+  }
+
+  async armFault(
+    instance: unknown,
+    point: string,
+    selector: unknown,
+    occurrence: number,
+    mode: "throw" | "block"
+  ): Promise<{ token: string }> {
+    const value = await this.request("armFault", {
+      instance,
+      point,
+      selector,
+      occurrence,
+      mode,
+    });
+    if (
+      !isRecord(value) ||
+      typeof value.token !== "string" ||
+      value.token.length === 0 ||
+      Object.keys(value).length !== 1
+    ) {
+      throw new Error("adapter armFault returned invalid token");
+    }
+    return { token: value.token };
   }
 
   async awaitOperation(
@@ -632,6 +659,16 @@ export class JsonRpcAdapterClient {
     try {
       if (pendingFrame?.lossless === true) {
         assertLosslessFrame(line);
+      }
+      if (isRecord(parsed) && !("id" in parsed)) {
+        if (
+          validateAdapterDefinition("JsonRpcNotification", parsed).length !== 0
+        ) {
+          throw new Error(
+            "adapter stdout contained malformed JSON-RPC notification"
+          );
+        }
+        return;
       }
       if (!isJsonRpcResponse(parsed)) {
         throw new Error("adapter stdout contained malformed JSON-RPC");

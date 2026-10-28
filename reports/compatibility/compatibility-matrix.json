@@ -772,6 +772,8 @@
             "kernel.protocol.deterministic_hashing",
             "kernel.protocol.modify_composition",
             "kernel.protocol.schema_roundtrip",
+            "kernel.syscall.controls.after_commit_before_ack",
+            "kernel.syscall.controls.before_commit",
             "kernel.syscall.lineage.cross_thread_rejection",
             "kernel.syscall.logical.branch_list",
             "kernel.syscall.logical.diff_paths",
@@ -884,6 +886,8 @@
             "kernel.crash-recovery.durable_fault_points",
             "kernel.crash-recovery.in_process_fault_points",
             "kernel.restart-recovery.close_reopen_checkpoint",
+            "kernel.syscall.crash-recovery.after_commit_before_ack",
+            "kernel.syscall.crash-recovery.before_commit",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.expired_listing",
@@ -900,15 +904,16 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 134,
+            "passedChecks": 138,
             "totalChecks": 141,
-            "applicableChecks": 134,
-            "nonApplicableChecks": 7
+            "applicableChecks": 138,
+            "nonApplicableChecks": 3
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
             "kernel.edge-validation.composite",
+            "kernel.fault-injection",
             "kernel.logical",
             "kernel.persistence.durable",
             "kernel.protocol",
@@ -943,6 +948,8 @@
             "kernel.protocol.deterministic_hashing",
             "kernel.protocol.modify_composition",
             "kernel.protocol.schema_roundtrip",
+            "kernel.syscall.controls.after_commit_before_ack",
+            "kernel.syscall.controls.before_commit",
             "kernel.syscall.lineage.cross_thread_rejection",
             "kernel.syscall.logical.branch_list",
             "kernel.syscall.logical.diff_paths",
@@ -1055,6 +1062,8 @@
             "kernel.crash-recovery.durable_fault_points",
             "kernel.crash-recovery.in_process_fault_points",
             "kernel.restart-recovery.close_reopen_checkpoint",
+            "kernel.syscall.crash-recovery.after_commit_before_ack",
+            "kernel.syscall.crash-recovery.before_commit",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.clock_skew_preemption",
@@ -1071,16 +1080,17 @@
             "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
-            "failedChecks": 0,
+            "failedChecks": 4,
             "passedChecks": 135,
             "totalChecks": 141,
-            "applicableChecks": 135,
-            "nonApplicableChecks": 6
+            "applicableChecks": 139,
+            "nonApplicableChecks": 2
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
             "kernel.edge-validation.composite",
+            "kernel.fault-injection",
             "kernel.logical",
             "kernel.persistence.durable",
             "kernel.protocol",
@@ -1093,8 +1103,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
-          "reportStatus": "capability_subset_pass",
-          "status": "pass",
+          "reportStatus": "unexpected_fail",
+          "status": "fail",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
         }

@@ -176,6 +176,14 @@ export const createKernelVerificationPhases = (options: {
             command: [
               "bun",
               "test",
+              "tools/conformance/harness/test/durable-faults.test.ts",
+            ],
+            id: "durable fault receipt contracts",
+          },
+          {
+            command: [
+              "bun",
+              "test",
               "tools/conformance/certification/bundle-contract.test.ts",
               "tools/conformance/certification/provenance.test.ts",
               "tools/conformance/meta-conformance/claim-coverage.test.ts",

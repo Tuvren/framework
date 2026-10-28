@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 
 import type { KernelRecord } from "@tuvren/core";
+import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import {
   createKernelTestClock,
   createKernelBarrierControl,
   createKernelFaultControl,
   createFaultInjectingBackend,
+  createDurableFaultControl,
 } from "@tuvren/kernel-testkit";
 
 import { AdapterProtocolError } from "../../../../tools/conformance/adapter-protocol/index.js";
@@ -32,7 +34,9 @@ const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);
 
 interface SyscallBinding {
   arguments: readonly unknown[];
+  checkpoint?: boolean;
   method?: string;
+  protocolMethod?: string;
   recordResult?: boolean;
   protocolErrors?: boolean;
   target?: string;
@@ -73,15 +77,20 @@ const parameters = {
   "kernel.fault.arm": {
     arguments: ["point", "selector", "occurrence", "mode"],
     method: "arm",
+    protocolMethod: "armFault",
     target: "fault",
   },
   "kernel.maintenance.reclaim": { arguments: ["options"] },
   "kernel.node.get": { arguments: ["hash"] },
   "kernel.node.walkBack": { arguments: [{ name: "fromHash", type: "string" }] },
   "kernel.run.beginStep": { arguments: ["runId", "stepId"] },
-  "kernel.run.complete": { arguments: ["runId", "status", "eventHash"] },
+  "kernel.run.complete": {
+    arguments: ["runId", "status", "eventHash"],
+    checkpoint: true,
+  },
   "kernel.run.completeStep": {
     arguments: ["runId", "stepId", "eventHash", "observeResults", "treeHash"],
+    checkpoint: true,
   },
   "kernel.run.create": {
     arguments: [
@@ -98,6 +107,7 @@ const parameters = {
   "kernel.runLiveness.listExpired": { arguments: ["nowMs"] },
   "kernel.runLiveness.preemptExpired": {
     arguments: ["runId", "preemptingOwnerId", "nowMs", "reason"],
+    checkpoint: true,
   },
   "kernel.runLiveness.renewLease": {
     arguments: [
@@ -162,7 +172,10 @@ const isSyscallBinding = (value: unknown): value is SyscallBinding =>
   (value.recordResult === undefined ||
     typeof value.recordResult === "boolean") &&
   (value.protocolErrors === undefined ||
-    typeof value.protocolErrors === "boolean");
+    typeof value.protocolErrors === "boolean") &&
+  (value.checkpoint === undefined || typeof value.checkpoint === "boolean") &&
+  (value.protocolMethod === undefined ||
+    typeof value.protocolMethod === "string");
 
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   isRecord(value) &&
@@ -390,19 +403,33 @@ interface Instance {
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
   createKernel: () => ReturnType<typeof createConformanceRuntimeKernel>;
   clock: ReturnType<typeof createKernelTestClock>;
-  fault: ReturnType<typeof createKernelFaultControl>;
+  fault:
+    | ReturnType<typeof createKernelFaultControl>
+    | ReturnType<typeof createDurableFaultControl>;
   barrier: ReturnType<typeof createKernelBarrierControl>;
 }
 
 interface InstanceState {
   config: KernelAdapterConfig;
   clock: ReturnType<typeof createKernelTestClock>;
+  fault?: ReturnType<typeof createDurableFaultControl>;
+  attachBackend?: (backend: RuntimeBackend) => void;
   opened?: Promise<Instance>;
   destroying?: Promise<void>;
   inFlight: Set<Promise<OperationOutcome>>;
 }
 
-export const createSyscallBindings = (config: KernelAdapterConfig) => {
+export const createSyscallBindings = (
+  config: KernelAdapterConfig,
+  reached: (receipt: {
+    token: string;
+    phase: string;
+  }) => Promise<void> = async () => {
+    await Promise.reject(
+      new Error("fault notification transport is unavailable")
+    );
+  }
+) => {
   const instances = new Map<string, InstanceState>();
   const createInstance = async (
     _input?: unknown,
@@ -422,11 +449,44 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       throw new Error("durable storageRef is required");
     }
     const handle = randomUUID();
-    instances.set(handle, {
+    const state: InstanceState = {
       clock: createKernelTestClock(),
       config: { ...config, ...options },
       inFlight: new Set(),
-    });
+    };
+    if (config.backend !== "memory") {
+      let attached: RuntimeBackend | undefined;
+      const requireBackend = (): RuntimeBackend => {
+        if (attached === undefined) {
+          throw new Error("durable backend is not initialized");
+        }
+        return attached;
+      };
+      const deferred: RuntimeBackend = {
+        capabilities: () => requireBackend().capabilities(),
+        health: async () => await requireBackend().health(),
+        purgeScope: async () => {
+          const backend = requireBackend();
+          if (backend.purgeScope === undefined) {
+            throw new Error("backend scope purge is unavailable");
+          }
+          await backend.purgeScope();
+        },
+        reclaim: async (reclamationOptions) => {
+          const backend = requireBackend();
+          if (backend.reclaim === undefined) {
+            throw new Error("backend reclamation is unavailable");
+          }
+          return await backend.reclaim(reclamationOptions);
+        },
+        transact: async (work) => await requireBackend().transact(work),
+      };
+      state.fault = createDurableFaultControl(deferred, reached);
+      state.attachBackend = (backend) => {
+        attached = backend;
+      };
+    }
+    instances.set(handle, state);
     return await Promise.resolve(handle);
   };
   const destroyInstance = async (handle: unknown): Promise<void> => {
@@ -505,10 +565,13 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
         const backend = await createConfiguredBackend(state.config, {
           now: clock.backendNow,
         });
-        const fault = createKernelFaultControl(
-          backend.backend,
-          config.mutant?.wrapFaultInjection(createFaultInjectingBackend)
-        );
+        state.attachBackend?.(backend.backend);
+        const fault =
+          state.fault ??
+          createKernelFaultControl(
+            backend.backend,
+            config.mutant?.wrapFaultInjection(createFaultInjectingBackend)
+          );
         const barrier = createKernelBarrierControl(fault.backend);
         const createKernel = () =>
           createConformanceRuntimeKernel(config, {
@@ -547,8 +610,13 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       typeof binding.target === "string"
         ? Reflect.get(opened, binding.target)
         : Reflect.get(kernel, group);
-    const invoke = async () =>
-      await invokeBinding(target, binding, input, method);
+    const invoke = async () => {
+      const work = async () =>
+        await invokeBinding(target, binding, input, method);
+      return binding.checkpoint === true && "runCheckpoint" in opened.fault
+        ? await opened.fault.runCheckpoint(work)
+        : await work();
+    };
     return operationHandle === undefined
       ? await invoke()
       : await opened.barrier.run(operationHandle, signal, invoke);
@@ -608,6 +676,19 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
         );
       }
       return await createInstance(undefined, options);
+    },
+    protocolControl: async (
+      method: string,
+      input: Record<string, unknown>
+    ): Promise<OperationOutcome> => {
+      const entry = Object.entries(parameters).find(
+        ([, binding]) =>
+          "protocolMethod" in binding && binding.protocolMethod === method
+      );
+      if (entry === undefined) {
+        throw new Error(`unsupported control method ${method}`);
+      }
+      return await trackedDispatch(entry[0], input, input.instance);
     },
     shutdown: async (): Promise<void> => {
       await Promise.all(

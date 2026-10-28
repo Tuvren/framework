@@ -87,6 +87,10 @@ export class ProcessSupervisor {
     const client = new JsonRpcAdapterClient({
       command: [this.options.executable, ...this.options.args],
       cwd: this.options.cwd,
+      env: {
+        ...process.env,
+        TUVREN_CONFORMANCE_PROCESS_EPOCH: String(this.history.length + 1),
+      },
     });
     const pid = client.processId();
     if (pid === undefined) {

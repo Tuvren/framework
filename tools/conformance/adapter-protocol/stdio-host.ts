@@ -36,6 +36,13 @@ export interface OpenInstanceOptions {
 }
 
 export interface StdioConformanceAdapter {
+  armFault?: (params: Record<string, unknown>) => Promise<OperationOutcome>;
+  setNotificationSink?: (
+    sink: (
+      method: "faultReached",
+      params: { token: string; processEpoch: number; phase: string }
+    ) => Promise<void>
+  ) => void;
   isLosslessRequest?: (method: string, params: unknown) => boolean;
   startOperation?: (
     operation: string,
@@ -75,6 +82,16 @@ interface JsonRpcRequest {
   jsonrpc: "2.0";
   method: string;
   params?: unknown;
+}
+
+class AdapterControlError extends Error {
+  readonly envelope: AdapterErrorEnvelope;
+
+  constructor(envelope: AdapterErrorEnvelope) {
+    super(envelope.message);
+    this.name = "AdapterControlError";
+    this.envelope = envelope;
+  }
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -156,6 +173,9 @@ const errorResponse = (
 });
 
 const createAdapterErrorEnvelope = (error: unknown): AdapterErrorEnvelope => {
+  if (error instanceof AdapterControlError) {
+    return error.envelope;
+  }
   if (error instanceof Error) {
     return {
       code:
@@ -301,6 +321,23 @@ const dispatchMethod = async (
         paramObject.instance
       );
     }
+    case "armFault": {
+      if (adapter.armFault === undefined) {
+        throw new AdapterProtocolError(
+          "adapter_method_not_implemented",
+          "adapter does not support armFault"
+        );
+      }
+      const outcome = await adapter.armFault(paramObject);
+      if (outcome.kind === "error") {
+        throw new AdapterControlError(outcome.error);
+      }
+      const value = isRecord(outcome.value) ? outcome.value.result : undefined;
+      if (!isRecord(value) || typeof value.token !== "string") {
+        throw new Error("armFault returned an invalid token");
+      }
+      return value;
+    }
     case "startOperation":
     case "awaitOperation":
     case "cancelOperation": {
@@ -384,6 +421,20 @@ export const serveStdioAdapter = async (
   const inFlight = new Map<symbol, Promise<void>>();
   let writeFailure: Error | undefined;
   let blockingDispatch = Promise.resolve();
+  const writeFrame = async (frame: unknown): Promise<void> => {
+    const written = Promise.withResolvers<undefined>();
+    process.stdout.write(`${JSON.stringify(frame)}\n`, (error) => {
+      if (error === undefined || error === null) {
+        written.resolve(undefined);
+      } else {
+        written.reject(error);
+      }
+    });
+    await written.promise;
+  };
+  adapter.setNotificationSink?.(async (method, params) => {
+    await writeFrame({ jsonrpc: "2.0", method, params });
+  });
   const respond = async (line: string): Promise<void> => {
     let request: unknown;
     try {
