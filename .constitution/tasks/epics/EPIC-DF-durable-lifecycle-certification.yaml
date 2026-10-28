@@ -234,6 +234,14 @@ tickets:
           - tools/scripts/lib/conformance-contract.ts
           - .changeset
         justification: "Real-adapter two-process suites run after the build phase, checked-in evidence normalizes per-process values, and touched publishable packages need direct changesets."
+      - files:
+          - tools/conformance/meta-conformance
+          - tools/schemas/certification-evidence.schema.json
+          - tools/scripts/compatibility-report.ts
+          - tools/scripts/conformance.ts
+          - tools/scripts/conformance/certification-schema-examples.ts
+          - reports/compatibility/compatibility-matrix.schema.json
+        justification: "OD-22 interim design D: one run finalizes per-profile certificate bundles with a shared run id, per-profile control runs and gates, profile-keyed compatibility certificate rows, a conformance lane that requires them, and a SQLite-PostgreSQL disagreement capture."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
     status: planned
