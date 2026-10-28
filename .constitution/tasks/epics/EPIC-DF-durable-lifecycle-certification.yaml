@@ -157,3 +157,35 @@ tickets:
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
+decisions:
+  - id: OD-20
+    question: "On a backend that advertises a shared backend clock, which clock stamps the kernel's non-lease durable timestamps (thread, branch, turn, run, node, staged-result, checkpoint createdAtMs and updatedAtMs)? The specification assigns only lease stamping to backend time (section 5.2, ADR-0050)."
+    blocks: [KRT-DF003, KRT-DF004, KRT-DF005]
+    options:
+      - name: One transaction clock per durable store
+        pros:
+          - "Matches the run API's existing resolveTransactionClock (tx.now on shared-lease-clock backends); only the lineage API never adopted it."
+          - "Reclamation compares updatedAtMs against backend-derived horizons, which stays in one domain; two workers with skewed clocks cannot reorder records."
+          - "Memory and SQLite keep the injected clock; other language ports state the same rule through the capability flag."
+        cons:
+          - "A record created by a worker clock ahead of backend time rejects later updates until backend time passes it, the same residue ADR-0050 accepts for leases."
+      - name: Worker time for every non-lease timestamp, clamped to stay ordered
+        pros:
+          - "One rule for every backend."
+        cons:
+          - "Clamping manufactures timestamps and hides regressions, and reclamation horizons become cross-domain under skew."
+    recommendation: One transaction clock per durable store
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-10-28
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ 5b25cd7
+    interim:
+      assumption: "Within a kernel transaction every kernel-stamped durable timestamp comes from one transaction clock: tx.now when the backend advertises shared-lease-clock, otherwise the injected kernel clock. updatedAtMs >= createdAtMs and non-regressing updatedAtMs stay strict; no clamping and no migration. Whether a backward-stepping backend clock should reject or clamp is left open."
+      applied_by:
+        - typescript/kernel/runtime
+        - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
+        - spec/conformance/kernel/operations.json
+        - KRT-DF003
