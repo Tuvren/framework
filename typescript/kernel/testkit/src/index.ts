@@ -58,6 +58,7 @@ export {
 } from "./lib/bench-phase-stats.js";
 export type { FaultPlan, FaultPoint } from "./lib/fault-injecting-backend.js";
 export { createFaultInjectingBackend } from "./lib/fault-injecting-backend.js";
+export { createDurableFaultControl } from "./lib/durable-fault-control.js";
 export {
   listKernelMutants,
   selectKernelMutant,

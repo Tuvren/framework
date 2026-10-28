@@ -50,6 +50,7 @@ const defaultCapabilities = (
 ): readonly string[] => {
   if (backend === "postgres") {
     return [
+      "kernel.fault-injection",
       "kernel.syscall",
       "kernel.protocol",
       "kernel.edge-validation",
@@ -72,6 +73,7 @@ const defaultCapabilities = (
 
   if (backend === "sqlite") {
     return [
+      "kernel.fault-injection",
       "kernel.syscall",
       "kernel.protocol",
       "kernel.edge-validation",
@@ -178,7 +180,28 @@ const createMutantActivationOperation =
 
 const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
 
-const syscallBindings = createSyscallBindings(ADAPTER_CONFIG);
+let notificationSink:
+  | ((
+      method: "faultReached",
+      params: { token: string; processEpoch: number; phase: string }
+    ) => Promise<void>)
+  | undefined;
+const syscallBindings = createSyscallBindings(
+  ADAPTER_CONFIG,
+  async (receipt) => {
+    const epoch = Number(process.env.TUVREN_CONFORMANCE_PROCESS_EPOCH);
+    if (
+      !Number.isSafeInteger(epoch) ||
+      epoch < 1 ||
+      notificationSink === undefined
+    ) {
+      throw new Error(
+        "supervisor process epoch and notification transport are required for blocking faults"
+      );
+    }
+    await notificationSink("faultReached", { ...receipt, processEpoch: epoch });
+  }
+);
 
 const createKernelOperations = (
   config: KernelAdapterConfig
@@ -292,6 +315,8 @@ const dispatch = async (
 };
 
 await serveStdioAdapter({
+  armFault: async (params) =>
+    await syscallBindings.protocolControl("armFault", params),
   awaitOperation: syscallBindings.awaitOperation,
   cancelOperation: syscallBindings.cancelOperation,
   createInstance: syscallBindings.createInstance,
@@ -306,6 +331,9 @@ await serveStdioAdapter({
       typeof params.operation === "string" &&
       syscallBindings.has(params.operation)),
   openInstance: syscallBindings.openInstance,
+  setNotificationSink: (sink) => {
+    notificationSink = sink;
+  },
   shutdown: syscallBindings.shutdown,
   startOperation: syscallBindings.startOperation,
 } satisfies StdioConformanceAdapter);

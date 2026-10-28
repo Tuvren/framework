@@ -13,6 +13,17 @@
     "build": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/tools/conformance/adapter-protocol/index.ts",
+        "{workspaceRoot}/tools/conformance/adapter-protocol/stdio-host.ts",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml",
+        "{workspaceRoot}/devenv.nix",
+        "{workspaceRoot}/devenv.lock"
+      ],
       "options": {
         "cwd": "typescript/kernel/conformance-adapter",
         "command": "bunx --bun tsup --config tsup.config.ts"

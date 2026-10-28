@@ -17,6 +17,8 @@
     "--backend",
     "sqlite",
     "--capability",
+    "kernel.fault-injection",
+    "--capability",
     "kernel.protocol",
     "--capability",
     "kernel.edge-validation",
@@ -40,6 +42,7 @@
     "kernel.syscall"
   ],
   "capabilities": [
+    "kernel.fault-injection",
     "kernel.protocol",
     "kernel.edge-validation",
     "kernel.edge-validation.composite",
