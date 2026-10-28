@@ -26,21 +26,6 @@ const firstModules = [
 
 const firstModule = process.env.TUVREN_BACKEND_POSTGRES_FIRST_MODULE;
 
-interface FaultInjectionControl {
-  setFaultHooks: (...hooks: never[]) => unknown;
-  supportsFaultPoint: (faultPoint: string) => boolean;
-}
-
-const isFaultInjectionControl = (
-  value: unknown
-): value is FaultInjectionControl =>
-  typeof value === "object" &&
-  value !== null &&
-  "setFaultHooks" in value &&
-  typeof value.setFaultHooks === "function" &&
-  "supportsFaultPoint" in value &&
-  typeof value.supportsFaultPoint === "function";
-
 if (firstModule === undefined) {
   for (const modulePath of firstModules) {
     test(`preserves PostgreSQL factory behavior when ${modulePath} initializes first`, () => {
@@ -62,7 +47,7 @@ if (firstModule === undefined) {
     });
   }
 } else {
-  test("keeps canonical exports, eager controls, and first constructor failure", async () => {
+  test("keeps canonical exports and first constructor failure", async () => {
     await import(firstModule);
 
     const publicApi = await import("../src/index.ts");
@@ -112,32 +97,7 @@ if (firstModule === undefined) {
         fsck: typeof backend.fsck,
       }).toEqual({ close: "function", destroy: "function", fsck: "function" });
 
-      const symbols = Object.getOwnPropertySymbols(backend);
-      expect(symbols.map((symbol) => symbol.description)).toEqual([
-        "tuvren.kernel.testkit.fault-injection-control",
-      ]);
-      const [faultSymbol] = symbols;
-      if (faultSymbol === undefined) {
-        throw new TypeError(
-          "expected the eager fault-injection control symbol"
-        );
-      }
-      const faultControl: unknown = Reflect.get(backend, faultSymbol);
-      if (!isFaultInjectionControl(faultControl)) {
-        throw new TypeError(
-          "expected the eager fault-injection control surface"
-        );
-      }
-      expect(Object.keys(faultControl)).toEqual([
-        "setFaultHooks",
-        "supportsFaultPoint",
-      ]);
-      expect(faultControl.supportsFaultPoint("before-commit")).toBe(true);
-      expect(faultControl.supportsFaultPoint("mid-commit")).toBe(true);
-      expect(faultControl.supportsFaultPoint("after-commit-before-ack")).toBe(
-        true
-      );
-      expect(faultControl.supportsFaultPoint("unknown")).toBe(false);
+      expect(Object.getOwnPropertySymbols(backend)).toEqual([]);
     } finally {
       await backend.close();
     }

@@ -197,27 +197,6 @@ interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
-/**
- * Test/conformance fault-injection hooks around the commit sequence
- * (`FAULT_INJECTION_CONTROL`); see {@link BackendFaultInjectionControl}.
- */
-interface BackendFaultHooks {
-  afterCommitBeforeAck?: () => Promise<void>;
-  beforeCommit?: () => Promise<void>;
-  midCommit?: (commit: () => Promise<void>) => Promise<void>;
-}
-
-/**
- * Internal fault-injection control surface exposed on the backend instance
- * under the `FAULT_INJECTION_CONTROL` symbol, for the shared kernel testkit
- * fault harness to install {@link BackendFaultHooks} and
- * discover which named fault points this backend supports.
- */
-interface BackendFaultInjectionControl {
-  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
-  supportsFaultPoint: (point: string) => boolean;
-}
-
 /** Options for {@link PostgresBackend.destroy}. */
 interface PostgresBackendDestroyOptions {
   /** When `true`, drops the backend's schema entirely after closing the connection. */
@@ -245,10 +224,6 @@ const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "shared-lease-clock": true,
   "thread.enumeration": true,
 };
-const FAULT_INJECTION_CONTROL = Symbol(
-  "tuvren.kernel.testkit.fault-injection-control"
-);
-
 /**
  * Drops the postgres schema named in `options.schemaName` using a fresh
  * short-lived connection. Safe to call after the backend's own pool has been
@@ -855,21 +830,8 @@ const readBackendClockMs = async (reserved: Sql): Promise<number> => {
  * resolved by PostgreSQL transaction isolation and deferred foreign keys.
  */
 class PostgresBackend implements KrakenBackend {
-  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
-    setFaultHooks: (hooks) => {
-      this.faultState.hooks = hooks;
-    },
-    supportsFaultPoint: (point) =>
-      point === "before-commit" ||
-      point === "mid-commit" ||
-      point === "after-commit-before-ack",
-  };
-
   private readonly connectionOptions: PostgresBackendPersistenceOptions;
   private destroyed = false;
-  private readonly faultState: { hooks: BackendFaultHooks | null } = {
-    hooks: null,
-  };
   private initializationPromise: Promise<void> | undefined;
   private readonly phaseObserver: PhaseObserver;
   private readonly schemaName: string;
@@ -1148,39 +1110,13 @@ class PostgresBackend implements KrakenBackend {
           endValidateWriteSet();
         }
 
-        await this.faultState.hooks?.beforeCommit?.();
-
-        let committed = false;
-        const commit = async (): Promise<void> => {
-          if (committed) {
-            throw new Error(
-              "postgres backend commit hook attempted double commit"
-            );
-          }
-
-          const endCommitWrite = this.phaseObserver.startPhase("write");
-          try {
-            await reserved.unsafe("COMMIT");
-          } finally {
-            endCommitWrite();
-          }
-          inTransaction = false;
-          committed = true;
-        };
-
-        if (this.faultState.hooks?.midCommit === undefined) {
-          await commit();
-        } else {
-          await this.faultState.hooks.midCommit(commit);
-
-          if (!committed) {
-            throw new Error(
-              "postgres backend mid-commit hook must call commit exactly once"
-            );
-          }
+        const endCommitWrite = this.phaseObserver.startPhase("write");
+        try {
+          await reserved.unsafe("COMMIT");
+        } finally {
+          endCommitWrite();
         }
-
-        await this.faultState.hooks?.afterCommitBeforeAck?.();
+        inTransaction = false;
         return result;
       } catch (error: unknown) {
         active = false;

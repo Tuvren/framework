@@ -47,11 +47,7 @@ const forwardOptionalMethod = (
   }
 };
 
-/**
- * Wraps a backend while staying faithful to everything the wrapper does not
- * mutate, including the hidden symbol-keyed fault-injection control that
- * {@link createFaultInjectingBackend} discovers by shape.
- */
+/** Wraps a backend while preserving the capabilities it does not mutate. */
 export const decorateBackend = (
   inner: RuntimeBackend,
   decoration: BackendDecoration
@@ -71,10 +67,6 @@ export const decorateBackend = (
 
   forwardOptionalMethod(inner, decorated, "close");
   forwardOptionalMethod(inner, decorated, "destroy");
-  for (const symbol of Object.getOwnPropertySymbols(inner)) {
-    Reflect.set(decorated, symbol, Reflect.get(inner, symbol));
-  }
-
   return decorated;
 };
 

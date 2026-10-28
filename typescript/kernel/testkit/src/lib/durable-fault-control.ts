@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { TuvrenPersistenceError } from "@tuvren/core";
 import type { RuntimeBackend, RuntimeBackendTx } from "@tuvren/kernel-protocol";
 
+import { transactWithCommitFaults } from "./commit-fault-seam.js";
 import type { FaultPoint } from "./fault-injecting-backend.js";
 import type { FaultInjectingBackendFactory } from "./kernel-mutant-types.js";
 
@@ -97,81 +98,88 @@ export const createDurableFaultControl = (
       let runBranch: string | undefined;
       let checkpointBranch: string | undefined;
       const branches = new Set<string>();
-      const value = await inner.transact(async (tx) => {
-        const recording: RuntimeBackendTx = {
-          ...tx,
-          branches: {
-            ...tx.branches,
-            async get(branchId) {
-              const branch = await tx.branches.get(branchId);
-              branches.add(branchId);
-              if (branch !== null && branchId === runBranch) {
-                checkpointBranch = branchId;
-                if (checkpointContext.getStore() === true) {
-                  await activate("before-commit", branchId);
+      return await transactWithCommitFaults(
+        inner,
+        async (tx) => {
+          const recording: RuntimeBackendTx = {
+            ...tx,
+            branches: {
+              ...tx.branches,
+              async get(branchId) {
+                const branch = await tx.branches.get(branchId);
+                branches.add(branchId);
+                if (branch !== null && branchId === runBranch) {
+                  checkpointBranch = branchId;
+                  if (checkpointContext.getStore() === true) {
+                    await activate("before-commit", branchId);
+                  }
                 }
+                return branch;
+              },
+              async set(branch) {
+                branches.add(branch.branchId);
+                await tx.branches.set(branch);
+                if (checkpointBranch === branch.branchId) {
+                  await activate(
+                    "after-head-move-before-staging-clear",
+                    branch.branchId
+                  );
+                }
+              },
+            },
+            runs: {
+              ...tx.runs,
+              async get(runId) {
+                const run = await tx.runs.get(runId);
+                if (run !== null) {
+                  runBranch = run.branchId;
+                }
+                return run;
+              },
+            },
+            turnNodes: {
+              ...tx.turnNodes,
+              async put(node) {
+                await tx.turnNodes.put(node);
+                if (checkpointBranch !== undefined) {
+                  await activate(
+                    "after-turn-node-write-before-head",
+                    checkpointBranch
+                  );
+                }
+              },
+            },
+            turns: {
+              ...tx.turns,
+              async set(turn) {
+                branches.add(turn.branchId);
+                await tx.turns.set(turn);
+              },
+            },
+          };
+          return await work(recording);
+        },
+        {
+          afterCommit: async () => {
+            if (armed?.selector.operation === undefined) {
+              const branch = armed?.selector.branchId;
+              if (branch === undefined || branches.has(branch)) {
+                await activate("after-commit-before-ack", branch);
               }
-              return branch;
-            },
-            async set(branch) {
-              branches.add(branch.branchId);
-              await tx.branches.set(branch);
-              if (checkpointBranch === branch.branchId) {
-                await activate(
-                  "after-head-move-before-staging-clear",
-                  branch.branchId
-                );
+            } else if (checkpointBranch !== undefined) {
+              await activate("after-commit-before-ack", checkpointBranch);
+            }
+          },
+          beforeCommit: async () => {
+            if (armed?.selector.operation === undefined) {
+              const branch = armed?.selector.branchId;
+              if (branch === undefined || branches.has(branch)) {
+                await activate("before-commit", branch);
               }
-            },
+            }
           },
-          runs: {
-            ...tx.runs,
-            async get(runId) {
-              const run = await tx.runs.get(runId);
-              if (run !== null) {
-                runBranch = run.branchId;
-              }
-              return run;
-            },
-          },
-          turnNodes: {
-            ...tx.turnNodes,
-            async put(node) {
-              await tx.turnNodes.put(node);
-              if (checkpointBranch !== undefined) {
-                await activate(
-                  "after-turn-node-write-before-head",
-                  checkpointBranch
-                );
-              }
-            },
-          },
-          turns: {
-            ...tx.turns,
-            async set(turn) {
-              branches.add(turn.branchId);
-              await tx.turns.set(turn);
-            },
-          },
-        };
-        const result = await work(recording);
-        if (armed?.selector.operation === undefined) {
-          const branch = armed?.selector.branchId;
-          if (branch === undefined || branches.has(branch)) {
-            await activate("before-commit", branch);
-          }
         }
-        return result;
-      });
-      if (armed?.selector.operation === undefined) {
-        const branch = armed?.selector.branchId;
-        if (branch === undefined || branches.has(branch)) {
-          await activate("after-commit-before-ack", branch);
-        }
-      } else if (checkpointBranch !== undefined) {
-        await activate("after-commit-before-ack", checkpointBranch);
-      }
-      return value;
+      );
     },
   };
   let current = inner;
