@@ -1,0 +1,52 @@
+date: 2026-10-28
+commit: 79f9631
+epics: [DE]
+routed:
+  - stage: tech-spec
+    item: "OD-17: the memory kernels apply the branch-head compare-and-set under a per-scope exclusive lock, so the writer race certifies overlapping transaction entry and, with list-ordered in-process release, an outcome equal to sequential writes in release order; rule whether that is the certified claim or whether kernel locking should change."
+    from: DE
+  - stage: tech-spec
+    item: "OD-18: the pinned adapter protocol 0.2.0 section lists subscriptions, pull, and openInstance; record that the version admits the wire surface and capabilities plus storage kind bind each method family, and the additive ProtocolErrorCode adapter_method_not_implemented, in conformance-certification.md."
+    from: DE
+  - stage: tech-spec
+    item: "OD-19: record kernel.edge-validation (observable syscall rejection) versus kernel.edge-validation.composite (legacy handler surface retiring in EPIC-DJ) in the conformance contract and the ADR-0081 consequences."
+    from: DE
+  - stage: tech-spec
+    item: "The operation catalog gained a closed barrierReleaseOrder contract on kernel.barrier.release (in-process seams release to the serialization point in list order); add it to the pinned plan-extension and catalog sections of conformance-certification.md."
+    from: DE
+  - stage: tech-spec
+    item: "Cancelling or destroying an operation held at a barrier returns an outer adapter_host_error in both languages, which the runner classifies as adapter_protocol, so no cancel-at-gate plan can pass; decide the protocol-level cancellation outcome before any plan uses cancel (ADR-0077 decision 6)."
+    from: DE
+  - stage: tech-spec
+    item: "spec/conformance/kernel/kernel-memory-undetected.json is new cross-implementation authority (the kernel.memory claims allowed to lack a detecting control, with reasons) without a schema, an authority-packet or profile reference, or an entry in conformance-certification.md; specify it, and have tooling flag a reason that goes stale once a control detects its claim."
+    from: DE
+  - stage: tech-spec
+    item: "code decision (contract_shape): Start steps capture opaque operation handles with handleCapture; start and cancel receipts never enter observations, assertions, or evidence; checks with handle steps require protocol 0.2.0 and are excluded with a reason for 0.1.0 manifests. [tools/conformance/harness/operation-steps.ts, tools/conformance/plan-compiler/handle-rules.ts] at 06c8309"
+    from: DE
+  - stage: tech-spec
+    item: "code decision (contract_shape): ProtocolErrorCode adds operation_cancelled_before_entry, adapter_instance_busy, and adapter_method_not_implemented; destroy closes owned barriers and drains in-flight work with a 1000 ms deadline per stage; correlated malformed frames reject only their request. [tools/conformance/adapter-protocol/protocol.schema.json, tools/conformance/adapter-protocol/stdio-host.ts, rust/kernel-conformance-adapter/src/host_stdio.rs] at 8f5e4bb"
+    from: DE
+  - stage: tech-spec
+    item: "code decision (pattern): Barriers hold every started operation entering their seam at transaction entry, emit receipts with the entering operation handle, and release named handles in list order to the serialization point; the compiler rejects non-participant starts while a barrier is armed. [typescript/kernel/testkit/src/lib/kernel-barrier-control.ts, rust/kernel/src/testkit/barrier.rs, tools/conformance/plan-compiler/barrier-rules.ts, spec/conformance/kernel/operations.json] at 1f5df2a"
+    from: DE
+  - stage: tech-spec
+    item: "code decision (pattern): The Rust conformance adapter runs a concurrent stdio host: an ordered request queue feeding native worker threads, with the barrier seam behind the conformance Cargo feature and absent from production builds. [rust/kernel-conformance-adapter/src/host_stdio.rs, rust/kernel/src/testkit/barrier.rs] at 6064c1e"
+    from: DE
+  - stage: tech-spec
+    item: "code decision (contract_shape): Certification profiles live in spec/conformance/kernel/profiles.json; certificates carry provenance digests including an aggregate verifier-authority digest and are certified only when linked to a content-addressed passing control run with matching digests. [spec/conformance/kernel/profiles.json, tools/conformance/certification/bundle.ts, tools/conformance/certification/provenance.ts, tools/conformance/certification/control-link.ts] at b9738a1"
+    from: DE
+  - stage: tech-spec
+    item: "code decision (convention): Conditional assertions whose condition the harness schedule fixes are written as unconditional assertions of the authority-determined outcome; the fleet gate requires every remaining conditional assertion id to apply and pass in a counted baseline. [spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json, spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json, tools/conformance/meta-conformance/negative-controls.ts] at d70213f"
+    from: DE
+  - stage: tech-spec
+    item: "code decision (pattern): Runner, claim coverage, and negative controls share one assertion-id derivation (tools/conformance/harness/assertion-id.ts). [tools/conformance/harness/assertion-id.ts] at b9738a1"
+    from: DE
+  - stage: tech-spec
+    item: "code decision (convention): Native error details are compared as non-normative when both implementations return the same catalogued error code; the catalog declares error codes only, so a future details shape would need its own comparison rule. [tools/conformance/meta-conformance/observation-comparison.ts] at b9738a1"
+    from: DE
+proposed_decisions: [OD-17, OD-18, OD-19]
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-DE006/manifest.yaml: KRT-DE006"
+  - ".constitution/evidence/KRT-DE003/manifest.yaml: KRT-DE003"
+  - ".constitution/evidence/KRT-DE005/manifest.yaml: KRT-DE005"

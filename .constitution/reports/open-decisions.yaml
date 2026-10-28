@@ -542,3 +542,119 @@ decisions:
         - spec/conformance/kernel/plans/kernel-protocol-extended.json
         - spec/conformance/kernel/negative-controls.json
         - KRT-DB004
+  - id: OD-17
+    question: "The memory kernels apply a branch-head compare-and-set under a per-scope exclusive lock, so a barrier seam at the compare-and-set would serialize the contenders. What does the syscall concurrent-writer check certify?"
+    blocks: [KRT-DE003, KRT-DE005, KRT-DE006]
+    options:
+      - name: Certify transaction-entry overlap and prove sensitivity with the stale-head mutant
+        pros:
+          - "Both contenders are held at transaction entry and released together, so each reads the common base head before either commits; a kernel that validates and commits in separate transactions is caught, as the harness-independent stale-head mutant (kernel.accept-stale-head-update) shows."
+          - "No product change to the kernels' locking; the barrier stays a test-only seam."
+        cons:
+          - "The check does not prove the compare-and-set itself runs concurrently; on today's memory kernels execution after release is equivalent to two serialized writes that both started from the base head."
+      - name: Move the seam to the compare-and-set by changing kernel locking
+        pros: [The check would prove overlap at the exact commit point.]
+        cons:
+          - "Requires a product change to the memory kernels' concurrency model, outside this epic's certification scope, and an architecture record."
+    recommendation: Certify transaction-entry overlap and prove sensitivity with the stale-head mutant
+    closure: ruling
+    ruler: "Owner, after the EPIC-DE merge"
+    status: proposed
+    asked:
+      date: 2026-10-27
+      in: EPIC-DE
+    proposed_by: EPIC-DE @ 79f9631
+    interim:
+      assumption: "The barrier seam sits at transaction entry; the concurrent-writer certificate claims overlapping transaction entry, not overlapping compare-and-set. In-process seams release participants to the serialization point in list order, so release order fixes the winner and the post-release outcome equals sequential writes in release order; what the race adds is two entry receipts before release, the head still at base between receipts and release, and the stale-head mutant's kill. Durable backends racing from two processes are outside this guarantee."
+      applied_by:
+        - typescript/kernel/testkit/src/lib/kernel-barrier-control.ts
+        - rust/kernel/src/testkit/barrier.rs
+        - rust/kernel/src/memory/transaction.rs
+        - spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json
+        - spec/conformance/kernel/operations.json
+        - tools/conformance/adapter-protocol/protocol.md
+        - KRT-DE003
+        - KRT-DE005
+        - KRT-DE006
+  - id: OD-18
+    question: "Does a manifest declaring adapter protocol 0.2.0 claim every 0.2.0 method family (handles, subscriptions and pull, storage reattachment, faults, clocks), or does each family apply only through the capabilities and storage kind the manifest declares?"
+    blocks: [KRT-DE005, KRT-DE006]
+    options:
+      - name: "Version admits the wire surface; capabilities and storage kind bind each method family"
+        pros:
+          - "Matches the repository rule that checks are selected by capability or surface requirement, and the manifest's storage field already states whether reattachment applies."
+          - "TypeScript and Rust declare 0.2.0 on the same footing; a kernel without live event channels or durable storage is certified for what it claims, and checks needing the rest are excluded with a recorded reason."
+        cons:
+          - Live subscriptions need their own capability claim before any plan uses subscribe or pull.
+      - name: Version claims the complete 0.2.0 surface
+        pros:
+          - A single version number tells a reader everything the adapter serves.
+        cons:
+          - "Neither the TypeScript nor the Rust host serves subscriptions or reattachment, so both would have to drop back to 0.1.0 and lose the handle-based race, or fabricate stream observations."
+    recommendation: "Version admits the wire surface; capabilities and storage kind bind each method family"
+    closure: ruling
+    ruler: "Owner, after the EPIC-DE merge"
+    status: proposed
+    asked:
+      date: 2026-10-27
+      in: EPIC-DE
+    proposed_by: EPIC-DE @ 79f9631
+    interim:
+      assumption: "Both kernel adapters declare protocol 0.2.0 and claim kernel.barrier; subscribe, pull, and openInstance are bound by capability and storage kind, and no plan step uses them before a live-event capability exists. The pinned protocol schema gains the additive ProtocolErrorCode adapter_method_not_implemented (already used by the Go, Python, and Dart adapters) so hosts answer unclaimed method families with a typed error."
+      applied_by:
+        - typescript/kernel/conformance-adapter/adapter.json
+        - typescript/kernel/conformance-adapter/adapter-sqlite.json
+        - typescript/kernel/conformance-adapter/adapter-postgres.json
+        - typescript/kernel/conformance-adapter/adapter-mutant.json
+        - rust/kernel-conformance-adapter/adapter.json
+        - rust/kernel-conformance-adapter/adapter-mutant.json
+        - rust/kernel-conformance-adapter/src/main.rs
+        - tools/conformance/adapter-protocol/protocol.schema.json
+        - tools/conformance/adapter-protocol/index.ts
+        - tools/conformance/adapter-protocol/stdio-host.ts
+        - KRT-DE005
+  - id: OD-19
+    question: "kernel.edge-validation selects both the observable syscall edge checks and the legacy composite edge-validation handler, so an adapter whose kernel passes the syscall checks cannot claim it without also owing composites it never bound. How should kernel.memory's edge-validation obligations select?"
+    blocks: [KRT-DE006]
+    options:
+      - name: "Split the capability; legacy composites require kernel.edge-validation.composite"
+        pros:
+          - "Each capability names one surface; the syscall checks select on observable rejection, and the bespoke handler surface retires mechanically in DJ."
+          - "Every adapter that binds the composite today claims the new capability, so no adapter loses legacy coverage, and the Rust kernel.memory run has no non-applicable required check."
+        cons:
+          - "Touches the legacy plan's capability metadata and the Go, Python, Dart, and TypeScript manifests before DJ."
+      - name: Profile-scoped selection for certificate runs
+        pros: [Leaves the legacy plans untouched.]
+        cons:
+          - "Redefines an unfiltered certificate run, and the fleet run still fails for Rust once it claims the capability."
+      - name: Rust stays uncertified for kernel.memory until DJ
+        pros: [No selection change.]
+        cons:
+          - "The second kernel language is not certified in the epic that exists to certify it, though its kernel already passes the checks."
+    recommendation: "Split the capability; legacy composites require kernel.edge-validation.composite"
+    closure: ruling
+    ruler: "Owner, after the EPIC-DE merge"
+    status: proposed
+    asked:
+      date: 2026-10-27
+      in: EPIC-DE
+    proposed_by: EPIC-DE @ 79f9631
+    interim:
+      assumption: "The kernel.protocol.edge-validation composite operation and its seven legacy kernel-protocol-af checks require kernel.edge-validation.composite; every adapter that binds the composite claims it; the Rust adapter claims kernel.edge-validation only. This resolves github#205."
+      applied_by:
+        - spec/conformance/kernel/operations.json
+        - spec/conformance/kernel/plans/kernel-protocol-extended.json
+        - go/kernel-conformance-adapter/adapter.json
+        - go/kernel-conformance-adapter/dispatch.go
+        - python/kernel-conformance-adapter/adapter.json
+        - python/kernel-conformance-adapter/src/tuvren_kernel_adapter/__main__.py
+        - dart/kernel-conformance-adapter/adapter.json
+        - dart/kernel-conformance-adapter/lib/adapter.dart
+        - typescript/kernel/conformance-adapter/adapter.json
+        - typescript/kernel/conformance-adapter/adapter-mutant.json
+        - typescript/kernel/conformance-adapter/adapter-sqlite.json
+        - typescript/kernel/conformance-adapter/adapter-postgres.json
+        - typescript/kernel/conformance-adapter/src/host.ts
+        - rust/kernel-conformance-adapter/adapter.json
+        - rust/kernel-conformance-adapter/adapter-mutant.json
+        - KRT-DE006

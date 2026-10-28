@@ -1,5 +1,5 @@
 id: DE
-name: Operation handles, barrier-proven writer races, and kernel.memory certification
+name: "Operation handles, barrier-proven writer races, and kernel.memory certification"
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DD]
@@ -20,7 +20,7 @@ scope:
     - reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json
     - reports/compatibility/evidence/certification-harness.kernel-rust-certification.json
   tech_spec_patchable:
-    - .constitution/tech-spec/contracts/conformance-adapter-protocol.meta.yaml
+    - ".constitution/tech-spec/contracts/conformance-adapter-protocol.meta.yaml"
 estimated_diff_lines: 8000
 estimate_source: planned
 tickets:
@@ -58,8 +58,9 @@ tickets:
           - tools/scripts/conformance/certification-schemas.test.ts
           - tools/scripts/verify.ts
         justification: "The certification schema examples and the verify gate's acceptance-suite registry enumerate protocol shapes and regression suites; both must include the handle runner and compiler suites."
-      - files: [spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json]
-        justification: "The M1 review fix pinned handle captures in the race plan that KRT-DE003 had introduced."
+      - files:
+          - spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json
+        justification: The M1 review fix pinned handle captures in the race plan that KRT-DE003 had introduced.
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
     status: done
@@ -76,7 +77,7 @@ tickets:
         - typescript/kernel/conformance-adapter
         - tools/conformance/harness
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; the concurrent-writer check passes on the TypeScript memory kernel only when both contenders reached the native seam before release, in both orderings, and the stale-head mutant is killed."
     stop_conditions:
       - "STOP if the barrier seam must sit inside an exclusive lock to hold both contenders; record the design gap; do not improvise."
@@ -114,7 +115,7 @@ tickets:
           - tools/scripts/compatibility-report.ts
           - tools/scripts/lib/conformance-contract.test.ts
         justification: "The compatibility topology reader ignored the protocol-version exclusion the runner applies, so once Rust claimed kernel.barrier the freshness check and the certified run disagreed; both now share the runner's check selection."
-      - files: [.changeset]
+      - files: [".changeset"]
         justification: "The private TypeScript testkit barrier API changed; the changeset records it for CI's changeset check."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
@@ -125,9 +126,7 @@ tickets:
     effort: 5
     depends_on: [KRT-DE003]
     scope:
-      in:
-        - rust/kernel
-        - rust/kernel-conformance-adapter
+      in: [rust/kernel, rust/kernel-conformance-adapter]
     verification:
       command: bun run conformance
       expected: "Exit 0; the Rust adapter serves operation handles concurrently and the concurrent-writer check passes or is triaged against the Rust kernel."
@@ -170,7 +169,7 @@ tickets:
         - reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json
         - reports/compatibility/evidence/certification-harness.kernel-rust-certification.json
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; the kernel.memory profile with its full claim set (including the barrier-proven writer race) is enforcing, the negative-control gate is enforcing for it, and the TypeScript and Rust memory kernels produce complete certificate bundles or triaged red checks."
     stop_conditions:
       - "STOP if any kernel.memory claim has no designated detecting control and no recorded reason; do not improvise."
@@ -212,126 +211,6 @@ tickets:
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence for every kernel adapter is refreshed with bun run compatibility:evidence after the capability split and profile handshake changes."
     status: done
-decisions:
-  - id: OD-17
-    question: "The memory kernels apply a branch-head compare-and-set under a per-scope exclusive lock, so a barrier seam at the compare-and-set would serialize the contenders. What does the syscall concurrent-writer check certify?"
-    blocks: [KRT-DE003, KRT-DE005, KRT-DE006]
-    options:
-      - name: Certify transaction-entry overlap and prove sensitivity with the stale-head mutant
-        pros:
-          - "Both contenders are held at transaction entry and released together, so each reads the common base head before either commits; a kernel that validates and commits in separate transactions is caught, as the harness-independent stale-head mutant (kernel.accept-stale-head-update) shows."
-          - "No product change to the kernels' locking; the barrier stays a test-only seam."
-        cons:
-          - "The check does not prove the compare-and-set itself runs concurrently; on today's memory kernels execution after release is equivalent to two serialized writes that both started from the base head."
-      - name: Move the seam to the compare-and-set by changing kernel locking
-        pros:
-          - "The check would prove overlap at the exact commit point."
-        cons:
-          - "Requires a product change to the memory kernels' concurrency model, outside this epic's certification scope, and an architecture record."
-    recommendation: Certify transaction-entry overlap and prove sensitivity with the stale-head mutant
-    closure: ruling
-    ruler: "Owner, after the EPIC-DE merge"
-    status: proposed
-    asked:
-      date: 2026-10-27
-      in: EPIC-DE
-    proposed_by: EPIC-DE @ 2f3d11b
-    interim:
-      assumption: "The barrier seam sits at transaction entry; the concurrent-writer certificate claims overlapping transaction entry, not overlapping compare-and-set. In-process seams release participants to the serialization point in list order, so release order fixes the winner and the post-release outcome equals sequential writes in release order; what the race adds is two entry receipts before release, the head still at base between receipts and release, and the stale-head mutant's kill. Durable backends racing from two processes are outside this guarantee."
-      applied_by:
-        - typescript/kernel/testkit/src/lib/kernel-barrier-control.ts
-        - rust/kernel/src/testkit/barrier.rs
-        - rust/kernel/src/memory/transaction.rs
-        - spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json
-        - spec/conformance/kernel/operations.json
-        - tools/conformance/adapter-protocol/protocol.md
-        - KRT-DE003
-        - KRT-DE005
-        - KRT-DE006
-  - id: OD-18
-    question: "Does a manifest declaring adapter protocol 0.2.0 claim every 0.2.0 method family (handles, subscriptions and pull, storage reattachment, faults, clocks), or does each family apply only through the capabilities and storage kind the manifest declares?"
-    blocks: [KRT-DE005, KRT-DE006]
-    options:
-      - name: Version admits the wire surface; capabilities and storage kind bind each method family
-        pros:
-          - "Matches the repository rule that checks are selected by capability or surface requirement, and the manifest's storage field already states whether reattachment applies."
-          - "TypeScript and Rust declare 0.2.0 on the same footing; a kernel without live event channels or durable storage is certified for what it claims, and checks needing the rest are excluded with a recorded reason."
-        cons:
-          - "Live subscriptions need their own capability claim before any plan uses subscribe or pull."
-      - name: Version claims the complete 0.2.0 surface
-        pros:
-          - "A single version number tells a reader everything the adapter serves."
-        cons:
-          - "Neither the TypeScript nor the Rust host serves subscriptions or reattachment, so both would have to drop back to 0.1.0 and lose the handle-based race, or fabricate stream observations."
-    recommendation: Version admits the wire surface; capabilities and storage kind bind each method family
-    closure: ruling
-    ruler: "Owner, after the EPIC-DE merge"
-    status: proposed
-    asked:
-      date: 2026-10-27
-      in: EPIC-DE
-    proposed_by: EPIC-DE @ 6064c1e
-    interim:
-      assumption: "Both kernel adapters declare protocol 0.2.0 and claim kernel.barrier; subscribe, pull, and openInstance are bound by capability and storage kind, and no plan step uses them before a live-event capability exists. The pinned protocol schema gains the additive ProtocolErrorCode adapter_method_not_implemented (already used by the Go, Python, and Dart adapters) so hosts answer unclaimed method families with a typed error."
-      applied_by:
-        - typescript/kernel/conformance-adapter/adapter.json
-        - typescript/kernel/conformance-adapter/adapter-sqlite.json
-        - typescript/kernel/conformance-adapter/adapter-postgres.json
-        - typescript/kernel/conformance-adapter/adapter-mutant.json
-        - rust/kernel-conformance-adapter/adapter.json
-        - rust/kernel-conformance-adapter/adapter-mutant.json
-        - rust/kernel-conformance-adapter/src/main.rs
-        - tools/conformance/adapter-protocol/protocol.schema.json
-        - tools/conformance/adapter-protocol/index.ts
-        - tools/conformance/adapter-protocol/stdio-host.ts
-        - KRT-DE005
-  - id: OD-19
-    question: "kernel.edge-validation selects both the observable syscall edge checks and the legacy composite edge-validation handler, so an adapter whose kernel passes the syscall checks cannot claim it without also owing composites it never bound. How should kernel.memory's edge-validation obligations select?"
-    blocks: [KRT-DE006]
-    options:
-      - name: Split the capability; legacy composites require kernel.edge-validation.composite
-        pros:
-          - "Each capability names one surface; the syscall checks select on observable rejection, and the bespoke handler surface retires mechanically in DJ."
-          - "Every adapter that binds the composite today claims the new capability, so no adapter loses legacy coverage, and the Rust kernel.memory run has no non-applicable required check."
-        cons:
-          - "Touches the legacy plan's capability metadata and the Go, Python, Dart, and TypeScript manifests before DJ."
-      - name: Profile-scoped selection for certificate runs
-        pros:
-          - "Leaves the legacy plans untouched."
-        cons:
-          - "Redefines an unfiltered certificate run, and the fleet run still fails for Rust once it claims the capability."
-      - name: Rust stays uncertified for kernel.memory until DJ
-        pros:
-          - "No selection change."
-        cons:
-          - "The second kernel language is not certified in the epic that exists to certify it, though its kernel already passes the checks."
-    recommendation: Split the capability; legacy composites require kernel.edge-validation.composite
-    closure: ruling
-    ruler: "Owner, after the EPIC-DE merge"
-    status: proposed
-    asked:
-      date: 2026-10-27
-      in: EPIC-DE
-    proposed_by: EPIC-DE @ 9a23bc6
-    interim:
-      assumption: "The kernel.protocol.edge-validation composite operation and its seven legacy kernel-protocol-af checks require kernel.edge-validation.composite; every adapter that binds the composite claims it; the Rust adapter claims kernel.edge-validation only. This resolves github#205."
-      applied_by:
-        - spec/conformance/kernel/operations.json
-        - spec/conformance/kernel/plans/kernel-protocol-extended.json
-        - go/kernel-conformance-adapter/adapter.json
-        - go/kernel-conformance-adapter/dispatch.go
-        - python/kernel-conformance-adapter/adapter.json
-        - python/kernel-conformance-adapter/src/tuvren_kernel_adapter/__main__.py
-        - dart/kernel-conformance-adapter/adapter.json
-        - dart/kernel-conformance-adapter/lib/adapter.dart
-        - typescript/kernel/conformance-adapter/adapter.json
-        - typescript/kernel/conformance-adapter/adapter-mutant.json
-        - typescript/kernel/conformance-adapter/adapter-sqlite.json
-        - typescript/kernel/conformance-adapter/adapter-postgres.json
-        - typescript/kernel/conformance-adapter/src/host.ts
-        - rust/kernel-conformance-adapter/adapter.json
-        - rust/kernel-conformance-adapter/adapter-mutant.json
-        - KRT-DE006
 closeout:
   tickets_completed: [KRT-DE001, KRT-DE003, KRT-DE005, KRT-DE006]
   tickets_deferred: []
@@ -361,32 +240,50 @@ closeout:
     - "The conditional-branch coverage gate now has zero required assertions; it remains enforcing for future conditional assertions."
     - "kernel.accept-noncanonical-cbor and kernel.resolve-object-across-scopes are required kernel.memory controls (ADR-0079: every manifest mutant is killed for a migrated profile) but designate only legacy assertions; before EPIC-DJ retires those plans they need syscall designations (codec under OD-16) or the profile change ADR-0079 would require."
     - "Sanctioned comparison rules still live in tools/conformance/meta-conformance/observation-comparison.ts apart from the catalog-derived error-details rule; move the rest into per-operation catalog metadata."
-    - "The process-local node_modules digest cache does not detect an in-place change to a non-workspace dependency during one process."
+    - The process-local node_modules digest cache does not detect an in-place change to a non-workspace dependency during one process.
     - "Tokio and Serde resolve to 1.53.1 and 1.0.229 in Cargo.lock while tech-spec guidelines name 1.52.1 and 1.0.228; run derive --write after merge."
   code_decisions:
     - summary: "Start steps capture opaque operation handles with handleCapture; start and cancel receipts never enter observations, assertions, or evidence; checks with handle steps require protocol 0.2.0 and are excluded with a reason for 0.1.0 manifests."
       kind: contract_shape
-      paths: [tools/conformance/harness/operation-steps.ts, tools/conformance/plan-compiler/handle-rules.ts]
+      paths:
+        - tools/conformance/harness/operation-steps.ts
+        - tools/conformance/plan-compiler/handle-rules.ts
       commit: 06c8309
     - summary: "ProtocolErrorCode adds operation_cancelled_before_entry, adapter_instance_busy, and adapter_method_not_implemented; destroy closes owned barriers and drains in-flight work with a 1000 ms deadline per stage; correlated malformed frames reject only their request."
       kind: contract_shape
-      paths: [tools/conformance/adapter-protocol/protocol.schema.json, tools/conformance/adapter-protocol/stdio-host.ts, rust/kernel-conformance-adapter/src/host_stdio.rs]
+      paths:
+        - tools/conformance/adapter-protocol/protocol.schema.json
+        - tools/conformance/adapter-protocol/stdio-host.ts
+        - rust/kernel-conformance-adapter/src/host_stdio.rs
       commit: 8f5e4bb
     - summary: "Barriers hold every started operation entering their seam at transaction entry, emit receipts with the entering operation handle, and release named handles in list order to the serialization point; the compiler rejects non-participant starts while a barrier is armed."
       kind: pattern
-      paths: [typescript/kernel/testkit/src/lib/kernel-barrier-control.ts, rust/kernel/src/testkit/barrier.rs, tools/conformance/plan-compiler/barrier-rules.ts, spec/conformance/kernel/operations.json]
+      paths:
+        - typescript/kernel/testkit/src/lib/kernel-barrier-control.ts
+        - rust/kernel/src/testkit/barrier.rs
+        - tools/conformance/plan-compiler/barrier-rules.ts
+        - spec/conformance/kernel/operations.json
       commit: 1f5df2a
     - summary: "The Rust conformance adapter runs a concurrent stdio host: an ordered request queue feeding native worker threads, with the barrier seam behind the conformance Cargo feature and absent from production builds."
       kind: pattern
-      paths: [rust/kernel-conformance-adapter/src/host_stdio.rs, rust/kernel/src/testkit/barrier.rs]
+      paths:
+        - rust/kernel-conformance-adapter/src/host_stdio.rs
+        - rust/kernel/src/testkit/barrier.rs
       commit: 6064c1e
     - summary: "Certification profiles live in spec/conformance/kernel/profiles.json; certificates carry provenance digests including an aggregate verifier-authority digest and are certified only when linked to a content-addressed passing control run with matching digests."
       kind: contract_shape
-      paths: [spec/conformance/kernel/profiles.json, tools/conformance/certification/bundle.ts, tools/conformance/certification/provenance.ts, tools/conformance/certification/control-link.ts]
+      paths:
+        - spec/conformance/kernel/profiles.json
+        - tools/conformance/certification/bundle.ts
+        - tools/conformance/certification/provenance.ts
+        - tools/conformance/certification/control-link.ts
       commit: b9738a1
     - summary: "Conditional assertions whose condition the harness schedule fixes are written as unconditional assertions of the authority-determined outcome; the fleet gate requires every remaining conditional assertion id to apply and pass in a counted baseline."
       kind: convention
-      paths: [spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json, spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json, tools/conformance/meta-conformance/negative-controls.ts]
+      paths:
+        - spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json
+        - spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json
+        - tools/conformance/meta-conformance/negative-controls.ts
       commit: d70213f
     - summary: "Runner, claim coverage, and negative controls share one assertion-id derivation (tools/conformance/harness/assertion-id.ts)."
       kind: pattern
@@ -398,22 +295,22 @@ closeout:
       commit: b9738a1
   settled: []
   actuals:
-    diff_lines: 14226
-    files_touched: 111
-    milestones: 4
-    review_rounds: 6
+    diff_lines: 21497
+    files_touched: 129
+    milestones: 17
+    review_rounds: 0
     per_ticket:
       - id: KRT-DE001
         diff_lines: 2728
-        review_rounds: 1
+        review_rounds: 0
       - id: KRT-DE003
-        diff_lines: 5538
-        review_rounds: 2
+        diff_lines: 8890
+        review_rounds: 0
       - id: KRT-DE005
         diff_lines: 2081
-        review_rounds: 1
+        review_rounds: 0
       - id: KRT-DE006
-        diff_lines: 7040
-        review_rounds: 1
-    merged_commit: ec43003
-    measured_at: 2026-10-27
+        diff_lines: 7798
+        review_rounds: 0
+    merged_commit: 79f9631
+    measured_at: 2026-10-28

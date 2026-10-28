@@ -1,4 +1,23 @@
 entries:
+  - version: v0.50.5
+    date: 2026-10-28
+    changed:
+      - "EPIC-DE Operation handles, barrier-proven writer races, and kernel.memory certification archived: 4 tickets, 20 points, 21497 diff lines, 0 review rounds"
+    added:
+      - "EPIC-DE certified the TypeScript and Rust memory kernels under the enforcing kernel.memory profile. Adapter protocol 0.2.0 runs operations through handles on concurrent stdio hosts in both languages. A writer race is proven with transaction-entry barriers, list-ordered release, and the harness-independent stale-head mutant (kernel.accept-stale-head-update, which validates and commits in separate transactions). 27 schedule-fixed conditional assertions became unconditional authority outcomes, and the fleet branch-coverage and claim-coverage gates enforce. Complete certificate bundles are linked to a digest-matched control run. The TypeScript-Rust comparison shows no disagreement. Splitting edge-validation from its legacy composite let Rust claim it with no adapter losing coverage."
+      - "Follow-up from EPIC-DE: Ten kernel mutants still have no Rust reproduction (including the stale-head race mutant), so the fleet kill of those claims rests on TypeScript alone; Rust certifies by pooled fleet controls under ADR-0079 decision 4."
+      - "Follow-up from EPIC-DE: The three after-commit-before-ack claims are detected only by the fault-seam-never-fires instrumentation control; add a behavioral mutant."
+      - "Follow-up from EPIC-DE: The conditional-branch coverage gate now has zero required assertions; it remains enforcing for future conditional assertions."
+      - "Follow-up from EPIC-DE: kernel.accept-noncanonical-cbor and kernel.resolve-object-across-scopes are required kernel.memory controls (ADR-0079: every manifest mutant is killed for a migrated profile) but designate only legacy assertions; before EPIC-DJ retires those plans they need syscall designations (codec under OD-16) or the profile change ADR-0079 would require."
+      - "Follow-up from EPIC-DE: Sanctioned comparison rules still live in tools/conformance/meta-conformance/observation-comparison.ts apart from the catalog-derived error-details rule; move the rest into per-operation catalog metadata."
+      - "Follow-up from EPIC-DE: The process-local node_modules digest cache does not detect an in-place change to a non-workspace dependency during one process."
+      - "Follow-up from EPIC-DE: Tokio and Serde resolve to 1.53.1 and 1.0.229 in Cargo.lock while tech-spec guidelines name 1.52.1 and 1.0.228; run derive --write after merge."
+    by: reconcile
+    fast_lane_through: 79f9631037aa0ec9a71940030297ae5222c63e95
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.48.1
   - version: v0.50.4
     date: 2026-10-23
     changed:
