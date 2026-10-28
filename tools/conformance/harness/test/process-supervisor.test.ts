@@ -200,6 +200,49 @@ test("kill terminates the supervised process group and its children", async () =
   }
 }, 15_000);
 
+test.each(["close", "restart"] as const)(
+  "%s terminates children after a clean leader exit",
+  async (action) => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "tuvren-graceful-child-")
+    );
+    const pidFile = path.join(directory, "child.pid");
+    const node = which("node");
+    if (node === null) {
+      throw new Error("node executable is required");
+    }
+    const supervisor = await ProcessSupervisor.start({
+      executable: node,
+      args: [
+        "--input-type=module",
+        "--eval",
+        `import { spawn } from "node:child_process"; import { writeFileSync } from "node:fs"; import { createInterface } from "node:readline"; const child = spawn(process.execPath, ["--eval", "setInterval(() => {}, 1000)"], { stdio: "ignore" }); child.unref(); writeFileSync(${JSON.stringify(pidFile)}, String(child.pid)); for await (const line of createInterface({ input: process.stdin })) { ${handshake} process.stdout.write(response); if (request.method === "shutdown") process.exit(0); }`,
+      ],
+      cwd: process.cwd(),
+      packetId: "probe",
+      planVersion: "0.1.0",
+    });
+    const childPid = Number(await readFile(pidFile, "utf8"));
+    try {
+      await supervisor[action]();
+      const stat = await readFile(`/proc/${childPid}/stat`, "utf8").catch(
+        () => ""
+      );
+      expect(stat === "" || ZOMBIE_PROCESS.test(stat)).toBe(true);
+      expect(supervisor.history[0]?.exit).toEqual({ code: 0, signal: null });
+    } finally {
+      try {
+        process.kill(childPid, "SIGKILL");
+      } catch {
+        /* Already gone. */
+      }
+      await supervisor.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+  15_000
+);
+
 test("close escalates to SIGKILL when an adapter ignores SIGTERM", async () => {
   const node = which("node");
   if (node === null) {
@@ -257,6 +300,47 @@ test("kill reports a descendant that escaped the adapter process group", async (
     await rm(directory, { recursive: true, force: true });
   }
 }, 15_000);
+
+test.each(["close", "restart"] as const)(
+  "%s rejects a descendant that escaped the adapter process group",
+  async (action) => {
+    const node = which("node");
+    if (node === null) {
+      throw new Error("node executable is required");
+    }
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "tuvren-escaped-graceful-")
+    );
+    const pidFile = path.join(directory, "child.pid");
+    const supervisor = await ProcessSupervisor.start({
+      executable: node,
+      args: [
+        "--input-type=module",
+        "--eval",
+        `import { spawn } from "node:child_process"; import { writeFileSync } from "node:fs"; import { createInterface } from "node:readline"; const child = spawn(process.execPath, ["--eval", "setInterval(() => {}, 1000)"], { detached: true, stdio: "ignore" }); child.unref(); writeFileSync(${JSON.stringify(pidFile)}, String(child.pid)); for await (const line of createInterface({ input: process.stdin })) { ${handshake} process.stdout.write(response); if (request.method === "shutdown") process.exit(0); }`,
+      ],
+      cwd: process.cwd(),
+      packetId: "probe",
+      planVersion: "0.1.0",
+    });
+    const childPid = Number(await readFile(pidFile, "utf8"));
+    try {
+      await expect(supervisor[action]()).rejects.toThrow(
+        "descendants survived SIGKILL"
+      );
+      expect(supervisor.history).toHaveLength(1);
+    } finally {
+      try {
+        process.kill(childPid, "SIGKILL");
+      } catch {
+        /* Already gone. */
+      }
+      await supervisor.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+  15_000
+);
 
 test("missing and non-executable adapters produce clear environment errors", async () => {
   const directory = await mkdtemp(

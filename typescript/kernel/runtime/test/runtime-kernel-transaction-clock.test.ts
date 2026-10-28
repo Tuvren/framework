@@ -142,3 +142,31 @@ test("a backend advertising a shared clock must provide it", async () => {
   const error = await rejectionOf(kernel.schema.register(TEST_SCHEMA));
   expect(error.message).toContain("shared-lease-clock");
 });
+
+test("reclamation requires the advertised transaction clock for its default horizon", async () => {
+  const memory = createMemoryBackend();
+  const reclaim = memory.reclaim?.bind(memory);
+  if (reclaim === undefined) {
+    throw new Error("memory backend does not support reclamation");
+  }
+  const backend: RuntimeBackend = {
+    capabilities: () => ({
+      ...memory.capabilities(),
+      "shared-lease-clock": true,
+    }),
+    health: async () => await memory.health(),
+    reclaim: async (options) => await reclaim(options),
+    transact: async (work) =>
+      await memory.transact(async (tx) => {
+        const { now: _now, ...repositories } = tx;
+        return await work(repositories);
+      }),
+  };
+  const kernel = createRuntimeKernel({ backend, now: () => 200 });
+  expect(await rejectionOf(kernel.maintenance.reclaim())).toMatchObject({
+    code: "kernel_capability_unsupported",
+  });
+  expect(await kernel.maintenance.reclaim({ nowMs: 200 })).toMatchObject({
+    releasedObjectCount: 0,
+  });
+});

@@ -22,6 +22,8 @@ import {
 import { loadConformancePlan } from "../../plan-compiler/index.ts";
 import { JsonRpcAdapterClient } from "../adapter-client.ts";
 import { descendantPids, ProcessSupervisor } from "../process-supervisor.ts";
+import { readAdapterManifest } from "../run-plans.ts";
+import { runScheduledChecks } from "../run.ts";
 import { withCheckStorage } from "../storage-resource.ts";
 
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -45,16 +47,63 @@ test("implementation provenance includes the dynamically imported durable backen
   }
 }, 60_000);
 
-const certificationDatabases = async (): Promise<string[]> => {
+const databases = async (): Promise<string[]> => {
   const { stdout } = await promisify(execFile)("psql", [
     "-XAt",
     "-d",
     "postgres",
     "-c",
-    "SELECT datname FROM pg_database WHERE starts_with(datname, 'tuvren_cert_') ORDER BY datname",
+    "SELECT datname FROM pg_database WHERE NOT datistemplate ORDER BY datname",
   ]);
   return stdout.trim() === "" ? [] : stdout.trim().split("\n");
 };
+
+test("certification recording retains each supervised reopen epoch and storage identity", async () => {
+  const manifest = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json"
+  );
+  const plan = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
+  );
+  const compiledCheck = plan.checks.find(
+    ({ check }) =>
+      check.checkId === "kernel.syscall.reopen.close_reopen_checkpoint"
+  );
+  if (compiledCheck === undefined) {
+    throw new Error("missing reopen check");
+  }
+  const [entry] = await runScheduledChecks(
+    manifest,
+    [{ plan, compiledCheck, index: 0 }],
+    1,
+    () => "replay",
+    true
+  );
+  expect(entry?.checkResult.status).toBe("pass");
+  const details = entry?.checkResult.details;
+  expect(details?.storageIdentity).toMatchObject({
+    kind: "sqlite-directory",
+    storageRef: expect.any(String),
+  });
+  const process = details?.process;
+  if (
+    typeof process !== "object" ||
+    process === null ||
+    !("epochs" in process) ||
+    !Array.isArray(process.epochs)
+  ) {
+    throw new Error("missing supervised process epochs");
+  }
+  expect(process.epochs.length).toBeGreaterThan(1);
+  for (const [index, epoch] of process.epochs.entries()) {
+    expect(epoch).toMatchObject({
+      pid: expect.any(Number),
+      epoch: index + 1,
+      signal: null,
+      exit: { code: 0, signal: null },
+    });
+  }
+}, 30_000);
 
 test.each(["missing", "non-executable"])(
   "%s supervised executable is classified as environment",
@@ -383,10 +432,10 @@ test.each([
     process.env.TMPDIR = tempRoot;
     try {
       const initialEntries = await readdir(tempRoot);
-      const initialDatabases = await certificationDatabases();
+      const initialDatabases = await databases();
       await withCheckStorage(kind, async (storageRef) => {
         const provisionedEntries = await readdir(tempRoot);
-        const provisionedDatabases = await certificationDatabases();
+        const provisionedDatabases = await databases();
         expect(
           provisionedEntries.filter((name) => !initialEntries.includes(name))
         ).toEqual(
@@ -474,7 +523,7 @@ test.each([
           ).toEqual({ kind: "result", value: { result: bytes } });
           expect(await descendantPids(supervisor.current.pid)).toEqual([]);
           expect(await readdir(tempRoot)).toEqual(provisionedEntries);
-          expect(await certificationDatabases()).toEqual(provisionedDatabases);
+          expect(await databases()).toEqual(provisionedDatabases);
           const frames = supervisor.frames();
           expect(
             frames.every(
@@ -487,7 +536,7 @@ test.each([
         }
       });
       expect(await readdir(tempRoot)).toEqual(initialEntries);
-      expect(await certificationDatabases()).toEqual(initialDatabases);
+      expect(await databases()).toEqual(initialDatabases);
     } finally {
       if (previousTmp === undefined) {
         delete process.env.TMPDIR;

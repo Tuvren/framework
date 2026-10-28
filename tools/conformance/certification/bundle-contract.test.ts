@@ -316,6 +316,81 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
       profile: profile.profileId,
       status: "certified",
     });
+    for (const [action, firstExit, expected] of [
+      ["restart", { code: 0, signal: null }, "certified"],
+      ["kill", { code: null, signal: "SIGKILL" }, "certified"],
+      ["kill", { code: 0, signal: null }, "uncertified"],
+      ["restart", { code: null, signal: "SIGKILL" }, "uncertified"],
+    ] as const) {
+      const supervised = [
+        {
+          ...results[0],
+          details: {
+            process: {
+              epochs: [
+                { pid: 1, epoch: 1, signal: firstExit.signal, exit: firstExit },
+                {
+                  pid: 2,
+                  epoch: 2,
+                  signal: null,
+                  exit: { code: 0, signal: null },
+                },
+              ],
+            },
+            schedule: [{ action }],
+            storageIdentity: {},
+          },
+        },
+      ];
+      const outcome = await finishCertificate(
+        options,
+        manifest,
+        profile,
+        plans,
+        supervised,
+        "pass",
+        digests
+      );
+      expect(outcome.certificate?.status).toBe(expected);
+    }
+    const badFinal = [
+      {
+        ...results[0],
+        details: {
+          process: {
+            epochs: [
+              {
+                pid: 1,
+                epoch: 1,
+                signal: "SIGKILL",
+                exit: { code: null, signal: "SIGKILL" },
+              },
+              {
+                pid: 2,
+                epoch: 2,
+                signal: "SIGTERM",
+                exit: { code: null, signal: "SIGTERM" },
+              },
+            ],
+          },
+          schedule: [{ action: "kill" }],
+          storageIdentity: {},
+        },
+      },
+    ];
+    expect(
+      (
+        await finishCertificate(
+          options,
+          manifest,
+          profile,
+          plans,
+          badFinal,
+          "pass",
+          digests
+        )
+      ).certificate?.status
+    ).toBe("uncertified");
     const branchAdapter =
       "typescript/kernel/conformance-adapter/adapter-postgres.json";
     const forgedReports = passing.reports.map((report) => ({

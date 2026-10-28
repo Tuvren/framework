@@ -23,7 +23,11 @@ import type {
   ConformanceCheckResult,
   ConformanceFailureClassification,
 } from "../../scripts/lib/conformance-contract.ts";
-import { classifyMutantRun, runNegativeControls } from "./negative-controls.ts";
+import {
+  classifyMutantRun,
+  runBranchControl,
+  runNegativeControls,
+} from "./negative-controls.ts";
 import type {
   HarnessRun,
   MutantReport,
@@ -80,6 +84,66 @@ const adapterManifest = (adapterId: string, extra: string[]) => ({
 
 let report: NegativeControlReport;
 let brokenReport: NegativeControlReport;
+
+test("branch controls execute and grade only selected conditional checks", async () => {
+  const alpha = fieldCheck("alpha", 1);
+  const plan = await writeJson("branch-plan.json", {
+    applicability: { capabilities: ["synthetic.core"] },
+    checks: [
+      {
+        ...alpha,
+        assertions: [
+          ...alpha.assertions,
+          {
+            kind: "resultField",
+            field: "$.alpha",
+            equals: 1,
+            when: { path: "$.result.alpha", equals: 1 },
+          },
+        ],
+      },
+      fieldCheck("beta", 2),
+    ],
+    packetId: "tuvren.synthetic",
+    planId: "tuvren.branch",
+    planVersion: "0.1.0",
+  });
+  const packet = await writeJson("branch-packet.json", {
+    conformancePlans: [
+      { path: plan, planId: "tuvren.branch", planVersion: "0.1.0" },
+    ],
+    packetId: "tuvren.synthetic",
+  });
+  const adapter = await writeJson(
+    "branch-adapter.json",
+    adapterManifest("branch", ["--broken-field", "beta"])
+  );
+  const branchConfig = {
+    ...config(nodePath.join(directory, "adapter.json")),
+    packet,
+  };
+  const result = await runBranchControl(
+    branchConfig,
+    adapter,
+    ["synthetic.alpha_check"],
+    nodePath.join(directory, "selected"),
+    {}
+  );
+  expect(result.status).toBe("pass");
+  expect(result.conditionalAssertions).toHaveLength(1);
+  expect(result.conditionalAssertions[0]).toMatchObject({
+    status: "pass",
+    when: "applied",
+  });
+  const all = await runBranchControl(
+    branchConfig,
+    adapter,
+    ["synthetic.alpha_check", "synthetic.beta_check"],
+    nodePath.join(directory, "both"),
+    {}
+  );
+  expect(all.status).toBe("fail");
+}, 30_000);
 
 const writeJson = async (name: string, value: unknown): Promise<string> => {
   const file = nodePath.join(directory, name);

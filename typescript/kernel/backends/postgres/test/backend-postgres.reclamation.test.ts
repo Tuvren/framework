@@ -42,6 +42,7 @@ const createMonotonicClock = (): (() => number) => {
     return clock;
   };
 };
+const skewedWorkerNow = (): number => Date.now() + 365 * 24 * 60 * 60 * 1000;
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();
@@ -52,6 +53,40 @@ afterAll(async () => {
 });
 
 describe("createPostgresBackend maintenance.reclamation", () => {
+  test("uses the backend clock for the default reclamation horizon despite worker skew", async () => {
+    const backend = createPostgresBackend(createPostgresTestBackendOptions());
+    try {
+      const kernel = createRuntimeKernel({ backend, now: skewedWorkerNow });
+      const schemaId = await kernel.schema.register(TEST_SCHEMA);
+      const thread = await kernel.thread.create(
+        "thread_clock",
+        schemaId,
+        "branch_clock"
+      );
+      const turn = await kernel.turn.create(
+        "turn_clock",
+        thread.threadId,
+        thread.branchId,
+        null,
+        thread.rootTurnNodeHash
+      );
+      await kernel.run.create(
+        "run_clock",
+        turn.turnId,
+        thread.branchId,
+        schemaId,
+        thread.rootTurnNodeHash,
+        [{ deterministic: false, id: "work", sideEffects: false }]
+      );
+      const orphan = await kernel.store.put(new Uint8Array([8, 9, 10]));
+      await kernel.maintenance.reclaim();
+      expect(await kernel.store.has(orphan)).toBe(true);
+      await kernel.maintenance.reclaim({ nowMs: skewedWorkerNow() });
+      expect(await kernel.store.has(orphan)).toBe(false);
+    } finally {
+      await backend.destroy();
+    }
+  });
   test("reclaims unreferenced objects and archived branches after a rollback", async () => {
     const now = createMonotonicClock();
     const backend = createPostgresBackend(

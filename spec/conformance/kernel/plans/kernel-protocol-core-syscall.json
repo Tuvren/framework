@@ -1471,7 +1471,11 @@
           "operation": "kernel.backend.capabilities",
           "arguments": {},
           "capture": [
-            { "name": "sharedLeaseClock", "path": "result.shared-lease-clock" }
+            {
+              "name": "sharedLeaseClock",
+              "path": "result.shared-lease-clock",
+              "default": false
+            }
           ],
           "claimIds": ["kernel.syscall.backend_capability.shared_lease_clock"],
           "assertions": []
@@ -1758,7 +1762,11 @@
           "operation": "kernel.backend.capabilities",
           "arguments": {},
           "capture": [
-            { "name": "sharedLeaseClock", "path": "result.shared-lease-clock" }
+            {
+              "name": "sharedLeaseClock",
+              "path": "result.shared-lease-clock",
+              "default": false
+            }
           ],
           "claimIds": ["kernel.syscall.backend_capability.shared_lease_clock"],
           "assertions": []

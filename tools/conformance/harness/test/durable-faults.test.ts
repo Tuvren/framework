@@ -204,6 +204,118 @@ for (const [backend, kind] of [
   ["sqlite", "sqlite-directory"],
   ["postgres", "postgres-database"],
 ] as const) {
+  test(`${backend} fault operation selector distinguishes unrestricted transactions from checkpoints`, async () => {
+    await withCheckStorage(kind, async (storageRef) => {
+      const supervisor = await ProcessSupervisor.start({
+        executable: "typescript/kernel/conformance-adapter/dist/host.mjs",
+        args: ["--backend", backend],
+        cwd: process.cwd(),
+        packetId: "tuvren.kernel.protocol",
+        planVersion: "0.1.0",
+      });
+      try {
+        const client = supervisor.client;
+        const { instance } = await checkpointSetup(client, storageRef);
+        const generic = await client.armFault(
+          instance,
+          "before-commit",
+          {},
+          1,
+          "throw"
+        );
+        expect(
+          await client.dispatch(
+            "kernel.thread.get",
+            { threadId: "thread" },
+            {},
+            instance
+          )
+        ).toMatchObject({
+          kind: "error",
+          error: {
+            code: "kernel_persistence_fault_injected",
+            details: { token: generic.token },
+          },
+        });
+        const targeted = await client.armFault(
+          instance,
+          "before-commit",
+          { operation: "checkpoint" },
+          1,
+          "throw"
+        );
+        expect(
+          (
+            await client.dispatch(
+              "kernel.thread.get",
+              { threadId: "thread" },
+              {},
+              instance
+            )
+          ).kind
+        ).toBe("result");
+        expect(
+          await client.dispatch(
+            "kernel.run.completeStep",
+            { runId: "run", stepId: "step" },
+            {},
+            instance
+          )
+        ).toMatchObject({
+          kind: "error",
+          error: {
+            code: "kernel_persistence_fault_injected",
+            details: { token: targeted.token },
+          },
+        });
+      } finally {
+        await supervisor.close();
+      }
+    });
+  }, 30_000);
+
+  test(`${backend} instrumentation mutant disables durable fault injection`, async () => {
+    await withCheckStorage(kind, async (storageRef) => {
+      const supervisor = await ProcessSupervisor.start({
+        executable: "typescript/kernel/conformance-adapter/dist/host.mjs",
+        args: [
+          "--backend",
+          backend,
+          "--mutant",
+          "kernel.fault-seam-never-fires",
+        ],
+        cwd: process.cwd(),
+        packetId: "tuvren.kernel.protocol",
+        planVersion: "0.1.0",
+      });
+      try {
+        const client = supervisor.client;
+        const { instance } = await checkpointSetup(client, storageRef);
+        await client.armFault(
+          instance,
+          "before-commit",
+          { operation: "checkpoint" },
+          1,
+          "throw"
+        );
+        expect(
+          (
+            await client.dispatch(
+              "kernel.run.completeStep",
+              { runId: "run", stepId: "step" },
+              {},
+              instance
+            )
+          ).kind
+        ).toBe("result");
+        expect(
+          await result(client, instance, "kernel.mutant.activation", {})
+        ).toMatchObject({ activation: { activated: true } });
+      } finally {
+        await supervisor.close();
+      }
+    });
+  }, 30_000);
   test(`${backend} fault tokens distinguish instances in the same process`, async () => {
     await withCheckStorage(kind, async (storageRef) => {
       const supervisor = await ProcessSupervisor.start({
@@ -259,7 +371,7 @@ for (const [backend, kind] of [
         const { token } = await supervisor.client.armFault(
           instance,
           "before-commit",
-          {},
+          { operation: "checkpoint" },
           1,
           "throw"
         );

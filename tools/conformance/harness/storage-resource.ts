@@ -182,7 +182,9 @@ export const withCheckStorage = async <T>(
   sweep ??= storageOperation(
     "sweep",
     async () => await sweepStaleDatabases(runStartedAt)
-  );
+  ).catch((error: unknown) => {
+    console.error("stale certification database sweep failed:", error);
+  });
   await sweep;
   const database = `tuvren_cert_${Date.now()}_${process.pid}_${randomUUID().replaceAll("-", "").slice(0, 16)}`;
   await storageOperation(

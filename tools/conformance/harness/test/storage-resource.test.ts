@@ -13,6 +13,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { which } from "bun";
+
 import {
   CleanupError,
   sweepStaleDatabases,
@@ -75,6 +77,44 @@ test("PostgreSQL databases are distinct and dropped after success and failure", 
   expect(refs[0]).not.toBe(refs[1]);
   for (const ref of refs) {
     expect(await databaseExists(ref)).toBe(false);
+  }
+}, 30_000);
+
+test("a stale database sweep error is logged without blocking provisioning", async () => {
+  const psql = which("psql");
+  if (psql === null) {
+    throw new Error("psql is required");
+  }
+  const directory = await mkdtemp(path.join(tmpdir(), "tuvren-sweep-error-"));
+  try {
+    const fakePsql = path.join(directory, "psql");
+    await writeFile(
+      fakePsql,
+      `#!/usr/bin/env bun\nif (process.argv.some((arg) => arg.includes("starts_with(datname"))) { console.error("simulated sweep failure"); process.exit(1); }\nconst child = Bun.spawnSync([${JSON.stringify(psql)}, ...process.argv.slice(2)], { stdin: "inherit", stdout: "inherit", stderr: "inherit" }); process.exit(child.exitCode);\n`
+    );
+    await chmod(fakePsql, 0o755);
+    const child = spawn(
+      process.execPath,
+      [
+        "--eval",
+        `import { withCheckStorage } from "./tools/conformance/harness/storage-resource.ts"; await withCheckStorage("postgres-database", async () => {});`,
+      ],
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, PATH: `${directory}:${process.env.PATH ?? ""}` },
+        stdio: ["ignore", "ignore", "pipe"],
+      }
+    );
+    let stderr = "";
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    const [code] = await once(child, "close");
+    expect(code).toBe(0);
+    expect(stderr).toContain("stale certification database sweep failed");
+    expect(stderr).toContain("simulated sweep failure");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 }, 30_000);
 

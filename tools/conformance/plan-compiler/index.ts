@@ -134,6 +134,7 @@ export interface ConformancePlanArgumentLiteral {
 }
 
 export interface ConformancePlanCapture {
+  default?: unknown;
   name: string;
   /** Rooted at `result`, `events`, or `state` of the step's observation. */
   path: string;

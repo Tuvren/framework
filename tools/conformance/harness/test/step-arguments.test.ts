@@ -16,6 +16,8 @@
 
 import { describe, expect, test } from "bun:test";
 
+import { loadConformancePlan } from "../../plan-compiler/index.ts";
+import { evaluateAssertions } from "../assertion-engine/index.ts";
 import {
   ArgumentResolutionError,
   createCaptureStore,
@@ -24,6 +26,82 @@ import {
 } from "../step-arguments.ts";
 
 describe("step argument captures", () => {
+  test("kernel clock branches use worker time when the descriptor omits shared-lease-clock", async () => {
+    const plan = await loadConformancePlan(
+      "spec/conformance/kernel/plans/kernel-protocol-core-syscall.json"
+    );
+    const checks = plan.checks.filter(({ check }) =>
+      check.steps?.some((step) =>
+        step.capture?.some(({ name }) => name === "sharedLeaseClock")
+      )
+    );
+    expect(checks).toHaveLength(2);
+    for (const { check } of checks) {
+      const capture = check.steps
+        ?.flatMap((step) => step.capture ?? [])
+        .find(({ name }) => name === "sharedLeaseClock");
+      const branchAssertions =
+        check.steps
+          ?.flatMap((step) => step.assertions ?? [])
+          .filter(
+            (assertion) => assertion.when?.path === "$.capture.sharedLeaseClock"
+          ) ?? [];
+      if (capture === undefined || branchAssertions.length !== 2) {
+        throw new Error("missing shared-clock branches");
+      }
+      for (const [descriptor, timestamp, appliedIndex] of [
+        [{ "thread.enumeration": true }, 200, 1],
+        [{ "thread.enumeration": true, "shared-lease-clock": false }, 200, 1],
+        [{ "thread.enumeration": true, "shared-lease-clock": true }, 100, 0],
+      ] as const) {
+        const store = createCaptureStore();
+        recordStepCaptures([capture], { result: descriptor }, store);
+        const fixture = {
+          assertions: branchAssertions,
+          checkId: check.checkId,
+          operation: check.operation,
+        };
+        const evaluation = evaluateAssertions(fixture, {
+          capture: store.values,
+          result: { stagedResult: { timestamp } },
+        });
+        expect(evaluation.every(({ status }) => status === "pass")).toBe(true);
+        expect(evaluation[appliedIndex]?.when).toBe("applied");
+        const wrong = evaluateAssertions(fixture, {
+          capture: store.values,
+          result: { stagedResult: { timestamp: timestamp + 1 } },
+        });
+        expect(wrong[appliedIndex]?.status).toBe("fail");
+      }
+    }
+  });
+  test("uses an explicit default for an omitted optional capability", () => {
+    for (const [descriptor, expected] of [
+      [{ "thread.enumeration": true }, false],
+      [{ "thread.enumeration": true, "shared-lease-clock": false }, false],
+      [{ "thread.enumeration": true, "shared-lease-clock": true }, true],
+    ] as const) {
+      const store = createCaptureStore();
+      recordStepCaptures(
+        [{ name: "clock", path: "result.shared-lease-clock", default: false }],
+        { result: descriptor },
+        store
+      );
+      expect(store.values.clock).toBe(expected);
+    }
+  });
+
+  test("a capture default does not hide a missing or invalid parent observation", () => {
+    for (const result of [undefined, null, 5]) {
+      const store = createCaptureStore();
+      recordStepCaptures(
+        [{ name: "clock", path: "result.shared-lease-clock", default: false }],
+        { result },
+        store
+      );
+      expect(Object.hasOwn(store.values, "clock")).toBe(false);
+    }
+  });
   test("stores a capture named __proto__ as an own data property", () => {
     const store = createCaptureStore();
     recordStepCaptures(
