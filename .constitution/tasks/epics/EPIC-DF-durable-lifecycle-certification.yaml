@@ -277,3 +277,35 @@ decisions:
       applied_by:
         - spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json
         - KRT-DF004
+  - id: OD-22
+    question: "How do conformance plans certify a two-process durable writer race, real server-clock skew, and several durable profiles per backend, when the pinned plan contract has no order-agnostic outcome selection, no per-step process routing, no server clock source, and one certificate per run?"
+    blocks: [KRT-DF005]
+    options:
+      - name: Additive runner-owned shapes (collect step, process selector with spawn, setClock source server, per-profile bundles)
+        pros:
+          - "The winner is selected deterministically by the runner from grouped outcomes, so assertions stay unconditional and ADR-0079 gains no unexercisable branch; sequential contenders still cannot certify because collect participants must hold barrier receipts recorded before release."
+          - "Adapters still grade nothing; other kernel languages implement the same additive protocol."
+          - "kernel.shared-backend requires clock.backend-server, so a shared-backend claim cannot dodge the real-clock skew check; per-profile bundles keep ADR-0081's one certificate per implementation, backend, and profile."
+        cons:
+          - "collect is the first runner-synthesized observation; ADR-0077 decision 5 needs an amendment that release order does not fix the winner across processes."
+      - name: Defer KRT-DF005 until a Stage 3 pass specifies the shapes
+        pros:
+          - "No new contract shape lands before review."
+        cons:
+          - "EPIC-DF would close without the shared-backend, persistent-reopen, and process-crash certificates it exists to produce."
+    recommendation: Additive runner-owned shapes (collect step, process selector with spawn, setClock source server, per-profile bundles)
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-10-28
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ 23af796
+    interim:
+      assumption: "The design recorded for KRT-DF005: collect (kernel.harness.collect control observation with outcomes and byKind), steps[].process with spawn (one instance per process, handle-owned routing for await/cancel/release/barrier/collect), setClock source server gated by clock.backend-server with relative skew assertions, and per-profile certificate bundles from one run linked to per-profile control gates."
+      applied_by:
+        - tools/schemas/conformance-plan.schema.json
+        - tools/conformance/harness
+        - tools/conformance/certification
+        - spec/conformance/kernel
+        - KRT-DF005
