@@ -353,6 +353,8 @@ closeout:
       item: "The operation catalog gained a closed barrierReleaseOrder contract on kernel.barrier.release (in-process seams release to the serialization point in list order); add it to the pinned plan-extension and catalog sections of conformance-certification.md."
     - stage: tech-spec
       item: "Cancelling or destroying an operation held at a barrier returns an outer adapter_host_error in both languages, which the runner classifies as adapter_protocol, so no cancel-at-gate plan can pass; decide the protocol-level cancellation outcome before any plan uses cancel (ADR-0077 decision 6)."
+    - stage: tech-spec
+      item: "spec/conformance/kernel/kernel-memory-undetected.json is new cross-implementation authority (the kernel.memory claims allowed to lack a detecting control, with reasons) without a schema, an authority-packet or profile reference, or an entry in conformance-certification.md; specify it, and have tooling flag a reason that goes stale once a control detects its claim."
   follow_ups:
     - "Ten kernel mutants still have no Rust reproduction (including the stale-head race mutant), so the fleet kill of those claims rests on TypeScript alone; Rust certifies by pooled fleet controls under ADR-0079 decision 4."
     - "The three after-commit-before-ack claims are detected only by the fault-seam-never-fires instrumentation control; add a behavioral mutant."
