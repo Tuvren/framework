@@ -278,51 +278,81 @@ test("a restarted PostgreSQL process restores the server and worker clock source
   );
 }, 60_000);
 
-test("sequential writer contenders cannot produce shared-backend race evidence", async () => {
-  const manifest = await readAdapterManifest(
-    "typescript/kernel/conformance-adapter/adapter-postgres.json"
-  );
-  const plan = await loadConformancePlan(
-    "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
-  );
-  plan.catalog = parseOperationCatalog(
-    JSON.parse(
-      await readFile("spec/conformance/kernel/operations.json", "utf8")
-    ),
-    "kernel catalog"
-  );
-  const original = plan.checks[0];
-  if (original === undefined) {
-    throw new Error("missing writer race");
-  }
-  const check = structuredClone(original.check);
-  const steps = check.steps;
-  if (steps === undefined) {
-    throw new Error("missing writer steps");
-  }
-  for (const id of ["secondReceipt", "secondStart"]) {
-    const index = steps.findIndex((step) => step.stepId === id);
-    const [step] = steps.splice(index, 1);
-    if (step === undefined) {
-      throw new Error(`missing ${id}`);
-    }
-    const awaitFirst = steps.findIndex(
-      (candidate) => candidate.stepId === "firstOutcome"
+test.each([
+  {
+    variant: "sequential contenders",
+    error: "release before all participants started",
+  },
+  {
+    variant: "missing second receipt",
+    error: "release requires every implementation entry receipt",
+  },
+])(
+  "writer race rejects $variant",
+  async ({ variant, error }) => {
+    const manifest = await readAdapterManifest(
+      "typescript/kernel/conformance-adapter/adapter-postgres.json"
     );
-    steps.splice(awaitFirst + 1, 0, step);
-  }
-  const [entry] = await runScheduledChecks(
-    manifest,
-    [{ plan, compiledCheck: { ...original, check }, index: 0 }],
-    1,
-    () => "replay",
-    true
-  );
-  expect(entry?.checkResult).toMatchObject({
-    status: "fail",
-    failure: { classification: "verification" },
-  });
-}, 60_000);
+    const plan = await loadConformancePlan(
+      "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
+    );
+    plan.catalog = parseOperationCatalog(
+      JSON.parse(
+        await readFile("spec/conformance/kernel/operations.json", "utf8")
+      ),
+      "kernel catalog"
+    );
+    const original = plan.checks[0];
+    if (original === undefined) {
+      throw new Error("missing writer race");
+    }
+    const check = structuredClone(original.check);
+    const steps = check.steps;
+    if (steps === undefined) {
+      throw new Error("missing writer steps");
+    }
+    if (variant === "sequential contenders") {
+      for (const id of ["secondReceipt", "secondStart"]) {
+        const index = steps.findIndex((step) => step.stepId === id);
+        if (index < 0) {
+          throw new Error(`missing ${id}`);
+        }
+        const [step] = steps.splice(index, 1);
+        if (step === undefined) {
+          throw new Error(`missing ${id}`);
+        }
+        const awaitFirst = steps.findIndex(
+          (candidate) => candidate.stepId === "firstOutcome"
+        );
+        if (awaitFirst < 0) {
+          throw new Error("missing firstOutcome");
+        }
+        steps.splice(awaitFirst + 1, 0, step);
+      }
+    } else {
+      const receipt = steps.findIndex(
+        (step) => step.stepId === "secondReceipt"
+      );
+      if (receipt < 0) {
+        throw new Error("missing secondReceipt");
+      }
+      steps.splice(receipt, 1);
+    }
+    const [entry] = await runScheduledChecks(
+      manifest,
+      [{ plan, compiledCheck: { ...original, check }, index: 0 }],
+      1,
+      () => "replay",
+      true
+    );
+    expect(entry?.checkResult).toMatchObject({
+      status: "fail",
+      failure: { classification: "verification" },
+      details: { verificationError: error },
+    });
+  },
+  60_000
+);
 
 test("a process exit assertion reads the named secondary supervisor epoch", async () => {
   const manifest = await readAdapterManifest(
@@ -467,7 +497,7 @@ test("a spawned process can create its own instance on the shared storage refere
   ).toBe("pass");
 }, 60_000);
 
-test("the runner routes identical opaque handle strings to their owning processes", async () => {
+test("the runner releases identical opaque handles on both owning processes before awaiting acknowledgements", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "shared-handles-"));
   try {
     const manifest = await readAdapterManifest(
@@ -480,6 +510,8 @@ test("the runner routes identical opaque handle strings to their owning processe
     ).href;
     const script = `#!/usr/bin/env bun
 import { serveStdioAdapter } from ${JSON.stringify(host)};
+import { readdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 let started;
 await serveStdioAdapter({
   initialize: (packetId, planVersion) => ({ adapterId: ${JSON.stringify(manifest.adapterId)}, capabilities: ${JSON.stringify(manifest.capabilities)}, packetId, planVersion, protocolVersion: "0.2.0", profiles: [], storageKinds: ["postgres-database"] }),
@@ -488,7 +520,11 @@ await serveStdioAdapter({
   dispatch: async (operation, input) => {
     if (operation === "kernel.barrier.arm") return { kind: "result", value: { result: { barrierId: input.barrierId, seam: input.seam } } };
     if (operation === "kernel.barrier.wait") return { kind: "result", value: { result: { barrierId: input.barrierId, seam: "kernel.persistence.before-transact", operationHandle: input.operationHandle } } };
-    if (operation === "kernel.barrier.release") return { kind: "result", value: { result: { barrierId: input.barrierId, operationHandles: input.operationHandles } } };
+    if (operation === "kernel.barrier.release") {
+      await writeFile(join(${JSON.stringify(directory)}, "release-" + process.pid), "");
+      while ((await readdir(${JSON.stringify(directory)})).filter((name) => name.startsWith("release-")).length < 2) await Bun.sleep(5);
+      return { kind: "result", value: { result: { barrierId: input.barrierId, operationHandles: input.operationHandles } } };
+    }
     throw new Error("unexpected operation");
   },
   startOperation: async (_operation, input) => { started = input; return { operationHandle: "same" }; },
@@ -721,81 +757,116 @@ test("a secondary process owns its fault receipt, death, and recovery epoch", as
   );
 }, 60_000);
 
-test("postgres worker-clock mutant is activated and killed by the live-lease assertion", async () => {
-  const directory = await mkdtemp(path.join(tmpdir(), "worker-clock-probe-"));
-  try {
-    const manifest = await readAdapterManifest(
-      "typescript/kernel/conformance-adapter/adapter-postgres-mutant.json"
-    );
-    const wrapped = {
-      ...manifest,
-      executable: "/usr/bin/env",
-      command: [
-        "/usr/bin/env",
-        "TUVREN_KERNEL_MUTANT=kernel.worker-clock-expiry",
-        "bun",
-        "tools/conformance/meta-conformance/activation-probe.ts",
-        "--record",
-        directory,
-        "--operation",
-        "kernel.mutant.activation",
-        "--",
-        ...manifest.command,
-      ],
-    };
-    const plan = await loadConformancePlan(
-      "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
-    );
-    plan.catalog = parseOperationCatalog(
-      JSON.parse(
-        await readFile("spec/conformance/kernel/operations.json", "utf8")
-      ),
-      "kernel catalog"
-    );
-    const compiledCheck = plan.checks[0];
-    if (compiledCheck === undefined) {
-      throw new Error("missing clock skew check");
-    }
-    const [entry] = await runScheduledChecks(
-      wrapped,
-      [{ plan, compiledCheck, index: 0 }],
-      1,
-      () => "replay",
-      true
-    );
-    expect(entry?.checkResult.status).toBe("fail");
-    expect(entry?.checkResult.failure?.classification).toBe("implementation");
-    expect(entry?.checkResult.assertionResults).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          assertionId: "kernel.syscall.clock_skew.preemption.2.schemaValid",
-          status: "fail",
-        }),
-      ])
-    );
-    const [file] = await readdir(directory);
-    if (file === undefined) {
-      throw new Error("missing activation proof");
-    }
-    expect(
-      JSON.parse(await readFile(path.join(directory, file), "utf8"))
-    ).toMatchObject({
-      reply: {
-        result: {
-          kind: "result",
-          value: {
-            result: {
-              activation: {
-                mutantId: "kernel.worker-clock-expiry",
-                activated: true,
-                activationCount: expect.any(Number),
+test.each([
+  { variant: "skewed clocks", aligned: false },
+  { variant: "equal clocks", aligned: true },
+])(
+  "postgres worker-clock mutant reports activation for $variant",
+  async ({ aligned }) => {
+    const directory = await mkdtemp(path.join(tmpdir(), "worker-clock-probe-"));
+    try {
+      const manifest = await readAdapterManifest(
+        "typescript/kernel/conformance-adapter/adapter-postgres-mutant.json"
+      );
+      const wrapped = {
+        ...manifest,
+        executable: "/usr/bin/env",
+        command: [
+          "/usr/bin/env",
+          "TUVREN_KERNEL_MUTANT=kernel.worker-clock-expiry",
+          "bun",
+          "tools/conformance/meta-conformance/activation-probe.ts",
+          "--record",
+          directory,
+          "--operation",
+          "kernel.mutant.activation",
+          "--",
+          ...manifest.command,
+        ],
+      };
+      const plan = await loadConformancePlan(
+        "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
+      );
+      plan.catalog = parseOperationCatalog(
+        JSON.parse(
+          await readFile("spec/conformance/kernel/operations.json", "utf8")
+        ),
+        "kernel catalog"
+      );
+      const compiledCheck = plan.checks[0];
+      if (compiledCheck === undefined) {
+        throw new Error("missing clock skew check");
+      }
+      const check = structuredClone(compiledCheck.check);
+      if (aligned) {
+        const steps = check.steps;
+        if (steps === undefined) {
+          throw new Error("missing clock skew steps");
+        }
+        for (const id of ["serverClock", "workerAhead"]) {
+          const step = steps.find((candidate) => candidate.stepId === id);
+          if (step === undefined) {
+            throw new Error(`missing ${id}`);
+          }
+          step.arguments = {
+            domain: id === "serverClock" ? "backend" : "worker",
+            nowMs: 10_000_000,
+          };
+        }
+        for (const id of ["livePreempt", "expiredPreempt"]) {
+          const step = steps.find((candidate) => candidate.stepId === id);
+          if (step === undefined || step.arguments === undefined) {
+            throw new Error(`missing ${id} arguments`);
+          }
+          step.arguments.nowMs = 10_000_000;
+        }
+      }
+      const [entry] = await runScheduledChecks(
+        wrapped,
+        [{ plan, compiledCheck: { ...compiledCheck, check }, index: 0 }],
+        1,
+        () => "replay",
+        true
+      );
+      expect(entry?.checkResult.status).toBe(aligned ? "pass" : "fail");
+      if (!aligned) {
+        expect(entry?.checkResult.failure?.classification).toBe(
+          "implementation"
+        );
+        expect(entry?.checkResult.assertionResults).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              assertionId: "kernel.syscall.clock_skew.preemption.2.schemaValid",
+              status: "fail",
+            }),
+          ])
+        );
+      }
+      const [file] = await readdir(directory);
+      if (file === undefined) {
+        throw new Error("missing activation proof");
+      }
+      expect(
+        JSON.parse(await readFile(path.join(directory, file), "utf8"))
+      ).toMatchObject({
+        reply: {
+          result: {
+            kind: "result",
+            value: {
+              result: {
+                activation: {
+                  mutantId: "kernel.worker-clock-expiry",
+                  activated: !aligned,
+                  activationCount: aligned ? 0 : expect.any(Number),
+                },
               },
             },
           },
         },
-      },
-    });
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
-}, 60_000);
+      });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+  60_000
+);

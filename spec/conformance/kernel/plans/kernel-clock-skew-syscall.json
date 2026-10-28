@@ -40,7 +40,7 @@
           "operation": "kernel.clock.set",
           "arguments": {
             "domain": "worker",
-            "nowMs": 0
+            "nowMs": 3600000
           },
           "claimIds": [
             "kernel.syscall.clock_skew.live",
@@ -169,7 +169,7 @@
                 }
               ],
               "executionOwnerId": "owner-primary",
-              "leaseExpiresAtMs": 3600000
+              "leaseExpiresAtMs": 7200000
             }
           },
           "claimIds": [
@@ -261,10 +261,95 @@
             "kernel.syscall.clock_skew.live",
             "kernel.syscall.clock_skew.expired"
           ],
-          "assertions": [],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.leaseExpiresAtMs",
+              "lessThan": "$.capture.backendNow"
+            }
+          ],
           "capture": [
             {
               "name": "expiredLease",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadfuture",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "threadfuture",
+            "schemaId": "run_liveness",
+            "initialBranchId": "branchfuture"
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadfuture",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turnfuture",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnfuture",
+            "threadId": "threadfuture",
+            "branchId": "branchfuture",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.threadfuture.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "futureLease",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "runfuture",
+              "turnId": "turnfuture",
+              "branchId": "branchfuture",
+              "schemaId": "run_liveness",
+              "startTurnNodeHash": {
+                "$ref": "capture.threadfuture.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "deterministic": false,
+                  "id": "iterate",
+                  "sideEffects": true
+                }
+              ],
+              "executionOwnerId": "owner-primary",
+              "leaseExpiresAtMs": 14400000
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.clock_skew.live",
+            "kernel.syscall.clock_skew.expired"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.leaseExpiresAtMs",
+              "greaterThan": "$.capture.liveLease.leaseExpiresAtMs"
+            }
+          ],
+          "capture": [
+            {
+              "name": "futureLease",
               "path": "result"
             }
           ]
@@ -276,7 +361,7 @@
           "arguments": {
             "domain": "worker",
             "nowMs": {
-              "$ref": "capture.liveLease.leaseExpiresAtMs"
+              "$ref": "capture.futureLease.leaseExpiresAtMs"
             }
           },
           "assertions": [],
@@ -292,7 +377,7 @@
             "runId": "runrenewal",
             "preemptingOwnerId": "other",
             "nowMs": {
-              "$ref": "capture.liveLease.leaseExpiresAtMs"
+              "$ref": "capture.futureLease.leaseExpiresAtMs"
             },
             "reason": "clock_skew"
           },
@@ -309,7 +394,7 @@
             "runId": "runexpired",
             "preemptingOwnerId": "other",
             "nowMs": {
-              "$ref": "capture.liveLease.leaseExpiresAtMs"
+              "$ref": "capture.futureLease.leaseExpiresAtMs"
             },
             "reason": "clock_skew"
           },

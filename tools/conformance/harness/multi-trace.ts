@@ -599,6 +599,7 @@ export const runMultiTraceCheck = async (
       if (!(isRecord(rawInput) && Array.isArray(rawInput.operationHandles))) {
         throw new ArgumentResolutionError("invalid release input");
       }
+      const operationHandles = rawInput.operationHandles;
       const participants =
         step.participants ??
         steps.find(
@@ -607,21 +608,34 @@ export const runMultiTraceCheck = async (
             candidate.barrierId === step.barrierId
         )?.participants ??
         [];
-      let first: Awaited<ReturnType<typeof observe>> | undefined;
-      for (const [index, id] of participants.entries()) {
+      const releases = participants.map((id, index) => {
         const start = startsByStep.get(id);
-        const handle = rawInput.operationHandles[index];
+        const handle = operationHandles[index];
         if (start === undefined || typeof handle !== "string") {
           throw new ArgumentResolutionError("release has no owning process");
         }
-        const current = await observe(start.process, {
-          barrierId: step.barrierId,
-          operationHandles: [handle],
-        });
+        return { process: start.process, handle };
+      });
+      if (releases.length === 0) {
+        throw new ArgumentResolutionError(
+          "barrier release has no participants"
+        );
+      }
+      const responses = await Promise.all(
+        releases.map(async ({ process, handle }) => ({
+          process,
+          current: await observe(process, {
+            barrierId: step.barrierId,
+            operationHandles: [handle],
+          }),
+        }))
+      );
+      let first: Awaited<ReturnType<typeof observe>> | undefined;
+      for (const { process, current } of responses) {
         if (current.outcome.kind !== "result") {
           throw new ArgumentResolutionError("barrier release failed");
         }
-        first = retainRelease(first, current, start.process);
+        first = retainRelease(first, current, process);
       }
       if (first === undefined) {
         throw new ArgumentResolutionError(

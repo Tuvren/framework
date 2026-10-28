@@ -27,7 +27,9 @@ export const CLOCK_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
                   return backendNow();
                 }
                 context.used = true;
-                activate();
+                if (context.nowMs !== backendNow()) {
+                  activate();
+                }
                 return context.nowMs;
               },
             };
