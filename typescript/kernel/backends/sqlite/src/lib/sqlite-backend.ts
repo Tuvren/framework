@@ -172,45 +172,12 @@ const SQLITE_BUSY_TIMEOUT_MS = 5000;
  */
 const SQLITE_PARTITION_FILE_SUFFIXES = ["", "-wal", "-shm"] as const;
 /**
- * Well-known symbol under which the backend exposes its
- * {@link BackendFaultInjectionControl}. The kernel testkit constructs the
- * same symbol description to discover the control surface at runtime; the
- * symbol is deliberately not exported so ordinary consumers never see it.
- */
-const FAULT_INJECTION_CONTROL = Symbol(
-  "tuvren.kernel.testkit.fault-injection-control"
-);
-
-/**
  * The transaction handle {@link createRepositories} builds: the protocol
  * repository surface plus the backend clock, so repository internals (e.g.
  * turn-tree path normalization) can stamp `createdAtMs` consistently.
  */
 interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
-}
-
-/**
- * Commit-boundary hooks installed by the kernel testkit's fault-injecting
- * wrapper. Each hook maps to a `FaultPoint`: `beforeCommit` runs after
- * write-set validation but before `COMMIT`, `midCommit` receives the commit
- * thunk and must invoke it exactly once, and `afterCommitBeforeAck` runs
- * after `COMMIT` but before the transaction resolves.
- */
-interface BackendFaultHooks {
-  afterCommitBeforeAck?: () => Promise<void>;
-  beforeCommit?: () => Promise<void>;
-  midCommit?: (commit: () => Promise<void>) => Promise<void>;
-}
-
-/**
- * The control surface exposed under {@link FAULT_INJECTION_CONTROL} so the
- * testkit can install {@link BackendFaultHooks} without the hooks becoming
- * part of the public backend contract.
- */
-interface BackendFaultInjectionControl {
-  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
-  supportsFaultPoint: (point: string) => boolean;
 }
 
 /** Construction options for {@link createSqliteBackend}. */
@@ -964,22 +931,9 @@ const createRepositories = (
  * `COMMIT`; any failure rolls the transaction back and surfaces a normalized
  * backend error.
  */
-/* oxlint-disable promise-function-async -- Public backend methods and hook thunks preserve synchronous precondition and engine throws before returning promises. */
+/* oxlint-disable promise-function-async -- Public backend methods preserve synchronous precondition and engine throws before returning promises. */
 class SqliteBackend implements KrakenBackend {
-  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
-    setFaultHooks: (hooks) => {
-      this.faultState.hooks = hooks;
-    },
-    supportsFaultPoint: (point) =>
-      point === "before-commit" ||
-      point === "mid-commit" ||
-      point === "after-commit-before-ack",
-  };
-
   private readonly db: Database.Database;
-  private readonly faultState: { hooks: BackendFaultHooks | null } = {
-    hooks: null,
-  };
   private readonly now: () => number;
   private readonly phaseObserver: PhaseObserver;
   /**
@@ -1202,34 +1156,7 @@ class SqliteBackend implements KrakenBackend {
         } finally {
           endValidateWriteSet();
         }
-        await this.faultState.hooks?.beforeCommit?.();
-
-        let committed = false;
-        const commit = (): Promise<void> => {
-          if (committed) {
-            throw new Error(
-              "sqlite backend commit hook attempted double commit"
-            );
-          }
-
-          this.db.exec("COMMIT");
-          committed = true;
-          return Promise.resolve();
-        };
-
-        if (this.faultState.hooks?.midCommit === undefined) {
-          await commit();
-        } else {
-          await this.faultState.hooks.midCommit(commit);
-
-          if (!committed) {
-            throw new Error(
-              "sqlite backend mid-commit hook must call commit exactly once"
-            );
-          }
-        }
-
-        await this.faultState.hooks?.afterCommitBeforeAck?.();
+        this.db.exec("COMMIT");
         return result;
       } catch (error: unknown) {
         active = false;

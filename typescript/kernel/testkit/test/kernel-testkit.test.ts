@@ -171,16 +171,11 @@ interface FocusedTestBackend extends RuntimeBackend {
 
 /** Focused single-branch unit fixture; real backend conformance lives in shared plans. */
 const createTestBackend = (): FocusedTestBackend => {
-  const faultControl = Symbol("fault-control");
   const state = {
     branches: new Map<string, StoredBranch>(),
     objects: new Map<string, StoredObject>(),
     turnNodes: new Map<string, StoredTurnNode>(),
   };
-  let hooks: {
-    afterCommitBeforeAck?: () => Promise<void>;
-    beforeCommit?: () => Promise<void>;
-  } | null = null;
   const readCommittedHead = (
     branch: StoredBranch | null
   ): StoredTurnNode | null =>
@@ -188,14 +183,6 @@ const createTestBackend = (): FocusedTestBackend => {
       ? null
       : (state.turnNodes.get(branch.headTurnNodeHash) ?? null);
   const backend = {
-    [faultControl]: {
-      setFaultHooks(nextHooks: typeof hooks) {
-        hooks = nextHooks;
-      },
-      supportsFaultPoint() {
-        return true;
-      },
-    },
     capabilities() {
       return { "thread.enumeration": false };
     },
@@ -405,11 +392,9 @@ const createTestBackend = (): FocusedTestBackend => {
         true,
         "focused fixture supports one branch"
       );
-      await hooks?.beforeCommit?.();
       state.branches = draft.branches;
       state.objects = draft.objects;
       state.turnNodes = draft.turnNodes;
-      await hooks?.afterCommitBeforeAck?.();
       return result;
     },
   };
@@ -873,7 +858,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
     );
   });
 
-  test("clears installed hooks before propagating transaction errors", async () => {
+  test("does not install backend hooks when propagating transaction errors", async () => {
     const actualError = new Error("backend transaction failed");
     const calls: string[] = [];
     const control = {
@@ -904,7 +889,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
     await rejects(
       wrapped.transact(async (tx) => await tx.branches.get("missing")),
       (error: unknown) => {
-        deepStrictEqual(calls, ["install", "transaction", "clear"]);
+        deepStrictEqual(calls, ["transaction"]);
         strictEqual(error, actualError);
         return true;
       }
@@ -983,6 +968,6 @@ for (const point of ["before-commit", "after-commit-before-ack"] as const) {
       { code: "kernel_persistence_fault_injected" }
     );
     await wrapped.transact(async () => await Promise.resolve("third"));
-    strictEqual(attempts, 3);
+    strictEqual(attempts, point === "before-commit" ? 2 : 3);
   });
 }

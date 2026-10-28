@@ -26,6 +26,7 @@ import type {
   StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 
+import { transactWithCommitFaults } from "./commit-fault-seam.js";
 import {
   createStoredObjectRecord,
   createStoredTurnNodeRecord,
@@ -79,23 +80,6 @@ export interface FaultPlan {
 /** Coarse classification of what a transaction did, for `plan.match.operation`. */
 type FaultOperation = "checkpoint" | "unknown";
 
-/**
- * Mirrors a backend's own internal fault-hook shape (see e.g. the
- * `postgres-backend.ts` / `sqlite-backend.ts` `BackendFaultHooks`), used to
- * install this module's injected-fault logic into a backend's real commit
- * sequence.
- */
-interface BackendFaultHooks {
-  afterCommitBeforeAck?: () => Promise<void>;
-  beforeCommit?: () => Promise<void>;
-}
-
-/** The hidden per-backend seam {@link readFaultInjectionControl} looks for. */
-interface BackendFaultInjectionControl {
-  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
-  supportsFaultPoint: (point: FaultPoint) => boolean;
-}
-
 /** What one in-flight transaction has done so far, for fault-plan matching. */
 interface TransactionRecording {
   branchIds: Set<string>;
@@ -124,32 +108,6 @@ type TransactionOutcome<T> =
 interface FsckCapableBackend {
   fsck: () => Promise<{ ok: true } | { ok: false; reason: string }>;
 }
-
-/** Structural check for the hidden `BackendFaultInjectionControl` shape. */
-const isBackendFaultInjectionControl = (
-  value: unknown
-): value is BackendFaultInjectionControl =>
-  typeof value === "object" &&
-  value !== null &&
-  typeof Reflect.get(value, "setFaultHooks") === "function" &&
-  typeof Reflect.get(value, "supportsFaultPoint") === "function";
-
-/** Locates a backend's hidden fault-injection control surface, if it exposes one. */
-const readFaultInjectionControl = (
-  backend: RuntimeBackend
-): BackendFaultInjectionControl | undefined => {
-  // Discover the backend-local seam by shape so production code does not get a
-  // stable global symbol lookup key for the hidden test hook.
-  for (const symbol of Object.getOwnPropertySymbols(backend)) {
-    const value: unknown = Reflect.get(backend, symbol);
-
-    if (isBackendFaultInjectionControl(value)) {
-      return value;
-    }
-  }
-
-  return undefined;
-};
 
 /**
  * Captures a branch's current head turn node before the faulted
@@ -204,48 +162,6 @@ const createUnsupportedFaultPointError = (
       details: { point },
     }
   );
-
-/** Fires faults at supported backend commit hooks after transaction matching. */
-const createFaultHooks = (
-  control: BackendFaultInjectionControl,
-  plan: FaultPlan,
-  getOperation: () => FaultOperation,
-  shouldInject: () => boolean,
-  markConsumed: () => void
-): BackendFaultHooks => ({
-  afterCommitBeforeAck: async () => {
-    if (!shouldInject()) {
-      return;
-    }
-
-    if (plan.point !== "after-commit-before-ack") {
-      return;
-    }
-
-    markConsumed();
-    await Promise.reject(
-      createInjectedFaultError(getOperation(), plan.point, plan.token)
-    );
-  },
-  beforeCommit: async () => {
-    if (!shouldInject()) {
-      return;
-    }
-
-    if (!control.supportsFaultPoint(plan.point)) {
-      throw createUnsupportedFaultPointError(plan.point);
-    }
-
-    if (plan.point !== "before-commit") {
-      return;
-    }
-
-    markConsumed();
-    await Promise.reject(
-      createInjectedFaultError(getOperation(), plan.point, plan.token)
-    );
-  },
-});
 
 /**
  * Wraps a transaction handle so touched branch IDs and a coarse
@@ -423,7 +339,6 @@ export const createFaultInjectingBackend = (
     throw createUnsupportedFaultPointError(plan.point);
   }
   let matches = 0;
-  const control = readFaultInjectionControl(inner);
   const innerReclaim = inner.reclaim?.bind(inner);
   const innerPurgeScope = inner.purgeScope?.bind(inner);
   let consumed = false;
@@ -458,71 +373,64 @@ export const createFaultInjectingBackend = (
       let shouldRunConcurrentWriter = false;
       let shouldInject = false;
 
-      const hooks =
-        control === undefined
-          ? null
-          : createFaultHooks(
-              control,
-              plan,
-              () => recording.operation,
-              () => shouldInject,
-              () => {
-                consumed = true;
-              }
-            );
-
-      if (hooks !== null && control !== undefined) {
-        control.setFaultHooks(hooks);
-      }
-
       let outcome: TransactionOutcome<T>;
 
       try {
         outcome = {
           status: "fulfilled",
-          value: await inner.transact(async (tx) => {
-            recording = createTransactionRecording();
-            const result = await work(
-              createRecordingTransactionProxy(tx, recording)
-            );
-            shouldInject = matchesFaultPlan(plan, recording, consumed);
-            if (shouldInject) {
-              if (occurrenceReached === undefined) {
-                matches += 1;
-                occurrenceReached = matches >= (plan.occurrence ?? 1);
-              }
-              shouldInject = occurrenceReached;
-            }
-            shouldRunConcurrentWriter =
-              shouldInject && concurrentWriterSnapshot !== undefined;
-
-            if (
-              shouldInject &&
-              control === undefined &&
-              plan.point === "before-commit"
-            ) {
-              consumed = true;
-              throw createInjectedFaultError(
-                recording.operation,
-                plan.point,
-                plan.token
+          value: await transactWithCommitFaults(
+            inner,
+            async (tx) => {
+              recording = createTransactionRecording();
+              const result = await work(
+                createRecordingTransactionProxy(tx, recording)
               );
-            }
+              shouldInject = matchesFaultPlan(plan, recording, consumed);
+              if (shouldInject) {
+                if (occurrenceReached === undefined) {
+                  matches += 1;
+                  occurrenceReached = matches >= (plan.occurrence ?? 1);
+                }
+                shouldInject = occurrenceReached;
+              }
+              shouldRunConcurrentWriter =
+                shouldInject && concurrentWriterSnapshot !== undefined;
 
-            if (shouldInject && control === undefined) {
-              throw createUnsupportedFaultPointError(plan.point);
+              return result;
+            },
+            {
+              afterCommit: async () => {
+                if (shouldInject && plan.point === "after-commit-before-ack") {
+                  consumed = true;
+                  await Promise.reject(
+                    createInjectedFaultError(
+                      recording.operation,
+                      plan.point,
+                      plan.token
+                    )
+                  );
+                }
+              },
+              beforeCommit: async () => {
+                if (shouldInject && plan.point === "before-commit") {
+                  consumed = true;
+                  await Promise.reject(
+                    createInjectedFaultError(
+                      recording.operation,
+                      plan.point,
+                      plan.token
+                    )
+                  );
+                }
+              },
             }
-
-            return result;
-          }),
+          ),
         };
       } catch (error: unknown) {
         outcome = {
           error,
           status: "rejected",
         };
-      } finally {
-        control?.setFaultHooks(null);
       }
 
       let concurrentWriterError: unknown;
