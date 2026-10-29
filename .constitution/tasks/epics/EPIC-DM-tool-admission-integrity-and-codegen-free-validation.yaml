@@ -16,9 +16,21 @@ scope:
     - typescript/runners/react/project.json
     - typescript/sdk/src/lib
     - typescript/sdk/test
-    - typescript/core/src/lib
+    - typescript/core/src
     - typescript/core/test
     - typescript/core/package.json
+    - typescript/core/tsup.config.ts
+    - tsconfig.base.json
+    - typescript/runtime/tsconfig.typecheck.json
+    - typescript/runtime/tsconfig.dts.json
+    - typescript/runners/react/tsconfig.typecheck.json
+    - typescript/runners/react/tsconfig.dts.json
+    - typescript/sdk/tsconfig.typecheck.json
+    - typescript/sdk/tsconfig.dts.json
+    - typescript/tools/mcp-client/tsconfig.typecheck.json
+    - typescript/tools/mcp-client/tsconfig.dts.json
+    - typescript/providers/bridge-ai-sdk/tsconfig.typecheck.json
+    - typescript/providers/bridge-ai-sdk/tsconfig.dts.json
     - typescript/tools/mcp-client/src/lib
     - typescript/tools/mcp-client/test
     - typescript/tools/mcp-client/package.json
@@ -136,11 +148,11 @@ tickets:
         - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
         - ".changeset/runtime-dm-tool-admission-validation.md"
     verification:
-      command: bun run conformance
-      expected: "Exit 0; the new engine checks pass and the TypeScript framework certification records them."
+      command: bun run verify
+      expected: "Exit 0; the docs freeze gate and conformance pass, the new engine checks pass, and the TypeScript framework certification records them."
     stop_conditions:
       - "STOP if reporting the root cause needs a change to the shape of a frozen public type beyond an added optional secondary-cause field; don't improvise."
-    description: "Wave-1 certification epics also regenerate the compatibility matrix. Whichever epic merges later rebases and regenerates the matrix and its evidence with the project's evidence refresh rather than hand-merging. Add subsequentErrors as an additive optional field on the failed branch of ExecutionResult, and state it in framework specification section 7.1. The throwing approval() predicate survives registration checks and is the root-cause trigger. Keep a schema-compile trigger as a second case; KRT-DM004 later rewrites it to expect a tool_schema_invalid registration failure. ADR-0083 decision 5. When an execution fails hard, its result reports the first fatal error. A later finalization failure is attached as a secondary cause and never replaces it, and the event stream keeps both. Today publishProjectedError overwrites the remembered error for fatal and non-fatal errors alike, and settleResult reports the last one (runtime-core-events.ts:345-353, runtime-execution-handle.ts:338). Add engine checks, judged by the runner from observations through the framework adapter, for two triggers: an approval() predicate that throws and a tool whose schema can't compile. Each check observes that the result's error code and message are the trigger's own and that the backend's head-mismatch error does not appear as the result error. Bind new operations as observation-only bridges per guidelines 5.10, with no adapter-computed verdicts."
+    description: "If reports/compatibility conflicts on rebase, regenerate it with the project's evidence refresh rather than hand-merging. Add subsequentErrors as an additive optional field on the failed branch of ExecutionResult, and state it in framework specification section 7.1. The throwing approval() predicate survives registration checks and is the root-cause trigger. Keep a schema-compile trigger as a second case; KRT-DM004 later rewrites it to expect a tool_schema_invalid registration failure. ADR-0083 decision 5. When an execution fails hard, its result reports the first fatal error. A later finalization failure is attached as a secondary cause and never replaces it, and the event stream keeps both. Today publishProjectedError overwrites the remembered error for fatal and non-fatal errors alike, and settleResult reports the last one (runtime-core-events.ts:345-353, runtime-execution-handle.ts:338). Add engine checks, judged by the runner from observations through the framework adapter, for two triggers: an approval() predicate that throws and a tool whose schema can't compile. Each check observes that the result's error code and message are the trigger's own and that the backend's head-mismatch error does not appear as the result error. Bind new operations as observation-only bridges per guidelines 5.10, with no adapter-computed verdicts."
     acceptance:
       mode: contract_test
       evidence: "Engine plan checks assert, from observed results and events, that the result error is the trigger's error for both triggers before the registration check is introduced, and that any finalization failure appears only as a secondary cause. A runtime unit test covers a fatal error followed by a non-fatal error."
@@ -180,7 +192,7 @@ tickets:
     stop_conditions:
       - "STOP if SPK-KRT-DM001 concludes that a new kernel operation is required; defer this ticket with the reason so a Stage 3 pass and kernel authority change can precede it, and don't improvise."
       - "STOP if the rewind can only be done in two separate transactions; don't improvise."
-    description: "Wave-1 certification epics also regenerate the compatibility matrix. Whichever epic merges later rebases and regenerates the matrix and its evidence with the project's evidence refresh rather than hand-merging. Base the tool-admission-failure checks on a throwing approval() predicate. ADR-0083 decision 4. failTrackedRunWithoutBranchAdvance (runtime-core-turn-progress.ts:206-219) completes the run as failed, which reactively checkpoints the staged assistant tool-call batch (kernel spec section 5.6), then resets only the branch head. The turn head is left on the failed checkpoint, so finalization trips the backend lineage invariant and the next turn on the branch fails with kernel_runtime_turn_parent_start_mismatch. Use the mechanism the spike recorded to return both heads to the stable head in one kernel transaction. Add the framework-specification rule that failed iteration work is never observable in branch history. Add engine checks: after a tool-admission failure, the branch's durable messages contain no message from the failed iteration, and a later turn on the same branch completes."
+    description: "If reports/compatibility conflicts on rebase, regenerate it with the project's evidence refresh rather than hand-merging. Base the tool-admission-failure checks on a throwing approval() predicate. ADR-0083 decision 4. failTrackedRunWithoutBranchAdvance (runtime-core-turn-progress.ts:206-219) completes the run as failed, which reactively checkpoints the staged assistant tool-call batch (kernel spec section 5.6), then resets only the branch head. The turn head is left on the failed checkpoint, so finalization trips the backend lineage invariant and the next turn on the branch fails with kernel_runtime_turn_parent_start_mismatch. Use the mechanism the spike recorded to return both heads to the stable head in one kernel transaction. Add the framework-specification rule that failed iteration work is never observable in branch history. Add engine checks: after a tool-admission failure, the branch's durable messages contain no message from the failed iteration, and a later turn on the same branch completes."
     acceptance:
       mode: contract_test
       evidence: "Engine plan checks assert from observed durable reads that no failed-iteration message is visible on the branch after a tool-admission failure, and that a second turn on the branch completes with status completed. The framework specification states the rule, and the docs authority inventory records it."
@@ -195,6 +207,18 @@ tickets:
     scope:
       in:
         - typescript/core/package.json
+        - typescript/core/tsup.config.ts
+        - tsconfig.base.json
+        - typescript/runtime/tsconfig.typecheck.json
+        - typescript/runtime/tsconfig.dts.json
+        - typescript/runners/react/tsconfig.typecheck.json
+        - typescript/runners/react/tsconfig.dts.json
+        - typescript/sdk/tsconfig.typecheck.json
+        - typescript/sdk/tsconfig.dts.json
+        - typescript/tools/mcp-client/tsconfig.typecheck.json
+        - typescript/tools/mcp-client/tsconfig.dts.json
+        - typescript/providers/bridge-ai-sdk/tsconfig.typecheck.json
+        - typescript/providers/bridge-ai-sdk/tsconfig.dts.json
         - typescript/runtime/project.json
         - typescript/runners/react/project.json
         - typescript/runtime/src/lib
@@ -203,10 +227,12 @@ tickets:
         - typescript/runners/react/src/lib
         - typescript/runners/react/test
         - typescript/runners/react/package.json
-        - typescript/core/src/lib
+        - typescript/core/src
         - typescript/core/test
         - typescript/conformance-adapter/src
         - spec/conformance/engine/plans
+        - spec/conformance/engine/scenarios
+        - spec/conformance/engine/fixtures
         - spec/conformance/tools/plans
         - spec/core/authority-packet.json
         - reports/compatibility/compatibility-matrix.json
@@ -221,10 +247,10 @@ tickets:
     stop_conditions:
       - "STOP if hosting the wrapper introduces a package dependency cycle; don't improvise."
       - "STOP if the validator the spike named rejects a schema that a currently passing conformance check depends on; don't improvise."
-    description: "Wave-1 certification epics also regenerate the compatibility matrix. Whichever epic merges later rebases and regenerates the matrix and its evidence with the project's evidence refresh rather than hand-merging. After KRT-DM002, rewrite its schema-compile trigger to expect a tool_schema_invalid registration failure. Check a structured-output schema first supplied during a turn before the provider call that uses it, and fail with structured_output_schema_invalid. ADR-0083 decisions 1, 2, and 7. Replace Ajv in tool-execution-validation.ts (lines 24, 41, 50) and the ReAct structured-output path (react-runner.ts:643-675) with the validator wrapper in the package ADR-0083 decision 1 names, built on the validator the spike named. It covers drafts 7, 2019-09, and 2020-12, selected by $schema. Check tool input and output schemas when the tool is registered and fail with a typed tool_schema_invalid error from @tuvren/core/errors. Check structured-output schemas when the request is registered and fail with structured_output_schema_invalid. Project validation failures into the details shape the spike recorded. A host validator (CustomSchema, Zod, or Standard Schema) still takes precedence. Add the no-codegen test run for the runtime validation tests, and add a minor changeset for @tuvren/runtime, @tuvren/runner-react, and @tuvren/core."
+    description: "If reports/compatibility conflicts on rebase, regenerate it with the project's evidence refresh rather than hand-merging. After KRT-DM002, rewrite its schema-compile trigger to expect a tool_schema_invalid registration failure. ADR-0083 decisions 1, 2, and 7. Replace Ajv in tool-execution-validation.ts (lines 24, 41, 50) and the ReAct structured-output path (react-runner.ts:643-675) with the validator wrapper in the package ADR-0083 decision 1 names, built on the validator the spike named. It covers drafts 7, 2019-09, and 2020-12, selected by $schema. Check tool input and output schemas when the tool is registered and fail with a typed tool_schema_invalid error from @tuvren/core/errors. Schemas declared in agent configuration are checked at registration, and a schema first supplied during a turn (per-request responseFormat or an around-hook replacement) is checked before the provider call that uses it. Schema compilation failures use structured_output_validation with details.reason: \"schema_compilation_failed\". Project validation failures into the details shape the spike recorded. A host validator (CustomSchema, Zod, or Standard Schema) still takes precedence. Add the no-codegen test run for the runtime validation tests, and add a minor changeset for @tuvren/runtime, @tuvren/runner-react, and @tuvren/core."
     acceptance:
       mode: contract_test
-      evidence: "Assert that a plain JSON Schema tool validates valid and invalid input identically with and without --disallow-code-generation-from-strings. Assert that an invalid schema fails at registration with tool_schema_invalid, that structured-output validation works under the flag, and that no production import of Ajv remains in the runtime or the ReAct runner. Engine and tools plans pass with the new details shape."
+      evidence: "Assert that a plain JSON Schema tool validates valid and invalid input identically with and without --disallow-code-generation-from-strings. Assert that an invalid tool schema fails at registration with tool_schema_invalid, and that the rewritten KRT-DM002 compile check expects tool_schema_invalid at registration. Assert that an invalid agent-configuration structured-output schema fails at registration with structured_output_validation and details.reason: \"schema_compilation_failed\", and that an invalid per-request or around-hook schema fails before the provider call. Assert that structured-output validation works under the flag and that no production import of Ajv remains in the runtime or the ReAct runner. Engine and tools plans pass with the new details shape."
     flows: [flow-react-runner-turn-execution, flow-exposure-time-tool-surface-policy]
     certainty: assumed
     status: planned
@@ -253,7 +279,7 @@ tickets:
     stop_conditions:
       - "STOP if hosting the wrapper introduces a package dependency cycle; don't improvise."
       - "STOP if MCP server schemas in the provider testkit fixtures use a draft or keyword the validator cannot evaluate; don't improvise."
-    description: "Wave-1 certification epics also regenerate the compatibility matrix. Whichever epic merges later rebases and regenerates the matrix and its evidence with the project's evidence refresh rather than hand-merging. ADR-0083 decisions 1 and 2, and ADR-0039 as amended. Replace the Ajv instance in mcp-tool-source.ts (lines 335 and 556) and the Ajv structured-output compile in ai-sdk-provider-bridge.ts (lines 893-904) with the validator wrapper in the package ADR-0083 decision 1 names. Check MCP tool schemas when the tool source lists them, so an unusable server schema surfaces as tool_schema_invalid for that tool instead of failing a turn. Extend the changeset to @tuvren/mcp-client and @tuvren/provider-bridge-ai-sdk."
+    description: "If reports/compatibility conflicts on rebase, regenerate it with the project's evidence refresh rather than hand-merging. ADR-0083 decisions 1 and 2, and ADR-0039 as amended. Replace the Ajv instance in mcp-tool-source.ts (lines 335 and 556) and the Ajv structured-output compile in ai-sdk-provider-bridge.ts (lines 893-904) with the validator wrapper in the package ADR-0083 decision 1 names. Check MCP tool schemas when the tool source lists them, so an unusable server schema surfaces as tool_schema_invalid for that tool instead of failing a turn. Extend the changeset to @tuvren/mcp-client and @tuvren/provider-bridge-ai-sdk."
     acceptance:
       mode: contract_test
       evidence: "Assert that an MCP tool with a valid server schema validates input under --disallow-code-generation-from-strings and that an invalid server schema yields tool_schema_invalid at listing. Assert that AI SDK structured output validates under the flag, and that neither package has an Ajv dependency."
@@ -280,7 +306,7 @@ tickets:
       expected: "Exit 0; the schema-authoring checks pass, including rejection of invalid input for a plain JSON Schema tool built with defineTool."
     stop_conditions:
       - "STOP if routing through the runtime validator creates a dependency cycle between @tuvren/sdk and @tuvren/runtime; don't improvise."
-    description: "Wave-1 certification epics also regenerate the compatibility matrix. Whichever epic merges later rebases and regenerates the matrix and its evidence with the project's evidence refresh rather than hand-merging. ADR-0083 decision 3 and ADR-0038 as amended. defineTool with a plain JSON Schema, and jsonSchema(schema) without validate, currently build a validate() that accepts any input (schema-authoring.ts:242-256 and 389-392). Route them through the validator wrapper in the package ADR-0083 decision 1 names so they validate exactly as the native path does, while a host-supplied validate still takes precedence. Extend the `schema-authoring.*` checks in `spec/conformance/engine/plans/runtime-api-callables-extended.json` with an invalid-input case for each helper path, and add @tuvren/sdk to the minor changeset."
+    description: "If reports/compatibility conflicts on rebase, regenerate it with the project's evidence refresh rather than hand-merging. ADR-0083 decision 3 and ADR-0038 as amended. defineTool with a plain JSON Schema, and jsonSchema(schema) without validate, currently build a validate() that accepts any input (schema-authoring.ts:242-256 and 389-392). Route them through the validator wrapper in the package ADR-0083 decision 1 names so they validate exactly as the native path does, while a host-supplied validate still takes precedence. Extend the `schema-authoring.*` checks in `spec/conformance/engine/plans/runtime-api-callables-extended.json` with an invalid-input case for each helper path, and add @tuvren/sdk to the minor changeset."
     acceptance:
       mode: contract_test
       evidence: "Schema-authoring plan checks assert from observed tool results that invalid input to a defineTool plain-JSON-Schema tool and to a jsonSchema-wrapped tool yields tool_input_validation_failed without executing, and that a host validate function still wins."
