@@ -2,7 +2,7 @@ id: DJ
 name: Retire legacy kernel plans and composite operations
 kind: product
 capabilities: [CAP-037, CAP-038]
-depends_on: [DF, DG, DH, DI]
+depends_on: [DF, DG, DH, DI, DM]
 priority: 10
 scope:
   paths:

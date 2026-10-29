@@ -1,0 +1,128 @@
+id: DK
+name: Portable certification core
+kind: product
+capabilities: [CAP-036, CAP-038]
+depends_on: [DF, DJ]
+priority: 11
+scope:
+  paths:
+    - tools/conformance/harness
+    - tools/conformance/adapter-protocol
+    - tools/conformance/meta-conformance
+    - reports/compatibility
+    - ".constitution/spikes/SPK-KRT-DK001.md"
+  out_of_scope:
+    - spec
+    - typescript
+    - rust
+    - go
+    - python
+    - dart
+    - tools/conformance/plan-compiler
+    - tools/conformance/certification
+  tech_spec_patchable:
+    - ".constitution/tech-spec/adrs/ADR-0082-published-runtime-portable-backend-testkit.md"
+estimated_diff_lines: 9000
+estimate_source: planned
+tickets:
+  - id: KRT-DK001
+    title: Map the portable core, precompiled validators, in-process transport, and the AsyncLocalStorage residual
+    type: Spike
+    effort: 3
+    depends_on: []
+    spike: SPK-KRT-DK001
+    scope:
+      in: [".constitution/spikes/SPK-KRT-DK001.md"]
+    verification:
+      command: bun run check
+      expected: "Exit 0; the spike report exists and no source changed."
+    stop_conditions:
+      - "STOP if Ajv standalone output cannot reproduce the runtime-compiled verdicts for a schema the runner reads; report it for a Stage 3 ruling and don't improvise."
+    description: "ADR-0082 decisions 2 to 5 and 13. Map every module of tools/conformance/harness to the portable core or the Node driver, with each node: import and its web-standard replacement, so the core has no node: import. Confirm that Ajv standalone ESM output, bundled with its runtime helpers, compiles every schema the runner validates. These are the encoding schema, catalog observation schemas, plan schema assertions, protocol and manifest schemas, and fixture manifests. Confirm that the output gives the same verdicts as runtime compilation on the meta-conformance corpus. Decide whether the generated validators and authority modules are checked in behind a freshness check or built as an Nx prerequisite (guidelines 5.11.3). Prototype an in-process transport that runs one kernel.memory plan and yields observations byte-identical to the stdio transport. Analyse AsyncLocalStorage in the kernel testkit's barrier and fault controls and in the memory backend's nested-transaction detection. Recommend per-operation backend views and an explicit transaction token, or name the narrowest remaining dependency for an owner ruling."
+    acceptance:
+      mode: gherkin
+      evidence: |
+        Feature: Portable core spike
+
+          Scenario: The module map and validator decision are recorded
+            Given the spike work is complete
+            When I read ".constitution/spikes/SPK-KRT-DK001.md"
+            Then every harness module is assigned to the core or the driver with its web-standard replacements
+            And it records standalone-versus-runtime verdict agreement for every schema family the runner reads
+            And it names the generated-output strategy
+
+          Scenario: The transport and AsyncLocalStorage answers are recorded
+            Given the spike work is complete
+            When I read ".constitution/spikes/SPK-KRT-DK001.md"
+            Then it reports whether in-process observations matched stdio observations for the prototype plan
+            And it either designs AsyncLocalStorage out of each use or names the remaining dependency for a ruling
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DK002
+    title: Split the harness into a web-standard core and a Node driver
+    type: Feature
+    effort: 8
+    depends_on: [KRT-DK001]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/adapter-protocol
+        - tools/conformance/meta-conformance
+        - reports/compatibility
+    verification:
+      command: bun run verify
+      expected: "Exit 0; every certification lane in every language produces the same verdicts and certificate contents as before, apart from the harness digest, and the core entry has no node: import."
+    stop_conditions:
+      - "STOP if a kernel or framework adapter must change its imports of tools/conformance/adapter-protocol to keep working; keep that import path stable and don't improvise."
+      - "STOP if any check's verdict changes; don't improvise."
+    description: "ADR-0082 decision 2 and guidelines 5.11.1. Move plan selection, step execution, the assertion engine, observation validation, lossless encoding, integrity assertions, fault-activation and barrier rules, applicability, and certificate assembly into a portable core. That core reads authority through an injected source and talks to adapters through a transport interface. Keep file loading, process spawning and supervision, the stdio transport, storage provisioning, and the CLI in a Node driver over the same core. Replace node:crypto digests with WebCrypto, and route every other node: use in the core through the driver. Refresh the checked-in certification evidence whose harness digest changes."
+    acceptance:
+      mode: contract_test
+      evidence: "A meta-conformance test bundles the core entry for a platform-neutral target with no node: externals. Every certification lane's evidence differs from its pre-change baseline only in harness and aggregate verifier digests, and compatibility:check passes."
+    flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DK003
+    title: Run the harness on precompiled validators
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DK002]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/meta-conformance
+        - reports/compatibility
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; every lane passes on the precompiled validators, and the core performs no runtime schema compilation."
+    stop_conditions:
+      - "STOP if a plan needs a schema that is known only at run time; don't improvise."
+    description: "ADR-0082 decision 4 and guidelines 5.11.3. Generate standalone validator modules for every schema the runner validates, using the strategy the spike chose, from one generator with a freshness check or a declared Nx prerequisite. Switch the core from runtime ajv.compile to those modules. Prove in meta-conformance that the precompiled validators accept and reject the same corpus as runtime compilation, and run the core's unit tests under node --disallow-code-generation-from-strings."
+    acceptance:
+      mode: contract_test
+      evidence: "Meta-conformance asserts verdict equality between the precompiled and runtime-compiled validators over the observation, plan, protocol, and fixture corpus. The core test suite passes under --disallow-code-generation-from-strings, and a drift in a source schema fails the freshness check or rebuilds the prerequisite."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DK004
+    title: Load authority from generated modules as well as the filesystem
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DK002]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/meta-conformance
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; certificates produced from the module source and from the filesystem source carry identical authority digests."
+    stop_conditions:
+      - "STOP if a canonical digest computed from module data differs from the filesystem digest for the same file; don't improvise."
+    description: "ADR-0082 decision 3. Generate modules that export the kernel authority packet, plans, operation catalog, profiles, negative-control manifest, identity recipes, encoding schema, and fixtures with their canonical digests, from the one generator in guidelines 5.11.3. Give the core an authority source backed by those modules beside the Node driver's filesystem source. Prove in meta-conformance that both sources yield identical digests and identical plan selection for the kernel port."
+    acceptance:
+      mode: contract_test
+      evidence: "Meta-conformance asserts digest and selection equality between the module and filesystem authority sources for every kernel profile. A changed spec file fails the generator's freshness check."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned

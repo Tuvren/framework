@@ -1,0 +1,270 @@
+id: DL
+name: Published, runtime-portable backend testkit
+kind: product
+capabilities: [CAP-036, CAP-038, CAP-039]
+depends_on: [DJ, DK]
+priority: 12
+scope:
+  paths:
+    - typescript/kernel/testkit
+    - typescript/kernel/conformance-adapter
+    - typescript/kernel/runtime
+    - typescript/kernel/protocol
+    - typescript/kernel/backends/memory
+    - typescript/kernel/backends/shared
+    - typescript/kernel/backends/sqlite
+    - typescript/kernel/backends/postgres
+    - typescript/kernel/certification
+    - typescript/kernel/certification-sqlite
+    - typescript/kernel/certification-postgres
+    - typescript/runtime/package.json
+    - typescript/sdk/tsconfig.typecheck.json
+    - typescript/providers/certification/tsconfig.typecheck.json
+    - typescript/providers/bridge-ai-sdk/tsconfig.typecheck.json
+    - tsconfig.base.json
+    - spec/conformance/kernel
+    - spec/kernel/authority-packet.json
+    - tools/conformance/harness
+    - tools/conformance/plan-compiler
+    - tools/conformance/certification
+    - reports/compatibility
+    - docs/guides/add-a-kernel-backend.md
+    - package.json
+    - bun.lock
+    - ".changeset/kernel-dl-published-backend-testkit.md"
+  out_of_scope:
+    - rust
+    - go
+    - python
+    - dart
+    - typescript/runtime/src
+    - spec/conformance/engine
+  tech_spec_patchable:
+    - ".constitution/tech-spec/adrs/ADR-0082-published-runtime-portable-backend-testkit.md"
+    - ".constitution/tech-spec/contracts/backend-testkit.meta.yaml"
+estimated_diff_lines: 15000
+estimate_source: planned
+tickets:
+  - id: KRT-DL001
+    title: Extract a transport-neutral kernel binding over a host-supplied substrate
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - typescript/kernel/conformance-adapter
+        - typescript/kernel/testkit
+        - tools/conformance/harness
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the memory, SQLite, and PostgreSQL kernel lanes certify through the stdio host wrapping the extracted binding, with unchanged verdicts, and an in-process run of kernel.memory gives the same verdicts."
+    stop_conditions:
+      - "STOP if the binding has to see a plan, fixture, or expected value to drive a backend; don't improvise."
+    description: "ADR-0082 decisions 5 and 6. Extract the TypeScript kernel binding from the stdio host so it implements the adapter-protocol methods over a host-supplied substrate. The host supplies the implementation identity, durability, provision, open with the scope and clock options the binding passes, close, release, optional concurrent attachment, and an optional process boundary. Provide the in-process transport, whose observations still round-trip through the ADR-0078 encoding. Keep the stdio host as a thin wrapper over the same binding. Express the memory, SQLite, and PostgreSQL backends as substrates."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert identical verdicts and observation digests for kernel.memory over the stdio and in-process transports. Assert that the binding receives only SPI-level inputs. The durable lanes still certify kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend as before."
+    flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL002
+    title: Replace Node-specific APIs on the testkit's kernel import path
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DL001]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/runtime
+        - typescript/kernel/protocol
+        - typescript/kernel/backends/memory
+        - typescript/kernel/backends/shared
+        - ".changeset/kernel-dl-published-backend-testkit.md"
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; no node: import remains in the testkit core entry, kernel-protocol, kernel-runtime, backend-shared, or backend-memory, and every kernel lane passes."
+    stop_conditions:
+      - "STOP if SPK-KRT-DK001 named an AsyncLocalStorage residual that has no owner ruling; don't improvise."
+    description: "ADR-0082 decision 13 and guidelines 5.11.2. Replace node:crypto randomUUID in kernel-runtime with crypto.randomUUID, node:process hrtime in backend-shared with performance.now, and node:timers/promises and node:crypto in the testkit with web-standard equivalents. Remove AsyncLocalStorage from the testkit's barrier and fault controls and from the memory backend's nested-transaction detection, using the design the spike recorded. Add a patch changeset for the affected public packages."
+    acceptance:
+      mode: contract_test
+      evidence: "A static check bundles each listed package entry for a platform-neutral target with no node: externals. Kernel lanes, barrier races, and fault-activation checks pass unchanged, and nested-transaction rejection is still observed."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL003
+    title: Audit the legacy backend suites and add the SPI plan family
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DL001]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - spec/conformance/kernel
+        - spec/kernel/authority-packet.json
+        - tools/conformance/plan-compiler
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the kernel.backend-spi checks and their mutants pass the negative-control gate on memory, SQLite, and PostgreSQL."
+    stop_conditions:
+      - "STOP if an SPI obligation cannot be expressed through catalogued operations and closed observation schemas; don't improvise."
+    description: "ADR-0082 decision 9 and guidelines 5.10.6. Write the claimId obligation map for every assertion in registerBackendConformanceSuite, registerBackendInvariantSuite, and registerBackendRecoverySuite. Each assertion maps to an existing claim, a new kernel syscall check, a new kernel.backend-spi check observable only at the SPI (such as defensive cloning or nested-transaction rejection), or a deletion with a reason. Catalogue the SPI operations, add the plan family with its mutants to negative-controls.json, and certify the three first-party backends on it."
+    acceptance:
+      mode: contract_test
+      evidence: "The obligation map accounts for every legacy assertion. Every new claimId has a designated detecting mutant that the control run kills, and the three backends pass the family."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL004
+    title: Add the persisted-field round-trip plan family
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DL003]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - spec/conformance/kernel
+        - spec/kernel/authority-packet.json
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the round-trip family and its field-dropping mutants pass the control gate on memory, SQLite, and PostgreSQL."
+    stop_conditions:
+      - "STOP if a stored field has no catalogued read-back path; don't improvise."
+    description: "ADR-0082 decision 9. For every stored record kind, write values covering every field, with each optional field both present and absent. Read them back on the same instance and, under kernel.persistent-reopen, after reopen. Compare against plan literals, and compare opaque objects, including large objects and chunked ordered paths, by digest. Add mutants that drop an optional field, truncate a large object, and reorder chunks."
+    acceptance:
+      mode: contract_test
+      evidence: "Every stored record field appears in at least one round-trip assertion. Each field-dropping or truncating mutant is killed, and the three backends pass."
+    flows: [flow-authority-packet-driven-conformance, flow-crash-mid-checkpoint-recovery]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL005
+    title: Retire the self-asserting backend suites
+    type: Chore
+    effort: 2
+    depends_on: [KRT-DL003, KRT-DL004]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/backends/memory
+        - typescript/kernel/backends/sqlite
+        - typescript/kernel/backends/postgres
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; no register*Suite export and no node:assert use remains in the testkit, and the backends' package tests keep only behavior the plans don't reach."
+    stop_conditions:
+      - "STOP if a legacy assertion has no entry in the obligation map; don't improvise."
+    description: "ADR-0082 decision 9 and guidelines 5.10.6. Delete registerBackendConformanceSuite, registerBackendInvariantSuite, and registerBackendRecoverySuite, their node:assert uses, and their registrations in the memory, SQLite, and PostgreSQL test files, citing the obligation map for each."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that the testkit exports none of the three suites, that no node:assert import remains, and that every deleted assertion is cited in the obligation map."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL006
+    title: Publish @tuvren/backend-testkit with certify, registration, and applicability
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DL002, KRT-DL005]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/backends/memory
+        - typescript/kernel/backends/sqlite
+        - typescript/kernel/backends/postgres
+        - typescript/kernel/certification
+        - typescript/kernel/conformance-adapter
+        - typescript/runtime/package.json
+        - typescript/sdk/tsconfig.typecheck.json
+        - typescript/providers/certification/tsconfig.typecheck.json
+        - typescript/providers/bridge-ai-sdk/tsconfig.typecheck.json
+        - tsconfig.base.json
+        - package.json
+        - bun.lock
+        - ".changeset/kernel-dl-published-backend-testkit.md"
+    verification:
+      command: bun run publish:preflight
+      expected: "Exit 0; @tuvren/backend-testkit is in the publishable set with no private dependency, and its public entries resolve."
+    stop_conditions:
+      - "STOP if the package would depend on a private package; don't improvise."
+    description: "ADR-0082 decisions 1, 7, 10, 11, and 12. Rename @tuvren/kernel-testkit to the public @tuvren/backend-testkit in the fixed release group, with no shim, and update every workspace dependent and path alias. Move the benchmark helpers to a private location that adds no public surface. Expose createBackendCertification, certify, and a { describe, test } registration. Report every unclaimed or non-applicable check as not_applicable with its reason and never as a skipped test, and fail a claimed profile with a non-applicable required check. Run the negative-control set in the same runtime and link it by verifier-authority digests. Write the certificate with the host-declared implementation identity, transport kind, and boundary kind. Bundle the core, the generated authority modules, and the precompiled validators. Add a minor changeset."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the package's public entries and types and that registration produces no skipped tests. A claimed profile with an inapplicable required check fails, and a certificate contains the identity, transport, boundary, and linked control-run fields. publish:preflight and the API freeze gate accept the package."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL007
+    title: Certify the crash profile through a Node process boundary
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DL006]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/certification-sqlite
+        - typescript/kernel/certification-postgres
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; SQLite and PostgreSQL certify kernel.process-crash through the package's Node driver boundary with fault-activation receipts."
+    stop_conditions:
+      - "STOP if the Node driver entry leaks into the core entry's import graph; don't improvise."
+    description: "ADR-0082 decision 6. Ship an operating-system process boundary in the package's separate Node driver entry, using the child-process transport and the harness supervision EPIC-DF built. Publish the process-boundary interface so other hosts can supply their own. Record the boundary kind in the certificate."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that kernel.process-crash certifies SQLite and PostgreSQL through the driver boundary with receipts matched to the observed forced death. A host-supplied boundary that cannot report a kill makes kernel.process-crash not_applicable with a reason."
+    flows: [flow-crash-mid-checkpoint-recovery, flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL008
+    title: Dogfood the published entry and prove the runtime floor
+    type: Chore
+    effort: 3
+    depends_on: [KRT-DL006, KRT-DL007]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/certification
+        - typescript/kernel/certification-sqlite
+        - typescript/kernel/certification-postgres
+        - reports/compatibility
+        - package.json
+        - bun.lock
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the first-party lanes certify through the public entry only, and the portability lanes pass: Node with --disallow-code-generation-from-strings, Bun, workerd with no Node compatibility flags, and the platform-neutral bundle check."
+    stop_conditions:
+      - "STOP if a first-party lane needs a deep import into the package; don't improvise."
+    description: "ADR-0082 decision 14 and guidelines 5.11.5. Switch the memory, SQLite, and PostgreSQL certification lanes to the package's public entries, each defining its substrate as an outside implementer would. Add the portability lanes to the package's test target, with workerd as a pinned test-only development dependency. The workerd lane runs kernel.memory over the memory substrate through certify() with no Node compatibility flags."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that the first-party lanes import only public entries and that each portability lane produces a passing kernel.memory certificate in its runtime. In the workerd and Node no-codegen lanes, the in-runtime control run kills every manifest mutant."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DL009
+    title: Rewrite the backend author guide around the published testkit
+    type: Chore
+    effort: 2
+    depends_on: [KRT-DL008]
+    scope:
+      in:
+        - docs/guides/add-a-kernel-backend.md
+        - typescript/kernel/testkit
+    verification:
+      command: bun run check
+      expected: "Exit 0; the guide and the package README describe the published workflow and no longer mention the fault-injection control symbol."
+    stop_conditions:
+      - "STOP if the guide would have to state behavior that no plan or ADR records; don't improvise."
+    description: "ADR-0082 consequences. Rewrite docs/guides/add-a-kernel-backend.md for implementers outside the repository. Cover the substrate, claims and profiles, applicability, running certify() or the registration, reading a certificate, the ADR-0081 failure artifacts and replay, and the in-runtime controls. Remove the instruction to implement FAULT_INJECTION_CONTROL. Add a package README with the same flow."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that the guide names the package, the substrate calls, every kernel profile, not_applicable reporting, and the certificate fields, that it has no FAULT_INJECTION_CONTROL instruction, and that the README's example compiles in the package's typecheck."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
