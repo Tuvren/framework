@@ -10,6 +10,7 @@ entries:
       - "Added ADR-0083. One codegen-free JSON Schema validator replaces runtime Ajv in the runtime, ReAct runner, MCP client, and AI SDK bridge. Schemas are checked at registration, and `defineTool`/`jsonSchema` stop accepting unchecked input. A hard iteration failure rewinds the branch head and turn head in one kernel transaction, and the root cause stays the result's error. It amends ADR-0038 and ADR-0039."
       - "Recorded the owner's 2026-10-29 rulings: the package name, the in-process trust model, retirement of the legacy suites, web-standard APIs on the kit's import path, a codegen-free validator, hiding failed iteration work, and sequencing (EPIC-DK after DF; EPIC-DL after DJ and DK, before CB)."
       - "Added guidelines sections 5.11 and 5.12, the `backend-testkit` contract sidecar with a companion section, a stack pin for `@cfworker/json-schema` 4.1.1 (assumed until EPIC-DM's spike confirms it), and the Ajv role change."
+      - "Recorded the owner's ruling that Deno is no longer a target. workerd, run with no Node compatibility flags, is the isolate portability lane for the published backend testkit and is pinned as a test-only tool. The two older guideline lines that targeted Deno now name web-standard isolates. The portability lanes stay out of `portability:check`."
       - "Downstream follow-ups: tasks/ plans EPIC-DK, EPIC-DL, and EPIC-DM against v0.49.0, and EPIC-CB gains EPIC-DL as a dependency. A Stage 2 alignment may restate BND-29's 'process' wording for in-process runs."
   - version: v0.48.1
     date: 2026-10-23
