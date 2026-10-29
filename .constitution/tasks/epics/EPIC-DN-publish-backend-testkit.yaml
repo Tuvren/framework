@@ -1,0 +1,227 @@
+id: DN
+name: Publish the runtime-portable backend testkit
+kind: product
+capabilities: [CAP-036, CAP-038]
+depends_on: [DL]
+priority: 13
+scope:
+  paths:
+    - typescript/kernel/testkit
+    - typescript/kernel/backends/memory
+    - typescript/kernel/backends/sqlite
+    - typescript/kernel/backends/postgres
+    - typescript/kernel/backends/shared
+    - typescript/kernel/certification
+    - typescript/kernel/certification-sqlite
+    - typescript/kernel/certification-postgres
+    - typescript/kernel/conformance-adapter
+    - typescript/runtime/package.json
+    - typescript/runtime/test/durable-reads.scope-isolation.test.ts
+    - typescript/runtime/tsconfig.typecheck.json
+    - typescript/runners/react/tsconfig.typecheck.json
+    - typescript/sdk/tsconfig.typecheck.json
+    - typescript/providers/certification/tsconfig.typecheck.json
+    - typescript/providers/bridge-ai-sdk/tsconfig.typecheck.json
+    - tsconfig.base.json
+    - tools/scripts/portability-check.ts
+    - tools/scripts/typecheck-source-aliases.test.ts
+    - tools/scripts/backend-testkit-consumer-smoke.ts
+    - tools/conformance/harness
+    - tools/conformance/certification
+    - tools/conformance/meta-conformance
+    - tools/conformance/adapter-protocol
+    - tools/schemas/certification-evidence.schema.json
+    - reports/compatibility
+    - docs/guides/add-a-kernel-backend.md
+    - ".changeset/conformance-handle-barriers.md"
+    - ".changeset/kernel-dn-publish-backend-testkit.md"
+    - package.json
+    - bun.lock
+  out_of_scope:
+    - rust
+    - go
+    - python
+    - dart
+    - spec/conformance/engine
+    - typescript/runtime/src
+  tech_spec_patchable:
+    - ".constitution/tech-spec/adrs/ADR-0082-published-runtime-portable-backend-testkit.md"
+    - ".constitution/tech-spec/contracts/backend-testkit.meta.yaml"
+estimated_diff_lines: 12000
+estimate_source: planned
+tickets:
+  - id: KRT-DN001
+    title: Rename the kernel testkit to @tuvren/backend-testkit and make it publishable
+    type: Chore
+    effort: 3
+    depends_on: []
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/backends/memory
+        - typescript/kernel/backends/sqlite
+        - typescript/kernel/backends/postgres
+        - typescript/kernel/backends/shared
+        - typescript/kernel/certification
+        - typescript/kernel/conformance-adapter
+        - typescript/runtime/package.json
+        - typescript/runtime/test/durable-reads.scope-isolation.test.ts
+        - typescript/runtime/tsconfig.typecheck.json
+        - typescript/runners/react/tsconfig.typecheck.json
+        - typescript/sdk/tsconfig.typecheck.json
+        - typescript/providers/certification/tsconfig.typecheck.json
+        - typescript/providers/bridge-ai-sdk/tsconfig.typecheck.json
+        - tsconfig.base.json
+        - tools/scripts/portability-check.ts
+        - tools/scripts/typecheck-source-aliases.test.ts
+        - ".changeset/conformance-handle-barriers.md"
+        - ".changeset/kernel-dn-publish-backend-testkit.md"
+        - package.json
+        - bun.lock
+    verification:
+      command: bun run publish:preflight
+      expected: "Exit 0; the package is publishable with public dependencies."
+    stop_conditions:
+      - "STOP if the package would depend on a private package; don't improvise."
+    description: "ADR-0082 decision 1. Rename @tuvren/kernel-testkit to @tuvren/backend-testkit, keeping the Nx project name kernel-testkit. Update every workspace dependent, path alias, and hard-coded name. Rewrite the still-pending changeset that names the old package. Move benchmark helpers to @tuvren/backend-shared as @experimental exports beside the phase observer. Make the package public in the fixed group with publication fields like the other public packages, and add a minor changeset."
+    acceptance:
+      mode: contract_test
+      evidence: "publish:preflight lists the package with only public dependencies, and no reference to @tuvren/kernel-testkit remains outside history (CHANGELOGs, completed epics, evidence, reports)."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DN002
+    title: Add certify, runner registration, applicability, and the certificate fields
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DN001]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - tools/conformance/harness
+        - tools/conformance/certification
+        - tools/conformance/adapter-protocol
+        - tools/schemas/certification-evidence.schema.json
+        - reports/compatibility
+        - ".changeset/kernel-dn-publish-backend-testkit.md"
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; registration, applicability, and certificate checks pass."
+    description: "ADR-0082 decisions 7, 11, and 12. Expose createBackendCertification, certify, and a { describe, test } registration. Inventory values are applicable, not_applicable with a reason, and unsupported with a reason; a claimed profile with a not_applicable required check fails. The certificate records the host-declared implementation identity, transport, processBoundary, and the digest of the binding's generated adapter manifest. Update the certification-evidence schema and the adapter protocol and manifest schemas for an in-process transport and host storage. Bundle the core, generated authority modules, and precompiled validators."
+    acceptance:
+      mode: contract_test
+      evidence: "Registration is proven with bun:test and node:test, with one test per applicable check and no skipped tests. The inventory test fails a filtered or unclaimable run, and a certificate with the new fields validates against the updated schema."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DN003
+    title: Run the negative controls in the backend's own runtime
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DN002]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - tools/conformance/meta-conformance
+        - tools/conformance/harness
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the in-process control gate passes."
+    description: "ADR-0082 decision 10. certify() runs the control set in the same runtime through the core's control runner and links the passing control run by verifier-authority digests. Release CI coverage is the existing verify gate, whose conformance lane runs the control gate, so no workflow changes are needed."
+    acceptance:
+      mode: contract_test
+      evidence: "A certify() run whose control run is missing or fails is uncertified, and an in-process control run kills every manifest mutant."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DN004
+    title: Certify the crash profile through a Node process boundary
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DN002]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/certification-sqlite
+        - typescript/kernel/certification-postgres
+        - reports/compatibility
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; SQLite and PostgreSQL certify kernel.process-crash through the package's Node driver boundary with fault-activation receipts."
+    stop_conditions:
+      - "STOP if the Node driver entry leaks into the core entry's import graph; don't improvise."
+    description: "ADR-0082 decision 6. Ship an operating-system process boundary in the package's separate Node driver entry, using the child-process transport and the harness process supervision. Publish the process-boundary interface so other hosts can supply their own. Record the boundary kind in the certificate."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that kernel.process-crash certifies SQLite and PostgreSQL through the driver boundary with receipts matched to the observed forced death. A host-supplied boundary that cannot report a kill makes kernel.process-crash not_applicable with a reason."
+    flows: [flow-crash-mid-checkpoint-recovery, flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DN005
+    title: Dogfood the published entry and prove the runtime floor
+    type: Chore
+    effort: 3
+    depends_on: [KRT-DN003, KRT-DN004]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/certification
+        - typescript/kernel/certification-sqlite
+        - typescript/kernel/certification-postgres
+        - reports/compatibility
+        - package.json
+        - bun.lock
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the first-party lanes certify through the public entry only, and the portability lanes pass: Node with --disallow-code-generation-from-strings, Bun, workerd with the disallow_eval_during_startup compatibility flag and no Node compatibility flags, and the platform-neutral bundle check."
+    stop_conditions:
+      - "STOP if a first-party lane needs a deep import into the package; don't improvise."
+    description: "ADR-0082 decision 14 and guidelines 5.11.5. Switch the memory, SQLite, and PostgreSQL certification lanes to the package's public entries, each defining its substrate as an outside implementer would. Add the portability lanes to the package's test target, with workerd as a pinned test-only development dependency. The workerd lane runs kernel.memory over the memory substrate through certify() with the disallow_eval_during_startup compatibility flag and no Node compatibility flags."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that the first-party lanes import only public entries and that each portability lane produces a passing kernel.memory certificate in its runtime. In the workerd and Node no-codegen lanes, the in-runtime control run kills every manifest mutant."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DN006
+    title: Prove the packed package works outside the workspace
+    type: Chore
+    effort: 2
+    depends_on: [KRT-DN005]
+    scope:
+      in:
+        - tools/scripts/backend-testkit-consumer-smoke.ts
+        - typescript/kernel/testkit
+    verification:
+      command: bun run check
+      expected: "Exit 0; the packed consumer smoke test passes."
+    description: "Write the smoke script behind the backend-testkit-packed-consumer live-verification recipe. It packs @tuvren/backend-testkit and its public @tuvren/* dependencies, installs the tarballs in a scratch consumer outside the workspace with no workspace links, runs certify() against the memory backend, prints backend-testkit packed consumer certified kernel.memory, and removes the scratch directory."
+    acceptance:
+      mode: live_probe
+      recipe: backend-testkit-packed-consumer
+      evidence: "A run of the recipe from a fresh checkout prints backend-testkit packed consumer certified kernel.memory, and the scratch consumer has no workspace links."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DN007
+    title: Rewrite the backend author guide around the published testkit
+    type: Chore
+    effort: 2
+    depends_on: [KRT-DN006]
+    scope:
+      in:
+        - docs/guides/add-a-kernel-backend.md
+        - typescript/kernel/testkit
+    verification:
+      command: bun run check
+      expected: "Exit 0; the guide and the package README describe the published workflow and no longer mention the fault-injection control symbol."
+    stop_conditions:
+      - "STOP if the guide would have to state behavior that no plan or ADR records; don't improvise."
+    description: "ADR-0082 consequences. Rewrite docs/guides/add-a-kernel-backend.md for implementers outside the repository. Cover the substrate, claims and profiles, applicability, running certify() or the registration, reading a certificate, the ADR-0081 failure artifacts and replay, and the in-runtime controls. Remove the instruction to implement FAULT_INJECTION_CONTROL. Add a package README with the same flow."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that the guide names the package, the substrate calls, every kernel profile, not_applicable reporting, and the certificate fields, that it has no FAULT_INJECTION_CONTROL instruction, and that the README's example compiles in the package's typecheck."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned

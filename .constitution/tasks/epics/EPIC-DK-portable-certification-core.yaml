@@ -7,6 +7,10 @@ priority: 11
 scope:
   paths:
     - tools/conformance/harness
+    - tools/conformance/plan-compiler
+    - tools/conformance/certification
+    - tools/scripts/lib/conformance-contract.ts
+    - tools/scripts/lib/verification-logs.ts
     - tools/conformance/adapter-protocol
     - tools/conformance/meta-conformance
     - reports/compatibility
@@ -18,11 +22,9 @@ scope:
     - go
     - python
     - dart
-    - tools/conformance/plan-compiler
-    - tools/conformance/certification
   tech_spec_patchable:
     - ".constitution/tech-spec/adrs/ADR-0082-published-runtime-portable-backend-testkit.md"
-estimated_diff_lines: 9000
+estimated_diff_lines: 14000
 estimate_source: planned
 tickets:
   - id: KRT-DK001
@@ -35,10 +37,11 @@ tickets:
       in: [".constitution/spikes/SPK-KRT-DK001.md"]
     verification:
       command: bun run check
-      expected: "Exit 0; the spike report exists and no source changed."
+      expected: "Exit 0; the spike report's Recommendation and Downstream impact sections are filled and no source changed."
     stop_conditions:
+      - "STOP if the spike chooses built generated output and wiring the prerequisite needs certification project.json files outside this epic's scope; record the choice for a scope amendment and don't improvise."
       - "STOP if Ajv standalone output cannot reproduce the runtime-compiled verdicts for a schema the runner reads; report it for a Stage 3 ruling and don't improvise."
-    description: "ADR-0082 decisions 2 to 5 and 13. Map every module of tools/conformance/harness to the portable core or the Node driver, with each node: import and its web-standard replacement, so the core has no node: import. Confirm that Ajv standalone ESM output, bundled with its runtime helpers, compiles every schema the runner validates. These are the encoding schema, catalog observation schemas, plan schema assertions, protocol and manifest schemas, and fixture manifests. Confirm that the output gives the same verdicts as runtime compilation on the meta-conformance corpus. Decide whether the generated validators and authority modules are checked in behind a freshness check or built as an Nx prerequisite (guidelines 5.11.3). Prototype an in-process transport that runs one kernel.memory plan and yields observations byte-identical to the stdio transport. Analyse AsyncLocalStorage in the kernel testkit's barrier and fault controls and in the memory backend's nested-transaction detection. Recommend per-operation backend views and an explicit transaction token, or name the narrowest remaining dependency for an owner ruling."
+    description: "Map the full import closure: the harness, plan-compiler/index.ts, certification-rules.ts, control-input.ts and certification-assessment.ts, certification/bundle.ts, provenance.ts and control-link.ts, tools/scripts/lib/conformance-contract.ts and verification-logs.ts, and meta-conformance/negative-controls.ts and claim-coverage.ts. Inventory typescript/kernel/testkit/src/lib/kernel-mutants-storage.ts, including AsyncLocalStorage at lines 17 and 226, and kernel-conformance-fixtures.ts, including node:fs, node:path, node:url and its module-scope Ajv compile. ADR-0082 decisions 2 to 5 and 13. Map every module of tools/conformance/harness to the portable core or the Node driver, with each node: import and its web-standard replacement, so the core has no node: import. Confirm that Ajv standalone ESM output, bundled with its runtime helpers, compiles every schema the runner validates. These are the encoding schema, catalog observation schemas, plan schema assertions, protocol and manifest schemas, and fixture manifests. Confirm that the output gives the same verdicts as runtime compilation on the meta-conformance corpus. Decide whether the generated validators and authority modules are checked in behind a freshness check or built as an Nx prerequisite (guidelines 5.11.3). Prototype an in-process transport that runs one kernel.memory plan and yields observations byte-identical to the stdio transport. Analyse AsyncLocalStorage in the kernel testkit's barrier and fault controls and in the memory backend's nested-transaction detection. Recommend per-operation backend views and an explicit transaction token, or name the narrowest remaining dependency for an owner ruling."
     acceptance:
       mode: gherkin
       evidence: |
@@ -47,7 +50,7 @@ tickets:
           Scenario: The module map and validator decision are recorded
             Given the spike work is complete
             When I read ".constitution/spikes/SPK-KRT-DK001.md"
-            Then every harness module is assigned to the core or the driver with its web-standard replacements
+            Then every module in the full import closure is assigned to the core or the driver with its web-standard replacements
             And it records standalone-versus-runtime verdict agreement for every schema family the runner reads
             And it names the generated-output strategy
 
@@ -66,6 +69,10 @@ tickets:
     depends_on: [KRT-DK001]
     scope:
       in:
+        - tools/conformance/plan-compiler
+        - tools/conformance/certification
+        - tools/scripts/lib/conformance-contract.ts
+        - tools/scripts/lib/verification-logs.ts
         - tools/conformance/harness
         - tools/conformance/adapter-protocol
         - tools/conformance/meta-conformance
@@ -76,7 +83,7 @@ tickets:
     stop_conditions:
       - "STOP if a kernel or framework adapter must change its imports of tools/conformance/adapter-protocol to keep working; keep that import path stable and don't improvise."
       - "STOP if any check's verdict changes; don't improvise."
-    description: "ADR-0082 decision 2 and guidelines 5.11.1. Move plan selection, step execution, the assertion engine, observation validation, lossless encoding, integrity assertions, fault-activation and barrier rules, applicability, and certificate assembly into a portable core. That core reads authority through an injected source and talks to adapters through a transport interface. Keep file loading, process spawning and supervision, the stdio transport, storage provisioning, and the CLI in a Node driver over the same core. Replace node:crypto digests with WebCrypto, and route every other node: use in the core through the driver. Refresh the checked-in certification evidence whose harness digest changes."
+    description: "Move plan loading and the negative-control runner's selection, activation and kill rules into the core with certificate assembly. Process spawning stays in the driver. ADR-0082 decision 2 and guidelines 5.11.1. Move plan selection, step execution, the assertion engine, observation validation, lossless encoding, integrity assertions, fault-activation and barrier rules, applicability, and certificate assembly into a portable core. That core reads authority through an injected source and talks to adapters through a transport interface. Keep filesystem access, process spawning and supervision, the stdio transport, storage provisioning, and the CLI in a Node driver over the same core. Replace node:crypto digests with WebCrypto, and route every other node: use in the core through the driver. Refresh the checked-in certification evidence whose harness digest changes."
     acceptance:
       mode: contract_test
       evidence: "A meta-conformance test bundles the core entry for a platform-neutral target with no node: externals. Every certification lane's evidence differs from its pre-change baseline only in harness and aggregate verifier digests, and compatibility:check passes."
@@ -97,6 +104,7 @@ tickets:
       command: bun run conformance
       expected: "Exit 0; every lane passes on the precompiled validators, and the core performs no runtime schema compilation."
     stop_conditions:
+      - "STOP if the spike chooses built generated output and wiring the prerequisite needs certification project.json files outside this epic's scope; record the choice for a scope amendment and don't improvise."
       - "STOP if a plan needs a schema that is known only at run time; don't improvise."
     description: "ADR-0082 decision 4 and guidelines 5.11.3. Generate standalone validator modules for every schema the runner validates, using the strategy the spike chose, from one generator with a freshness check or a declared Nx prerequisite. Switch the core from runtime ajv.compile to those modules. Prove in meta-conformance that the precompiled validators accept and reject the same corpus as runtime compilation, and run the core's unit tests under node --disallow-code-generation-from-strings."
     acceptance:
