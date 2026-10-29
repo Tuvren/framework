@@ -1,4 +1,21 @@
 entries:
+  - version: v0.51.0
+    date: 2026-10-29
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.49.0
+    added:
+      - "EPIC-DM (23 points) covers tool-admission failure integrity and codegen-free schema validation under ADR-0083. A spike confirms the validator and the single-transaction head rewind. Then: the root cause wins over later finalization errors; both heads rewind on hard failure; the runtime, ReAct runner, MCP client, and AI SDK bridge move to one codegen-free validator with registration checks; defineTool and jsonSchema stop accepting unchecked input; and the host guide documents at-least-once dispatch and deduplication on idempotencyKey, closing the documentation part of github#156. DM has no dependencies and is scope-disjoint from DF, DG, DH, and DI, so it joins wave 1."
+      - "EPIC-DK (19 points) builds the portable certification core under ADR-0082: a spike, the web-standard core and Node driver split, precompiled validators, and module-backed authority. It depends on DF and DJ."
+      - "EPIC-DL (33 points) delivers the published @tuvren/backend-testkit under ADR-0082. It covers the transport-neutral binding over a host-supplied substrate, web-standard APIs on the kernel import path, the claimId audit, the kernel.backend-spi and persisted-field round-trip plan families, and retirement of the legacy suites. It also covers certify() and registration with applicability, in-runtime negative controls, the certificate fields, the Node process boundary, dogfooded first-party lanes, the Node no-codegen, Bun, workerd, and neutral-bundle portability lanes, and the rewritten backend author guide. DL depends on DJ and DK, and it resolves github#154 once the package is published."
+    changed:
+      - "EPIC-DJ now depends on EPIC-DM. DJ owns reports/compatibility, while DM refreshes framework and provider evidence files, so the two need a dependency path; DM is small and has no other dependency."
+      - "EPIC-CB now depends on EPIC-DL, per the owner's ruling that the published testkit lands before the Biome retirement and the Bazel waves."
+      - "EPIC-CJ's layer 3 list and changeset coverage name @tuvren/backend-testkit, which is public after EPIC-DL."
+      - "Deviation from the owner's sequencing ruling: DK cannot run beside DJ. Changing the harness changes the harness digest in the checked-in certification evidence, which DJ owns, so DK depends on DJ. The two-epic split is kept because one 52-point epic would far exceed the 10,000 to 15,000-line review range."
+      - "Estimates plan against the INFO-CAL ratio of 1.28 (actual over estimate, 27 completed epics) and about 1,000 diff lines per point on the recent certification epics (EPIC-DE: 20 points, 21,497 lines). Every new ticket is assumed, because the ADR-0082 and ADR-0083 records and the backend-testkit sidecar are assumed."
   - version: v0.50.5
     date: 2026-10-28
     changed:
