@@ -42,6 +42,8 @@ Line-delimited JSON-RPC 2.0 over stdio. An error member carries an `ErrorEnvelop
 - `setClock {instance, domain, nowMs}`, where `domain` is `backend` or `worker` as the authority distinguishes them.
 - Adapter manifest adds `storage` (`none`, `sqlite-directory`, `postgres-database`), `profiles[]`, and an `executable` launched directly by the supervisor.
 
+**Planned additive change (ADR-0082):** The protocol gains an `in-process` transport value carrying the same messages, and adapter manifest `storage` gains `host` for host-supplied substrates.
+
 ## Plan extensions (pinned)
 
 Additions to `tools/schemas/conformance-plan.schema.json`:
@@ -85,6 +87,8 @@ The existing evidence fields, plus:
 - `selection[]`, with a reason for every exclusion;
 - `negativeControlRunId`: a passing control run whose `harness`, `packet`, `plans`, `catalogs`, `fixtures`, `profiles`, `controls`, and `verifierAuthority` digests equal the certificate's.
 
+**Planned additive change (ADR-0082):** `tools/schemas/certification-evidence.schema.json` allows `digests.implementation` to hold a digest or a host-declared identity. A generated adapter manifest carried by the in-process binding supplies `digests.adapterManifest`. The evidence adds `transport` (`stdio`, `in-process`, or `host`) and `processBoundary` (kind and description), distinct from the top-level `boundary` authority boundary. These forms meet ADR-0081 decision 3’s digest requirement.
+
 Each failed check adds `failure`:
 
 - the resolved arguments and raw observation;
@@ -110,8 +114,8 @@ Each failed check adds `failure`:
   - optional concurrent attachment;
   - an optional process boundary, which starts a binding behind a transport and kills it, reporting the epoch and signal.
 - **Claims.** The profile ids the author claims from `spec/conformance/kernel/profiles.json`.
-- **Inventory.** Every selected check with `applicable` or `not_applicable` and a reason. A claimed profile with a non-applicable required check fails.
-- **Certificate.** The ADR-0081 evidence bundle, recording the host-declared implementation identity, the transport kind (`in-process`, `stdio`, or `host`), the boundary kind for `kernel.process-crash`, and the id of the in-runtime negative-control run, which carries matching verifier-authority digests.
+- **Inventory.** Every selected check with `applicable`, `not_applicable` with a reason, or `unsupported` with a reason for a fault point the seam cannot reach. Profiles list only fault points the SPI seam can reach, so `unsupported` never fails a claimed profile; a claimed profile with a `not_applicable` required check fails.
+- **Certificate.** The ADR-0081 evidence bundle, recording the host-declared implementation identity, the `transport` and `processBoundary` fields, and the id of the in-runtime negative-control run, which carries matching verifier-authority digests.
 
 ## Invariants
 
