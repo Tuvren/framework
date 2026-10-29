@@ -8,14 +8,15 @@ entries:
       tech-spec: v0.49.0
     added:
       - "EPIC-DM plans 23 points and 8,000 lines for tool-admission failure integrity and codegen-free validation. Its estimate is calibrated on runtime epics CR (28 points, 4,874 lines) and CS (30 points, 6,776 lines), plus a framework evidence refresh. It delivers the host-guide follow-up promised in github#156's closing comment."
-      - "EPIC-DK plans 19 points and 14,000 lines for the portable certification core."
-      - "EPIC-DL plans 20 points and 15,000 lines for the backend testkit binding and plan families."
-      - "EPIC-DN plans 21 points and 12,000 lines for publication of @tuvren/backend-testkit and resolves github#154 once the package is published."
+      - "EPIC-DK plans 19 points and 14,000 lines for the portable certification core. The evidence changes are harness-digest lines only, and most of the diff is moved code counted twice."
+      - "EPIC-DL plans 20 points and 17,000 lines for binding moves, two new plan families with fixtures, and evidence refresh for three backends. This is slightly above the review range; the step-0 plan may move KRT-DL003 to KRT-DL005 into their own epic if it measures the size larger."
+      - "EPIC-DN plans 21 points and 15,000 lines for publication of @tuvren/backend-testkit: many small rename edits, new certify and registration code, and the evidence-schema refresh. It resolves github#154 once the package is published."
+      - "Estimates plan against the INFO-CAL ratio of 1.28 (actual over estimate, 27 completed epics), and every new ticket is assumed because ADR-0082, ADR-0083, and the backend-testkit sidecar are assumed."
       - "The spike stub files exist because validator TSK-006 requires them before their tickets run."
     changed:
       - "Certification epics run near 1,000 diff lines per point because checked-in evidence counts and diff_exclusions cover only lockfiles and snapshots: DB was 25,896 lines for 29 points, DC 18,563 for 18, DD 13,492 for 18, and DE 21,497 for 20. The DL and DN split follows from this calibration."
       - "DJ depends on DM because DJ owns reports/compatibility. DK depends on DF and DJ because changing the harness changes the harness digest in evidence DJ owns; this deviates from the owner's original expectation that DK run beside DJ. CB depends on DN, and CJ names the renamed package."
-      - "The durable-lifecycle branch replaced the planned backend hooks with a testkit transaction seam (ef893e1), so EPIC-DF is not re-planned here and its file remains with its in-flight lead."
+      - "The durable-lifecycle branch replaced the planned backend hooks with the testkit transaction seam in typescript/kernel/testkit/src/lib/commit-fault-seam.ts and typescript/kernel/testkit/src/lib/durable-fault-control.ts, as recorded in the KRT-DF003 closeout (ef893e1 at the time of writing), so EPIC-DF is not re-planned here and its file remains with its in-flight lead."
       - "Wave-1 certification epics also regenerate the compatibility matrix; whichever epic merges later rebases and regenerates the matrix and its evidence with the project's evidence refresh rather than hand-merging."
   - version: v0.50.5
     date: 2026-10-28

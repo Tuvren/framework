@@ -36,7 +36,7 @@ scope:
   tech_spec_patchable:
     - ".constitution/tech-spec/adrs/ADR-0082-published-runtime-portable-backend-testkit.md"
     - ".constitution/tech-spec/contracts/backend-testkit.meta.yaml"
-estimated_diff_lines: 15000
+estimated_diff_lines: 17000
 estimate_source: planned
 tickets:
   - id: KRT-DL001
@@ -49,6 +49,7 @@ tickets:
         - typescript/kernel/conformance-adapter
         - typescript/kernel/testkit
         - tools/conformance/harness
+        - tools/conformance/adapter-protocol
         - reports/compatibility
     verification:
       command: bun run verify:kernel
@@ -56,7 +57,7 @@ tickets:
     stop_conditions:
       - "STOP if the merged durable-lifecycle work still exposes fault or barrier hooks on publicly constructed backends; don't improvise."
       - "STOP if the binding has to see a plan, fixture, or expected value to drive a backend; don't improvise."
-    description: "Inject faults through the testkit transaction seam landed by the durable-lifecycle branch (commit ef893e1), whose closeout says \"Commit-phase fault hooks exist only in the testkit\". ADR-0082 decisions 5 and 6. Extract the TypeScript kernel binding from the stdio host so it implements the adapter-protocol methods over a host-supplied substrate. The host supplies the implementation identity, durability, provision, open with the scope and clock options the binding passes, close, release, optional concurrent attachment, and an optional process boundary. Provide the in-process transport, whose observations still round-trip through the ADR-0078 encoding. Keep the stdio host as a thin wrapper over the same binding. Express the memory, SQLite, and PostgreSQL backends as substrates."
+    description: "Inject faults through the testkit transaction seam in typescript/kernel/testkit/src/lib/commit-fault-seam.ts and typescript/kernel/testkit/src/lib/durable-fault-control.ts; the KRT-DF003 closeout says \"Commit-phase fault hooks exist only in the testkit\" (ef893e1 at the time of writing). ADR-0082 decisions 5 and 6. Extract the TypeScript kernel binding from the stdio host so it implements the adapter-protocol methods over a host-supplied substrate. The host supplies the implementation identity, durability, provision, open with the scope and clock options the binding passes, close, release, optional concurrent attachment, and an optional process boundary. Provide the in-process transport, whose observations still round-trip through the ADR-0078 encoding. Keep the stdio host as a thin wrapper over the same binding. Express the memory, SQLite, and PostgreSQL backends as substrates."
     acceptance:
       mode: contract_test
       evidence: "Assert identical verdicts and observation digests for kernel.memory over the stdio and in-process transports. Assert that the binding receives only SPI-level inputs. The durable lanes still certify kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend as before."
@@ -99,6 +100,7 @@ tickets:
         - typescript/kernel/conformance-adapter
         - spec/conformance/kernel
         - spec/kernel/authority-packet.json
+        - tools/conformance/meta-conformance
         - tools/conformance/plan-compiler
         - reports/compatibility
     verification:
@@ -124,6 +126,7 @@ tickets:
         - typescript/kernel/conformance-adapter
         - spec/conformance/kernel
         - spec/kernel/authority-packet.json
+        - tools/conformance/meta-conformance
         - reports/compatibility
     verification:
       command: bun run verify:kernel

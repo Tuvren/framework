@@ -31,6 +31,8 @@ scope:
     - tools/conformance/meta-conformance
     - tools/conformance/adapter-protocol
     - tools/schemas/certification-evidence.schema.json
+    - tools/scripts/conformance/certification-schema-examples.ts
+    - tools/scripts/conformance/certification-schemas.test.ts
     - reports/compatibility
     - docs/guides/add-a-kernel-backend.md
     - ".changeset/conformance-handle-barriers.md"
@@ -47,7 +49,7 @@ scope:
   tech_spec_patchable:
     - ".constitution/tech-spec/adrs/ADR-0082-published-runtime-portable-backend-testkit.md"
     - ".constitution/tech-spec/contracts/backend-testkit.meta.yaml"
-estimated_diff_lines: 12000
+estimated_diff_lines: 15000
 estimate_source: planned
 tickets:
   - id: KRT-DN001
@@ -74,6 +76,7 @@ tickets:
         - tsconfig.base.json
         - tools/scripts/portability-check.ts
         - tools/scripts/typecheck-source-aliases.test.ts
+        - docs/guides/add-a-kernel-backend.md
         - ".changeset/conformance-handle-barriers.md"
         - ".changeset/kernel-dn-publish-backend-testkit.md"
         - package.json
@@ -83,10 +86,10 @@ tickets:
       expected: "Exit 0; the package is publishable with public dependencies."
     stop_conditions:
       - "STOP if the package would depend on a private package; don't improvise."
-    description: "ADR-0082 decision 1. Rename @tuvren/kernel-testkit to @tuvren/backend-testkit, keeping the Nx project name kernel-testkit. Update every workspace dependent, path alias, and hard-coded name. Rewrite the still-pending changeset that names the old package. Move benchmark helpers to @tuvren/backend-shared as @experimental exports beside the phase observer. Make the package public in the fixed group with publication fields like the other public packages, and add a minor changeset."
+    description: "ADR-0082 decision 1. Rename @tuvren/kernel-testkit to @tuvren/backend-testkit, keeping the Nx project name kernel-testkit. Update every workspace dependent, path alias, and hard-coded name. Rewrite the still-pending changeset that names the old package. Fix the package name in docs/guides/add-a-kernel-backend.md; KRT-DN007 rewrites the guide. Move the benchmark helpers to a separate @tuvren/backend-shared/bench subpath entry as @experimental exports, which neither the package's main entry nor the testkit core imports, and change readSampleCountFromEnv to readSampleCount(value) so callers pass the environment value. Make the package public in the fixed group with publication fields like the other public packages, and add a minor changeset."
     acceptance:
       mode: contract_test
-      evidence: "publish:preflight lists the package with only public dependencies, and no reference to @tuvren/kernel-testkit remains outside history (CHANGELOGs, completed epics, evidence, reports)."
+      evidence: "publish:preflight lists the package with only public dependencies, and no reference to @tuvren/kernel-testkit remains outside CHANGELOG files and everything under .constitution/."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -102,6 +105,8 @@ tickets:
         - tools/conformance/certification
         - tools/conformance/adapter-protocol
         - tools/schemas/certification-evidence.schema.json
+        - tools/scripts/conformance/certification-schema-examples.ts
+        - tools/scripts/conformance/certification-schemas.test.ts
         - reports/compatibility
         - ".changeset/kernel-dn-publish-backend-testkit.md"
     verification:
@@ -110,7 +115,7 @@ tickets:
     description: "ADR-0082 decisions 7, 11, and 12. Expose createBackendCertification, certify, and a { describe, test } registration. Inventory values are applicable, not_applicable with a reason, and unsupported with a reason; a claimed profile with a not_applicable required check fails. The certificate records the host-declared implementation identity, transport, processBoundary, and the digest of the binding's generated adapter manifest. Update the certification-evidence schema and the adapter protocol and manifest schemas for an in-process transport and host storage. Bundle the core, generated authority modules, and precompiled validators."
     acceptance:
       mode: contract_test
-      evidence: "Registration is proven with bun:test and node:test, with one test per applicable check and no skipped tests. The inventory test fails a filtered or unclaimable run, and a certificate with the new fields validates against the updated schema."
+      evidence: "Registration is proven with bun:test and node:test, with one test per applicable check and no skipped tests. The inventory test fails a filtered or unclaimable run; a claimed profile with a not_applicable required check fails certify(), and an unsupported fault point never fails a claimed profile. Assert that the certificate carries the declared implementation identity, transport, processBoundary when a boundary is used, the generated adapter-manifest digest, and the linked control-run id, and that the pinned evidence example validates against the updated schema."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -195,7 +200,7 @@ tickets:
         - typescript/kernel/testkit
     verification:
       command: bun run check
-      expected: "Exit 0; the packed consumer smoke test passes."
+      expected: "Exit 0; the smoke script typechecks, lints, and passes its unit test; the recipe run is the epic's live probe."
     description: "Write the smoke script behind the backend-testkit-packed-consumer live-verification recipe. It packs @tuvren/backend-testkit and its public @tuvren/* dependencies, installs the tarballs in a scratch consumer outside the workspace with no workspace links, runs certify() against the memory backend, prints backend-testkit packed consumer certified kernel.memory, and removes the scratch directory."
     acceptance:
       mode: live_probe
