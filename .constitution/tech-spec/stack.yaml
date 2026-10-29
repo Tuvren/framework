@@ -58,18 +58,18 @@ bill_of_materials:
     role: library
     version: "4.1.1"
     ecosystem: bun
-    justification: "The single interpreting JSON Schema validator for production tool, MCP, and structured-output validation on runtimes that forbid code generation (ADR-0083). MIT licensed, ES modules only, no dependencies, and no Function or eval in the package. Its README claims drafts 4, 7, 2019-09, and 2020-12."
+    justification: "The single interpreting JSON Schema validator for production tool, MCP, and structured-output validation on runtimes that forbid code generation (ADR-0083). MIT licensed, ships ES module and CommonJS builds, no dependencies, and no Function or eval in the package. Its README claims drafts 4, 7, 2019-09, and 2020-12."
     radar: trial
     certainty: assumed
-    assumption: "The selected candidate, pending EPIC-DM's spike. The spike confirms draft coverage, $ref resolution, format behavior, and a stable details projection under node --disallow-code-generation-from-strings. Package metadata was checked with npm view on 2026-10-29 (4.1.1, last published 2025-01-31). Not yet in bun.lock."
+    assumption: "The selected candidate, pending the implementing spike. The spike confirms draft coverage, $ref resolution, format behavior, and a stable details projection under node --disallow-code-generation-from-strings. Package metadata was checked with npm view on 2026-10-29 (4.1.1, last published 2025-01-31). Not yet in bun.lock."
   - name: workerd
     role: tooling
     version: "1.20261029.1"
     ecosystem: bun
-    justification: "The isolate test runtime for the published backend testkit's portability lane (ADR-0082 decision 14). It runs the core entry with no Node compatibility flags and no package filesystem, and it refuses code generation during request handling. It is a development dependency only; no product code targets it."
+    justification: "The isolate test runtime for the published backend testkit's portability lane (ADR-0082 decision 14). It runs the core entry with no Node compatibility flags and no package filesystem, and with `disallow_eval_during_startup`, it refuses code generation at module scope and during request handling. It is a development dependency only; no product code targets it."
     radar: trial
     certainty: assumed
-    assumption: "Owner ruling 2026-10-29: workerd replaces Deno as the isolate lane. npm view workerd on 2026-10-29 reported 1.20261029.1. EPIC-DL pins the release current when it lands, and derive aligns this record. Whether the lane uses the workerd test runner directly or a thin driver is EPIC-DL's choice. Not yet in bun.lock."
+    assumption: "Owner ruling 2026-10-29: workerd replaces Deno as the isolate lane. npm view workerd on 2026-10-29 reported 1.20261029.1. The implementing change pins the release current when it lands, and derive aligns this record. Whether the lane uses the workerd test runner directly or a thin driver is the implementing change’s choice. Not yet in bun.lock."
   - name: cbor-x
     role: library
     version: "1.6.4"

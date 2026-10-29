@@ -1012,7 +1012,7 @@ export declare function toAgUiEvents(
 - The Reference Host exercises the same high-level SDK surface offered to downstream hosts, proves durable reload and orchestration behavior end to end, lists threads and reads branch messages through the host-facing durable-read surface (never directly through the kernel), and avoids any private runtime shortcuts.
 - The Reference Host supports two operating modes from one package and one command set: **interactive readline mode** (default) and **headless stdin mode** (activated by the `--headless` flag or `TUVREN_REPL_MODE=headless`). Headless mode reads stdin line-by-line, dispatches each non-empty line through `runReplInput(shell, line)` exactly as interactive mode does, and writes one JSON record per input/output pair to stdout. Headless mode exits on EOF or `.exit`. No script-file interpreter is provided; stdin is the input surface.
 - The Reference Host supports **transcript capture** via `--record <path>` and **transcript replay** via `--replay <path>`. Transcript file format is JSONL with the schema in §3.9. Replay reconstructs a fresh runtime via `createTuvren({...})` using the backend choice recorded in the transcript header, replays each recorded input, and asserts equality between recorded and live outputs for deterministic record types; non-deterministic records (real provider responses) are captured-and-reported without assertion failure.
-- The hardening line owns the extracted provider/framework testkits, release-check tooling, package export smoke tests, and explicit portability-matrix validation for clearly portable core non-native packages across Bun and Node. Historical closure detail from Epic Q and later support work may remain available for audit, but it must not substitute for current proving-host or portability-gate evidence. Deno checks remain deferred until package surfaces stabilize enough to avoid testing scaffolding churn.
+- The hardening line owns the extracted provider/framework testkits, release-check tooling, package export smoke tests, and explicit portability-matrix validation for clearly portable core non-native packages across Bun and Node. Historical closure detail from Epic Q and later support work may remain available for audit, but it must not substitute for current proving-host or portability-gate evidence. Deno is no longer a target (owner ruling, 2026-10-29); isolate coverage is the workerd lane of ADR-0082.
 
 ### 4.8 Boundary-Owned Contract and Conformance Asset Surface
 
@@ -1678,7 +1678,7 @@ export declare function createMcpToolSource(
 ): Promise<McpToolSource>;
 ```
 
-- Tool translation rules: MCP `tool.name` → `TuvrenToolDefinition.name` prefixed by `${name}${toolNameSeparator}` when `name` is supplied; MCP `tool.description` → `TuvrenToolDefinition.description`; MCP `tool.inputSchema` (JSON Schema) → wrapped via `jsonSchema<unknown>(schema, { validate })` with Ajv-based validation; MCP advertised `outputSchema` (if present) is enforced on the result before surfacing; MCP `tool.annotations` are preserved under `TuvrenToolDefinition.metadata.mcp.annotations`.
+- Tool translation rules: MCP `tool.name` → `TuvrenToolDefinition.name` prefixed by `${name}${toolNameSeparator}` when `name` is supplied; MCP `tool.description` → `TuvrenToolDefinition.description`; MCP `tool.inputSchema` (JSON Schema) → wrapped via `jsonSchema<unknown>(schema, { validate })` with validation by the codegen-free validator (ADR-0083); MCP advertised `outputSchema` (if present) is enforced on the result by the same validator before surfacing; MCP `tool.annotations` are preserved under `TuvrenToolDefinition.metadata.mcp.annotations`.
 - Both public transports (`stdio` and `http-sse`, with `http-sse` implemented by the SDK's non-deprecated Streamable HTTP transport) are exercised against the same conformance scenario set in `providers-mcp-client.json` to enforce behavioral parity (per Architecture §6 MCP transport fragmentation mitigation).
 - The MCP server-side projection (exposing Tuvren as an MCP server) is explicitly out of scope and must not be added to `@tuvren/mcp-client`.
 
@@ -1858,11 +1858,11 @@ export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 ### 4.20 Fault-Injection and Recovery Verification Seam (Test-Only)
 
 - **Style:** testkit library API (no production surface)
-- **Ownership:** `@tuvren/kernel-testkit` owns `createFaultInjectingBackend` and `FaultPlan` (§3.12).
+- **Ownership:** `@tuvren/kernel-testkit` (renamed `@tuvren/backend-testkit` and made public by ADR-0082) owns `createFaultInjectingBackend` and `FaultPlan` (§3.12).
 - **Compatibility Strategy:** §2.1 recovery verification compatibility. Testkit-only; not part of any public-runtime contract.
 - **Error model:** Injected checkpoint-commit faults surface as `TuvrenPersistenceError`, the same error family the runtime already raises on real persistence failure, so recovery code under test cannot tell an injected persistence fault from a real one. The seam does not claim a separate recovery-operation injection mode.
 
-- `createFaultInjectingBackend(inner, plan)` wraps a real backend and interrupts `transact` at the `FaultPlan.point` relative to the durable commit, optionally racing a concurrent writer (§3.12).
+- The hook text in §3.12 describes master before this change. For TypeScript `RuntimeBackend` implementations, ADR-0082 replaces backend hooks with a testkit transaction seam that wraps `RuntimeBackend.transact`; a `before-commit` fault throws inside the backend transaction callback before COMMIT. The seam supports reachable fault and barrier points, while a commit submitted with unknown outcome is `unsupported`.
 - The seam is consumed only by the `kernel-crash-recovery` check set in `kernel-restart-recovery.json` and by recovery scenario tests; it must not be imported by `@tuvren/core`, `@tuvren/runtime`, any backend, the host-facing SDK, any runner, or the reference host.
 - Recovery invariant asserted by the plan: a recovered branch head is always a committed TurnNode; no torn or partial TurnNode is observable; staged-but-uncommitted work is fully recovered or fully absent; the runtime resumes only unfinished work or fails the run cleanly with `TuvrenRecoveryError`; and two writers racing one branch head never corrupt lineage (one wins; the other observes a typed lineage conflict).
 
