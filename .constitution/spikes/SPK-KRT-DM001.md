@@ -8,13 +8,13 @@
 ## Question
 
 - **Owner:** KRT-DM001 (`.constitution/tasks/epics/EPIC-DM-tool-admission-integrity-and-codegen-free-validation.yaml`)
-- **Decision this spike must produce:** Which interpreting JSON Schema validator replaces runtime Ajv in production, and with which `details` projection? Can existing kernel syscalls return the branch head and the turn head to the stable head in one kernel transaction after `run.complete(failed)`, or is a kernel operation needed?
+- **Decision this spike must produce:** Which interpreting JSON Schema validator replaces runtime Ajv in production, and with which `details` projection, and should the wrapper live in an `@tuvren/core` subpath or be used per package with the projection typed in `@tuvren/core`? Can existing kernel syscalls return the branch head and the turn head to the stable head in one kernel transaction after `run.complete(failed)`, or is a kernel operation needed?
 
 ## Context and objective
 
 - **Triggering upstream file or section:** `.constitution/tech-spec/adrs/ADR-0083-codegen-free-schema-validation-and-clean-tool-admission-failure.md` decisions 1 and 4; `.constitution/tech-spec/stack.yaml` (`@cfworker/json-schema`)
 - **Target:**
-  - validation of drafts 7, 2019-09, and 2020-12 under `node --disallow-code-generation-from-strings`;
+  - validation of drafts 7, 2019-09, and 2020-12 under `node --disallow-code-generation-from-strings`, and the wrapper package recommendation as an ADR-0083 spec-patch milestone;
   - lineage consistency of the branch head and turn head after a hard iteration failure (kernel specification section 5.6).
 - **Archetype / surface:** the library surface of `@tuvren/runtime`, `@tuvren/runner-react`, `@tuvren/mcp-client`, `@tuvren/provider-bridge-ai-sdk`, and `@tuvren/sdk`
 

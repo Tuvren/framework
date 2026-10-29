@@ -8,13 +8,14 @@
 ## Question
 
 - **Owner:** KRT-DK001 (`.constitution/tasks/epics/EPIC-DK-portable-certification-core.yaml`)
-- **Decision this spike must produce:** How does `tools/conformance/harness` split into a web-standard core and a Node driver? Do Ajv standalone validators reproduce runtime-compiled verdicts, and are generated outputs checked in or built? Does an in-process transport yield the same observations as stdio? Can AsyncLocalStorage be designed out of the testkit controls and the memory backend?
+- **Decision this spike must produce:** How does the full import closure of `tools/conformance/harness`, including plan compilation, certification assembly, conformance-contract and verification-logs, and the negative-control runner and claim coverage, split into a web-standard core and a Node driver? Do Ajv standalone validators reproduce runtime-compiled verdicts, and are generated outputs checked in or built? Does an in-process transport yield the same observations as stdio? Can AsyncLocalStorage be designed out of the testkit controls and the memory backend?
 
 ## Context and objective
 
 - **Triggering upstream file or section:** `.constitution/tech-spec/adrs/ADR-0082-published-runtime-portable-backend-testkit.md` decisions 2 to 5 and 13; `.constitution/tech-spec/guidelines.md` section 5.11
 - **Target:**
-  - the module boundary between the harness core and the driver;
+  - the module boundary across the full import closure between the core and the driver, including plan loading, negative controls, and certificate assembly;
+  - the Node-only `kernel-mutants-storage.ts` and `kernel-conformance-fixtures.ts` testkit files;
   - validator verdict equivalence;
   - the generated-output strategy;
   - transport observation equality;
