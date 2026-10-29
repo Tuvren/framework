@@ -584,12 +584,12 @@ export interface ExecutionBoundExceededDetails {
 
 ### 3.12 Fault-Injection Plan (Test-Only)
 
-- **Purpose:** Per ADR-0045, a test-only seam interrupts persistence at controlled points so crash-recovery and concurrency invariants can be verified. This shape lives in `@tuvren/kernel-testkit` and is never reachable from production packages.
+- **Purpose:** Per ADR-0045, a test-only seam interrupts persistence at controlled points so crash-recovery and concurrency invariants can be verified. This shape lives in `@tuvren/backend-testkit` (renamed from `@tuvren/kernel-testkit`) and is never reachable from production packages.
 - **Storage Shape:** In-memory test configuration consumed by `createFaultInjectingBackend`; never persisted.
 - **Constraints / Invariants:**
   - The seam is testkit-only: no production package, backend, runtime, host, or runner may import or expose it.
   - Injection points are defined relative to the durable commit so atomicity can be probed on both atomic and non-atomic substrates.
-  - `mid-commit` injection requires backend-specific test-only commit-phase hooks; it must not be inferred from the generic `RuntimeBackend.transact` wrapper alone.
+  - For TypeScript backends, the testkit transaction seam injects fault points around `RuntimeBackend.transact` (ADR-0082 decision 8, amending ADR-0076).
   - A fault is reproducible: the same `FaultPlan` against the same scenario produces the same interruption.
   - ADR-0076 retires `mid-commit` and redefines certification fault points by storage boundary; the testkit names below remain until that migration lands.
 - **Shape:**

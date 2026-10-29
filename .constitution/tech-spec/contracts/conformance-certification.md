@@ -42,7 +42,7 @@ Line-delimited JSON-RPC 2.0 over stdio. An error member carries an `ErrorEnvelop
 - `setClock {instance, domain, nowMs}`, where `domain` is `backend` or `worker` as the authority distinguishes them.
 - Adapter manifest adds `storage` (`none`, `sqlite-directory`, `postgres-database`), `profiles[]`, and an `executable` launched directly by the supervisor.
 
-**Planned additive change (ADR-0082):** The protocol gains an `in-process` transport value carrying the same messages, and adapter manifest `storage` gains `host` for host-supplied substrates.
+**Planned additive change (ADR-0082):** The adapter manifest's `protocol.transport` gains `in-process` and `host` values carrying the same messages, and adapter manifest `storage` gains `host` for host-supplied substrates.
 
 ## Plan extensions (pinned)
 
@@ -87,7 +87,7 @@ The existing evidence fields, plus:
 - `selection[]`, with a reason for every exclusion;
 - `negativeControlRunId`: a passing control run whose `harness`, `packet`, `plans`, `catalogs`, `fixtures`, `profiles`, `controls`, and `verifierAuthority` digests equal the certificate's.
 
-**Planned additive change (ADR-0082):** `tools/schemas/certification-evidence.schema.json` allows `digests.implementation` to hold a digest or a host-declared identity. A generated adapter manifest carried by the in-process binding supplies `digests.adapterManifest`. The evidence adds `transport` (`stdio`, `in-process`, or `host`) and `processBoundary` (kind and description), distinct from the top-level `boundary` authority boundary. These forms meet ADR-0081 decision 3’s digest requirement.
+**Planned additive change (ADR-0082):** `tools/schemas/certification-evidence.schema.json` allows `digests.implementation` to hold a digest or a host-declared identity. A generated adapter manifest carried by the in-process binding supplies `digests.adapterManifest`. The evidence adds `transport` (`stdio`, `in-process`, or `host`) and `processBoundary` (kind and description), distinct from the top-level `boundary` authority boundary. For an out-of-tree backend, this amends ADR-0081 decision 3: a host-declared identity replaces the implementation-artifact digest, which weakens provenance for out-of-tree certificates, and the certificate says so.
 
 Each failed check adds `failure`:
 
