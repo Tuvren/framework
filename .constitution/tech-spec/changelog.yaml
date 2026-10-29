@@ -1,4 +1,16 @@
 entries:
+  - version: v0.49.0
+    date: 2026-10-29
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "Added ADR-0082. The published, runtime-portable `@tuvren/backend-testkit` is reshaped from the private kernel testkit. The CLI harness and the package share one portable runner core. Authority ships as generated modules, and validators are precompiled. A transport-neutral kernel binding runs over a host-supplied substrate lifecycle and process boundary. Applicability is reported as `not_applicable` with a reason and is never skipped. Faults are injected at `RuntimeBackend.transact` with no backend hooks. The self-asserting `register*Suite` suites retire into plans through a `claimId` audit, and a persisted-field round-trip family is added. Negative controls run in the backend's runtime, and the package and its kernel import path use web-standard APIs only. It amends ADR-0075 decision 5, ADR-0076 decisions 2 and 3, and ADR-0081 decision 3."
+      - "Added ADR-0083. One codegen-free JSON Schema validator replaces runtime Ajv in the runtime, ReAct runner, MCP client, and AI SDK bridge. Schemas are checked at registration, and `defineTool`/`jsonSchema` stop accepting unchecked input. A hard iteration failure rewinds the branch head and turn head in one kernel transaction, and the root cause stays the result's error. It amends ADR-0038 and ADR-0039."
+      - "Recorded the owner's 2026-10-29 rulings: the package name, the in-process trust model, retirement of the legacy suites, web-standard APIs on the kit's import path, a codegen-free validator, hiding failed iteration work, and sequencing (EPIC-DK after DF; EPIC-DL after DJ and DK, before CB)."
+      - "Added guidelines sections 5.11 and 5.12, the `backend-testkit` contract sidecar with a companion section, a stack pin for `@cfworker/json-schema` 4.1.1 (assumed until EPIC-DM's spike confirms it), and the Ajv role change."
+      - "Downstream follow-ups: tasks/ plans EPIC-DK, EPIC-DL, and EPIC-DM against v0.49.0, and EPIC-CB gains EPIC-DL as a dependency. A Stage 2 alignment may restate BND-29's 'process' wording for in-process runs."
   - version: v0.48.1
     date: 2026-10-23
     by: reconcile

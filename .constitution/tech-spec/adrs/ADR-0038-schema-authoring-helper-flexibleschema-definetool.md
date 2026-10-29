@@ -7,7 +7,7 @@ assumption: "Migrated; the decision's ruling reference was not found in the stat
 ---
 ### ADR-0038 Schema Authoring Helper: `FlexibleSchema` + `defineTool`
 
-- **Status:** accepted
+- **Status:** accepted. Amended by ADR-0083: a wrapped or bare JSON Schema with no host validator is validated by the runtime's codegen-free validator, never accepted unchecked.
 - **Context:** PRD v0.7.0 CAP-P0-040 requires a schema-agnostic tool-authoring helper that accepts Zod (v3 and v4), Standard Schema, and wrapped JSON Schema with strict TypeScript inference, while preserving the existing `CustomSchema` boundary contract for raw JSON Schema. Architecture v0.7.0 establishes the Schema Authoring Helper as a host-facing authoring boundary that normalizes authoring shapes into the boundary contract through a centralized detection routine with explicit precedence. The Vercel AI SDK's `tool()` + `FlexibleSchema` + `asSchema()` pattern is the proven precedent and aligns directly with this requirement.
 - **Decision:** Add a `defineTool({...})` helper to `@tuvren/core/tools` with the signature:
   ```ts
