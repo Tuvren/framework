@@ -47,13 +47,21 @@ bill_of_materials:
     role: library
     version: "8.18.0"
     ecosystem: bun
-    justification: JSON Schema validation at tool and contract boundaries.
+    justification: "JSON Schema validation in the conformance verifier, the testkits, and contract tooling, precompiled to standalone validators where the published backend testkit needs them (ADR-0082). ADR-0083 removes it from the production packages (runtime, ReAct runner, MCP client, AI SDK bridge) because every Ajv compile generates code."
     radar: adopt
     certainty: settled
     evidence:
       kind: repository
       ref: bun.lock
       date: 2026-09-03
+  - name: "@cfworker/json-schema"
+    role: library
+    version: "4.1.1"
+    ecosystem: bun
+    justification: "The single interpreting JSON Schema validator for production tool, MCP, and structured-output validation on runtimes that forbid code generation (ADR-0083). MIT licensed, ES modules only, no dependencies, and no Function or eval in the package. Its README claims drafts 4, 7, 2019-09, and 2020-12."
+    radar: trial
+    certainty: assumed
+    assumption: "The selected candidate, pending EPIC-DM's spike. The spike confirms draft coverage, $ref resolution, format behavior, and a stable details projection under node --disallow-code-generation-from-strings. Package metadata was checked with npm view on 2026-10-29 (4.1.1, last published 2025-01-31). Not yet in bun.lock."
   - name: cbor-x
     role: library
     version: "1.6.4"

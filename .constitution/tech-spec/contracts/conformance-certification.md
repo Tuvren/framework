@@ -97,9 +97,26 @@ Each failed check adds `failure`:
 
 `spec/conformance/kernel/identity-recipes.json`: one recipe per record type (`opaque-object`, `turn-node`, `turn-tree`, `schema`), each with `projection` (included fields and staged-result projection), `cborProfile` (map key ordering rule, integer and length encodings), and `hash` (`sha256`). Recipes are pinned to the committed vectors in `spec/conformance/kernel/fixtures/`.
 
+## Published backend testkit
+
+`@tuvren/backend-testkit` (`typescript/kernel/testkit/src/index.ts`, ADR-0082) is the public way to certify an out-of-tree `RuntimeBackend`. Its entities:
+
+- **Substrate.** The host supplies:
+  - an implementation identity (a string, recorded in evidence);
+  - a durability, either `process` or `durable`;
+  - `provision()`, which returns an opaque storage reference;
+  - `open(ref, options)`, which returns a new `RuntimeBackend`; `options` carries the scope and clock that the binding chooses;
+  - `close(backend)` and `release(ref)`;
+  - optional concurrent attachment;
+  - an optional process boundary, which starts a binding behind a transport and kills it, reporting the epoch and signal.
+- **Claims.** The profile ids the author claims from `spec/conformance/kernel/profiles.json`.
+- **Inventory.** Every selected check with `applicable` or `not_applicable` and a reason. A claimed profile with a non-applicable required check fails.
+- **Certificate.** The ADR-0081 evidence bundle, recording the host-declared implementation identity, the transport kind (`in-process`, `stdio`, or `host`), the boundary kind for `kernel.process-crash`, and the id of the in-runtime negative-control run, which carries matching verifier-authority digests.
+
 ## Invariants
 
 - No adapter computes a comparison, chooses an expectation, scripts a scenario, owns a clock, or simulates restart.
+- An in-process binding passes only SPI calls to the backend under test, never plans, fixtures, or expected values (ADR-0082).
 - Every observation is schema-validated before any assertion runs.
 - Expected values reach only the runner.
 - A certificate requires a complete run, a passing negative-control run with matching harness, plan, catalog, fixture, profile, and control digests, and proven fault activation for every claimed fault point.
