@@ -55,7 +55,7 @@ assumption: "The owner ruled the package and its name, the trust model, retireme
 
      The suites and every `node:assert` use are then deleted. A persisted-field round-trip family is added. It writes every stored record kind with each optional field both present and absent, reads them back on the same instance and after reopen, and compares opaque objects (including large objects and chunked ordered paths) by digest. Framework fields inside opaque objects, such as `admissionKey`, are covered by that byte-exact round trip.
   10. **Negative controls run where the backend runs.** The package ships the control manifest and its mutants of the reference memory backend. `certify()` runs the control set in the same runtime as the backend under test, which proves the verifier works there. The certificate links that passing control run through matching verifier-authority digests (ADR-0081 decision 3). Release CI runs the same controls.
-  11. **No dependency on a test runner.** `certify()` returns the evidence bundle without any test runner. A `{ describe, test }` registration registers one test per applicable check, plus an inventory test that fails on an unclaimable or filtered run. It works with Vitest, `bun:test`, `node:test`, and Deno's standard BDD module.
+  11. **No dependency on a test runner.** `certify()` returns the evidence bundle without any test runner. A `{ describe, test }` registration registers one test per applicable check, plus an inventory test that fails on an unclaimable or filtered run. It works with Vitest, `bun:test`, and `node:test`. An isolate test harness can call `certify()` directly.
   12. **Certificate contents.** This amends ADR-0081 decision 3. For an out-of-tree backend, the certificate records the host-declared implementation identity in place of an artifact digest the package cannot compute, together with the transport kind and, for `kernel.process-crash`, the boundary kind.
   13. **Web-standard APIs.** The package and every package on its import path (`@tuvren/kernel-protocol`, `@tuvren/kernel-runtime`, `@tuvren/backend-shared`, `@tuvren/backend-memory`) replace Node-specific APIs with web-standard ones:
       - `crypto.randomUUID` and `crypto.subtle`;
@@ -68,14 +68,17 @@ assumption: "The owner ruled the package and its name, the trust model, retireme
   14. **Dogfooding.** The memory, SQLite, and PostgreSQL certification lanes run through the package's public entry point and define their substrates exactly as an outside implementer would. Portability lanes prove the floor with four runs:
       - Node with `--disallow-code-generation-from-strings`;
       - Bun;
-      - Deno with no permissions;
+      - workerd with no Node compatibility flags, which proves the web-standard floor and code-generation refusal during request handling in an isolate with no package filesystem;
       - a static check of a platform-neutral bundle of the core entry.
+
+      workerd is a test runtime here, not a product target. Tuvren gains no workerd-specific code path, option, or example.
   15. **Sequencing.** EPIC-DK (portable certification core) depends on EPIC-DF. EPIC-DL (published testkit) depends on EPIC-DK and EPIC-DJ, so the package never carries legacy adapter-scripted composites, and EPIC-CB depends on EPIC-DL.
 - **Alternatives considered:**
   - Publish `@tuvren/kernel-testkit` as it is, as github#154 and the downstream ticket asked. Rejected by the owner: it publishes the self-asserting suites as a second oracle beside the ADR-0075 runner, and it does not load without a filesystem or with code generation disabled.
   - Keep the three suites as non-certifying diagnostics beside the certification checks. Rejected by the owner: it leaves two oracles and keeps `node:assert` in a public package.
   - Require a process boundary for every certification run. Rejected by the owner: backends on runtimes without subprocesses could never certify.
   - Document the Node-compat subset that the kernel already needs as the floor. Rejected by the owner, who directed that Node-specific APIs be replaced with web-standard ones wherever necessary.
+  - A Deno portability lane. Dropped by the owner on 2026-10-29 because Deno is winding down. workerd takes the isolate lane instead, because it has no package filesystem and refuses code generation during request handling.
   - Other names for the package: `@tuvren/kernel-testkit` made public, or `@tuvren/backend-certification`. The owner chose `@tuvren/backend-testkit`, which matches the `backend-*` package names an implementer looks for.
   - No second independent design was requested. The owner ruled each choice above in the session.
 - **Consequences:** These are assumed until observed.
