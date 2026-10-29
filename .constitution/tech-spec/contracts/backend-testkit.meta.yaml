@@ -5,4 +5,4 @@ boundaries: [BND-28, BND-29]
 companion: conformance-certification.md
 certainty: assumed
 assumption: "ADR-0082. The public @tuvren/backend-testkit surface: createBackendCertification, certify, the { describe, test } registration, the substrate and process-boundary types, and the documented test-only control exports. The package is reshaped from the private @tuvren/kernel-testkit at this path, and the core entry is web-standard only."
-settles_when: "A closeout cites the memory, SQLite, and PostgreSQL certification lanes passing through this package's public entry, plus the Node no-codegen, Bun, workerd (no Node compatibility flags), and neutral-bundle portability lanes."
+settles_when: "A closeout cites the memory, SQLite, and PostgreSQL certification lanes passing through this package's public entry, plus the Node no-codegen, Bun, workerd (no Node compatibility flags, `disallow_eval_during_startup`), and neutral-bundle portability lanes."

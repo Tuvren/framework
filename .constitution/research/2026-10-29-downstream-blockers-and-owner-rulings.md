@@ -4,9 +4,9 @@ date: "2026-10-29"
 ---
 # Downstream Blockers and Owner Rulings
 
-This is an investigation and ruling record for ADR-0082 and ADR-0083. It is not authority; authority packets and conformance plans under `spec/` remain the cross-implementation oracle. The investigation preceded these rulings, so its proposed sequencing and initial portability design are historical, not decisions.
+This is an investigation and ruling record for ADR-0082 and ADR-0083. The brief is a task brief from the downstream product's planning session, written by its owner. This record is not authority; authority packets and conformance plans under `spec/` remain the cross-implementation oracle. The investigation preceded these rulings, so its proposed sequencing and initial portability design are historical, not decisions.
 
-## 0. Fact check of the brief's "State on 2026-10-29"
+## Fact check of the brief's "State on 2026-10-29"
 
 | Brief claim | Verdict | Evidence |
 | :--- | :--- | :--- |
@@ -20,7 +20,7 @@ This is an investigation and ruling record for ADR-0082 and ADR-0083. It is not 
 | Runtime changelog entry is `ed385c0`; published dist contains `runtime_recovery_interrupted_iteration_unreadable`; issue still open | True | `typescript/runtime/CHANGELOG.md:12`; 2 hits in `@tuvren/runtime@0.3.0/dist/index.js`; #156 `OPEN` |
 | Unreleased changesets: kernel-runtime minor (canonical codes) and the memory backend's removed `midCommit` | True, but incomplete | Also present: a `@tuvren/kernel-testkit` minor (barrier control; a private package), a kernel-protocol patch, and lint-prep patches. With the fixed group, the next release is **0.4.0**. |
 | The EPIC-DF worktree holds unmerged closeout commits | True | The branch is 22 commits ahead of master, HEAD `fc51fe6` (closeout) |
-| "EPIC-DF removed the commit hook" | True **only on the unmerged branch** | `ef893e1` removes `FAULT_INJECTION_CONTROL` from SQLite and PostgreSQL. On master both backends still carry it, and `docs/guides/add-a-kernel-backend.md` §3 still tells backend authors to implement it. |
+| "EPIC-DF removed the commit hook" | True **only on the unmerged branch** | KRT-DF003 removes `FAULT_INJECTION_CONTROL` from SQLite and PostgreSQL; the testkit seam is in `typescript/kernel/testkit/src/lib/commit-fault-seam.ts` and `typescript/kernel/testkit/src/lib/durable-fault-control.ts` (`ef893e1` at the time of writing). On master both backends still carry it, and `docs/guides/add-a-kernel-backend.md` §3 still tells backend authors to implement it. |
 
 The investigation also turned up facts the brief doesn't mention:
 
@@ -35,11 +35,11 @@ The investigation also turned up facts the brief doesn't mention:
 - A public backend author has no portable, published certification path. The private self-asserting suites and the observation-only certification harness are separate evidence systems; only the latter is certification. The proposed portable runner shares authority, verdicts, plans, controls, and evidence with the CLI, while a host supplies its substrate and optional process boundary.
 - The #156 recovery checks show that call identities survive stale-run recovery, but do not force process death. Dispatch is at least once across crashes, so host tools with external effects must deduplicate on the stable `context.idempotencyKey`. The investigation identified a missing host guide and `nonRetryable` documentation.
 - Tool-admission failures can mask the first fatal error as a backend head mismatch and leave the branch unusable. Ajv compiles at runtime and fails when code generation is forbidden; the SDK plain JSON Schema helper path also accepts input unchecked. See the reproduction and causal chain below.
-- On the unmerged durable-lifecycle branch, commit `ef893e1` removes backend commit hooks and the testkit transaction seam wraps `RuntimeBackend.transact`; master still has SQLite and PostgreSQL hooks. The branch also carries lifecycle profiles absent from master.
+- On the unmerged durable-lifecycle branch, KRT-DF003 removes backend commit hooks and the testkit transaction seam wraps `RuntimeBackend.transact` (`typescript/kernel/testkit/src/lib/commit-fault-seam.ts` and `typescript/kernel/testkit/src/lib/durable-fault-control.ts`; `ef893e1` at the time of writing); master still has SQLite and PostgreSQL hooks. The branch also carries lifecycle profiles absent from master.
 
 ### Reproduction (published 0.3.0, Node v24 `--disallow-code-generation-from-strings`)
 
-The script is in `$CLAUDE_JOB_DIR/tmp/repro-ajv/repro.mjs`. It uses `createTuvren`, `createMemoryBackend()`, `createReActRunner({ providerCallMode: "generate" })`, and a scripted provider that makes one tool call to a plain-JSON-Schema tool.
+The session script used `createTuvren`, `createMemoryBackend()`, `createReActRunner({ providerCallMode: "generate" })`, and a scripted provider that makes one tool call to a plain-JSON-Schema tool. The commands and observed output are recorded from the session run; the script is not retained. The epic that fixes the bug encodes the reproduction as engine conformance checks.
 
 - **Failing run:** `status: "failed"`, and `awaitResult()` reports `TuvrenRuntimeError` `memory_backend_active_run_turn_head_mismatch`. The event stream does carry the real cause: a fatal `error` event "Code generation from strings disallowed for this context", followed by the non-fatal head-mismatch error. There is no `tool.start` and no `turn.end`.
 - **Controls:** without the flag, valid input runs the tool and invalid input yields `tool_input_validation_failed`. With the flag and a `CustomSchema`, both cases behave correctly.
@@ -63,7 +63,7 @@ The script is in `$CLAUDE_JOB_DIR/tmp/repro-ajv/repro.mjs`. It uses `createTuvre
 
 ## Reproduction commands and observed output
 
-The 392-line `repro.mjs` composes `createTuvren`, the memory backend, a ReAct runner in generate mode, a scripted provider, and a single plain-JSON-Schema tool. It can trace kernel calls, run a second turn, switch to host validation, and select missing-reference and throwing-approval cases. The following commands reproduce the recorded modes from the reproduction directory containing the published 0.3.0 packages; the original command history was not included with the output:
+The 392-line `repro.mjs` composed `createTuvren`, the memory backend, a ReAct runner in generate mode, a scripted provider, and a single plain-JSON-Schema tool. It could trace kernel calls, run a second turn, switch to host validation, and select missing-reference and throwing-approval cases. The following commands and observed output are recorded from the session run in a scratch directory containing the published 0.3.0 packages; the original command history was not included with the output. The script is not retained, and the epic that fixes the bug encodes the reproduction as engine conformance checks.
 
 ```sh
 TRACE_KERNEL=1 node --disallow-code-generation-from-strings repro.mjs plain valid
@@ -214,7 +214,7 @@ SUMMARY: {
 }
 ```
 
-## 4. Owner rulings (2026-10-29)
+## Owner rulings (2026-10-29)
 
 | Decision | Ruling |
 | :--- | :--- |
