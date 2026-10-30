@@ -458,10 +458,10 @@ closeout:
       kind: contract_shape
       paths: [typescript/runtime/src/lib/runtime-execution-handle.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
       commit: 2dc8fdf
-    - summary: "When a fatal error has no code, or a code that is not snake_case, the typed ExecutionResult reports execution_failed and the event keeps the error as published. Before, such a code made settleResult throw and awaitResult() never resolved. Framework specification section 7.1 and the TypeScript binding appendix now state the rule, and the orchestration node's initialization-failure path uses the same mapping."
+    - summary: "For error and every subsequentErrors entry, an absent or non-snake_case published code becomes execution_failed in the typed result, and each error event keeps the error as published. Before, a non-snake_case fatal code made settleResult throw and awaitResult() never resolved. Framework specification section 7.1 and the TypeScript binding appendix state the rule. One shared helper, projectionToError, applies it in the execution handle and in the orchestration node's initialization-failure path."
       kind: contract_shape
-      paths: [typescript/runtime/src/lib/runtime-execution-handle.ts, typescript/runtime/src/lib/orchestration-runtime-node.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
-      commit: 095be22
+      paths: [typescript/runtime/src/lib/runtime-core-shared.ts, typescript/runtime/src/lib/runtime-execution-handle.ts, typescript/runtime/src/lib/orchestration-runtime-node.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
+      commit: 5d48ad0
     - summary: "The API freeze gate recorded the additive optional subsequentErrors field as a minor bump (stable-signature-changed). ADR-0083 decision 5 and ADR-0069 decision 3 treat additive changes as patch, so the changeset keeps @tuvren/core at patch. Stage 3 should rule whether the gate's classification or the changeset policy wins for additive optional fields."
       kind: convention
       paths: [tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json, .changeset/runtime-dm-tool-admission-validation.md]

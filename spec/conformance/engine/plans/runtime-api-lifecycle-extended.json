@@ -26,6 +26,11 @@
           "length": 1
         },
         {
+          "field": "$.trace.run.events.12.error.code",
+          "kind": "stateField",
+          "matches": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
+        },
+        {
           "equalsPath": "$.state.trace.run.events.12.error.code",
           "field": "$.trace.run.result.tool.execution.executionResult.subsequentErrors.0.code",
           "kind": "stateField"
@@ -113,6 +118,11 @@
           "field": "$.trace.run.result.tool.execution.executionResult.subsequentErrors",
           "kind": "stateField",
           "length": 1
+        },
+        {
+          "field": "$.trace.run.events.11.error.code",
+          "kind": "stateField",
+          "matches": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
         },
         {
           "equalsPath": "$.state.trace.run.events.11.error.code",
