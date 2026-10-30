@@ -100,6 +100,18 @@ Three things to know about this shape:
 - The construction-time `provider` binds to `createTuvren`'s default agent configuration, addressed as `agent: "agent"` on the orchestration tier.
 - `await using` disposes the instance when the scope exits; on runtimes without explicit-resource-management, call the disposer manually.
 
+### Tool side effects and crash recovery
+
+Tuvren uses at-least-once dispatch for tool calls. The same logical call can be dispatched more than once.
+
+After a crash or lost lease, cold recovery resumes an interrupted tool batch from its durable assistant message without re-invoking the model. It redispatches every call without a durable result using its original `callId`, including calls marked `nonRetryable`. If recovery is interrupted, the same call can be dispatched again.
+
+Tools with external effects must deduplicate on `context.idempotencyKey`, the logical call identity derived from `(turnId, callId)`. The key is identical on every dispatch of the logical call, including the first attempt, retries, approval resumes, and recovery.
+
+If the interrupted assistant message cannot be read, for example because its payload was erased, recovery fails with `TuvrenRecoveryError` code `runtime_recovery_interrupted_iteration_unreadable`. Recovery does not re-invoke the model or mint new call identities in this case. The host decides what to do with the Turn.
+
+If no assistant tool batch was durably recorded, recovery can re-invoke the model. For the full recovery contract, see [Recovery Protocol](../KrakenFrameworkSpecification.md#49-recovery-protocol).
+
 ## 3. Stable core vs. `@experimental` surfaces (ADR-0056)
 
 The stable guarantee does not cover every export equally. The canonical experimental marker is the TSDoc **`@experimental`** release tag on an individual export — you will see it in your editor's hover docs and in generated documentation, in the same place you see the type signature.

@@ -256,6 +256,10 @@ export interface TuvrenToolDefinition {
    * When true, the framework must not retry this capability even when
    * idempotent is true. Overrides the tool-level idempotency opt-in for the
    * retry budget. BB004.
+   * After losing authority, a live owner does not retry a `nonRetryable` call,
+   * but cold recovery redispatches a missing call once per recovery attempt
+   * with its original call identity, so the tool must deduplicate on
+   * `idempotencyKey`.
    */
   nonRetryable?: boolean;
   /**
