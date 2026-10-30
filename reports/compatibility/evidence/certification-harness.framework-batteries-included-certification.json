@@ -606,12 +606,9 @@
     "schema-authoring.branch6-json-object.has-schema-symbol",
     "schema-authoring.branch6-json-object.no-validate-fn",
     "schema-authoring.branch6-json-object.passthrough-json-schema",
-    "schema-authoring.define-tool.host-validator-wins",
-    "schema-authoring.define-tool.json-schema-preserved",
     "schema-authoring.define-tool.json-schema-type",
     "schema-authoring.define-tool.name-preserved",
-    "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input",
-    "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input",
+    "schema-authoring.define-tool.validate-passthrough-success",
     "secret-isolation.runtime-api-surfaces",
     "trust-boundary.approval-non-bypassable",
     "trust-boundary.local-tool-input-invalid",
@@ -753,9 +750,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 528,
+    "totalChecks": 525,
     "applicableChecks": 12,
-    "nonApplicableChecks": 516
+    "nonApplicableChecks": 513
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

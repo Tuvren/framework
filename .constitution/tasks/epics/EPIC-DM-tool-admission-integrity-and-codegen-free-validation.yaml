@@ -322,16 +322,8 @@ tickets:
       evidence: "Schema-authoring plan checks assert from observed tool results that invalid input to a defineTool plain-JSON-Schema tool and to a jsonSchema-wrapped tool yields tool_input_validation_failed without executing, and that a host validate function still wins."
     flows: [flow-react-runner-turn-execution]
     certainty: assumed
-    status: done
-    deviations:
-      - files: [typescript/sdk/src/lib/schema-authoring.ts]
-        justification: "Executed before KRT-DM004, which OD-23 defers, per plan amendment A1. With no host validator, defineTool now hands the plain JSON Schema to the runtime, whose existing native validation path checks it exactly as it checks a plain inputSchema on a TuvrenToolDefinition. No validator wrapper exists yet, so the routing goes to that path instead of the wrapper ADR-0083 decision 1 names. When KRT-DM004 replaces the validator, these schemas follow without an SDK change."
-      - files: [spec/conformance/engine/scenarios/runtime-api-scenarios.json]
-        justification: "The three new schema-authoring checks bind the existing runtime.tool-execute operation, whose checks keep their scenario data in this file. The new scenarios add plan data only."
-      - files:
-          - reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json
-          - reports/compatibility/evidence/certification-harness.framework-rust-certification.json
-        justification: "bun run compatibility:evidence registers the renamed and new schema-authoring check ids in every framework lane's check inventory. These two files change only by those ids and their totals, and their verdicts are unchanged."
+    status: deferred
+    deferred_to: "Owner ruling OD-23, then KRT-DM004's validator wrapper. Routing the helpers through the runtime's current Ajv path before then fails their turns on runtimes that forbid code generation, and exposes them to Ajv's per-turn recompile and duplicate-$id failure (SPK-KRT-DM001; milestone review of c93937e, reverted)"
   - id: KRT-DM007
     title: Document the at-least-once tool dispatch contract for hosts
     type: Chore
@@ -358,7 +350,7 @@ tickets:
 decisions:
   - id: OD-23
     question: "@cfworker/json-schema 4.1.1, the assumed candidate, failed SPK-KRT-DM001. It accepted an invalid draft 2020-12 $dynamicRef case, accepted malformed schemas, and deferred unresolved-reference errors to validation time. Which interpreting JSON Schema validator replaces runtime Ajv?"
-    blocks: [KRT-DM004, KRT-DM005]
+    blocks: [KRT-DM004, KRT-DM005, KRT-DM006]
     options:
       - name: "@hyperjump/json-schema 1.18.0 behind a @tuvren/core/schema-validation wrapper, prepared at registration"
         pros:
@@ -384,9 +376,8 @@ decisions:
       in: EPIC-DM
     proposed_by: "EPIC-DM @ 89c0e29"
     interim:
-      assumption: "The validator choice itself waits: KRT-DM004 and KRT-DM005 are deferred. For the helpers, plain schemas built with defineTool or jsonSchema and no host validator are routed through the runtime's existing native validation path. The synchronous helper contract is unchanged and the helpers stop accepting unchecked input, while the validator behind that path waits for this ruling."
-      applied_by:
-        - KRT-DM006
+      assumption: "Everything that depends on the validator waits: KRT-DM004, KRT-DM005, and KRT-DM006 are deferred, and validation keeps its 0.3.0 behavior. A plain inputSchema on a TuvrenToolDefinition is still validated by the runtime's Ajv. defineTool and jsonSchema without a host validator still accept unchecked input. Routing those helpers onto the Ajv path now would make them fail on runtimes that forbid code generation, which ADR-0083 records the owner rejected. Two facts found in review belong to KRT-DM004's acceptance: the Ajv path recompiles a schema on every turn because each turn's registry deep-clones the tool, and Ajv's instance cache grows with every compile. A schema that carries $id also fails on its second turn in the same process with 'schema with key or id ... already exists'."
+      applied_by: []
   - id: OD-24
     question: "After an iteration fails hard, how do the branch head and the turn head return to the stable head in one kernel transaction, so failed iteration work is never observable (ADR-0083 decision 4)? SPK-KRT-DM001 found that no existing syscall does both. The kernel specification is ambiguous about who moves the turn head during a checkpoint: docs/KrakenKernelSpecification.md line 435 says the Turn head advances as TurnNodes are created, line 439 says it is updated via turn.updateHead, and section 5.5 is silent. Both the TypeScript and Rust kernels move the turn head inside the checkpoint, all four TypeScript backends enforce that an active run stays aligned with the turn head, and no kernel conformance plan observes a turn head after a checkpoint."
     blocks: [KRT-DM003]
