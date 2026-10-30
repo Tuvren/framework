@@ -8745,6 +8745,99 @@
     {
       "assertionResults": [
         {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.2.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.3.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.4.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.5.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.6.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.7.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.events.11.callId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.events.11.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.result.tool.execution",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.result.tool.execution.callCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.result.tool.execution.inputs.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.result.tool.execution.outputs.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.result.tool.execution.toolResults.0.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.host-validator-wins.requiredEvidence.trace.run.result.tool.execution.toolResults.0.output",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.host-validator-wins",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended",
+        "traceStepIds": ["run"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.define-tool.json-schema-preserved.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.json-schema-preserved.requiredEvidence.result.schemaAuthoring.defineTool.inputSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.json-schema-preserved",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "schema-authoring.define-tool.json-schema-type.1.resultField",
           "status": "pass"
         },
@@ -8781,18 +8874,142 @@
     {
       "assertionResults": [
         {
-          "assertionId": "schema-authoring.define-tool.validate-passthrough-success.1.resultField",
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.1.stateField",
           "status": "pass"
         },
         {
-          "assertionId": "schema-authoring.define-tool.validate-passthrough-success.requiredEvidence.result.schemaAuthoring.defineTool.validateSuccess",
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.2.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.3.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.4.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.5.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.6.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.7.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events.10.callId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events.10.output.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events.10.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution.callCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution.toolResults.0.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution.toolResults.0.output",
           "status": "pass"
         }
       ],
-      "checkId": "schema-authoring.define-tool.validate-passthrough-success",
+      "checkId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.runtime-api.callables-extended"
+        "planId": "tuvren.framework.runtime-api.callables-extended",
+        "traceStepIds": ["run"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.2.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.3.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.4.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.5.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.6.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.7.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events.10.callId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events.10.output.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.events.10.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution.callCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution.toolResults.0.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input.requiredEvidence.trace.run.result.tool.execution.toolResults.0.output",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended",
+        "traceStepIds": ["run"]
       },
       "status": "pass"
     },
@@ -12596,9 +12813,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 513,
-    "totalChecks": 525,
-    "applicableChecks": 513,
+    "passedChecks": 516,
+    "totalChecks": 528,
+    "applicableChecks": 516,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

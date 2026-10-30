@@ -322,7 +322,16 @@ tickets:
       evidence: "Schema-authoring plan checks assert from observed tool results that invalid input to a defineTool plain-JSON-Schema tool and to a jsonSchema-wrapped tool yields tool_input_validation_failed without executing, and that a host validate function still wins."
     flows: [flow-react-runner-turn-execution]
     certainty: assumed
-    status: planned
+    status: done
+    deviations:
+      - files: [typescript/sdk/src/lib/schema-authoring.ts]
+        justification: "Executed before KRT-DM004, which OD-23 defers, per plan amendment A1. With no host validator, defineTool now hands the plain JSON Schema to the runtime, whose existing native validation path checks it exactly as it checks a plain inputSchema on a TuvrenToolDefinition. No validator wrapper exists yet, so the routing goes to that path instead of the wrapper ADR-0083 decision 1 names. When KRT-DM004 replaces the validator, these schemas follow without an SDK change."
+      - files: [spec/conformance/engine/scenarios/runtime-api-scenarios.json]
+        justification: "The three new schema-authoring checks bind the existing runtime.tool-execute operation, whose checks keep their scenario data in this file. The new scenarios add plan data only."
+      - files:
+          - reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json
+          - reports/compatibility/evidence/certification-harness.framework-rust-certification.json
+        justification: "bun run compatibility:evidence registers the renamed and new schema-authoring check ids in every framework lane's check inventory. These two files change only by those ids and their totals, and their verdicts are unchanged."
   - id: KRT-DM007
     title: Document the at-least-once tool dispatch contract for hosts
     type: Chore
