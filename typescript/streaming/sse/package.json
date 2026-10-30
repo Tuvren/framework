@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/stream-sse",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tuvren SSE stream adapter leaf: projects Tuvren stream events onto Server-Sent Events for HTTP hosts.",
   "license": "Apache-2.0",
   "repository": {

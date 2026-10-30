@@ -1,5 +1,19 @@
 # @tuvren/kernel-typescript-certification
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [8a76b87]
+- Updated dependencies [76379fa]
+- Updated dependencies [104052b]
+- Updated dependencies [f202e30]
+  - @tuvren/kernel-runtime@0.4.0
+  - @tuvren/kernel-protocol@0.4.0
+  - @tuvren/backend-memory@0.4.0
+  - @tuvren/kernel-testkit@0.4.0
+  - @tuvren/backend-sqlite@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

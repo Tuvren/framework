@@ -40,7 +40,7 @@
     },
     "typescript/certification": {
       "name": "@tuvren/framework-typescript-certification",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
         "@tuvren/stream-agui": "workspace:*",
@@ -50,11 +50,11 @@
     },
     "typescript/core": {
       "name": "@tuvren/core",
-      "version": "0.3.0",
+      "version": "0.4.0",
     },
     "typescript/host/remote-session": {
       "name": "@tuvren/remote-session",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/host-session": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
@@ -65,7 +65,7 @@
     },
     "typescript/host/repl": {
       "name": "@tuvren/repl-host",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
         "@ai-sdk/anthropic": "3.0.66",
@@ -97,18 +97,18 @@
     },
     "typescript/host/session": {
       "name": "@tuvren/host-session",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "peerDependencies": {
         "@tuvren/core": "workspace:~",
       },
     },
     "typescript/host/session-client": {
       "name": "@tuvren/session-client",
-      "version": "0.3.0",
+      "version": "0.4.0",
     },
     "typescript/kernel/backends/memory": {
       "name": "@tuvren/backend-memory",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
@@ -122,7 +122,7 @@
     },
     "typescript/kernel/backends/postgres": {
       "name": "@tuvren/backend-postgres",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
@@ -138,7 +138,7 @@
     },
     "typescript/kernel/backends/shared": {
       "name": "@tuvren/backend-shared",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
       },
@@ -148,7 +148,7 @@
     },
     "typescript/kernel/backends/sqlite": {
       "name": "@tuvren/backend-sqlite",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
@@ -165,7 +165,7 @@
     },
     "typescript/kernel/certification": {
       "name": "@tuvren/kernel-typescript-certification",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
@@ -176,7 +176,7 @@
     },
     "typescript/kernel/grpc-client": {
       "name": "@tuvren/kernel-grpc-client",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@bufbuild/protobuf": "2.11.0",
         "@connectrpc/connect": "2.1.1",
@@ -189,7 +189,7 @@
     },
     "typescript/kernel/protocol": {
       "name": "@tuvren/kernel-protocol",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "cbor-x": "1.6.4",
       },
@@ -199,7 +199,7 @@
     },
     "typescript/kernel/runtime": {
       "name": "@tuvren/kernel-runtime",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
       },
@@ -212,7 +212,7 @@
     },
     "typescript/kernel/testkit": {
       "name": "@tuvren/kernel-testkit",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/core": "workspace:*",
@@ -222,7 +222,7 @@
     },
     "typescript/providers/bridge-ai-sdk": {
       "name": "@tuvren/provider-bridge-ai-sdk",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@ai-sdk/provider": "3.0.8",
         "@tuvren/provider-api": "workspace:*",
@@ -241,7 +241,7 @@
     },
     "typescript/providers/certification": {
       "name": "@tuvren/providers-typescript-certification",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@ai-sdk/provider": "3.0.8",
         "@tuvren/backend-memory": "workspace:*",
@@ -253,14 +253,14 @@
     },
     "typescript/providers/provider-api": {
       "name": "@tuvren/provider-api",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "peerDependencies": {
         "@tuvren/core": "workspace:~",
       },
     },
     "typescript/providers/testkit": {
       "name": "@tuvren/provider-testkit",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
         "@modelcontextprotocol/server-everything": "2026.1.26",
@@ -272,7 +272,7 @@
     },
     "typescript/runners/react": {
       "name": "@tuvren/runner-react",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/provider-api": "workspace:*",
         "ajv": "8.18.0",
@@ -288,7 +288,7 @@
     },
     "typescript/runtime": {
       "name": "@tuvren/runtime",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/telemetry-semconv": "workspace:*",
@@ -306,7 +306,7 @@
     },
     "typescript/sdk": {
       "name": "@tuvren/sdk",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/kernel-runtime": "workspace:*",
@@ -327,7 +327,7 @@
     },
     "typescript/streaming/agui": {
       "name": "@tuvren/stream-agui",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
         "@tuvren/stream-core": "workspace:*",
@@ -341,7 +341,7 @@
     },
     "typescript/streaming/core": {
       "name": "@tuvren/stream-core",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "devDependencies": {
         "@tuvren/framework-testkit": "workspace:*",
       },
@@ -351,7 +351,7 @@
     },
     "typescript/streaming/sse": {
       "name": "@tuvren/stream-sse",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/stream-core": "workspace:*",
       },
@@ -364,7 +364,7 @@
     },
     "typescript/streaming/ws": {
       "name": "@tuvren/stream-ws",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/host-session": "workspace:*",
         "@tuvren/remote-session": "workspace:*",
@@ -379,7 +379,7 @@
     },
     "typescript/telemetry/otel": {
       "name": "@tuvren/telemetry-otel",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@opentelemetry/api": "1.9.1",
       },
@@ -392,11 +392,11 @@
     },
     "typescript/telemetry/semconv": {
       "name": "@tuvren/telemetry-semconv",
-      "version": "0.3.0",
+      "version": "0.4.0",
     },
     "typescript/testkit": {
       "name": "@tuvren/framework-testkit",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@tuvren/core": "workspace:*",
         "ajv": "8.18.0",
@@ -404,7 +404,7 @@
     },
     "typescript/tools/mcp-client": {
       "name": "@tuvren/mcp-client",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
         "ajv": "8.18.0",

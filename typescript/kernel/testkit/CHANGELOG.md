@@ -1,5 +1,22 @@
 # @tuvren/kernel-testkit
 
+## 0.4.0
+
+### Minor Changes
+
+- f202e30: Add `createKernelBarrierControl` to coordinate started operations at transaction-entry barriers by operation handle. The Rust kernel's `conformance` feature provides the corresponding `BarrierControl`.
+
+### Patch Changes
+
+- Updated dependencies [8a76b87]
+- Updated dependencies [104052b]
+- Updated dependencies [8c5da7a]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [98d14f4]
+  - @tuvren/kernel-protocol@0.4.0
+  - @tuvren/core@0.4.0
+  - @tuvren/backend-shared@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/backend-memory",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tuvren in-memory backend leaf: a non-durable store for tests, prototypes, and ephemeral sessions, constructed by the host and passed into createTuvren.",
   "license": "Apache-2.0",
   "repository": {

@@ -1,5 +1,31 @@
 # @tuvren/repl-host
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [76379fa]
+- Updated dependencies [8c5da7a]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [98d14f4]
+  - @tuvren/backend-memory@0.4.0
+  - @tuvren/core@0.4.0
+  - @tuvren/sdk@0.4.0
+  - @tuvren/mcp-client@0.4.0
+  - @tuvren/stream-agui@0.4.0
+  - @tuvren/stream-core@0.4.0
+  - @tuvren/stream-sse@0.4.0
+  - @tuvren/telemetry-semconv@0.4.0
+  - @tuvren/backend-postgres@0.4.0
+  - @tuvren/backend-sqlite@0.4.0
+  - @tuvren/provider-bridge-ai-sdk@0.4.0
+  - @tuvren/kernel-grpc-client@0.4.0
+  - @tuvren/runner-react@0.4.0
+  - @tuvren/remote-session@0.4.0
+  - @tuvren/stream-ws@0.4.0
+  - @tuvren/host-session@0.4.0
+  - @tuvren/session-client@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

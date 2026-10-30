@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/runner-react",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tuvren ReAct runner leaf: the reason-act agent loop implementation a host constructs and passes into createTuvren.",
   "license": "Apache-2.0",
   "repository": {

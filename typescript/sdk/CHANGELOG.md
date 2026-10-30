@@ -1,5 +1,26 @@
 # @tuvren/sdk
 
+## 0.4.0
+
+### Patch Changes
+
+- 8c5da7a: Prepare the core, SDK, and MCP client packages for native lint adoption.
+- 98d14f4: Migrate the small TypeScript packages toward the native OXC lint toolchain while preserving their public behavior.
+- Updated dependencies [8a76b87]
+- Updated dependencies [76379fa]
+- Updated dependencies [104052b]
+- Updated dependencies [8c5da7a]
+- Updated dependencies [030339b]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [15ce8bc]
+- Updated dependencies [de358ab]
+- Updated dependencies [4829233]
+- Updated dependencies [98d14f4]
+  - @tuvren/kernel-runtime@0.4.0
+  - @tuvren/runtime@0.4.0
+  - @tuvren/kernel-protocol@0.4.0
+  - @tuvren/core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

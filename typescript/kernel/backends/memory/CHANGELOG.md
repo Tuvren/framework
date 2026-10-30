@@ -1,5 +1,24 @@
 # @tuvren/backend-memory
 
+## 0.4.0
+
+### Minor Changes
+
+- 76379fa: Stop advertising mid-commit fault injection and remove the memory backend's midCommit test hook because it cannot expose a genuine storage boundary. This changes untagged exported behavior and requires a minor release under ADR-0069 decision 3.
+  
+  Remove kernel runtime tests superseded by the shared syscall certification plans. This patch does not change runtime behavior.
+
+### Patch Changes
+
+- Updated dependencies [8a76b87]
+- Updated dependencies [104052b]
+- Updated dependencies [8c5da7a]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [98d14f4]
+  - @tuvren/kernel-protocol@0.4.0
+  - @tuvren/core@0.4.0
+  - @tuvren/backend-shared@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

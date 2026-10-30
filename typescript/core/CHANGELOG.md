@@ -1,5 +1,16 @@
 # @tuvren/core
 
+## 0.4.0
+
+### Patch Changes
+
+- 8c5da7a: Prepare the core, SDK, and MCP client packages for native lint adoption.
+- 1b2e3a9: Preserve the first fatal execution error and expose later failures in the optional `subsequentErrors` field of a failed execution result.
+  Map an absent or non-snake_case error code to `execution_failed` in the typed result and its `subsequentErrors`, keeping the published error in the event stream, so `awaitResult()` resolves where a non-snake_case code previously prevented it.
+  Preserve subsequent execution errors in failed orchestration results and resolve child initialization failures with invalid error codes using the same fallback.
+  Document the at-least-once tool dispatch and recovery contract for hosts, including idempotency requirements.
+- 98d14f4: Migrate the small TypeScript packages toward the native OXC lint toolchain while preserving their public behavior.
+
 ## 0.3.0
 
 ### Minor Changes

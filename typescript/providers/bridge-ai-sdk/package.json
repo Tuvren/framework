@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/provider-bridge-ai-sdk",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tuvren provider bridge for the Vercel AI SDK: adapts AI SDK models to the TuvrenProvider contract.",
   "license": "Apache-2.0",
   "repository": {
