@@ -158,7 +158,14 @@ tickets:
       evidence: "Engine plan checks assert, from observed results and events, that the result error is the trigger's error for both triggers before the registration check is introduced, and that any finalization failure appears only as a secondary cause. A runtime unit test covers a fatal error followed by a non-fatal error."
     flows: [flow-react-runner-turn-execution, flow-tool-approval-pause-resume]
     certainty: assumed
-    status: planned
+    status: done
+    deviations:
+      - files: [spec/host/bindings/typescript.md]
+        justification: "ADR-0083 decision 5 names the TypeScript binding appendix as a record that states ExecutionResult. The appendix restates the union verbatim, so it gains subsequentErrors in the same change."
+      - files:
+          - reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json
+          - reports/compatibility/evidence/certification-harness.framework-rust-certification.json
+        justification: "bun run compatibility:evidence registers the two new engine check ids in every framework lane's check inventory. These two files change only by those ids and their totals, and their verdicts are unchanged."
   - id: KRT-DM003
     title: Rewind the branch and turn heads together when an iteration fails hard
     type: Feature

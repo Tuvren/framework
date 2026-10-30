@@ -25,6 +25,37 @@
     "operation": "runtime.execute-turn",
     "case": "empty_parts"
   },
+  "tool-admission-approval-throws": {
+    "operation": "runtime.tool-execute",
+    "prompt": "Trigger an approval predicate failure.",
+    "toolCall": {
+      "callId": "call-admission",
+      "name": "admission",
+      "input": {}
+    },
+    "inputSchema": { "type": "object" },
+    "approvalFailure": {
+      "code": "approval_predicate_failed",
+      "message": "approval predicate exploded"
+    },
+    "toolResult": {},
+    "finalText": "Unreachable"
+  },
+  "tool-admission-missing-schema-reference": {
+    "operation": "runtime.tool-execute",
+    "prompt": "Trigger an unresolved schema reference.",
+    "toolCall": {
+      "callId": "call-admission",
+      "name": "admission",
+      "input": {}
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": { "value": { "$ref": "#/$defs/missing" } }
+    },
+    "toolResult": {},
+    "finalText": "Unreachable"
+  },
   "provider-generate-text": {
     "operation": "runtime.provider-generate",
     "prompt": {

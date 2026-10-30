@@ -16,6 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 
+import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   RunnerExecutionResult,
   RuntimeRunner,
@@ -531,6 +532,135 @@ describe("framework-runtime-core", () => {
     });
   });
 
+  test("keeps an earlier non-fatal error out of a later failed result", async () => {
+    const harness = createFakeKernelHarness();
+    const runner = {
+      execute: fromSynchronousVariadicAwaited(() => ({
+        resolution: {
+          error: new TuvrenRuntimeError("runner failed", {
+            code: "runner_failed",
+          }),
+          fatality: "hard" as const,
+          type: "fail" as const,
+        },
+      })),
+      id: "fake",
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterTurn() {
+              throw new Error("cleanup failed");
+            },
+            name: "cleanup",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Fail after cleanup"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const result = await handle.awaitResult();
+    const errorEvents = events.filter((event) => event.type === "error");
+
+    expect(errorEvents.map((event) => event.fatal)).toEqual([false, true]);
+    expect(result).toMatchObject({
+      error: { code: "runner_failed", message: "runner failed" },
+      status: "failed",
+    });
+    expect("subsequentErrors" in result).toBe(false);
+  });
+
+  test("preserves later failures in event order", async () => {
+    const harness = createFakeKernelHarness();
+    let finalStatusStaged = false;
+    let headReadFailed = false;
+    const kernel = {
+      ...harness.kernel,
+      branch: {
+        ...harness.kernel.branch,
+        async get(branchId) {
+          if (finalStatusStaged && !headReadFailed) {
+            headReadFailed = true;
+            throw new Error("post-failure head read failed");
+          }
+          return await harness.kernel.branch.get(branchId);
+        },
+      },
+      staging: {
+        ...harness.kernel.staging,
+        async stage(runId, blob, taskId, objectType, status, interruptPayload) {
+          if (taskId === "runtime_status_final") {
+            if (headReadFailed) {
+              throw new Error("failure status staging failed");
+            }
+            finalStatusStaged = true;
+          }
+          return await harness.kernel.staging.stage(
+            runId,
+            blob,
+            taskId,
+            objectType,
+            status,
+            interruptPayload
+          );
+        },
+      },
+    } satisfies RuntimeKernel;
+    const runner = {
+      execute: fromSynchronousVariadicAwaited(() => ({
+        resolution: {
+          error: new TuvrenRuntimeError("runner failed first", {
+            code: "runner_failed",
+          }),
+          fatality: "hard" as const,
+          type: "fail" as const,
+        },
+      })),
+      id: "fake",
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Fail during finalization"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errors = events.filter((event) => event.type === "error");
+    const result = await handle.awaitResult();
+
+    expect(errors.map((event) => event.error.message)).toEqual([
+      "runner failed first",
+      "post-failure head read failed",
+      "failure status staging failed",
+    ]);
+    expect(result).toMatchObject({
+      error: { code: "runner_failed", message: "runner failed first" },
+      status: "failed",
+      subsequentErrors: [
+        { message: "post-failure head read failed" },
+        { message: "failure status staging failed" },
+      ],
+    });
+  });
+
   test("marks the handle failed without turn.end when final turn-status checkpointing fails and preserves the root cause", async () => {
     const harness = createFakeKernelHarness();
     const kernel = {
@@ -539,7 +669,12 @@ describe("framework-runtime-core", () => {
         ...harness.kernel.staging,
         async stage(runId, blob, taskId, objectType, status, interruptPayload) {
           if (taskId === "runtime_status_final") {
-            throw new Error("final runtime status staging failed");
+            throw Object.assign(
+              new Error("final runtime status staging failed"),
+              {
+                code: "ERR_FINALIZATION",
+              }
+            );
           }
 
           return await harness.kernel.staging.stage(
@@ -572,6 +707,7 @@ describe("framework-runtime-core", () => {
       (event): event is Extract<(typeof events)[number], { type: "error" }> =>
         event.type === "error"
     );
+    const result = await handle.awaitResult();
 
     expect(handle.status().phase).toBe("failed");
     expect(events.some((event) => event.type === "turn.end")).toBe(false);
@@ -583,6 +719,26 @@ describe("framework-runtime-core", () => {
         (event) => event.error.message === "final runtime status staging failed"
       )
     ).toBe(true);
+    expect(errorEvents.map((event) => event.fatal)).toEqual([true, false]);
+    expect(errorEvents[1]?.error.code).toBe("ERR_FINALIZATION");
+    expect(result).toMatchObject({
+      error: {
+        code: "unknown_runner",
+        message: 'runner "missing-runner" is not registered',
+      },
+      status: "failed",
+      subsequentErrors: [
+        {
+          code: "execution_failed",
+          message: "final runtime status staging failed",
+        },
+      ],
+    });
+    if (result.status !== "failed") {
+      throw new Error("expected a failed execution result");
+    }
+    expect(result.error).toBeInstanceOf(TuvrenRuntimeError);
+    expect(result.subsequentErrors?.[0]).toBeInstanceOf(TuvrenRuntimeError);
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
       activeAgent: "primary",
       state: "running",

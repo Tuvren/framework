@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TuvrenRuntimeError } from "@tuvren/core";
+import { isTuvrenErrorCode, TuvrenRuntimeError } from "@tuvren/core";
 import type {
   TuvrenErrorProjection,
   TuvrenStreamEvent,
@@ -45,6 +45,18 @@ import type {
   ResumeContext,
 } from "./runtime-execution-types.js";
 
+const projectionToError = (
+  projection: TuvrenErrorProjection | undefined
+): TuvrenRuntimeError =>
+  new TuvrenRuntimeError(projection?.message ?? "Execution failed", {
+    code: isTuvrenErrorCode(projection?.code)
+      ? projection.code
+      : "execution_failed",
+    ...(projection?.details === undefined
+      ? {}
+      : { details: projection.details }),
+  });
+
 export interface RuntimeExecutionHandleRuntime {
   cancelPausedExecution: (handle: RuntimeExecutionHandle) => void;
   createResumedExecutionHandle: (
@@ -61,6 +73,8 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   private readonly eventsQueue: AsyncEventQueue<TuvrenStreamEvent>;
   private eventStreamClaimed = false;
   private lastErrorProjection?: TuvrenErrorProjection;
+  private firstFatalErrorProjection?: TuvrenErrorProjection;
+  private readonly subsequentErrorProjections: TuvrenErrorProjection[] = [];
   private materializedRunner?: RuntimeRunner;
   private materializedRunnerId?: string;
   private pendingPausedCancellation?: Promise<void>;
@@ -306,6 +320,9 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       reason.code === "runtime_execution_cancelled";
 
     const executionStatus = cloneExecutionStatus(this.statusSnapshot);
+    const subsequentErrors =
+      this.subsequentErrorProjections.map(projectionToError);
+    const secondary = subsequentErrors.length === 0 ? {} : { subsequentErrors };
 
     // A wall-clock bound abort is authoritative: the failed result carries the
     // execution_bound_exceeded error and its details regardless of whatever was
@@ -315,6 +332,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
         error: reason,
         executionStatus,
         status: "failed",
+        ...secondary,
       });
       return;
     }
@@ -335,17 +353,15 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
         status: "completed",
       });
     } else {
-      const projection = this.lastErrorProjection;
-      const error = new TuvrenRuntimeError(
-        projection?.message ?? "Execution failed",
-        {
-          code: projection?.code ?? "execution_failed",
-          ...(projection?.details === undefined
-            ? {}
-            : { details: projection.details }),
-        }
+      const error = projectionToError(
+        this.firstFatalErrorProjection ?? this.lastErrorProjection
       );
-      this.resultState.resolve({ error, executionStatus, status: "failed" });
+      this.resultState.resolve({
+        error,
+        executionStatus,
+        status: "failed",
+        ...secondary,
+      });
     }
   }
 
@@ -360,6 +376,15 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   rememberError(error: TuvrenErrorProjection): void {
     this.lastErrorProjection = error;
+  }
+
+  rememberProjectedError(error: TuvrenErrorProjection, fatal: boolean): void {
+    this.rememberError(error);
+    if (this.firstFatalErrorProjection !== undefined) {
+      this.subsequentErrorProjections.push(error);
+    } else if (fatal) {
+      this.firstFatalErrorProjection = error;
+    }
   }
 
   rememberPauseContext(context: PauseContext): void {

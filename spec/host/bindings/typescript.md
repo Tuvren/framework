@@ -27,7 +27,7 @@ TypeScript bindings not in the TypeSpec:
 ```typescript
 type ExecutionResult =
   | { status: "completed"; finalAssistantMessage?: TuvrenMessage; executionStatus: ExecutionStatus }
-  | { status: "failed"; error: TuvrenError; executionStatus: ExecutionStatus };
+  | { status: "failed"; error: TuvrenError; subsequentErrors?: readonly TuvrenError[]; executionStatus: ExecutionStatus };
 ```
 
 ADR-0035 semantics for `awaitResult()`:
@@ -37,6 +37,7 @@ ADR-0035 semantics for `awaitResult()`:
   final runner iteration produced only tool results.
 - `status: "failed"` — the runner returned an invalid result or the execution
   encountered an unrecoverable error; the result resolves (does not reject).
+- For a hard failure, `error` is the first fatal error. The optional `subsequentErrors` lists later failures in order, including finalization failures, while the event stream retains both errors.
 - Cancellation via `cancel()` is the only path that causes `awaitResult()` to
   reject; the rejection carries a `TuvrenRuntimeError` with
   `code: "execution_cancelled"`.

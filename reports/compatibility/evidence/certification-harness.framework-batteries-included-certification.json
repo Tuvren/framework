@@ -655,6 +655,8 @@
     "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner",
     "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
     "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+    "runtime-lifecycle-ext.tool-admission.approval-root-cause",
+    "runtime-lifecycle-ext.tool-admission.schema-root-cause",
     "runtime-api-operational-telemetry.approval-events",
     "runtime-api-operational-telemetry.completed-turn-events",
     "runtime-api-operational-telemetry.completed-turn-spans",
@@ -748,9 +750,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 523,
+    "totalChecks": 525,
     "applicableChecks": 12,
-    "nonApplicableChecks": 511
+    "nonApplicableChecks": 513
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

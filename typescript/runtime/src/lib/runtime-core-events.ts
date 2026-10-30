@@ -350,7 +350,7 @@ export const publishProjectedError = (
   loopState: LoopState
 ): void => {
   const projection = projectError(error);
-  handle.rememberError(projection);
+  handle.rememberProjectedError(projection, fatal);
   publishEvent(
     host,
     handle,
