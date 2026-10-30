@@ -410,3 +410,60 @@ decisions:
       assumption: "KRT-DM003 is deferred, so the failure path keeps today's head behavior. KRT-DM002's checks are written against it, and the backend head mismatch from finalization appears only as a subsequent error. When the rewind lands, finalization stops failing. The two runtime-lifecycle-ext.tool-admission checks must then drop their subsequentErrors length and non-fatal-event assertions, or they go red."
       applied_by:
         - KRT-DM002
+closeout:
+  tickets_completed: [KRT-DM001, KRT-DM002, KRT-DM007]
+  tickets_deferred:
+    - id: KRT-DM003
+      route: "specifying-technical-implementation: a Stage 3 ADR plus kernel authority packet, plans, and interop change for a compound failure-and-rewind kernel operation, after the owner rules OD-24"
+      reason: "SPK-KRT-DM001 found that no existing syscall rewinds the branch head and the turn head in one kernel transaction, so the ticket's first stop condition fired. The kernel specification is also ambiguous about who moves the turn head during a checkpoint (docs/KrakenKernelSpecification.md lines 435 and 439)."
+    - id: KRT-DM004
+      route: "Owner ruling OD-23 on the replacement validator, then a Stage 3 patch of ADR-0083 decision 1 and stack.yaml"
+      reason: "The assumed validator, @cfworker/json-schema 4.1.1, failed SPK-KRT-DM001. The sound fallback, @hyperjump/json-schema 1.18.0, prepares schemas asynchronously and brings seven dependencies and a required peer into @tuvren/core. ADR-0083 decision 1 reserves this ruling for the owner."
+    - id: KRT-DM005
+      route: "Owner ruling OD-23, then KRT-DM004's validator wrapper"
+      reason: "Depends on KRT-DM004's wrapper."
+    - id: KRT-DM006
+      route: "Owner ruling OD-23, then KRT-DM004's validator wrapper"
+      reason: "Executed early as c93937e by routing the helpers onto the runtime's native path, then reverted in a246975 after milestone review. That path is still Ajv. The helpers would have failed their turns on runtimes that forbid code generation, an outcome ADR-0083 records the owner rejected. They would also have been exposed to Ajv's per-turn recompile and duplicate-$id failure."
+  points_completed: 8
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "EPIC-DM completes KRT-DM001, KRT-DM002, and KRT-DM007 (8 points). It defers KRT-DM003 (OD-24) and KRT-DM004, KRT-DM005, and KRT-DM006 (OD-23), 15 points, until the owner rules."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "OD-23: the owner rules on the codegen-free validator and the synchronous helper contract. Then ADR-0083 decision 1 names the validator and the wrapper's package, and stack.yaml replaces the failed @cfworker/json-schema 4.1.1 pin (SPK-KRT-DM001)."
+    - stage: tech-spec
+      item: "OD-24: the owner rules on the single-transaction rewind. Then a Stage 3 ADR and kernel authority change define the compound operation, and the kernel specification resolves who moves the turn head during a checkpoint (lines 435 and 439, and section 5.5) (SPK-KRT-DM001)."
+    - stage: tech-spec
+      item: "ADR-0063 section 6 says an in-flight nonRetryable invocation is not re-run under a dead owner. That contradicts ADR-0052 section 2 as clarified by EPIC-CR, and framework specification section 4.9, which redispatch every missing call on cold recovery, nonRetryable included. The adopter guide defers to ADRs, so ADR-0063's sentence needs the same clarification."
+    - stage: tech-spec
+      item: "ADR-0083 decision 5 (root cause wins) is now exercised by runtime-lifecycle-ext.tool-admission.approval-root-cause and .schema-root-cause and by the runtime lifecycle test. The alignment pass can record that consequence as observed. The ADR stays assumed until decisions 1 and 4 settle."
+    - stage: architecture
+      item: "flow-preemption-idempotent-side-effect.md (note near line 35) says cold-crash call re-presentation is not yet realized in the TypeScript runtime (ADR-0065 open obligation 1). EPIC-CR realized it, and the runtime resumes staged calls (typescript/runtime/src/lib/runtime-core-iteration.ts), so the note is stale."
+  follow_ups:
+    - "Runtime Ajv path defect, present in 0.3.0. A plain inputSchema is recompiled on every turn, because createActiveToolRegistry deep-clones each tool and the validator memo in tool-execution-validation.ts is keyed by object identity. Ajv's instance cache grows with every compile, and a schema that carries $id fails on its second turn in the same process with \"schema with key or id ... already exists\". KRT-DM004's wrapper must prepare each schema once, must not register $id globally, and needs a two-turn test with an $id schema. If OD-23 stays open long, a narrow runtime fix is worth planning on its own."
+    - "When KRT-DM006 is rescheduled: use plan literals or observed values, never expected* fields in scenario data, because the plan compiler's no-echo rule rejects them. Add a check where a host validator rejects input the schema accepts. Make the host-validator check prove the validator ran, for example by returning a transformed value. Use a distinctive schema for the schema-preservation check, and record the representation defineTool returns against ADR-0038's text."
+    - "Once KRT-DM003 lands, the two runtime-lifecycle-ext.tool-admission checks must drop their subsequentErrors length and non-fatal-event assertions (OD-24 interim)."
+    - "Constitution tooling: validate reports TS-001 for the reference-host live-verification doctor commands when python3 is not on PATH, for example outside devenv shell."
+    - "Tooling flake seen once during bun run verify: seven biome coverage partition tests in the BP tooling acceptance suite hit their 5000 ms timeout under parallel load."
+  code_decisions:
+    - summary: "subsequentErrors lists, in event order, the errors published after the first fatal error event. A non-fatal error published before the first fatal event is therefore excluded. Stated in framework specification section 7.1 and the TypeScript binding appendix."
+      kind: contract_shape
+      paths: [typescript/runtime/src/lib/runtime-execution-handle.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
+      commit: 2dc8fdf
+    - summary: "When a projected error code is not snake_case, the typed ExecutionResult reports execution_failed and the event keeps the native code. Before, such a code made settleResult throw and awaitResult() never resolved."
+      kind: contract_shape
+      paths: [typescript/runtime/src/lib/runtime-execution-handle.ts]
+      commit: 095be22
+    - summary: "The API freeze gate recorded the additive optional subsequentErrors field as a minor bump (stable-signature-changed). ADR-0083 decision 5 and ADR-0069 decision 3 treat additive changes as patch, so the changeset keeps @tuvren/core at patch. Stage 3 should rule whether the gate's classification or the changeset policy wins for additive optional fields."
+      kind: convention
+      paths: [tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json, .changeset/runtime-dm-tool-admission-validation.md]
+      commit: 095be22
+    - summary: "Engine checks configure a failure trigger as a scenario input on the existing runtime.tool-execute operation (inputSchema, approvalFailure). The adapter builds the host's tool from that data and returns only raw observations, instead of adding a scripted composite operation."
+      kind: pattern
+      paths: [typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts, spec/conformance/engine/plans/runtime-api-lifecycle-extended.json]
+      commit: 095be22
+  settled: []
