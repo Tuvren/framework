@@ -45,7 +45,7 @@ import type {
   ResumeContext,
 } from "./runtime-execution-types.js";
 
-const projectionToError = (
+export const projectionToError = (
   projection: TuvrenErrorProjection | undefined
 ): TuvrenRuntimeError =>
   new TuvrenRuntimeError(projection?.message ?? "Execution failed", {

@@ -16,6 +16,9 @@
 
 import { describe, expect, test } from "bun:test";
 
+import type { ExecutionHandle, TuvrenRuntime } from "@tuvren/core/execution";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
+
 import {
   createOrchestrationRuntime,
   createTuvrenRuntime,
@@ -36,6 +39,95 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("orchestration-runtime approval", () => {
+  test("preserves subsequent errors from the bound execution after an approval predicate fails", async () => {
+    const harness = createFakeKernelHarness();
+    const kernel = {
+      ...harness.kernel,
+      staging: {
+        ...harness.kernel.staging,
+        async stage(runId, blob, taskId, objectType, status, interruptPayload) {
+          if (taskId === "runtime_status_final") {
+            throw new Error("failure status staging failed");
+          }
+          return await harness.kernel.staging.stage(
+            runId,
+            blob,
+            taskId,
+            objectType,
+            status,
+            interruptPayload
+          );
+        },
+      },
+    } satisfies RuntimeKernel;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel,
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
+          messages: [
+            assistantToolCalls([
+              { callId: "call-hold", input: {}, name: "hold" },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" },
+        })),
+      ]),
+    });
+    let boundHandle: ExecutionHandle | undefined;
+    const createRuntime: (prototype: TuvrenRuntime) => TuvrenRuntime =
+      Object.create;
+    const framework: TuvrenRuntime = Object.assign(createRuntime(runtime), {
+      executeTurn(input: Parameters<TuvrenRuntime["executeTurn"]>[0]) {
+        boundHandle = runtime.executeTurn(input);
+        return boundHandle;
+      },
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: {
+          name: "primary",
+          tools: [
+            {
+              approval() {
+                throw new Error("approval predicate failed");
+              },
+              description: "Fail approval",
+              execute() {
+                return { ok: true };
+              },
+              inputSchema: { type: "object" },
+              name: "hold",
+            },
+          ],
+        },
+      },
+      framework,
+    });
+    const thread = await runtime.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Start"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+    const result = await handle.awaitResult();
+    if (boundHandle === undefined) {
+      throw new Error("expected a bound execution handle");
+    }
+    const executionResult = await boundHandle.awaitResult();
+    expect(result).toMatchObject({
+      error: { message: "approval predicate failed" },
+      status: "failed",
+    });
+    if (result.status !== "failed" || executionResult.status !== "failed") {
+      throw new Error("expected failed results");
+    }
+    expect(executionResult.subsequentErrors?.length).toBeGreaterThan(0);
+    expect(result.subsequentErrors).toEqual(executionResult.subsequentErrors);
+  });
+
   test("keeps existing subtree events flowing while the parent is paused", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({

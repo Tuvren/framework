@@ -448,15 +448,17 @@ closeout:
     - "When KRT-DM006 is rescheduled: use plan literals or observed values, never expected* fields in scenario data, because the plan compiler's no-echo rule rejects them. Add a check where a host validator rejects input the schema accepts. Make the host-validator check prove the validator ran, for example by returning a transformed value. Use a distinctive schema for the schema-preservation check, and record the representation defineTool returns against ADR-0038's text."
     - "Once KRT-DM003 lands, the two runtime-lifecycle-ext.tool-admission checks must drop their subsequentErrors length and non-fatal-event assertions (OD-24 interim)."
     - "Constitution tooling: validate reports TS-001 for the reference-host live-verification doctor commands when python3 is not on PATH, for example outside devenv shell."
-    - "Tooling flake seen once during bun run verify: seven biome coverage partition tests in the BP tooling acceptance suite hit their 5000 ms timeout under parallel load."
+    - "Tooling flake under heavy machine load: the biome coverage partition tests in the BP tooling acceptance suite hit their 5000 ms timeout during local bun run verify. Two lease-timing engine checks (runtime-lifecycle-af.client-result-as-proposal-authority-lost and runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner) also failed locally on both this branch's code and its parent. CI passed all of them."
+    - "Conformance harness: the runtime-lifecycle-ext.tool-admission checks address events by position (events.10, .11, .12). An added or removed earlier event breaks them for reasons unrelated to root cause. A type-filtered event projection in tools/conformance would remove that coupling."
+    - "KRT-DM007's guide section and nonRetryable TSDoc were accepted by recorded grep assertions. No committed check guards them against regression, and a docs-content test lane would be needed for one."
   code_decisions:
     - summary: "subsequentErrors lists, in event order, the errors published after the first fatal error event. A non-fatal error published before the first fatal event is therefore excluded. Stated in framework specification section 7.1 and the TypeScript binding appendix."
       kind: contract_shape
       paths: [typescript/runtime/src/lib/runtime-execution-handle.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
       commit: 2dc8fdf
-    - summary: "When a projected error code is not snake_case, the typed ExecutionResult reports execution_failed and the event keeps the native code. Before, such a code made settleResult throw and awaitResult() never resolved."
+    - summary: "When a fatal error has no code, or a code that is not snake_case, the typed ExecutionResult reports execution_failed and the event keeps the error as published. Before, such a code made settleResult throw and awaitResult() never resolved. Framework specification section 7.1 and the TypeScript binding appendix now state the rule, and the orchestration node's initialization-failure path uses the same mapping."
       kind: contract_shape
-      paths: [typescript/runtime/src/lib/runtime-execution-handle.ts]
+      paths: [typescript/runtime/src/lib/runtime-execution-handle.ts, typescript/runtime/src/lib/orchestration-runtime-node.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
       commit: 095be22
     - summary: "The API freeze gate recorded the additive optional subsequentErrors field as a minor bump (stable-signature-changed). ADR-0083 decision 5 and ADR-0069 decision 3 treat additive changes as patch, so the changeset keeps @tuvren/core at patch. Stage 3 should rule whether the gate's classification or the changeset policy wins for additive optional fields."
       kind: convention

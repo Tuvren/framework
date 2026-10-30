@@ -125,6 +125,9 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
       error: ownResult.error,
       executionStatus: ownResult.executionStatus,
       status: "failed",
+      ...(ownResult.subsequentErrors === undefined
+        ? {}
+        : { subsequentErrors: ownResult.subsequentErrors }),
     };
   }
 

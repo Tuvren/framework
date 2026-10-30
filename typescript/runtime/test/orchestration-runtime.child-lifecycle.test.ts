@@ -43,6 +43,62 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("orchestration-runtime child lifecycle", () => {
+  test("resolves child initialization failures with invalid error codes", async () => {
+    const harness = createFakeKernelHarness();
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(async () => {
+          await delay(50);
+          return {
+            messages: [assistantText("Done")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        }),
+      ]),
+    });
+    const createRuntime: (prototype: TuvrenRuntime) => TuvrenRuntime =
+      Object.create;
+    const framework: TuvrenRuntime = Object.assign(createRuntime(runtime), {
+      async getThread() {
+        return await Promise.reject(
+          Object.assign(new Error("thread lookup failed"), {
+            code: "ERR_LOOKUP",
+            details: { source: "backend" },
+          })
+        );
+      },
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: { primary: { name: "primary" }, worker: { name: "worker" } },
+      framework,
+    });
+    const thread = await runtime.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("root"),
+      threadId: thread.threadId,
+    });
+    const capture = startEventCapture(handle.allEvents());
+    const child = handle.spawn({
+      agent: "worker",
+      signal: textSignal("child"),
+    });
+    const result = await child.awaitResult();
+    expect(result).toMatchObject({
+      error: {
+        code: "execution_failed",
+        details: { source: "backend" },
+        message: "thread lookup failed",
+      },
+      status: "failed",
+    });
+    expect("subsequentErrors" in result).toBe(false);
+    await capture.done;
+  });
+
   test("requires the parent handle to start execution before spawning children", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({

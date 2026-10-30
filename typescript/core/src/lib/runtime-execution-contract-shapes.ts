@@ -107,7 +107,9 @@ export type ExecutionResult =
     }
   | {
       status: "failed";
+      /** The first fatal error. */
       error: TuvrenError;
+      /** Errors published after the first fatal error event, in event order. */
       subsequentErrors?: readonly TuvrenError[];
       executionStatus: ExecutionStatus;
     };

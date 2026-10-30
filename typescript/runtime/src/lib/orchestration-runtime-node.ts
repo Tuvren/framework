@@ -39,6 +39,7 @@ import {
   normalizeInputSignal,
   projectError,
 } from "./runtime-core-shared.js";
+import { projectionToError } from "./runtime-execution-handle.js";
 
 /**
  * The concrete framework execution an {@link OrchestrationNode} is bound to:
@@ -228,11 +229,7 @@ export class OrchestrationNode {
       }
 
       // Initialization failed — no binding was ever established.
-      const projection = this.lastErrorProjection;
-      const error = new TuvrenRuntimeError(
-        projection?.message ?? "orchestration execution failed",
-        { code: projection?.code ?? "execution_failed" }
-      );
+      const error = projectionToError(this.lastErrorProjection);
       return {
         error,
         executionStatus: this.currentStatus(),
