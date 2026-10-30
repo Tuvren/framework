@@ -54,7 +54,7 @@ There is a further visibility gap: if `run.complete(failed)` commits its reactiv
 
 ### Measurement method and schema families
 
-Experiments ran offline from `/home/oscar/.cache/codex-subagent/tuvren-dm/tmp/` with Node 24.22.1. The candidate and fallback ran with `--disallow-code-generation-from-strings`; a `new Function` probe raised `EvalError`. The installed packages were `@cfworker/json-schema` 4.1.1, `@hyperjump/json-schema` 1.18.0, and Ajv 8.18.0. Ajv ran without the flag for the semantic baseline; under the flag it raised `EvalError` for every sampled compilation. A fetch stub rejected network access. The installed package documentation and source supplied the API signatures; no package was installed.
+Experiments ran offline using probe scripts outside the repository, not committed, with Node 24.22.1. The candidate and fallback ran with `--disallow-code-generation-from-strings`; a `new Function` probe raised `EvalError`. The installed packages were `@cfworker/json-schema` 4.1.1, `@hyperjump/json-schema` 1.18.0, and Ajv 8.18.0. Ajv ran without the flag for the semantic baseline; under the flag it raised `EvalError` for every sampled compilation. A fetch stub rejected network access. The installed package documentation and source supplied the API signatures; no package was added to the repository.
 
 For each row, pass means that the sampled valid value was accepted and the sampled invalid value was rejected under the flag. It does not mean the entire family or dialect passed an exhaustive suite. Ajv matched those validity results without the flag. Candidate and fallback diagnostic fields differ from Ajv in every invalid case, as described in the projection section.
 
