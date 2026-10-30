@@ -127,7 +127,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.callables-extended",
-      "planVersion": "0.9.0",
+      "planVersion": "0.8.0",
       "path": "spec/conformance/engine/plans/runtime-api-callables-extended.json"
     },
     {

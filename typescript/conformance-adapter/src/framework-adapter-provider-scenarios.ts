@@ -15,7 +15,6 @@
  */
 
 import { assertHashString, TuvrenRuntimeError } from "@tuvren/core";
-import { TuvrenValidationError } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   StructuredOutputRequest,
@@ -29,8 +28,6 @@ import {
   createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { defineTool, jsonSchema } from "@tuvren/sdk";
-import type { FlexibleSchema } from "@tuvren/sdk";
 
 import { createReActRunner } from "../../runners/react/src/index.ts";
 import {
@@ -545,63 +542,6 @@ export const createFrameworkAdapterProviderScenarios = (
             "inputSchema",
             "runtime.tool-execute.inputSchema"
           );
-    let authoredInputSchema: FlexibleSchema | undefined;
-    if (scenario.schemaAuthoring !== undefined) {
-      if (!isRecord(scenario.schemaAuthoring)) {
-        throw new TypeError(
-          "runtime.tool-execute.schemaAuthoring must be an object"
-        );
-      }
-      const mode = dependencies.readStringProperty(
-        scenario.schemaAuthoring,
-        "mode",
-        "runtime.tool-execute.schemaAuthoring.mode"
-      );
-      switch (mode) {
-        case "defineTool": {
-          authoredInputSchema = inputSchema;
-          break;
-        }
-        case "jsonSchema": {
-          authoredInputSchema = jsonSchema(inputSchema);
-          break;
-        }
-        case "jsonSchemaWithValidate": {
-          const verdict = scenario.schemaAuthoring.validate;
-          if (!isRecord(verdict) || typeof verdict.success !== "boolean") {
-            throw new TypeError(
-              "runtime.tool-execute.schemaAuthoring.validate.success must be a boolean"
-            );
-          }
-          if (verdict.success) {
-            authoredInputSchema = jsonSchema(inputSchema, {
-              validate: (value) => ({ success: true, value }),
-            });
-          } else {
-            const code = dependencies.readStringProperty(
-              verdict,
-              "code",
-              "runtime.tool-execute.schemaAuthoring.validate.code"
-            );
-            const message = dependencies.readStringProperty(
-              verdict,
-              "message",
-              "runtime.tool-execute.schemaAuthoring.validate.message"
-            );
-            authoredInputSchema = jsonSchema(inputSchema, {
-              validate: () => ({
-                error: new TuvrenValidationError(message, { code }),
-                success: false,
-              }),
-            });
-          }
-          break;
-        }
-        default: {
-          throw new Error(`unsupported schemaAuthoring mode ${mode}`);
-        }
-      }
-    }
     const { approvalFailure } = scenario;
     if (approvalFailure !== undefined && !isRecord(approvalFailure)) {
       throw new TypeError(
@@ -658,37 +598,33 @@ export const createFrameworkAdapterProviderScenarios = (
       branchId: thread.branchId,
       config: {
         name: AGENT_NAME,
-        tools: calls.map((call) => {
-          const tool = {
-            ...(approvalError === undefined
-              ? {}
-              : {
-                  approval() {
-                    throw new TuvrenRuntimeError(approvalError.message, {
-                      code: approvalError.code,
-                    });
-                  },
-                }),
-            description: `Shared conformance tool ${call.name}`,
-            execute(value: unknown) {
-              toolCalls += 1;
-              toolInputs.push(value);
+        tools: calls.map((call) => ({
+          ...(approvalError === undefined
+            ? {}
+            : {
+                approval() {
+                  throw new TuvrenRuntimeError(approvalError.message, {
+                    code: approvalError.code,
+                  });
+                },
+              }),
+          description: `Shared conformance tool ${call.name}`,
+          execute() {
+            toolCalls += 1;
+            toolInputs.push(call.input);
 
-              if (call.throwMessage !== undefined) {
-                toolFailures.push(call.name);
-                throw new Error(call.throwMessage);
-              }
+            if (call.throwMessage !== undefined) {
+              toolFailures.push(call.name);
+              throw new Error(call.throwMessage);
+            }
 
-              const output = call.output ?? toolResult;
-              toolOutputs.push(output);
-              return output;
-            },
-            name: call.name,
-          };
-          return authoredInputSchema === undefined
-            ? { ...tool, inputSchema }
-            : defineTool({ ...tool, inputSchema: authoredInputSchema });
-        }),
+            const output = call.output ?? toolResult;
+            toolOutputs.push(output);
+            return output;
+          },
+          inputSchema,
+          name: call.name,
+        })),
       },
       signal: textSignal(prompt),
       threadId: thread.threadId,

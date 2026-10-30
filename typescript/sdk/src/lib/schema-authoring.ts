@@ -340,7 +340,7 @@ export const asSchema = <T>(schema: FlexibleSchema<T>): Schema<T> => {
 /**
  * Defines a typed tool whose `inputSchema` is normalized once at
  * definition time via `asSchema`. Returns a `TuvrenToolDefinition`
- * with a native JSON Schema or a host-provided validator.
+ * whose `inputSchema` satisfies the `CustomSchema` boundary contract.
  *
  * `OUTPUT` is inferred from `execute`'s return type but is not carried
  * into the unparameterized `TuvrenToolDefinition` return type.  It is
@@ -381,38 +381,35 @@ export const defineTool = <INPUT, OUTPUT>(options: {
 }): TuvrenToolDefinition => {
   const normalized = asSchema(options.inputSchema);
   const userExecute = options.execute;
-  const { validate } = normalized;
 
-  const customSchema: CustomSchema | undefined =
-    validate === undefined
-      ? undefined
-      : {
-          toJSONSchema(): TuvrenJsonSchema {
-            return normalized.jsonSchema;
-          },
-          validate(input: unknown): ValidationResult {
-            const result = validate.call(normalized, input);
-            if (result.success) {
-              return { valid: true, value: result.value };
-            }
-            return {
-              error: {
-                ...(result.error.details === undefined
-                  ? {}
-                  : { details: result.error.details }),
-                message: result.error.message,
-              },
-              valid: false,
-            };
-          },
-        };
+  const customSchema: CustomSchema = {
+    toJSONSchema(): TuvrenJsonSchema {
+      return normalized.jsonSchema;
+    },
+    validate(input: unknown): ValidationResult {
+      if (normalized.validate === undefined) {
+        return { valid: true, value: input };
+      }
+      const result = normalized.validate(input);
+      if (result.success) {
+        return { valid: true, value: result.value };
+      }
+      return {
+        error: {
+          details: result.error.details,
+          message: result.error.message,
+        },
+        valid: false,
+      };
+    },
+  };
 
   return {
     approval: options.approval,
     description: options.description,
     // ExecuteFunction takes (input: unknown, ...) while userExecute takes
     // (input: INPUT, ...).  The gateway always passes the value that came
-    // through input validation, so the runtime type is INPUT even though
+    // through inputSchema.validate, so the runtime type is INPUT even though
     // the static type is unknown.  This is the boundary assignment that
     // bridges unknown ← INPUT at the TuvrenToolDefinition contract seam.
     // oxlint-disable-next-line typescript/promise-function-async -- Preserve synchronous tool results and exact user Promise identity across the public execute seam.
@@ -421,7 +418,7 @@ export const defineTool = <INPUT, OUTPUT>(options: {
       return userExecute(input as INPUT, context);
     },
     idempotent: options.idempotent,
-    inputSchema: customSchema ?? normalized.jsonSchema,
+    inputSchema: customSchema,
     maxRetries: options.maxRetries,
     metadata: options.metadata,
     name: options.name,

@@ -460,7 +460,7 @@ describe("defineTool()", () => {
     expect(tool.description).toBe("A test tool");
   });
 
-  test("plain input schema is passed to the runtime", () => {
+  test("inputSchema.toJSONSchema() returns normalized JSON schema", () => {
     const raw = { required: ["x"], type: "object" };
     const tool = defineTool({
       description: "d",
@@ -468,17 +468,18 @@ describe("defineTool()", () => {
       inputSchema: raw,
       name: "t",
     });
-    expect(tool.inputSchema).toEqual(raw);
+    expect(getCustomSchema(tool.inputSchema).toJSONSchema()).toEqual(raw);
   });
 
-  test("boolean input schema is passed to the runtime", () => {
+  test("inputSchema.validate() passes through when no schema validate defined", () => {
     const tool = defineTool({
       description: "d",
       execute: (input) => input,
-      inputSchema: false,
+      inputSchema: { type: "string" },
       name: "t",
     });
-    expect(tool.inputSchema).toBe(false);
+    const result = getCustomSchema(tool.inputSchema).validate("hello");
+    expect(result).toEqual({ valid: true, value: "hello" });
   });
 
   test("inputSchema.validate() propagates schema validation success", () => {

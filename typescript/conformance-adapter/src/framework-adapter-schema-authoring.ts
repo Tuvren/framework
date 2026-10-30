@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+import type { CustomSchema } from "@tuvren/core/tools";
 import { asSchema, defineTool, jsonSchema, schemaSymbol } from "@tuvren/sdk";
 import type { FlexibleSchema } from "@tuvren/sdk";
 import { z as z3 } from "zod/v3";
 import { z as z4 } from "zod/v4";
 
-import { readJsonSchemaProperty } from "./framework-adapter-input.ts";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 // ── Input reading ─────────────────────────────────────────────────────────────
@@ -159,38 +159,44 @@ const runSchemaAuthoringRoute = fromSynchronous(
   runSchemaAuthoringRouteSynchronous
 );
 
+const isCustomSchema = (value: unknown): value is CustomSchema =>
+  isRecord(value) &&
+  typeof value.toJSONSchema === "function" &&
+  typeof value.validate === "function";
+
 const runSchemaAuthoringDefineToolSynchronous = (
-  input: unknown
+  _input: unknown
 ): AdapterProjection => {
-  const checkInput =
-    isRecord(input) && isRecord(input.checkInput) ? input.checkInput : {};
-  const inputSchema =
-    checkInput.inputSchema === undefined
-      ? { type: "string" }
-      : readJsonSchemaProperty(
-          checkInput,
-          "inputSchema",
-          "runtime.schema-authoring.define-tool.inputSchema"
-        );
   const tool = defineTool({
     description: "conformance test tool",
     execute: (_in) => "done",
-    inputSchema,
+    inputSchema: { type: "string" },
     name: "test-tool",
   });
 
-  const jsonSchemaType = isRecord(tool.inputSchema)
-    ? tool.inputSchema.type
-    : null;
+  // defineTool always assigns a CustomSchema object to inputSchema; the wider
+  // union type on TuvrenToolDefinition accommodates legacy bare-JSON-Schema
+  // paths that don't go through defineTool.
+  const customSchema = tool.inputSchema;
+  if (!isCustomSchema(customSchema)) {
+    throw new TypeError("defineTool did not normalize its input schema");
+  }
+  const rawJsonSchema = customSchema.toJSONSchema();
+  const jsonSchemaType =
+    typeof rawJsonSchema === "object" && rawJsonSchema !== null
+      ? (rawJsonSchema.type ?? null)
+      : null;
+
+  const validateResult = customSchema.validate("test-input");
 
   return {
     result: {
       schemaAuthoring: {
         defineTool: {
-          inputSchema: tool.inputSchema,
           jsonSchemaType:
             typeof jsonSchemaType === "string" ? jsonSchemaType : null,
           name: tool.name,
+          validateSuccess: validateResult.valid,
         },
       },
     },
