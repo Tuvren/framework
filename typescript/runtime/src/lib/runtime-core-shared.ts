@@ -462,6 +462,10 @@ export const projectError = (error: Error): TuvrenErrorProjection => {
   };
 };
 
+/**
+ * Converts a projection to a runtime error, falling back to `execution_failed`
+ * for an absent or non-snake_case code (KrakenFrameworkSpecification §7.1).
+ */
 export const projectionToError = (
   projection: TuvrenErrorProjection | undefined
 ): TuvrenRuntimeError =>
