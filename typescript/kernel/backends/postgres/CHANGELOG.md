@@ -1,5 +1,18 @@
 # @tuvren/backend-postgres
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [8a76b87]
+- Updated dependencies [104052b]
+- Updated dependencies [8c5da7a]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [98d14f4]
+  - @tuvren/kernel-protocol@0.4.0
+  - @tuvren/core@0.4.0
+  - @tuvren/backend-shared@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

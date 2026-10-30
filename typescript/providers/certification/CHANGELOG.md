@@ -1,5 +1,22 @@
 # @tuvren/providers-typescript-certification
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [8a76b87]
+- Updated dependencies [76379fa]
+- Updated dependencies [030339b]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [15ce8bc]
+- Updated dependencies [de358ab]
+- Updated dependencies [4829233]
+  - @tuvren/kernel-runtime@0.4.0
+  - @tuvren/runtime@0.4.0
+  - @tuvren/backend-memory@0.4.0
+  - @tuvren/provider-bridge-ai-sdk@0.4.0
+  - @tuvren/provider-testkit@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

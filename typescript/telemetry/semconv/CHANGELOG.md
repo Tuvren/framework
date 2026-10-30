@@ -1,5 +1,11 @@
 # @tuvren/telemetry-semconv
 
+## 0.4.0
+
+### Patch Changes
+
+- 98d14f4: Migrate the small TypeScript packages toward the native OXC lint toolchain while preserving their public behavior.
+
 ## 0.3.0
 
 ### Patch Changes

@@ -1,5 +1,31 @@
 # @tuvren/runtime
 
+## 0.4.0
+
+### Patch Changes
+
+- 8a76b87: Return unique tree.diff changedPaths in ascending unsigned UTF-8 byte order, including paths with supplementary Unicode characters. Document the canonical result order in the kernel protocol and forward native diff results through the TypeScript conformance adapter without sorting.
+  
+  Emit the canonical turn_node_thread_mismatch, run_lease_owner_mismatch, and run_lease_token_mismatch error codes from @tuvren/kernel-runtime. Native errors now reach conformance unchanged; consumers matching the previous kernel_runtime-prefixed codes must update their handlers.
+  
+  Recognize canonical lease-fence errors in @tuvren/runtime so execution fails with runtime_execution_lease_lost and discards late runner output. The error-code change requires a minor release under ADR-0069 decision 3.
+- 030339b: Prepare runtime core internals for native linting while preserving public behavior.
+- 1b2e3a9: Preserve the first fatal execution error and expose later failures in the optional `subsequentErrors` field of a failed execution result.
+  Map an absent or non-snake_case error code to `execution_failed` in the typed result and its `subsequentErrors`, keeping the published error in the event stream, so `awaitResult()` resolves where a non-snake_case code previously prevented it.
+  Preserve subsequent execution errors in failed orchestration results and resolve child initialization failures with invalid error codes using the same fallback.
+  Document the at-least-once tool dispatch and recovery contract for hosts, including idempotency requirements.
+- 15ce8bc: Prepare runtime execution and tool-dispatch internals for native linting while preserving public behavior.
+- de358ab: Preserve runtime regression coverage while preparing the remaining test surface for native linting.
+- 4829233: Apply behavior-preserving lint cleanup to the framework runtime while preserving public signatures and runtime semantics.
+- Updated dependencies [8a76b87]
+- Updated dependencies [104052b]
+- Updated dependencies [8c5da7a]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [98d14f4]
+  - @tuvren/kernel-protocol@0.4.0
+  - @tuvren/core@0.4.0
+  - @tuvren/telemetry-semconv@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

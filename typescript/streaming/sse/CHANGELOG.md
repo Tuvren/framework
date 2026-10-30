@@ -1,5 +1,16 @@
 # @tuvren/stream-sse
 
+## 0.4.0
+
+### Patch Changes
+
+- 98d14f4: Migrate the small TypeScript packages toward the native OXC lint toolchain while preserving their public behavior.
+- Updated dependencies [8c5da7a]
+- Updated dependencies [1b2e3a9]
+- Updated dependencies [98d14f4]
+  - @tuvren/core@0.4.0
+  - @tuvren/stream-core@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

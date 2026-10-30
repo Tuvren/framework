@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/kernel-runtime",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Internal Tuvren kernel runtime engine (ADR-0057) — an engine dependency of @tuvren/sdk, not a host-facing API. Not semver-guaranteed.",
   "license": "Apache-2.0",
   "repository": {
