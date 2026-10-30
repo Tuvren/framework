@@ -354,7 +354,7 @@ tickets:
       evidence: "Assert that the guide section names at-least-once dispatch, context.idempotencyKey, the (turnId, callId) identity, the nonRetryable redispatch, and the runtime_recovery_interrupted_iteration_unreadable code. Assert that both nonRetryable declarations carry the note, and that the API surface snapshot changes only in documentation."
     flows: [flow-preemption-idempotent-side-effect, flow-crash-mid-checkpoint-recovery]
     certainty: assumed
-    status: planned
+    status: done
 decisions:
   - id: OD-23
     question: "@cfworker/json-schema 4.1.1, the assumed candidate, failed SPK-KRT-DM001. It accepted an invalid draft 2020-12 $dynamicRef case, accepted malformed schemas, and deferred unresolved-reference errors to validation time. Which interpreting JSON Schema validator replaces runtime Ajv?"
