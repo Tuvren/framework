@@ -1496,7 +1496,7 @@ ExecutionResult
 
 `executionStatus.phase === status` is an invariant for all terminal results.
 
-For a hard failure, `error` is the first fatal error. The optional `subsequentErrors` lists later failures in the order they occur, including failures during finalization. A later failure MUST NOT replace the first fatal error. The event stream retains both the fatal error and any subsequent errors.
+For a hard failure, `error` is the first fatal error. The optional `subsequentErrors` lists, in event order, the errors published after the first fatal error event. A later failure MUST NOT replace the first fatal error. The event stream carries every error.
 
 **`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the runner advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
 

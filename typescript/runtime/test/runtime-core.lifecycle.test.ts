@@ -532,7 +532,7 @@ describe("framework-runtime-core", () => {
     });
   });
 
-  test("keeps an earlier non-fatal error out of a later failed result", async () => {
+  test("excludes a non-fatal error published before the first fatal error event", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
       execute: fromSynchronousVariadicAwaited(() => ({

@@ -37,7 +37,7 @@ ADR-0035 semantics for `awaitResult()`:
   final runner iteration produced only tool results.
 - `status: "failed"` — the runner returned an invalid result or the execution
   encountered an unrecoverable error; the result resolves (does not reject).
-- For a hard failure, `error` is the first fatal error. The optional `subsequentErrors` lists later failures in order, including finalization failures, while the event stream retains both errors.
+- For a hard failure, `error` is the first fatal error. The optional `subsequentErrors` lists, in event order, the errors published after the first fatal error event, while the event stream retains the fatal error and every subsequent error.
 - Cancellation via `cancel()` is the only path that causes `awaitResult()` to
   reject; the rejection carries a `TuvrenRuntimeError` with
   `code: "execution_cancelled"`.
