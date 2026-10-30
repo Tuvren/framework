@@ -108,6 +108,7 @@ export type ExecutionResult =
   | {
       status: "failed";
       error: TuvrenError;
+      subsequentErrors?: readonly TuvrenError[];
       executionStatus: ExecutionStatus;
     };
 

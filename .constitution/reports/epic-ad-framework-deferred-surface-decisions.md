@@ -20,7 +20,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | framework state schema | 3 | authority-backed-conformance-covered | KRT-AF001 if portability is selected | No, if kept local/deferred |
 | future framework runners | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | handoff and context engineering | 6 | authority-backed-conformance-covered | KRT-AF005 | No, if kept local/deferred |
-| host execution handle | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| host execution handle | 3 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | orchestration optional worker modes | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration out-of-core boundaries | 8 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | orchestration static config and extension scoping | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |

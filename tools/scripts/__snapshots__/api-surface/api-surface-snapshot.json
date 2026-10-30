@@ -613,7 +613,7 @@
       },
       "ExecutionResult": {
         "kind": "type",
-        "signature": "export type ExecutionResult = { status: \"completed\"; finalAssistantMessage?: TuvrenMessage; executionStatus: ExecutionStatus; } | { status: \"failed\"; error: TuvrenError; executionStatus: ExecutionStatus; };",
+        "signature": "export type ExecutionResult = { status: \"completed\"; finalAssistantMessage?: TuvrenMessage; executionStatus: ExecutionStatus; } | { status: \"failed\"; error: TuvrenError; subsequentErrors?: readonly TuvrenError[]; executionStatus: ExecutionStatus; };",
         "stability": "stable"
       },
       "ExecutionStatus": {
@@ -2094,6 +2094,13 @@
         "@tuvren/sdk#TuvrenMessage: stable-signature-changed"
       ],
       "recordedAt": "2026-10-17T21:36:33.503Z"
+    },
+    {
+      "bump": "minor",
+      "changes": [
+        "@tuvren/core/execution#ExecutionResult: stable-signature-changed"
+      ],
+      "recordedAt": "2026-10-30T00:13:32.413Z"
     }
   ]
 }

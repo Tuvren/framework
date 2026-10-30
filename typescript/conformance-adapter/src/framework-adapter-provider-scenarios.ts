@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { assertHashString } from "@tuvren/core";
+import { assertHashString, TuvrenRuntimeError } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   StructuredOutputRequest,
@@ -34,6 +34,7 @@ import {
   executeGenerateCall,
   executeStreamCall,
 } from "../../runners/react/src/lib/react-runner-stream.ts";
+import { readJsonSchemaProperty } from "./framework-adapter-input.ts";
 import {
   AGENT_NAME,
   assistantText,
@@ -533,6 +534,35 @@ export const createFrameworkAdapterProviderScenarios = (
       "finalText",
       "runtime.tool-execute.finalText"
     );
+    const inputSchema =
+      scenario.inputSchema === undefined
+        ? { type: "object" }
+        : readJsonSchemaProperty(
+            scenario,
+            "inputSchema",
+            "runtime.tool-execute.inputSchema"
+          );
+    const { approvalFailure } = scenario;
+    if (approvalFailure !== undefined && !isRecord(approvalFailure)) {
+      throw new TypeError(
+        "runtime.tool-execute.approvalFailure must be an object"
+      );
+    }
+    const approvalError =
+      approvalFailure === undefined
+        ? undefined
+        : {
+            code: dependencies.readStringProperty(
+              approvalFailure,
+              "code",
+              "runtime.tool-execute.approvalFailure.code"
+            ),
+            message: dependencies.readStringProperty(
+              approvalFailure,
+              "message",
+              "runtime.tool-execute.approvalFailure.message"
+            ),
+          };
     const harness = createConformanceKernelHarness();
     let toolCalls = 0;
     const toolInputs: unknown[] = [];
@@ -569,6 +599,15 @@ export const createFrameworkAdapterProviderScenarios = (
       config: {
         name: AGENT_NAME,
         tools: calls.map((call) => ({
+          ...(approvalError === undefined
+            ? {}
+            : {
+                approval() {
+                  throw new TuvrenRuntimeError(approvalError.message, {
+                    code: approvalError.code,
+                  });
+                },
+              }),
           description: `Shared conformance tool ${call.name}`,
           execute() {
             toolCalls += 1;
@@ -583,7 +622,7 @@ export const createFrameworkAdapterProviderScenarios = (
             toolOutputs.push(output);
             return output;
           },
-          inputSchema: { type: "object" },
+          inputSchema,
           name: call.name,
         })),
       },
@@ -592,9 +631,35 @@ export const createFrameworkAdapterProviderScenarios = (
     });
 
     const events = await collectValues(handle.events());
+    const executionResult = await handle.awaitResult();
+    const observedResult =
+      executionResult.status === "failed"
+        ? {
+            ...executionResult,
+            error: {
+              code: executionResult.error.code,
+              details: executionResult.error.details,
+              message: executionResult.error.message,
+              name: executionResult.error.name,
+            },
+            ...(executionResult.subsequentErrors === undefined
+              ? {}
+              : {
+                  subsequentErrors: executionResult.subsequentErrors.map(
+                    (error) => ({
+                      code: error.code,
+                      details: error.details,
+                      message: error.message,
+                      name: error.name,
+                    })
+                  ),
+                }),
+          }
+        : executionResult;
     const messages = await harness.readBranchMessages(thread.branchId);
 
     return {
+      events,
       evidence: {
         tool: {
           execution: {
@@ -620,6 +685,7 @@ export const createFrameworkAdapterProviderScenarios = (
           execution: {
             callCount: toolCalls,
             eventTypes: events.map((event) => readEventType(event)),
+            executionResult: observedResult,
             failureNames: toolFailures,
             firstToolResultIndex: findEventIndex(events, "tool.result"),
             inputs: toolInputs,

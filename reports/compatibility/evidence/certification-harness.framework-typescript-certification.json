@@ -10326,6 +10326,260 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.2.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.3.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.4.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.5.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.6.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.7.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.8.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.9.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.10.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.11.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.12.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.13.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.14.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.11.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.11.error.message",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.11.fatal",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.11.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.12.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.12.fatal",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.12.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.error.message",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors.0.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors.0.details",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors.0.message",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.tool-admission.approval-root-cause",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+        "traceStepIds": ["run"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.2.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.3.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.4.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.5.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.6.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.7.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.8.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.9.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.10.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.11.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.12.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.13.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.10.error.message",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.10.fatal",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.10.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.11.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.11.fatal",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.11.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.error.message",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors.0.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors.0.details",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.result.tool.execution.executionResult.subsequentErrors.0.message",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.tool-admission.schema-root-cause",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+        "traceStepIds": ["run"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-api-operational-telemetry.approval-events.1.resultField",
           "status": "pass"
         },
@@ -12366,9 +12620,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 511,
-    "totalChecks": 523,
-    "applicableChecks": 511,
+    "passedChecks": 513,
+    "totalChecks": 525,
+    "applicableChecks": 513,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

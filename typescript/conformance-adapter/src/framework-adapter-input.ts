@@ -170,7 +170,7 @@ const readJsonObject = (
   return object;
 };
 
-const readJsonSchemaProperty = (
+export const readJsonSchemaProperty = (
   source: Record<string, unknown>,
   key: string,
   label: string

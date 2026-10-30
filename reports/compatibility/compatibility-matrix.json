@@ -433,6 +433,8 @@
             "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner",
             "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
             "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+            "runtime-lifecycle-ext.tool-admission.approval-root-cause",
+            "runtime-lifecycle-ext.tool-admission.schema-root-cause",
             "runtime-api-operational-telemetry.approval-events",
             "runtime-api-operational-telemetry.completed-turn-events",
             "runtime-api-operational-telemetry.completed-turn-spans",
@@ -521,9 +523,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 511,
-            "totalChecks": 523,
-            "applicableChecks": 511,
+            "passedChecks": 513,
+            "totalChecks": 525,
+            "applicableChecks": 513,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -567,9 +569,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 523,
+            "totalChecks": 525,
             "applicableChecks": 12,
-            "nonApplicableChecks": 511
+            "nonApplicableChecks": 513
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
@@ -1666,9 +1668,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 523,
+            "totalChecks": 525,
             "applicableChecks": 0,
-            "nonApplicableChecks": 523
+            "nonApplicableChecks": 525
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",
