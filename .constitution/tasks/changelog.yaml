@@ -1,4 +1,29 @@
 entries:
+  - version: v0.51.1
+    date: 2026-10-30
+    changed:
+      - "EPIC-DM completes KRT-DM001, KRT-DM002, and KRT-DM007 (8 points). It defers KRT-DM003 (OD-24) and KRT-DM004, KRT-DM005, and KRT-DM006 (OD-23), 15 points, until the owner rules."
+      - "KRT-DM003 deferred to specifying-technical-implementation: a Stage 3 ADR plus kernel authority packet, plans, and interop change for a compound failure-and-rewind kernel operation, after the owner rules OD-24: SPK-KRT-DM001 found that no existing syscall rewinds the branch head and the turn head in one kernel transaction, so the ticket's first stop condition fired. The kernel specification is also ambiguous about who moves the turn head during a checkpoint (docs/KrakenKernelSpecification.md lines 435 and 439)."
+      - "KRT-DM004 deferred to Owner ruling OD-23 on the replacement validator, then a Stage 3 patch of ADR-0083 decision 1 and stack.yaml: The assumed validator, @cfworker/json-schema 4.1.1, failed SPK-KRT-DM001. The sound fallback, @hyperjump/json-schema 1.18.0, prepares schemas asynchronously and brings seven dependencies and a required peer into @tuvren/core. ADR-0083 decision 1 reserves this ruling for the owner."
+      - "KRT-DM005 deferred to Owner ruling OD-23, then KRT-DM004's validator wrapper: Depends on KRT-DM004's wrapper."
+      - "KRT-DM006 deferred to Owner ruling OD-23, then KRT-DM004's validator wrapper: Executed early as c93937e by routing the helpers onto the runtime's native path, then reverted in a246975 after milestone review. That path is still Ajv. The helpers would have failed their turns on runtimes that forbid code generation, an outcome ADR-0083 records the owner rejected. They would also have been exposed to Ajv's per-turn recompile and duplicate-$id failure."
+      - "EPIC-DM Tool-admission failure integrity and codegen-free schema validation archived: 3 tickets, 8 points, 4221 diff lines, 1 review rounds"
+    added:
+      - "Follow-up from EPIC-DM: Runtime Ajv path defect, present in 0.3.0. A plain inputSchema is recompiled on every turn, because createActiveToolRegistry deep-clones each tool and the validator memo in tool-execution-validation.ts is keyed by object identity. Ajv's instance cache grows with every compile, and a schema that carries $id fails on its second turn in the same process with \"schema with key or id ... already exists\". KRT-DM004's wrapper must prepare each schema once, must not register $id globally, and needs a two-turn test with an $id schema. If OD-23 stays open long, a narrow runtime fix is worth planning on its own."
+      - "Follow-up from EPIC-DM: When KRT-DM006 is rescheduled: use plan literals or observed values, never expected* fields in scenario data, because the plan compiler's no-echo rule rejects them. Add a check where a host validator rejects input the schema accepts. Make the host-validator check prove the validator ran, for example by returning a transformed value. Use a distinctive schema for the schema-preservation check, and record the representation defineTool returns against ADR-0038's text."
+      - "Follow-up from EPIC-DM: Once KRT-DM003 lands, the two runtime-lifecycle-ext.tool-admission checks must drop their subsequentErrors length and non-fatal-event assertions (OD-24 interim)."
+      - "Follow-up from EPIC-DM: Docs-authority tooling: the generator classifies a claim as conformance-covered by section. The §7.1 execution_failed fallback claim is marked covered, but conformance exercises only its no-code case. The non-snake_case case and the event-preservation clause rest on runtime unit tests."
+      - "Follow-up from EPIC-DM: Constitution tooling: validate reports TS-001 for the reference-host live-verification doctor commands when python3 is not on PATH, for example outside devenv shell."
+      - "Follow-up from EPIC-DM: Tooling flake under heavy machine load: the biome coverage partition tests in the BP tooling acceptance suite hit their 5000 ms timeout during local bun run verify. Two lease-timing engine checks (runtime-lifecycle-af.client-result-as-proposal-authority-lost and runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner) also failed locally when checked against both e508691 and its parent, 4479814. On 4479814, CI's verify and bazel jobs passed, including those suites and checks."
+      - "Follow-up from EPIC-DM: Until KRT-DM004 lands, runtime-lifecycle-ext.tool-admission.schema-root-cause expects execution_failed because the unresolved-$ref failure is published without a code, and the check asserts that precondition. KRT-DM004 rewrites the check to expect a tool_schema_invalid registration failure (ADR-0083 decision 2)."
+      - "Follow-up from EPIC-DM: Conformance harness: the runtime-lifecycle-ext.tool-admission checks address events by position (events.10, .11, .12). An added or removed earlier event breaks them for reasons unrelated to root cause. A type-filtered event projection in tools/conformance would remove that coupling."
+      - "Follow-up from EPIC-DM: KRT-DM007's guide section and nonRetryable TSDoc were accepted by recorded grep assertions. No committed check guards them against regression, and a docs-content test lane would be needed for one."
+    by: reconcile
+    fast_lane_through: b243e4891ab2854232b1cb108353397b6bb6830c
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.49.0
   - version: v0.51.0
     date: 2026-10-29
     by: stage

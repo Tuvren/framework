@@ -97,28 +97,30 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Validator and rewind spike
-
+        
           Scenario: The validator recommendation is measured
             Given the spike work is complete
             When I read ".constitution/spikes/SPK-KRT-DM001.md"
             Then it records each schema family's result under the no-codegen flag for the candidate and, when needed, the fallback
             And it names one validator, its details projection, and the wrapper package recommendation for the ADR-0083 spec patch
-
+        
           Scenario: The rewind mechanism is decided
             Given the spike work is complete
             When I read ".constitution/spikes/SPK-KRT-DM001.md"
             Then it states whether existing syscalls rewind both heads in one transaction
             And if they don't, it names the kernel operation a Stage 3 pass must record
-
+        
           Scenario: No production code changed
             Given the spike is complete
             When I diff the working tree against the commit before the spike milestone
             Then no file under typescript/ changed
-    flows: [flow-react-runner-turn-execution, flow-host-adds-external-mcp-server]
+    flows:
+      - flow-react-runner-turn-execution
+      - flow-host-adds-external-mcp-server
     certainty: assumed
     status: done
   - id: KRT-DM002
-    title: Report the root cause of a hard failure as the execution result's error
+    title: "Report the root cause of a hard failure as the execution result's error"
     type: Feature
     effort: 3
     depends_on: []
@@ -203,7 +205,9 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Engine plan checks assert from observed durable reads that no failed-iteration message is visible on the branch after a tool-admission failure, and that a second turn on the branch completes with status completed. The framework specification states the rule, and the docs authority inventory records it."
-    flows: [flow-react-runner-turn-execution, flow-crash-mid-checkpoint-recovery]
+    flows:
+      - flow-react-runner-turn-execution
+      - flow-crash-mid-checkpoint-recovery
     certainty: assumed
     status: deferred
     deferred_to: "specifying-technical-implementation: a Stage 3 ADR plus kernel authority packet, plans, and interop change for a compound failure-and-rewind kernel operation (OD-24, SPK-KRT-DM001)"
@@ -259,7 +263,9 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Assert that a plain JSON Schema tool validates valid and invalid input identically with and without --disallow-code-generation-from-strings. Assert that an invalid tool schema fails at registration with tool_schema_invalid, and that the rewritten KRT-DM002 compile check expects tool_schema_invalid at registration. Assert that an invalid agent-configuration structured-output schema fails at registration with structured_output_validation and details.reason: \"schema_compilation_failed\", and that an invalid per-request or around-hook schema fails before the provider call. Assert that structured-output validation works under the flag and that no production import of Ajv remains in the runtime or the ReAct runner. Engine and tools plans pass with the new details shape."
-    flows: [flow-react-runner-turn-execution, flow-exposure-time-tool-surface-policy]
+    flows:
+      - flow-react-runner-turn-execution
+      - flow-exposure-time-tool-surface-policy
     certainty: assumed
     status: deferred
     deferred_to: "Owner ruling OD-23 on the replacement validator and the synchronous helper contract, then a Stage 3 patch of ADR-0083 decision 1 and stack.yaml (SPK-KRT-DM001)"
@@ -292,7 +298,9 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Assert that an MCP tool with a valid server schema validates input under --disallow-code-generation-from-strings and that an invalid server schema yields tool_schema_invalid at listing. Assert that AI SDK structured output validates under the flag, and that neither package has an Ajv dependency."
-    flows: [flow-host-adds-external-mcp-server, flow-react-runner-turn-execution]
+    flows:
+      - flow-host-adds-external-mcp-server
+      - flow-react-runner-turn-execution
     certainty: assumed
     status: deferred
     deferred_to: "Owner ruling OD-23 on the replacement validator, then a Stage 3 patch of ADR-0083 decision 1 and stack.yaml (SPK-KRT-DM001)"
@@ -344,72 +352,11 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Assert that the guide section names at-least-once dispatch, context.idempotencyKey, the (turnId, callId) identity, the nonRetryable redispatch, and the runtime_recovery_interrupted_iteration_unreadable code. Assert that both nonRetryable declarations carry the note, and that the API surface snapshot changes only in documentation."
-    flows: [flow-preemption-idempotent-side-effect, flow-crash-mid-checkpoint-recovery]
+    flows:
+      - flow-preemption-idempotent-side-effect
+      - flow-crash-mid-checkpoint-recovery
     certainty: assumed
     status: done
-decisions:
-  - id: OD-23
-    question: "@cfworker/json-schema 4.1.1, the assumed candidate, failed SPK-KRT-DM001. It accepted an invalid draft 2020-12 $dynamicRef case, accepted malformed schemas, and deferred unresolved-reference errors to validation time. Which interpreting JSON Schema validator replaces runtime Ajv?"
-    blocks: [KRT-DM004, KRT-DM005, KRT-DM006]
-    options:
-      - name: "@hyperjump/json-schema 1.18.0 behind a @tuvren/core/schema-validation wrapper, prepared at registration"
-        pros:
-          - "Passed every sampled repository schema family and probe under --disallow-code-generation-from-strings, including the 2020-12 $dynamicRef case, and rejected malformed schemas and unresolved references at preparation."
-          - "One wrapper and one details projection ({ instanceLocation, keywordLocation, keyword }) serve the runtime, ReAct runner, MCP client, and AI SDK bridge without a package cycle."
-        cons:
-          - "Preparation is asynchronous, so registration must become an async boundary for the built-in validator."
-          - "It declares seven caret-ranged runtime dependencies (@hyperjump/json-pointer, json-schema-formats, @hyperjump/pact, @hyperjump/uri, content-type, just-curry-it, uuid) and a required peer, @hyperjump/browser ^1.1.0. Every @tuvren/core consumer would inherit them; @tuvren/core has no dependencies today, and ADR-0083 assumed a dependency-free library."
-          - "Its shared schema registry and global format configuration need isolation, it reports an unresolved reference as a plain TypeError that the wrapper must map, its BASIC output format is documented as experimental, and validation measured about 16.6x Ajv's time."
-      - name: "@cfworker/json-schema 4.1.1 hardened inside the same wrapper"
-        pros:
-          - "Synchronous and dependency-free, so @tuvren/core stays dependency-light; measured about 8x Ajv's time."
-          - "It implements $recursiveRef and $recursiveAnchor; a draft 2019-09 recursive probe was rejected correctly."
-        cons:
-          - "The wrapper must detect malformed schemas and unresolved references itself, and must reject $dynamicRef and $dynamicAnchor at preparation because the library mis-validates them; the draft 2020-12 meta-schema itself uses those keywords."
-          - "It mutates schemas while dereferencing, so the wrapper must clone them, and it asserts known formats, which is stricter than today's Ajv configuration."
-    recommendation: "@hyperjump/json-schema 1.18.0 behind a @tuvren/core/schema-validation wrapper, prepared at registration"
-    closure: ruling
-    ruler: "Owner, after the EPIC-DM merge (ADR-0083 decision 1 reserves this ruling for the owner when the candidate fails)"
-    status: proposed
-    asked:
-      date: 2026-10-29
-      in: EPIC-DM
-    proposed_by: "EPIC-DM @ 89c0e29"
-    interim:
-      assumption: "Everything that depends on the validator waits: KRT-DM004, KRT-DM005, and KRT-DM006 are deferred, and validation keeps its 0.3.0 behavior. A plain inputSchema on a TuvrenToolDefinition is still validated by the runtime's Ajv. defineTool and jsonSchema without a host validator still accept unchecked input. Routing those helpers onto the Ajv path now would make them fail on runtimes that forbid code generation, which ADR-0083 records the owner rejected. Two facts found in review belong to KRT-DM004's acceptance: the Ajv path recompiles a schema on every turn because each turn's registry deep-clones the tool, and Ajv's instance cache grows with every compile. A schema that carries $id also fails on its second turn in the same process with 'schema with key or id ... already exists'."
-      applied_by: []
-  - id: OD-24
-    question: "After an iteration fails hard, how do the branch head and the turn head return to the stable head in one kernel transaction, so failed iteration work is never observable (ADR-0083 decision 4)? SPK-KRT-DM001 found that no existing syscall does both. The kernel specification is ambiguous about who moves the turn head during a checkpoint: docs/KrakenKernelSpecification.md line 435 says the Turn head advances as TurnNodes are created, line 439 says it is updated via turn.updateHead, and section 5.5 is silent. Both the TypeScript and Rust kernels move the turn head inside the checkpoint, all four TypeScript backends enforce that an active run stays aligned with the turn head, and no kernel conformance plan observes a turn head after a checkpoint."
-    blocks: [KRT-DM003]
-    options:
-      - name: "A compound kernel operation that completes the run as failed and rewinds both heads atomically (proposed name run.failAndRewind)"
-        pros:
-          - "Atomic end to end, so concurrent durable reads never see the failed checkpoint and a crash cannot leave the heads split."
-          - "Keeps the reactive-checkpoint and archival obligations inside the kernel's single transaction."
-        cons:
-          - "A new syscall needs the kernel authority packet, plans, interop proto, and every kernel implementation, plus crash and concurrency semantics defined in authority."
-      - name: "A compound rewind operation that moves both heads back to the stable head atomically after run.complete(failed)"
-        pros:
-          - "A smaller operation, and the heads never split."
-        cons:
-          - "The failed checkpoint is visible between run.complete(failed) and the rewind, which contradicts ADR-0083 decision 4; it is still a new syscall across every kernel."
-      - name: "Change the kernels so checkpoints move only the branch head, then rewind only the branch head"
-        pros:
-          - "No new syscall for the failure path."
-        cons:
-          - "It changes both the Rust and TypeScript kernels, the active-run alignment rule in four TypeScript backends, and adds a separate turn.updateHead after every successful checkpoint; failed work is still visible between transactions."
-    recommendation: "A compound kernel operation that completes the run as failed and rewinds both heads atomically (proposed name run.failAndRewind)"
-    closure: ruling
-    ruler: "Owner, through a Stage 3 ADR and kernel authority change"
-    status: proposed
-    asked:
-      date: 2026-10-29
-      in: EPIC-DM
-    proposed_by: "EPIC-DM @ 89c0e29"
-    interim:
-      assumption: "KRT-DM003 is deferred, so the failure path keeps today's head behavior. KRT-DM002's checks are written against it, and the backend head mismatch from finalization appears only as a subsequent error. When the rewind lands, finalization stops failing. The two runtime-lifecycle-ext.tool-admission checks must then drop their subsequentErrors length and non-fatal-event assertions, or they go red."
-      applied_by:
-        - KRT-DM002
 closeout:
   tickets_completed: [KRT-DM001, KRT-DM002, KRT-DM007]
   tickets_deferred:
@@ -440,7 +387,7 @@ closeout:
     - stage: tech-spec
       item: "ADR-0063 section 6 says an in-flight nonRetryable invocation is not re-run under a dead owner. That contradicts ADR-0052 section 2 as clarified by EPIC-CR, and framework specification section 4.9, which redispatch every missing call on cold recovery, nonRetryable included. The adopter guide defers to ADRs, so ADR-0063's sentence needs the same clarification."
     - stage: tech-spec
-      item: "ADR-0083 decision 5 (root cause wins) is now exercised by runtime-lifecycle-ext.tool-admission.approval-root-cause and .schema-root-cause and by the runtime lifecycle test. The alignment pass can record that consequence as observed. The ADR stays assumed until decisions 1 and 4 settle."
+      item: ADR-0083 decision 5 (root cause wins) is now exercised by runtime-lifecycle-ext.tool-admission.approval-root-cause and .schema-root-cause and by the runtime lifecycle test. The alignment pass can record that consequence as observed. The ADR stays assumed until decisions 1 and 4 settle.
     - stage: architecture
       item: "flow-preemption-idempotent-side-effect.md (note near line 35) says cold-crash call re-presentation is not yet realized in the TypeScript runtime (ADR-0065 open obligation 1). EPIC-CR realized it, and the runtime resumes staged calls (typescript/runtime/src/lib/runtime-core-iteration.ts), so the note is stale."
   follow_ups:
@@ -456,18 +403,59 @@ closeout:
   code_decisions:
     - summary: "subsequentErrors lists, in event order, the errors published after the first fatal error event. A non-fatal error published before the first fatal event is therefore excluded. Stated in framework specification section 7.1 and the TypeScript binding appendix."
       kind: contract_shape
-      paths: [typescript/runtime/src/lib/runtime-execution-handle.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
+      paths:
+        - typescript/runtime/src/lib/runtime-execution-handle.ts
+        - docs/KrakenFrameworkSpecification.md
+        - spec/host/bindings/typescript.md
       commit: 2dc8fdf
     - summary: "For error and every subsequentErrors entry, an absent or non-snake_case published code becomes execution_failed in the typed result, and each error event keeps the error as published. Before, a non-snake_case fatal code made settleResult throw and awaitResult() never resolved. Framework specification section 7.1 and the TypeScript binding appendix state the rule. One shared helper, projectionToError, applies it in the execution handle and in the orchestration node's initialization-failure path."
       kind: contract_shape
-      paths: [typescript/runtime/src/lib/runtime-core-shared.ts, typescript/runtime/src/lib/runtime-execution-handle.ts, typescript/runtime/src/lib/orchestration-runtime-node.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md]
+      paths:
+        - typescript/runtime/src/lib/runtime-core-shared.ts
+        - typescript/runtime/src/lib/runtime-execution-handle.ts
+        - typescript/runtime/src/lib/orchestration-runtime-node.ts
+        - docs/KrakenFrameworkSpecification.md
+        - spec/host/bindings/typescript.md
       commit: 5d48ad0
     - summary: "The API freeze gate recorded the additive optional subsequentErrors field as a minor bump (stable-signature-changed). ADR-0083 decision 5 and ADR-0069 decision 3 treat additive changes as patch, so the changeset keeps @tuvren/core at patch. Stage 3 should rule whether the gate's classification or the changeset policy wins for additive optional fields."
       kind: convention
-      paths: [tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json, .changeset/runtime-dm-tool-admission-validation.md]
+      paths:
+        - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
+        - ".changeset/runtime-dm-tool-admission-validation.md"
       commit: 095be22
     - summary: "Engine checks configure a failure trigger as a scenario input on the existing runtime.tool-execute operation (inputSchema, approvalFailure). The adapter builds the host's tool from that data and returns only raw observations, instead of adding a scripted composite operation."
       kind: pattern
-      paths: [typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts, spec/conformance/engine/plans/runtime-api-lifecycle-extended.json]
+      paths:
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+        - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
       commit: 095be22
   settled: []
+  actuals:
+    diff_lines: 4221
+    files_touched: 38
+    milestones: 10
+    review_rounds: 1
+    per_ticket:
+      - id: KRT-DM001
+        diff_lines: 299
+        review_rounds: 1
+      - id: KRT-DM002
+        diff_lines: 1241
+        review_rounds: 0
+      - id: KRT-DM003
+        diff_lines: 0
+        review_rounds: 0
+      - id: KRT-DM004
+        diff_lines: 2114
+        review_rounds: 0
+      - id: KRT-DM005
+        diff_lines: 0
+        review_rounds: 0
+      - id: KRT-DM006
+        diff_lines: 0
+        review_rounds: 0
+      - id: KRT-DM007
+        diff_lines: 567
+        review_rounds: 0
+    merged_commit: b243e48
+    measured_at: 2026-10-30
