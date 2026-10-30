@@ -218,6 +218,7 @@ export interface PolicyCapabilityMetadata {
   /**
    * When true, the framework must not retry this capability even if the tool
    * definition declares idempotent: true. BB004.
+   *
    * After losing authority, a live owner does not retry a `nonRetryable` call,
    * but cold recovery redispatches a missing call once per recovery attempt
    * with its original call identity, so the tool must deduplicate on
