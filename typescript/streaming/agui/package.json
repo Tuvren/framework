@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@ag-ui/core": "0.0.52",
+    "@ag-ui/core": "0.0.59",
     "@tuvren/stream-core": "workspace:*"
   },
   "devDependencies": {
