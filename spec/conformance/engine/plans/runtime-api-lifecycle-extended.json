@@ -26,12 +26,12 @@
           "length": 1
         },
         {
-          "equals": "memory_backend_active_run_turn_head_mismatch",
+          "equalsPath": "$.state.trace.run.events.12.error.code",
           "field": "$.trace.run.result.tool.execution.executionResult.subsequentErrors.0.code",
           "kind": "stateField"
         },
         {
-          "equals": "stored active runs must stay aligned with the current turn head",
+          "equalsPath": "$.state.trace.run.events.12.error.message",
           "field": "$.trace.run.result.tool.execution.executionResult.subsequentErrors.0.message",
           "kind": "stateField"
         },
@@ -63,11 +63,6 @@
         {
           "equals": false,
           "field": "$.trace.run.events.12.fatal",
-          "kind": "stateField"
-        },
-        {
-          "equals": "memory_backend_active_run_turn_head_mismatch",
-          "field": "$.trace.run.events.12.error.code",
           "kind": "stateField"
         },
         {
@@ -105,7 +100,7 @@
           "kind": "stateField"
         },
         {
-          "equals": "can't resolve reference #/$defs/missing from id #",
+          "equalsPath": "$.state.trace.run.events.10.error.message",
           "field": "$.trace.run.result.tool.execution.executionResult.error.message",
           "kind": "stateField"
         },
@@ -115,12 +110,12 @@
           "length": 1
         },
         {
-          "equals": "memory_backend_active_run_turn_head_mismatch",
+          "equalsPath": "$.state.trace.run.events.11.error.code",
           "field": "$.trace.run.result.tool.execution.executionResult.subsequentErrors.0.code",
           "kind": "stateField"
         },
         {
-          "equals": "stored active runs must stay aligned with the current turn head",
+          "equalsPath": "$.state.trace.run.events.11.error.message",
           "field": "$.trace.run.result.tool.execution.executionResult.subsequentErrors.0.message",
           "kind": "stateField"
         },
@@ -135,11 +130,6 @@
           "kind": "stateField"
         },
         {
-          "equals": "can't resolve reference #/$defs/missing from id #",
-          "field": "$.trace.run.events.10.error.message",
-          "kind": "stateField"
-        },
-        {
           "equals": "error",
           "field": "$.trace.run.events.11.type",
           "kind": "stateField"
@@ -147,11 +137,6 @@
         {
           "equals": false,
           "field": "$.trace.run.events.11.fatal",
-          "kind": "stateField"
-        },
-        {
-          "equals": "memory_backend_active_run_turn_head_mismatch",
-          "field": "$.trace.run.events.11.error.code",
           "kind": "stateField"
         },
         {

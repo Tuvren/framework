@@ -10378,10 +10378,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.14.stateField",
-          "status": "pass"
-        },
-        {
           "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events",
           "status": "pass"
         },
@@ -10399,10 +10395,6 @@
         },
         {
           "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.11.type",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.tool-admission.approval-root-cause.requiredEvidence.trace.run.events.12.error.code",
           "status": "pass"
         },
         {
@@ -10501,19 +10493,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.12.stateField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.13.stateField",
-          "status": "pass"
-        },
-        {
           "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.10.error.message",
           "status": "pass"
         },
         {
@@ -10522,10 +10502,6 @@
         },
         {
           "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.10.type",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.tool-admission.schema-root-cause.requiredEvidence.trace.run.events.11.error.code",
           "status": "pass"
         },
         {

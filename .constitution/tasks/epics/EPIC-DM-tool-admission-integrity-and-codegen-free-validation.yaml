@@ -407,6 +407,6 @@ decisions:
       in: EPIC-DM
     proposed_by: "EPIC-DM @ 89c0e29"
     interim:
-      assumption: "KRT-DM003 is deferred, so the failure path keeps today's head behavior. KRT-DM002's checks are written against it, and the backend head mismatch from finalization appears only as a subsequent error."
+      assumption: "KRT-DM003 is deferred, so the failure path keeps today's head behavior. KRT-DM002's checks are written against it, and the backend head mismatch from finalization appears only as a subsequent error. When the rewind lands, finalization stops failing. The two runtime-lifecycle-ext.tool-admission checks must then drop their subsequentErrors length and non-fatal-event assertions, or they go red."
       applied_by:
         - KRT-DM002
