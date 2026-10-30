@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { isTuvrenErrorCode, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   TuvrenErrorProjection,
   TuvrenStreamEvent,
@@ -38,24 +38,13 @@ import {
   createExecutionCancelledError,
   detachPromise,
   normalizeInputSignal,
+  projectionToError,
 } from "./runtime-core-shared.js";
 import type {
   ExecutionSessionRequest,
   PauseContext,
   ResumeContext,
 } from "./runtime-execution-types.js";
-
-export const projectionToError = (
-  projection: TuvrenErrorProjection | undefined
-): TuvrenRuntimeError =>
-  new TuvrenRuntimeError(projection?.message ?? "Execution failed", {
-    code: isTuvrenErrorCode(projection?.code)
-      ? projection.code
-      : "execution_failed",
-    ...(projection?.details === undefined
-      ? {}
-      : { details: projection.details }),
-  });
 
 export interface RuntimeExecutionHandleRuntime {
   cancelPausedExecution: (handle: RuntimeExecutionHandle) => void;

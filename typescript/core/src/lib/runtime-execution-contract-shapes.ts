@@ -107,9 +107,9 @@ export type ExecutionResult =
     }
   | {
       status: "failed";
-      /** The first fatal error. */
+      /** The first fatal error; an absent or non-snake_case event code becomes `execution_failed`. */
       error: TuvrenError;
-      /** Errors published after the first fatal error event, in event order. */
+      /** Errors after the first fatal event, in event order; absent or non-snake_case event codes become `execution_failed`. */
       subsequentErrors?: readonly TuvrenError[];
       executionStatus: ExecutionStatus;
     };

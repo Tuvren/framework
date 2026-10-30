@@ -1498,7 +1498,7 @@ ExecutionResult
 
 For a hard failure, `error` is the first fatal error. The optional `subsequentErrors` lists, in event order, the errors published after the first fatal error event. A later failure MUST NOT replace the first fatal error. The event stream carries every error.
 
-When a fatal error has no code or its code is not a snake_case identifier, the typed result's `error.code` MUST be `execution_failed`. A snake_case identifier consists of one or more lowercase alphanumeric segments joined by single underscores. The typed result preserves the published error's message and details, and the error event keeps the error as published.
+For `error` and each `subsequentErrors` entry, if the published error has no code or its code is not a snake_case identifier, the typed result's code MUST be `execution_failed`. A snake_case identifier consists of one or more lowercase alphanumeric segments joined by single underscores. The typed result preserves each published error's message and details, and each error event keeps the error as published.
 
 **`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the runner advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
 
