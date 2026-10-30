@@ -384,9 +384,12 @@
             "schema-authoring.branch6-json-object.has-schema-symbol",
             "schema-authoring.branch6-json-object.no-validate-fn",
             "schema-authoring.branch6-json-object.passthrough-json-schema",
+            "schema-authoring.define-tool.host-validator-wins",
+            "schema-authoring.define-tool.json-schema-preserved",
             "schema-authoring.define-tool.json-schema-type",
             "schema-authoring.define-tool.name-preserved",
-            "schema-authoring.define-tool.validate-passthrough-success",
+            "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input",
+            "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input",
             "secret-isolation.runtime-api-surfaces",
             "trust-boundary.approval-non-bypassable",
             "trust-boundary.local-tool-input-invalid",
@@ -523,9 +526,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 513,
-            "totalChecks": 525,
-            "applicableChecks": 513,
+            "passedChecks": 516,
+            "totalChecks": 528,
+            "applicableChecks": 516,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -569,9 +572,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 525,
+            "totalChecks": 528,
             "applicableChecks": 12,
-            "nonApplicableChecks": 513
+            "nonApplicableChecks": 516
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
@@ -1668,9 +1671,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 525,
+            "totalChecks": 528,
             "applicableChecks": 0,
-            "nonApplicableChecks": 525
+            "nonApplicableChecks": 528
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",

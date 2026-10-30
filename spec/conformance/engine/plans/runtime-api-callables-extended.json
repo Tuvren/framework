@@ -1357,14 +1357,178 @@
     {
       "assertions": [
         {
-          "equals": true,
-          "field": "$.schemaAuthoring.defineTool.validateSuccess",
+          "equalsPath": "$.input.inputSchema",
+          "field": "$.schemaAuthoring.defineTool.inputSchema",
           "kind": "resultField"
         }
       ],
-      "checkId": "schema-authoring.define-tool.validate-passthrough-success",
-      "evidence": ["result.schemaAuthoring.defineTool.validateSuccess"],
+      "checkId": "schema-authoring.define-tool.json-schema-preserved",
+      "evidence": ["result.schemaAuthoring.defineTool.inputSchema"],
+      "input": { "inputSchema": { "type": "string" } },
       "operation": "runtime.schema-authoring.define-tool"
+    },
+    {
+      "assertions": [
+        {
+          "equalsPath": "$.scenario.expectedCallCount",
+          "field": "$.trace.run.result.tool.execution.callCount",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.expectedEventType",
+          "field": "$.trace.run.events.10.type",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.toolCall.callId",
+          "field": "$.trace.run.events.10.callId",
+          "kind": "stateField"
+        },
+        {
+          "equals": "tool_input_validation_failed",
+          "field": "$.trace.run.events.10.output.code",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.state.trace.run.events.10.output",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.output",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.expectedIsError",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.isError",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.state.trace.run.events.10.isError",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.isError",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.plain-json-schema-rejects-invalid-input",
+      "evidence": ["trace.run.result.tool.execution", "trace.run.events"],
+      "input": {
+        "scenarioPath": "$.schema-authoring-plain-json-schema-invalid"
+      },
+      "operation": "runtime.tool-execute",
+      "scenario": "runtime-api-scenarios",
+      "steps": [
+        {
+          "input": {
+            "scenarioPath": "$.schema-authoring-plain-json-schema-invalid"
+          },
+          "operation": "runtime.tool-execute",
+          "stepId": "run"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equalsPath": "$.scenario.expectedCallCount",
+          "field": "$.trace.run.result.tool.execution.callCount",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.expectedEventType",
+          "field": "$.trace.run.events.10.type",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.toolCall.callId",
+          "field": "$.trace.run.events.10.callId",
+          "kind": "stateField"
+        },
+        {
+          "equals": "tool_input_validation_failed",
+          "field": "$.trace.run.events.10.output.code",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.state.trace.run.events.10.output",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.output",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.expectedIsError",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.isError",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.state.trace.run.events.10.isError",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.isError",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.wrapped-json-schema-rejects-invalid-input",
+      "evidence": ["trace.run.result.tool.execution", "trace.run.events"],
+      "input": {
+        "scenarioPath": "$.schema-authoring-wrapped-json-schema-invalid"
+      },
+      "operation": "runtime.tool-execute",
+      "scenario": "runtime-api-scenarios",
+      "steps": [
+        {
+          "input": {
+            "scenarioPath": "$.schema-authoring-wrapped-json-schema-invalid"
+          },
+          "operation": "runtime.tool-execute",
+          "stepId": "run"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equalsPath": "$.scenario.expectedCallCount",
+          "field": "$.trace.run.result.tool.execution.callCount",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.expectedEventType",
+          "field": "$.trace.run.events.11.type",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.toolCall.callId",
+          "field": "$.trace.run.events.11.callId",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.state.trace.run.events.11.output",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.output",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.state.trace.run.events.11.output",
+          "field": "$.trace.run.result.tool.execution.outputs.0",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.toolCall.input",
+          "field": "$.trace.run.result.tool.execution.inputs.0",
+          "kind": "stateField"
+        },
+        {
+          "equalsPath": "$.scenario.expectedIsError",
+          "field": "$.trace.run.result.tool.execution.toolResults.0.isError",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.host-validator-wins",
+      "evidence": ["trace.run.result.tool.execution", "trace.run.events"],
+      "input": { "scenarioPath": "$.schema-authoring-host-validate-accepts" },
+      "operation": "runtime.tool-execute",
+      "scenario": "runtime-api-scenarios",
+      "steps": [
+        {
+          "input": {
+            "scenarioPath": "$.schema-authoring-host-validate-accepts"
+          },
+          "operation": "runtime.tool-execute",
+          "stepId": "run"
+        }
+      ]
     },
     {
       "assertions": [
@@ -1958,7 +2122,7 @@
   },
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.callables-extended",
-  "planVersion": "0.8.0",
+  "planVersion": "0.9.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }
