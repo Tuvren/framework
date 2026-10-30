@@ -38,8 +38,8 @@ import {
   normalizeError,
   normalizeInputSignal,
   projectError,
+  projectionToError,
 } from "./runtime-core-shared.js";
-import { projectionToError } from "./runtime-execution-handle.js";
 
 /**
  * The concrete framework execution an {@link OrchestrationNode} is bound to:

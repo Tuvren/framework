@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { assertKernelRecord, TuvrenRuntimeError } from "@tuvren/core";
+import {
+  assertKernelRecord,
+  isTuvrenErrorCode,
+  TuvrenRuntimeError,
+} from "@tuvren/core";
 import type {
   TuvrenErrorProjection,
   TuvrenStreamEvent,
@@ -457,6 +461,18 @@ export const projectError = (error: Error): TuvrenErrorProjection => {
     message: error.message,
   };
 };
+
+export const projectionToError = (
+  projection: TuvrenErrorProjection | undefined
+): TuvrenRuntimeError =>
+  new TuvrenRuntimeError(projection?.message ?? "Execution failed", {
+    code: isTuvrenErrorCode(projection?.code)
+      ? projection.code
+      : "execution_failed",
+    ...(projection?.details === undefined
+      ? {}
+      : { details: projection.details }),
+  });
 
 /**
  * Normalizes an {@link InputSignal} by deep-cloning its parts and validating

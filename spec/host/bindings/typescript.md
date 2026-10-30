@@ -38,7 +38,7 @@ ADR-0035 semantics for `awaitResult()`:
 - `status: "failed"` — the runner returned an invalid result or the execution
   encountered an unrecoverable error; the result resolves (does not reject).
 - For a hard failure, `error` is the first fatal error. The optional `subsequentErrors` lists, in event order, the errors published after the first fatal error event, while the event stream retains the fatal error and every subsequent error.
-- When a fatal error has no code or its code is not a snake_case identifier, the typed result's `error.code` MUST be `execution_failed`. A snake_case identifier consists of one or more lowercase alphanumeric segments joined by single underscores. The typed result preserves the published error's message and details, and the error event keeps the error as published.
+- For `error` and each `subsequentErrors` entry, if the published error has no code or its code is not a snake_case identifier, the typed result's code MUST be `execution_failed`. A snake_case identifier consists of one or more lowercase alphanumeric segments joined by single underscores. The typed result preserves each published error's message and details, and each error event keeps the error as published.
 - Cancellation via `cancel()` is the only path that causes `awaitResult()` to
   reject; the rejection carries a `TuvrenRuntimeError` with
   `code: "execution_cancelled"`.

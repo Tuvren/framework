@@ -95,6 +95,11 @@
           "kind": "stateField"
         },
         {
+          "field": "$.trace.run.events.10.error.code",
+          "kind": "stateField",
+          "present": false
+        },
+        {
           "equals": "execution_failed",
           "field": "$.trace.run.result.tool.execution.executionResult.error.code",
           "kind": "stateField"
