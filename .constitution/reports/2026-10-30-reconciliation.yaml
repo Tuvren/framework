@@ -1,0 +1,34 @@
+date: 2026-10-30
+commit: b243e48
+epics: [DM]
+routed:
+  - stage: tech-spec
+    item: "OD-23: the owner rules on the codegen-free validator and the synchronous helper contract. Then ADR-0083 decision 1 names the validator and the wrapper's package, and stack.yaml replaces the failed @cfworker/json-schema 4.1.1 pin (SPK-KRT-DM001)."
+    from: DM
+  - stage: tech-spec
+    item: "OD-24: the owner rules on the single-transaction rewind. Then a Stage 3 ADR and kernel authority change define the compound operation, and the kernel specification resolves who moves the turn head during a checkpoint (lines 435 and 439, and section 5.5) (SPK-KRT-DM001)."
+    from: DM
+  - stage: tech-spec
+    item: "ADR-0063 section 6 says an in-flight nonRetryable invocation is not re-run under a dead owner. That contradicts ADR-0052 section 2 as clarified by EPIC-CR, and framework specification section 4.9, which redispatch every missing call on cold recovery, nonRetryable included. The adopter guide defers to ADRs, so ADR-0063's sentence needs the same clarification."
+    from: DM
+  - stage: tech-spec
+    item: ADR-0083 decision 5 (root cause wins) is now exercised by runtime-lifecycle-ext.tool-admission.approval-root-cause and .schema-root-cause and by the runtime lifecycle test. The alignment pass can record that consequence as observed. The ADR stays assumed until decisions 1 and 4 settle.
+    from: DM
+  - stage: architecture
+    item: "flow-preemption-idempotent-side-effect.md (note near line 35) says cold-crash call re-presentation is not yet realized in the TypeScript runtime (ADR-0065 open obligation 1). EPIC-CR realized it, and the runtime resumes staged calls (typescript/runtime/src/lib/runtime-core-iteration.ts), so the note is stale."
+    from: DM
+  - stage: tech-spec
+    item: "code decision (contract_shape): subsequentErrors lists, in event order, the errors published after the first fatal error event. A non-fatal error published before the first fatal event is therefore excluded. Stated in framework specification section 7.1 and the TypeScript binding appendix. [typescript/runtime/src/lib/runtime-execution-handle.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md] at 2dc8fdf"
+    from: DM
+  - stage: tech-spec
+    item: "code decision (contract_shape): For error and every subsequentErrors entry, an absent or non-snake_case published code becomes execution_failed in the typed result, and each error event keeps the error as published. Before, a non-snake_case fatal code made settleResult throw and awaitResult() never resolved. Framework specification section 7.1 and the TypeScript binding appendix state the rule. One shared helper, projectionToError, applies it in the execution handle and in the orchestration node's initialization-failure path. [typescript/runtime/src/lib/runtime-core-shared.ts, typescript/runtime/src/lib/runtime-execution-handle.ts, typescript/runtime/src/lib/orchestration-runtime-node.ts, docs/KrakenFrameworkSpecification.md, spec/host/bindings/typescript.md] at 5d48ad0"
+    from: DM
+  - stage: tech-spec
+    item: "code decision (convention): The API freeze gate recorded the additive optional subsequentErrors field as a minor bump (stable-signature-changed). ADR-0083 decision 5 and ADR-0069 decision 3 treat additive changes as patch, so the changeset keeps @tuvren/core at patch. Stage 3 should rule whether the gate's classification or the changeset policy wins for additive optional fields. [tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json, .changeset/runtime-dm-tool-admission-validation.md] at 095be22"
+    from: DM
+  - stage: tech-spec
+    item: "code decision (pattern): Engine checks configure a failure trigger as a scenario input on the existing runtime.tool-execute operation (inputSchema, approvalFailure). The adapter builds the host's tool from that data and returns only raw observations, instead of adding a scripted composite operation. [typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts, spec/conformance/engine/plans/runtime-api-lifecycle-extended.json] at 095be22"
+    from: DM
+proposed_decisions: [OD-23, OD-24]
+candidate_terms: []
+stale_owners: [".constitution/spikes/SPK-KRT-DM001.md: KRT-DM001"]
