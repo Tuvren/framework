@@ -6,6 +6,9 @@ flows:
 boundaries: [BND-23, BND-27]
 companion: conformance-certification.md
 pinned: true
-certainty: assumed
-assumption: "The existing plan schema is exercised by tools/conformance/plan-compiler/certification-rules.test.ts. Named instance selection for cross-scope checks is planned and not yet exercised."
-settles_when: "A closeout cites schema and runner tests for two scoped instances on one substrate, including rejected unknown and duplicate names."
+certainty: settled
+evidence:
+  kind: ruling
+  ref: .constitution/research/2026-11-01-testkit-control-gaps-rulings.md
+  date: 2026-11-01
+# The named-instance shape is fixed by the lead ruling; implementation remains unverified until DQ002.

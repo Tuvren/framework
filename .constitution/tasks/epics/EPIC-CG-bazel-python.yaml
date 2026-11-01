@@ -3,6 +3,7 @@ name: Bazel-native Python workspace
 kind: tooling
 capabilities: []
 depends_on: [CC]
+priority: 19
 scope:
   paths:
     - python/kernel/BUILD.bazel

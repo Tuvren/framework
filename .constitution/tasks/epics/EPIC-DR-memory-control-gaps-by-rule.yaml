@@ -2,8 +2,8 @@ id: DR
 name: "Close kernel.memory control gaps by rule"
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
-depends_on: [DQ]
-priority: 4
+depends_on: [DT]
+priority: 5
 scope:
   paths:
     - "spec/conformance/kernel"
@@ -20,7 +20,7 @@ tickets:
     title: "Detect schema-roundtrip corruption across fixtures"
     type: Feature
     effort: 5
-    depends_on: []
+    depends_on: [KRT-DR006]
     scope:
       in:
         - "spec/conformance/kernel"
@@ -32,10 +32,10 @@ tickets:
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if any fixture cannot expose the corruption; route that claim for a ruling rather than marking it detected."
-    description: "Introduce one schema-roundtrip corruption mutant and designate the aggregate claim and its 17 fixture-specific claims in spec/conformance/kernel/kernel-memory-undetected.json. Keep the committed fixture expectations independent of the implementation."
+    description: "Introduce one schema-roundtrip corruption mutant and designate the aggregate claim and its 17 fixture-specific claims in spec/conformance/kernel/kernel-memory-undetected.json. Keep the committed fixture expectations independent of the implementation. Run new kernel.memory controls on each claiming TypeScript backend. Record an explicit unsupported reason for every new mutant in the Rust diagnostic configuration until DS. STOP and route any new positive assertion Rust cannot pass to DS; it must not block publishing the TypeScript testkit."
     acceptance:
       mode: contract_test
-      evidence: "The mutant activates and every designated schema-roundtrip claim has a detecting assertion; the unmutated checks pass and all 18 corresponding register entries are removed."
+      evidence: "The mutant activates and every designated schema-roundtrip claim has a detecting assertion; the unmutated checks pass and all 18 corresponding register entries are removed. The expanded inventory, including codec claims from DR006, is authoritative; no fixed total of 40 is assumed."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
@@ -55,10 +55,10 @@ tickets:
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP for a ruling on any rule that cannot be violated and observed without invalid setup; do not preserve it silently."
-    description: "Add one distinct implementation mutant per remaining edge-validation and lineage rule: lateral branch head, out-of-order step, missing event object, busy branch, duplicate schema path, missing required tree path, tree schema mismatch, and cross-thread lineage. The affected claims and reasons are in spec/conformance/kernel/kernel-memory-undetected.json."
+    description: "Add one distinct implementation mutant per remaining edge-validation and lineage rule: lateral branch head, out-of-order step, missing event object, busy branch, duplicate schema path, missing required tree path, tree schema mismatch, and cross-thread lineage. The affected claims and reasons are in spec/conformance/kernel/kernel-memory-undetected.json. Run new kernel.memory controls on each claiming TypeScript backend. Record an explicit unsupported reason for every new mutant in the Rust diagnostic configuration until DS. STOP and route any new positive assertion Rust cannot pass to DS; it must not block publishing the TypeScript testkit."
     acceptance:
       mode: contract_test
-      evidence: "Each listed rule has its own activated mutant and profile-scoped designated failing assertion; unmutated checks pass and only proven entries leave the register."
+      evidence: "Each listed rule has its own activated mutant and profile-scoped designated failing assertion; unmutated checks pass and only proven entries leave the register. The expanded inventory, including codec claims from DR006, is authoritative; no fixed total of 40 is assumed."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
@@ -78,10 +78,10 @@ tickets:
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP and route a ruling if a rule has no observable failure or a mutant only causes collateral failures."
-    description: "Add one mutant per remaining logical and identity rule, covering branch and thread listing, verdict composition including its fixture claim, node identity walk, canonical schema encoding, and tree manifest identity. The remaining claim IDs are in spec/conformance/kernel/kernel-memory-undetected.json."
+    description: "Add one mutant per remaining logical and identity rule, covering branch and thread listing, verdict composition including its fixture claim, node identity walk, canonical schema encoding, and tree manifest identity. The remaining claim IDs are in spec/conformance/kernel/kernel-memory-undetected.json. Run new kernel.memory controls on each claiming TypeScript backend. Record an explicit unsupported reason for every new mutant in the Rust diagnostic configuration until DS. STOP and route any new positive assertion Rust cannot pass to DS; it must not block publishing the TypeScript testkit."
     acceptance:
       mode: contract_test
-      evidence: "Each distinct rule has an activated mutant and designated failing assertion; related fixture claims are mapped explicitly and unmutated checks pass."
+      evidence: "Each distinct rule has an activated mutant and designated failing assertion; related fixture claims are mapped explicitly and unmutated checks pass. The expanded inventory, including codec claims from DR006, is authoritative; no fixed total of 40 is assumed."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
@@ -101,10 +101,10 @@ tickets:
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP and route a ruling when an applicable rule cannot be detected or its mutant makes the run invalid."
-    description: "Add one mutant per remaining rule for the shared-clock descriptor, expired listing, paused-run exclusion, stale preemption, ciphertext retention and lineage, own-scope content, and own-scope enumeration. Use the claims and reasons in spec/conformance/kernel/kernel-memory-undetected.json; do not conflate them with cross-scope or live-lease controls."
+    description: "Add one mutant per remaining rule for the shared-clock descriptor, expired listing, paused-run exclusion, stale preemption, ciphertext retention and lineage, own-scope content, and own-scope enumeration. Use the claims and reasons in spec/conformance/kernel/kernel-memory-undetected.json; do not conflate them with cross-scope or live-lease controls. Run new kernel.memory controls on each claiming TypeScript backend. Record an explicit unsupported reason for every new mutant in the Rust diagnostic configuration until DS. STOP and route any new positive assertion Rust cannot pass to DS; it must not block publishing the TypeScript testkit."
     acceptance:
       mode: contract_test
-      evidence: "Every remaining rule in these classes has its own activated mutant and designated failing assertion. The positive checks pass and any claimed detected entry leaves the register only after the kill."
+      evidence: "Every remaining rule in these classes has its own activated mutant and designated failing assertion. The positive checks pass and any claimed detected entry leaves the register only after the kill. The expanded inventory, including codec claims from DR006, is authoritative; no fixed total of 40 is assumed."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
@@ -123,11 +123,34 @@ tickets:
       command: "bun run verify:kernel"
       expected: "Exit 0 for complete applicable checks, with every unresolved claim explicitly routed and reported."
     stop_conditions:
-      - "STOP if a remaining claim lacks a proposed ruling or a designated kill is based on an invalid or collateral failure."
-    description: "Recompute the kernel.memory claim inventory and detector mapping after the rule-class mutants land. For any claim that could not be detected, route its precise evidence as an owner decision; an unexplained register entry is not closure."
+      - "STOP if a remaining claim lacks a closed owner ruling or a designated kill is based on an invalid or collateral failure."
+    description: "Recompute the kernel.memory claim inventory and detector mapping after the rule-class mutants land. For any claim that could not be detected, route its precise evidence as an owner decision; an unexplained register entry is not closure. Do not close this ticket on a proposal: finish with an empty register or STOP for an owner ruling; after the ruling, remaining reasons name its closed OD id for the publish gate."
     acceptance:
       mode: contract_test
-      evidence: "The memory register is empty, or every remaining claim is tied to a proposed decision with its failed measurement and an owner ruling path. Every certificate lists the actual remaining claims and reasons."
+      evidence: "The memory register is empty, or execution stops for an owner ruling on every remaining claim is tied to a closed owner ruling, whose closed OD id appears in its reason string. Every certificate lists the actual remaining claims and reasons."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DR006
+    title: "Detect every migrated kernel.codec claim"
+    type: Feature
+    effort: 3
+    depends_on: []
+    scope:
+      in:
+        - "spec/conformance/kernel"
+        - "typescript/kernel/testkit"
+        - "typescript/kernel/conformance-adapter"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if a codec claim lacks an observable designated detector; route the failed measurement for an owner ruling."
+    description: "Own detectors for every codec claim introduced by DQ, including the migrated 68 obligations and any distinct claim IDs they produce. Add the manifest tags, activated codec mutants, and designated assertions, including noncanonical rejection. Recompute the claim inventory rather than assuming the original 40 undetected entries are the final set. Rust remains a diagnostic lane with explicit unsupported reasons until DS. Run the codec controls over memory, SQLite, and PostgreSQL; any new assertion Rust cannot pass stops and routes to DS without blocking the testkit."
+    acceptance:
+      mode: contract_test
+      evidence: "Every migrated codec claim has a designated activated detector and a TypeScript kill over the claimed implementation. A missing detector or omitted claim fails the two-way inventory. Registers use the expanded inventory and preserve unexplained claims for DR closure."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned

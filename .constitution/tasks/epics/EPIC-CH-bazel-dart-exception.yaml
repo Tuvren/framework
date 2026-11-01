@@ -3,6 +3,7 @@ name: Dart native-wrapped Bazel exception
 kind: tooling
 capabilities: []
 depends_on: [CC]
+priority: 20
 scope:
   paths:
     - dart/kernel/BUILD.bazel

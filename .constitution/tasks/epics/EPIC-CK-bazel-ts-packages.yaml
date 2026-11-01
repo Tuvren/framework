@@ -3,6 +3,7 @@ name: Staged TypeScript dependency layers 4 to 5 and wrappers
 kind: tooling
 capabilities: []
 depends_on: [CJ]
+priority: 26
 scope:
   paths:
     - typescript/kernel/testkit/BUILD.bazel

@@ -3,6 +3,7 @@ name: Retire Biome after all directory gates
 kind: tooling
 capabilities: []
 depends_on: [BR, BS, BT, BU, BV, BW, BX, BY, BZ, CX, DJ, DN]
+priority: 14
 scope:
   paths:
     - package.json

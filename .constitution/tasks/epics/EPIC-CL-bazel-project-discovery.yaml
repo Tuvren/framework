@@ -3,6 +3,7 @@ name: Bazel project identity and discovery
 kind: tooling
 capabilities: []
 depends_on: [CC]
+priority: 21
 scope:
   paths:
     - tools/bazel/project-tags.bzl

@@ -3,6 +3,7 @@ name: Bazel-native Rust workspace
 kind: tooling
 capabilities: []
 depends_on: [CC]
+priority: 17
 scope:
   paths:
     - rust/kernel/BUILD.bazel

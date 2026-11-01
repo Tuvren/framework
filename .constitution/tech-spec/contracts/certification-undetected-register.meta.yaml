@@ -1,8 +1,9 @@
 artifact_path: tools/schemas/certification-undetected-register.schema.json
 surface: json
-flows: [flow-multi-implementation-conformance-compatibility]
+flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
 boundaries: [BND-27, BND-29]
 companion: conformance-certification.md
+pinned: true
 certainty: assumed
-assumption: "ADR-0084: the four profile registers use one schema and are referenced by the kernel authority packet."
-settles_when: "A closeout cites schema rejection cases, packet resolution, two-way claim inventory, certificate gap lists, and empty durable registers."
+assumption: "The lead fixes the register shape as claimId-to-nonempty-reason in the companion; its schema artifact and integration do not exist until DP003, after DO."
+settles_when: "DP003 cites schema, membership, stale-entry, packet-reference and register-digest tests."

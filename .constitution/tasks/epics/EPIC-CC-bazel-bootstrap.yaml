@@ -3,6 +3,7 @@ name: Bazel shared toolchain bootstrap
 kind: tooling
 capabilities: []
 depends_on: [CB]
+priority: 15
 scope:
   paths:
     - MODULE.bazel

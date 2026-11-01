@@ -3,7 +3,7 @@ name: Retire legacy kernel plans and composite operations
 kind: product
 capabilities: [CAP-037, CAP-038]
 depends_on: [DF, DG, DH, DI, DM]
-priority: 10
+priority: 13
 scope:
   paths:
     - spec/conformance/kernel
@@ -19,6 +19,10 @@ scope:
     - reports/compatibility
     - .constitution/tech-spec/contracts/kernel-legacy-packet.meta.yaml
     - .constitution/tech-spec/guidelines.md
+    - "tools/scripts/portability-gate.ts"
+    - ".constitution/reports/epic-al-portability-inventory.json"
+    - ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
+    - "tools/scripts/conformance/generate-kernel-plans.ts"
   tech_spec_patchable:
     - .constitution/tech-spec/contracts/kernel-legacy-packet.meta.yaml
     - .constitution/tech-spec/guidelines.md
@@ -45,12 +49,16 @@ tickets:
         - reports/compatibility
         - .constitution/tech-spec/contracts/kernel-legacy-packet.meta.yaml
         - .constitution/tech-spec/guidelines.md
+        - "tools/scripts/portability-gate.ts"
+        - ".constitution/reports/epic-al-portability-inventory.json"
+        - ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
+        - "tools/scripts/conformance/generate-kernel-plans.ts"
     verification:
       command: bun run verify:kernel
       expected: "Exit 0; no kernel plan, fixture, catalog entry, or adapter handler for a legacy composite remains, kernel compiler rules are enforcing everywhere, and the certified list names each kernel implementation with its claimed profiles."
     stop_conditions:
       - "STOP if any kernel adapter still depends on a legacy plan or composite; do not improvise."
-    description: "ADR-0075 consequences and ADR-0081 decision 2. After DG, DH, and DI bind kernel.codec and the other canonical operations and drop the legacy packet, delete the temporary packet, its six plans and unused integer-array fixtures, and the remaining composite operations and adapter handlers. OD-16 is ruled: codec obligations have already moved under kernel.codec in DQ, and Go, Python, and Dart pick them up through their own canonical bindings in DG, DH, and DI. Enforce the kernel compiler rules and update the certified list for each claimed profile. Remove the temporary packet sidecar and guideline reference in a separate spec-only patch, and route the companion's historical section to Stage 3 for removal. Link every remaining red check to its triage entry."
+    description: "ADR-0075 consequences and ADR-0081 decision 2. After DG, DH, and DI bind kernel.codec and the other canonical operations and drop the legacy packet, delete the temporary packet, its six plans and unused integer-array fixtures, and the legacy-owned catalog of 21 composite operations; TypeScript and Rust handlers were deleted by DQ and the other handlers retired with their packet references in DG, DH, and DI. OD-16 is ruled: codec obligations have already moved under kernel.codec in DQ, and Go, Python, and Dart pick them up through their own canonical bindings in DG, DH, and DI. Enforce the kernel compiler rules and update the certified list for each claimed profile. Remove the temporary packet sidecar and guideline reference in a separate spec-only patch, and route the companion's historical section to Stage 3 for removal. Link every remaining red check to its triage entry. Remove the transitional topology from portability-gate.ts, the AL inventory and its Markdown companion, and the legacy generator selection."
     acceptance:
       mode: contract_test
       evidence: "Assert no legacy packet, kernel plan, unused fixture, composite operation, or obsolete sidecar remains; the canonical kernel.codec obligations remain selected by all migrated adapters; every kernel rule is enforcing; each certified profile has its own certificate; and each red check links to an issue or proposed decision."
