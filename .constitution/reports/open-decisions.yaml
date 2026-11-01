@@ -754,7 +754,7 @@ decisions:
         - KRT-DF003
   - id: OD-21
     question: "At the intermediate checkpoint fault points (after-turn-node-write-before-head, after-head-move-before-staging-clear), must recovery roll back to the baseline, or must an implementation whose turn-node write or head move was separately durable roll forward (KrakenKernelSpecification section 5.5: a durably visible post-checkpoint TurnNode means the checkpoint committed)?"
-    blocks: [KRT-DF004]
+    blocks: [KRT-DF004, KRT-DO002, KRT-DO007]
     options:
       - name: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
         pros:
@@ -779,6 +779,8 @@ decisions:
       applied_by:
         - spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json
         - KRT-DF004
+        - KRT-DO002
+        - KRT-DO007
   - id: OD-22
     question: "How do conformance plans certify a two-process durable writer race, real server-clock skew, and several durable profiles per backend, when the pinned plan contract has no order-agnostic outcome selection, no per-step process routing, no server clock source, and one certificate per run?"
     blocks: [KRT-DF005]

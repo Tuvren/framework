@@ -7,6 +7,8 @@ priority: 4
 scope:
   paths:
     - "spec/conformance/kernel"
+    - "typescript/kernel/backends"
+    - "typescript/kernel/runtime"
     - "typescript/kernel/testkit"
     - "typescript/kernel/conformance-adapter"
     - "tools/conformance/meta-conformance"
@@ -16,8 +18,9 @@ scope:
     - "typescript/kernel/certification-postgres"
     - "tools/conformance/certification"
   tech_spec_patchable: []
-estimated_diff_lines: 10000
+estimated_diff_lines: 3500
 estimate_source: planned
+# Estimate: 5 points at about 711 diff lines per point, rounded to 3,500 lines; includes checked-in generated evidence because diff_exclusions excludes lockfiles and snapshots, not generated evidence.
 tickets:
   - id: KRT-DT001
     title: "Certify SQLite and PostgreSQL on kernel.memory"
@@ -27,6 +30,8 @@ tickets:
     scope:
       in:
         - "spec/conformance/kernel"
+        - "typescript/kernel/backends"
+        - "typescript/kernel/runtime"
         - "typescript/kernel/testkit"
         - "typescript/kernel/conformance-adapter"
         - "tools/conformance/meta-conformance"
@@ -38,11 +43,12 @@ tickets:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
-      - "STOP if SQLite cannot provide kernel.barrier through the testkit seam or a required core rule cannot run; triage the finding without weakening the profile."
-    description: "Make adapter-sqlite.json and adapter-postgres.json claim kernel.memory in addition to their durable profiles. Run every core rule and profile-tagged control over each backend itself. Add the SQLite testkit transaction barrier construction and capability declaration required by kernel.barrier; prove both writer-entry receipts before release, retaining the actual SQLite transaction behavior. Never borrow reference-memory or another backend kills. Findings are expected and use the normal V/I/S/E triage with replay evidence. Subsequent DR detectors must run against these claimed backends too."
+      - "STOP if SQLite cannot provide kernel.barrier through the testkit seam or a required core rule cannot run; fix the finding without weakening the profile."
+      - "STOP and create a new ticket for an implementation finding too large for this ticket; keep DT open until that prerequisite lands and the affected certificate passes. Do not silently defer it or close DT with a withheld certificate."
+    description: "Make adapter-sqlite.json and adapter-postgres.json claim kernel.memory in addition to their durable profiles. Run the full positive core inventory and the profile-tagged controls available after DQ over each backend itself; DR adds later detectors. Declare SQLite kernel.barrier and prove the existing testkit barrier constructed in typescript/kernel/conformance-adapter/src/host-syscalls.ts; prove both writer-entry receipts before release, retaining the actual SQLite transaction behavior. Never borrow reference-memory or another backend kills. Own findings using normal V/I/S/E triage with replay evidence, and fix implementation findings in the backend or runtime. Subsequent DR detectors must run against these claimed backends too."
     acceptance:
       mode: contract_test
-      evidence: "SQLite and PostgreSQL each execute the complete kernel.memory inventory and their own applicable controls, including protocol, edge-validation, lineage, codec, scopes, and concurrency. SQLite proves kernel.barrier activation and both arrival orderings through its testkit seam. Certificates link matching backend identity and control runs; every discovered failure has a triage entry and cannot count as a pass. Missing required capabilities or controls withhold the affected certificate."
+      evidence: "SQLite and PostgreSQL each execute the complete kernel.memory inventory and their own applicable controls that exist after DQ, including protocol, edge-validation, lineage, codec, scopes, and concurrency positive checks; later DR detectors are outside this acceptance. SQLite proves kernel.barrier activation and both arrival orderings through its testkit seam. Certificates link matching backend identity and control runs; every discovered failure has a triage entry and cannot count as a pass. Implementation findings are fixed, and both affected certificates pass at close; no certificate remains withheld."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
