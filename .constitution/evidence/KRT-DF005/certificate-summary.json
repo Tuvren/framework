@@ -1,62 +1,97 @@
 {
   "certificates": [
     {
-      "backend": "sqlite",
-      "implementation": "typescript-kernel-sqlite",
-      "profile": "kernel.persistent-reopen",
+      "backend": "memory",
+      "implementation": "rust-kernel",
+      "profile": "kernel.memory",
       "certified": true,
-      "runId": "d416d000-9ea9-4dfd-83d8-fa73ac969f65",
-      "controlRunId": "8a232ef9d884031bca3c14684b6dd92faa6f9fad805239c176797f97b14a01d4",
+      "runId": "dc0a8140-b501-47e4-8918-2ad52c500bd5",
+      "controlRunId": "3266db78d4bd632fa7785e8b17c847f072e718155bdafc4c62dd09f2a22bd54c",
       "digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31",
-        "implementation": "a398f7003f1d9ffae771348a1c90bf96c6d3617a8f7cbeed7b4999a632a78548",
-        "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36",
+        "implementation": "ac46843dd2065dcdcbfc8504e89057f095114d0d4625465b212409d213886672",
+        "adapterManifest": "b241fe9b6fef765e3631434a6954db6a1fbb3aef423e8d4f3bae32054160e4bd"
+      },
+      "environment": {
+        "architecture": "x64",
+        "backend": {
+          "kind": "memory",
+          "version": "0.1.0"
+        },
+        "operatingSystem": {
+          "platform": "linux",
+          "release": "7.3.0"
+        },
+        "toolchains": {
+          "bun": "1.4.2",
+          "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+          "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+          "rustc": "rustc 1.95.0 (59807616e 2026-04-14)"
+        },
+        "fingerprint": "caec537c0c96fa3b273955fceb23f035cb959de0d6b0301866f0e06648deb26e"
       },
       "summary": {
         "failedChecks": 0,
-        "passedChecks": 1,
-        "totalChecks": 147,
-        "applicableChecks": 1,
+        "passedChecks": 67,
+        "totalChecks": 146,
+        "applicableChecks": 67,
         "nonApplicableChecks": 0,
-        "outsideProfileChecks": 146
+        "outsideProfileChecks": 79
       },
       "matchingControlRun": true,
       "matchingVerifierDigests": true,
       "matchingImplementationDigests": true
     },
     {
-      "backend": "sqlite",
-      "implementation": "typescript-kernel-sqlite",
-      "profile": "kernel.process-crash",
+      "backend": "memory",
+      "implementation": "typescript-kernel-memory",
+      "profile": "kernel.memory",
       "certified": true,
-      "runId": "d416d000-9ea9-4dfd-83d8-fa73ac969f65",
-      "controlRunId": "818dab1e4aed0d8984df1524a8a70bdf7bbe6e06eb27323a72e1e80019265071",
+      "runId": "9a8418ce-b28e-4f4a-b87d-039eff35d594",
+      "controlRunId": "3266db78d4bd632fa7785e8b17c847f072e718155bdafc4c62dd09f2a22bd54c",
       "digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31",
-        "implementation": "a398f7003f1d9ffae771348a1c90bf96c6d3617a8f7cbeed7b4999a632a78548",
-        "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36",
+        "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4",
+        "adapterManifest": "4acfae5c3310713181146242d75c2cb2a15b5090aa5ea64f744f9745fefbfe0e"
+      },
+      "environment": {
+        "architecture": "x64",
+        "backend": {
+          "kind": "memory",
+          "version": "0.4.0"
+        },
+        "operatingSystem": {
+          "platform": "linux",
+          "release": "7.3.0"
+        },
+        "toolchains": {
+          "bun": "1.4.2",
+          "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+          "typescript": "6.0.2"
+        },
+        "fingerprint": "6ff1ef813b54ef59e901ca2677eb3ad9a93d4d7ca7e25788f3c35f43645fec22"
       },
       "summary": {
         "failedChecks": 0,
-        "passedChecks": 4,
-        "totalChecks": 147,
-        "applicableChecks": 4,
+        "passedChecks": 67,
+        "totalChecks": 146,
+        "applicableChecks": 67,
         "nonApplicableChecks": 0,
-        "outsideProfileChecks": 143
+        "outsideProfileChecks": 79
       },
       "matchingControlRun": true,
       "matchingVerifierDigests": true,
@@ -67,27 +102,45 @@
       "implementation": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
       "certified": true,
-      "runId": "783ffd3b-1677-4929-a653-16378e720b42",
-      "controlRunId": "8a232ef9d884031bca3c14684b6dd92faa6f9fad805239c176797f97b14a01d4",
+      "runId": "c9206c02-d7c2-48e7-9fd4-50f4d6b56220",
+      "controlRunId": "ff2ab1fa5f54323cff8998f6a09d11aac27edf2e7aaffa915b25124def203eab",
       "digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31",
-        "implementation": "a398f7003f1d9ffae771348a1c90bf96c6d3617a8f7cbeed7b4999a632a78548",
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36",
+        "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4",
         "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f"
+      },
+      "environment": {
+        "architecture": "x64",
+        "backend": {
+          "kind": "postgres",
+          "version": "0.4.0",
+          "serverVersion": "17.11"
+        },
+        "operatingSystem": {
+          "platform": "linux",
+          "release": "7.3.0"
+        },
+        "toolchains": {
+          "bun": "1.4.2",
+          "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+          "typescript": "6.0.2"
+        },
+        "fingerprint": "d7a5b13f051c6f33ce977e2a83cfaafd5bab3a2bd78383f982ba8c56d97441ac"
       },
       "summary": {
         "failedChecks": 0,
         "passedChecks": 1,
-        "totalChecks": 147,
+        "totalChecks": 146,
         "applicableChecks": 1,
         "nonApplicableChecks": 0,
-        "outsideProfileChecks": 146
+        "outsideProfileChecks": 145
       },
       "matchingControlRun": true,
       "matchingVerifierDigests": true,
@@ -98,27 +151,45 @@
       "implementation": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
       "certified": true,
-      "runId": "783ffd3b-1677-4929-a653-16378e720b42",
-      "controlRunId": "818dab1e4aed0d8984df1524a8a70bdf7bbe6e06eb27323a72e1e80019265071",
+      "runId": "c9206c02-d7c2-48e7-9fd4-50f4d6b56220",
+      "controlRunId": "10cdce3630251864d7d611206b7a798015aabf064f51e38036da8e6aeaad61ed",
       "digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31",
-        "implementation": "a398f7003f1d9ffae771348a1c90bf96c6d3617a8f7cbeed7b4999a632a78548",
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36",
+        "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4",
         "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f"
+      },
+      "environment": {
+        "architecture": "x64",
+        "backend": {
+          "kind": "postgres",
+          "version": "0.4.0",
+          "serverVersion": "17.11"
+        },
+        "operatingSystem": {
+          "platform": "linux",
+          "release": "7.3.0"
+        },
+        "toolchains": {
+          "bun": "1.4.2",
+          "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+          "typescript": "6.0.2"
+        },
+        "fingerprint": "d7a5b13f051c6f33ce977e2a83cfaafd5bab3a2bd78383f982ba8c56d97441ac"
       },
       "summary": {
         "failedChecks": 0,
         "passedChecks": 4,
-        "totalChecks": 147,
+        "totalChecks": 146,
         "applicableChecks": 4,
         "nonApplicableChecks": 0,
-        "outsideProfileChecks": 143
+        "outsideProfileChecks": 142
       },
       "matchingControlRun": true,
       "matchingVerifierDigests": true,
@@ -129,27 +200,141 @@
       "implementation": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
       "certified": true,
-      "runId": "783ffd3b-1677-4929-a653-16378e720b42",
-      "controlRunId": "4d6f83e18a2c69f408b1e95dc2a416fa1acb73398c2fe7c217885da4b63b0ce0",
+      "runId": "c9206c02-d7c2-48e7-9fd4-50f4d6b56220",
+      "controlRunId": "0292388d8316f761b4c5f048c12d47b11342d039f0a73ae9128b9185efb8e523",
       "digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31",
-        "implementation": "a398f7003f1d9ffae771348a1c90bf96c6d3617a8f7cbeed7b4999a632a78548",
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36",
+        "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4",
         "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f"
+      },
+      "environment": {
+        "architecture": "x64",
+        "backend": {
+          "kind": "postgres",
+          "version": "0.4.0",
+          "serverVersion": "17.11"
+        },
+        "operatingSystem": {
+          "platform": "linux",
+          "release": "7.3.0"
+        },
+        "toolchains": {
+          "bun": "1.4.2",
+          "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+          "typescript": "6.0.2"
+        },
+        "fingerprint": "d7a5b13f051c6f33ce977e2a83cfaafd5bab3a2bd78383f982ba8c56d97441ac"
       },
       "summary": {
         "failedChecks": 0,
-        "passedChecks": 3,
-        "totalChecks": 147,
-        "applicableChecks": 3,
+        "passedChecks": 2,
+        "totalChecks": 146,
+        "applicableChecks": 2,
         "nonApplicableChecks": 0,
         "outsideProfileChecks": 144
+      },
+      "matchingControlRun": true,
+      "matchingVerifierDigests": true,
+      "matchingImplementationDigests": true
+    },
+    {
+      "backend": "sqlite",
+      "implementation": "typescript-kernel-sqlite",
+      "profile": "kernel.persistent-reopen",
+      "certified": true,
+      "runId": "d34ded1e-6c41-47be-bdd2-089197e2d811",
+      "controlRunId": "ff2ab1fa5f54323cff8998f6a09d11aac27edf2e7aaffa915b25124def203eab",
+      "digests": {
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
+        "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
+        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
+        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
+        "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36",
+        "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4",
+        "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8"
+      },
+      "environment": {
+        "architecture": "x64",
+        "backend": {
+          "kind": "sqlite",
+          "version": "0.4.0"
+        },
+        "operatingSystem": {
+          "platform": "linux",
+          "release": "7.3.0"
+        },
+        "toolchains": {
+          "bun": "1.4.2",
+          "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+          "typescript": "6.0.2"
+        },
+        "fingerprint": "3141ae90963f4e82e1058441225c230731ff4169f58688d3a93866857d164853"
+      },
+      "summary": {
+        "failedChecks": 0,
+        "passedChecks": 1,
+        "totalChecks": 146,
+        "applicableChecks": 1,
+        "nonApplicableChecks": 0,
+        "outsideProfileChecks": 145
+      },
+      "matchingControlRun": true,
+      "matchingVerifierDigests": true,
+      "matchingImplementationDigests": true
+    },
+    {
+      "backend": "sqlite",
+      "implementation": "typescript-kernel-sqlite",
+      "profile": "kernel.process-crash",
+      "certified": true,
+      "runId": "d34ded1e-6c41-47be-bdd2-089197e2d811",
+      "controlRunId": "10cdce3630251864d7d611206b7a798015aabf064f51e38036da8e6aeaad61ed",
+      "digests": {
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
+        "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
+        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
+        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
+        "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36",
+        "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4",
+        "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8"
+      },
+      "environment": {
+        "architecture": "x64",
+        "backend": {
+          "kind": "sqlite",
+          "version": "0.4.0"
+        },
+        "operatingSystem": {
+          "platform": "linux",
+          "release": "7.3.0"
+        },
+        "toolchains": {
+          "bun": "1.4.2",
+          "bunExecutable": "11d629cdc05d5af0ed068bed6984836b2d545c94896a982a26fd5e006be26965",
+          "typescript": "6.0.2"
+        },
+        "fingerprint": "3141ae90963f4e82e1058441225c230731ff4169f58688d3a93866857d164853"
+      },
+      "summary": {
+        "failedChecks": 0,
+        "passedChecks": 4,
+        "totalChecks": 146,
+        "applicableChecks": 4,
+        "nonApplicableChecks": 0,
+        "outsideProfileChecks": 142
       },
       "matchingControlRun": true,
       "matchingVerifierDigests": true,

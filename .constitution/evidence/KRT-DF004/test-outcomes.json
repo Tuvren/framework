@@ -1,9 +1,9 @@
 {
-  "commit": "44e9481",
-  "date": "2026-10-28",
+  "commit": "2962a85",
+  "date": "2026-11-01",
   "command": "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts",
   "exit_status": 0,
-  "tests": 77,
+  "tests": 76,
   "failures": 0,
   "outcomes": [
     {
@@ -86,6 +86,26 @@
       "command": "bun run conformance",
       "exit_status": 0,
       "result": "pass"
+    }
+  ],
+  "before_commit_measurements": [
+    {
+      "backend": "sqlite",
+      "check": "kernel.syscall.process-crash.before_commit",
+      "mutant": "kernel.expose-incomplete-checkpoint",
+      "activation_at_arming": 1,
+      "activation_at_fault_reached": 2,
+      "detected": false,
+      "recovery": "Pending TurnNode absent; baseline head and staging intact; all assertions pass."
+    },
+    {
+      "backend": "postgres",
+      "check": "kernel.syscall.process-crash.before_commit",
+      "mutant": "kernel.expose-incomplete-checkpoint",
+      "activation_at_arming": 1,
+      "activation_at_fault_reached": 2,
+      "detected": false,
+      "recovery": "Pending TurnNode absent; baseline head and staging intact; all assertions pass."
     }
   ]
 }

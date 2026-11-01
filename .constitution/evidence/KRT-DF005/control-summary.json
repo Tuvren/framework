@@ -1,91 +1,1508 @@
 {
   "control_runs": [
     {
-      "profile": "kernel.persistent-reopen",
+      "profile": "kernel.memory",
       "status": "pass",
-      "id": "8a232ef9d884031bca3c14684b6dd92faa6f9fad805239c176797f97b14a01d4",
-      "verifier_digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+      "verifierDigests": {
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31"
-      }
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+      },
+      "adapters": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+          "adapterManifest": "4acfae5c3310713181146242d75c2cb2a15b5090aa5ea64f744f9745fefbfe0e",
+          "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4"
+        },
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
+          "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4"
+        },
+        {
+          "adapter": "rust/kernel-conformance-adapter/adapter.json",
+          "adapterManifest": "b241fe9b6fef765e3631434a6954db6a1fbb3aef423e8d4f3bae32054160e4bd",
+          "implementation": "ac46843dd2065dcdcbfc8504e89057f095114d0d4625465b212409d213886672"
+        }
+      ],
+      "outcomes": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+          "baseline": "pass",
+          "conditionalAssertions": [
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            }
+          ],
+          "branchControls": [
+            {
+              "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+              "conditionalAssertions": [
+                {
+                  "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+                  "status": "pass",
+                  "when": "applied"
+                },
+                {
+                  "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+                  "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+                  "status": "pass",
+                  "when": "not_applied"
+                },
+                {
+                  "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+                  "status": "pass",
+                  "when": "applied"
+                },
+                {
+                  "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+                  "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+                  "status": "pass",
+                  "when": "not_applied"
+                }
+              ],
+              "status": "pass"
+            }
+          ],
+          "counted": true,
+          "findings": [],
+          "mode": "enforcing",
+          "mutants": [
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.protocol.canonical_rejection.1.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.accept-noncanonical-cbor",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+                "kernel.syscall.concurrent_writer.a_first.7.resultField",
+                "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+                "kernel.syscall.concurrent_writer.b_first.10.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.accept-stale-head-update",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+                "kernel.syscall.run-liveness.lease_renewal.4.schemaValid"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.accept-stale-owner-after-takeover",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.reclamation.reachability.8.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.delete-object-reachable-through-live-root",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.logical.recovery_state.3.resultField",
+                "kernel.syscall.crash-recovery.before_commit.6.resultField",
+                "kernel.syscall.crash-recovery.before_commit.12.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [],
+              "expectedRejection": "missing_fault_activation",
+              "kind": "instrumentation",
+              "mutantId": "kernel.fault-seam-never-fires",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.run-liveness.expired_listing.2.resultField",
+                "kernel.syscall.run-liveness.lease_renewal.8.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.lease-takeover-before-expiry",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+                "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+                "kernel.syscall.reclamation.reachability.1.resultField",
+                "kernel.syscall.reclamation.reachability.2.resultField",
+                "kernel.syscall.reclamation.reachability.4.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.never-sweep-eligible-objects",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.logical.diff_paths.1.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.noncanonical-changed-paths-order",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.crash-recovery.before_commit.8.resultField",
+                "kernel.syscall.crash-recovery.before_commit.9.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.promote-staged-before-checkpoint",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.scope-isolation.store_get_is_scope_confined.2.resultField",
+                "kernel.scope-isolation.store_has_is_scope_confined.2.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.resolve-object-across-scopes",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+                "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.sweep-inside-grace-window",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.wrong-opaque-object-hash",
+              "outcome": "killed"
+            }
+          ],
+          "notRun": [],
+          "profile": "kernel.memory"
+        },
+        {
+          "adapter": "rust/kernel-conformance-adapter/adapter.json",
+          "baseline": "pass",
+          "conditionalAssertions": [
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            }
+          ],
+          "counted": true,
+          "findings": [],
+          "mode": "enforcing",
+          "mutants": [
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.accept-noncanonical-cbor",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.accept-stale-head-update",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.accept-stale-owner-after-takeover",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.reclamation.reachability.8.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.delete-object-reachable-through-live-root",
+              "outcome": "killed"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.logical.recovery_state.3.resultField",
+                "kernel.syscall.crash-recovery.before_commit.6.resultField",
+                "kernel.syscall.crash-recovery.before_commit.12.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+              "outcome": "killed"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "expectedRejection": "missing_fault_activation",
+              "kind": "instrumentation",
+              "mutantId": "kernel.fault-seam-never-fires",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.lease-takeover-before-expiry",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.never-sweep-eligible-objects",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.noncanonical-changed-paths-order",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.promote-staged-before-checkpoint",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.resolve-object-across-scopes",
+              "outcome": "unsupported",
+              "reason": "no shared-substrate construction seam in the Rust kernel; not run"
+            },
+            {
+              "activated": false,
+              "designatedFailures": [],
+              "kind": "implementation",
+              "mutantId": "kernel.sweep-inside-grace-window",
+              "outcome": "unsupported",
+              "reason": "no Rust reproduction yet; not run"
+            },
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+                "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.wrong-opaque-object-hash",
+              "outcome": "killed"
+            }
+          ],
+          "notRun": [],
+          "profile": "kernel.memory"
+        }
+      ],
+      "id": "3266db78d4bd632fa7785e8b17c847f072e718155bdafc4c62dd09f2a22bd54c"
+    },
+    {
+      "profile": "kernel.persistent-reopen",
+      "status": "pass",
+      "verifierDigests": {
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
+        "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
+        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
+        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
+        "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+      },
+      "adapters": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+          "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8",
+          "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4"
+        },
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
+          "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4"
+        }
+      ],
+      "outcomes": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+          "baseline": "pass",
+          "conditionalAssertions": [
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            }
+          ],
+          "counted": true,
+          "findings": [],
+          "mode": "enforcing",
+          "mutants": [
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.reopen.close_reopen_checkpoint.10.resultField",
+                "kernel.syscall.reopen.close_reopen_checkpoint.17.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+              "outcome": "killed"
+            }
+          ],
+          "notRun": [],
+          "profile": "kernel.persistent-reopen"
+        },
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "baseline": "pass",
+          "conditionalAssertions": [
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+              "status": "pass",
+              "when": "not_applied"
+            }
+          ],
+          "counted": true,
+          "findings": [],
+          "mode": "enforcing",
+          "mutants": [
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.reopen.close_reopen_checkpoint.10.resultField",
+                "kernel.syscall.reopen.close_reopen_checkpoint.17.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+              "outcome": "killed"
+            }
+          ],
+          "notRun": [],
+          "profile": "kernel.persistent-reopen"
+        }
+      ],
+      "id": "ff2ab1fa5f54323cff8998f6a09d11aac27edf2e7aaffa915b25124def203eab"
     },
     {
       "profile": "kernel.process-crash",
       "status": "pass",
-      "id": "818dab1e4aed0d8984df1524a8a70bdf7bbe6e06eb27323a72e1e80019265071",
-      "verifier_digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+      "verifierDigests": {
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31"
-      }
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+      },
+      "adapters": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+          "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8",
+          "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4"
+        },
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
+          "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4"
+        }
+      ],
+      "outcomes": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+          "baseline": "pass",
+          "conditionalAssertions": [
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal true",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+              "status": "pass",
+              "when": "applied"
+            }
+          ],
+          "counted": true,
+          "findings": [],
+          "mode": "enforcing",
+          "mutants": [
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.process-crash.after_commit_before_ack.11.resultField",
+                "kernel.syscall.process-crash.after_commit_before_ack.12.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.expose-incomplete-checkpoint",
+              "outcome": "killed"
+            }
+          ],
+          "notRun": [],
+          "profile": "kernel.process-crash"
+        },
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "baseline": "pass",
+          "conditionalAssertions": [
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+              "status": "pass",
+              "when": "not_applied"
+            }
+          ],
+          "counted": true,
+          "findings": [],
+          "mode": "enforcing",
+          "mutants": [
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.process-crash.after_commit_before_ack.11.resultField",
+                "kernel.syscall.process-crash.after_commit_before_ack.12.resultField"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.expose-incomplete-checkpoint",
+              "outcome": "killed"
+            }
+          ],
+          "notRun": [],
+          "profile": "kernel.process-crash"
+        }
+      ],
+      "id": "10cdce3630251864d7d611206b7a798015aabf064f51e38036da8e6aeaad61ed"
     },
     {
       "profile": "kernel.shared-backend",
       "status": "pass",
-      "id": "4d6f83e18a2c69f408b1e95dc2a416fa1acb73398c2fe7c217885da4b63b0ce0",
-      "verifier_digests": {
-        "harness": "4f2f3ca096c8d712d3b8f56c2d0d27dcd9955bbab483f7ab976eb665292238c9",
+      "verifierDigests": {
+        "harness": "155544b389d1c571962b6e5b086857a213905ec215db6b54b0b824e3b411f736",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b4549daa7e6f7d7db0adb76d81b7dc09bfd86d6b67fc03d10e0fa379d6908e31"
-      }
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+      },
+      "adapters": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
+          "implementation": "e493199497c28f41afdc50d4d141b7ec10eeb130cafafc4fbd5db2673a3abae4"
+        }
+      ],
+      "outcomes": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "baseline": "pass",
+          "conditionalAssertions": [
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+              "status": "pass",
+              "when": "not_applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+              "status": "pass",
+              "when": "applied"
+            },
+            {
+              "assertionId": "kernel.syscall.controls.before_commit.consumed.2.resultField",
+              "message": "when branch not applied: $.capture.sharedLeaseClock did not equal false",
+              "status": "pass",
+              "when": "not_applied"
+            }
+          ],
+          "counted": true,
+          "findings": [],
+          "mode": "enforcing",
+          "mutants": [
+            {
+              "activated": true,
+              "designatedFailures": [
+                "kernel.syscall.clock_skew.preemption.2.schemaValid"
+              ],
+              "kind": "implementation",
+              "mutantId": "kernel.worker-clock-expiry",
+              "outcome": "killed"
+            }
+          ],
+          "notRun": [],
+          "profile": "kernel.shared-backend"
+        }
+      ],
+      "id": "0292388d8316f761b4c5f048c12d47b11342d039f0a73ae9128b9185efb8e523"
     }
   ],
   "per_mutant_outcomes": [
     {
-      "profile": "kernel.persistent-reopen",
-      "implementation": "typescript-kernel-sqlite",
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
       "baseline": "pass",
-      "mutant": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "mutantId": "kernel.accept-noncanonical-cbor",
+      "kind": "implementation",
       "activated": true,
-      "outcome": "killed"
+      "activationCount": 1,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.protocol.canonical_rejection.1.resultField"
+      ],
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.accept-stale-head-update",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 13,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+        "kernel.syscall.concurrent_writer.a_first.7.resultField",
+        "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+        "kernel.syscall.concurrent_writer.b_first.10.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.accept-stale-owner-after-takeover",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 4,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+        "kernel.syscall.run-liveness.lease_renewal.4.schemaValid"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.delete-object-reachable-through-live-root",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 6,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.reclamation.reachability.8.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 5,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.logical.recovery_state.3.resultField",
+        "kernel.syscall.crash-recovery.before_commit.6.resultField",
+        "kernel.syscall.crash-recovery.before_commit.12.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.fault-seam-never-fires",
+      "kind": "instrumentation",
+      "activated": true,
+      "activationCount": 7,
+      "outcome": "killed",
+      "designatedFailures": [],
+      "expectedRejection": "missing_fault_activation",
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.lease-takeover-before-expiry",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 3,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.run-liveness.expired_listing.2.resultField",
+        "kernel.syscall.run-liveness.lease_renewal.8.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.never-sweep-eligible-objects",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 25,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+        "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+        "kernel.syscall.reclamation.reachability.1.resultField",
+        "kernel.syscall.reclamation.reachability.2.resultField",
+        "kernel.syscall.reclamation.reachability.4.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.noncanonical-changed-paths-order",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 2,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.logical.diff_paths.1.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.promote-staged-before-checkpoint",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 2,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.crash-recovery.before_commit.8.resultField",
+        "kernel.syscall.crash-recovery.before_commit.9.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.resolve-object-across-scopes",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 6,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.scope-isolation.store_get_is_scope_confined.2.resultField",
+        "kernel.scope-isolation.store_has_is_scope_confined.2.resultField"
+      ],
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.sweep-inside-grace-window",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 18,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+        "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.wrong-opaque-object-hash",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 86,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.accept-noncanonical-cbor",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.accept-stale-head-update",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.accept-stale-owner-after-takeover",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.delete-object-reachable-through-live-root",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 1,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.reclamation.reachability.8.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 3,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.logical.recovery_state.3.resultField",
+        "kernel.syscall.crash-recovery.before_commit.6.resultField",
+        "kernel.syscall.crash-recovery.before_commit.12.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.fault-seam-never-fires",
+      "kind": "instrumentation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "expectedRejection": "missing_fault_activation",
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.lease-takeover-before-expiry",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.never-sweep-eligible-objects",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.noncanonical-changed-paths-order",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.promote-staged-before-checkpoint",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.resolve-object-across-scopes",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no shared-substrate construction seam in the Rust kernel; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.sweep-inside-grace-window",
+      "kind": "implementation",
+      "activated": false,
+      "activationCount": 0,
+      "outcome": "unsupported",
+      "designatedFailures": [],
+      "reason": "no Rust reproduction yet; not run",
+      "earnsClaimCredit": false
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "mutantId": "kernel.wrong-opaque-object-hash",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 26,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+        "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+      ],
+      "earnsClaimCredit": true
     },
     {
       "profile": "kernel.persistent-reopen",
-      "implementation": "typescript-kernel-postgres",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
       "baseline": "pass",
-      "mutant": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "kind": "implementation",
       "activated": true,
-      "outcome": "killed"
+      "activationCount": 10,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.reopen.close_reopen_checkpoint.10.resultField",
+        "kernel.syscall.reopen.close_reopen_checkpoint.17.resultField"
+      ],
+      "earnsClaimCredit": true
+    },
+    {
+      "profile": "kernel.persistent-reopen",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+      "baseline": "pass",
+      "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "kind": "implementation",
+      "activated": true,
+      "activationCount": 10,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.reopen.close_reopen_checkpoint.10.resultField",
+        "kernel.syscall.reopen.close_reopen_checkpoint.17.resultField"
+      ],
+      "earnsClaimCredit": true
     },
     {
       "profile": "kernel.process-crash",
-      "implementation": "typescript-kernel-sqlite",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
       "baseline": "pass",
-      "mutant": "kernel.expose-incomplete-checkpoint",
+      "mutantId": "kernel.expose-incomplete-checkpoint",
+      "kind": "implementation",
       "activated": true,
-      "outcome": "killed"
+      "activationCount": 62,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.process-crash.after_commit_before_ack.11.resultField",
+        "kernel.syscall.process-crash.after_commit_before_ack.12.resultField"
+      ],
+      "earnsClaimCredit": true
     },
     {
       "profile": "kernel.process-crash",
-      "implementation": "typescript-kernel-postgres",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
       "baseline": "pass",
-      "mutant": "kernel.expose-incomplete-checkpoint",
+      "mutantId": "kernel.expose-incomplete-checkpoint",
+      "kind": "implementation",
       "activated": true,
-      "outcome": "killed"
+      "activationCount": 73,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.process-crash.after_commit_before_ack.11.resultField",
+        "kernel.syscall.process-crash.after_commit_before_ack.12.resultField"
+      ],
+      "earnsClaimCredit": true
     },
     {
       "profile": "kernel.shared-backend",
-      "implementation": "typescript-kernel-postgres",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
       "baseline": "pass",
-      "mutant": "kernel.worker-clock-expiry",
+      "mutantId": "kernel.worker-clock-expiry",
+      "kind": "implementation",
       "activated": true,
-      "outcome": "killed"
+      "activationCount": 3,
+      "outcome": "killed",
+      "designatedFailures": [
+        "kernel.syscall.clock_skew.preemption.2.schemaValid"
+      ],
+      "earnsClaimCredit": true
+    }
+  ],
+  "perProfileKills": [
+    {
+      "profile": "kernel.memory",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "totals": {
+        "activated": 13,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 13,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "killed": [
+        "kernel.accept-noncanonical-cbor",
+        "kernel.accept-stale-head-update",
+        "kernel.accept-stale-owner-after-takeover",
+        "kernel.delete-object-reachable-through-live-root",
+        "kernel.drop-uncommitted-staged-result-on-recovery",
+        "kernel.fault-seam-never-fires",
+        "kernel.lease-takeover-before-expiry",
+        "kernel.never-sweep-eligible-objects",
+        "kernel.noncanonical-changed-paths-order",
+        "kernel.promote-staged-before-checkpoint",
+        "kernel.resolve-object-across-scopes",
+        "kernel.sweep-inside-grace-window",
+        "kernel.wrong-opaque-object-hash"
+      ],
+      "noClaimCredit": [
+        "kernel.accept-noncanonical-cbor",
+        "kernel.resolve-object-across-scopes"
+      ],
+      "earnedClaims": {
+        "kernel.accept-noncanonical-cbor": [],
+        "kernel.accept-stale-head-update": [
+          "kernel.syscall.concurrent_writer.a_first",
+          "kernel.syscall.concurrent_writer.b_first"
+        ],
+        "kernel.accept-stale-owner-after-takeover": [
+          "kernel.syscall.run-liveness.lease_renewal"
+        ],
+        "kernel.delete-object-reachable-through-live-root": [
+          "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+          "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+        ],
+        "kernel.drop-uncommitted-staged-result-on-recovery": [
+          "kernel.crash-recovery.in_process_fault_points",
+          "kernel.syscall.crash-recovery.before_commit",
+          "kernel.syscall.logical.recovery_state"
+        ],
+        "kernel.fault-seam-never-fires": [
+          "kernel.crash-recovery.in_process_fault_points",
+          "kernel.syscall.controls.after_commit_before_ack",
+          "kernel.syscall.controls.before_commit",
+          "kernel.syscall.crash-recovery.after_commit_before_ack",
+          "kernel.syscall.crash-recovery.before_commit"
+        ],
+        "kernel.lease-takeover-before-expiry": [
+          "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+        ],
+        "kernel.never-sweep-eligible-objects": [
+          "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+          "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+          "kernel.syscall.reclamation.unreachable_past_grace_is_released"
+        ],
+        "kernel.noncanonical-changed-paths-order": [
+          "kernel.syscall.logical.diff_paths"
+        ],
+        "kernel.promote-staged-before-checkpoint": [
+          "kernel.crash-recovery.in_process_fault_points",
+          "kernel.syscall.crash-recovery.before_commit"
+        ],
+        "kernel.resolve-object-across-scopes": [],
+        "kernel.sweep-inside-grace-window": [
+          "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+          "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+        ],
+        "kernel.wrong-opaque-object-hash": [
+          "kernel.syscall.protocol.deterministic_hashing",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+          "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+          "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+          "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+          "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+          "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+          "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+          "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+          "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+          "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+        ]
+      },
+      "unsupported": []
+    },
+    {
+      "profile": "kernel.memory",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "baseline": "pass",
+      "totals": {
+        "activated": 3,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 3,
+        "survived": 0,
+        "unsupported": 10
+      },
+      "killed": [
+        "kernel.delete-object-reachable-through-live-root",
+        "kernel.drop-uncommitted-staged-result-on-recovery",
+        "kernel.wrong-opaque-object-hash"
+      ],
+      "noClaimCredit": [],
+      "earnedClaims": {
+        "kernel.delete-object-reachable-through-live-root": [
+          "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+          "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+        ],
+        "kernel.drop-uncommitted-staged-result-on-recovery": [
+          "kernel.crash-recovery.in_process_fault_points",
+          "kernel.syscall.crash-recovery.before_commit",
+          "kernel.syscall.logical.recovery_state"
+        ],
+        "kernel.wrong-opaque-object-hash": [
+          "kernel.syscall.protocol.deterministic_hashing",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+          "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+          "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+          "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+          "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+          "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+          "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+          "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+          "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+          "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+          "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+          "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+        ]
+      },
+      "unsupported": [
+        {
+          "mutant": "kernel.accept-noncanonical-cbor",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.accept-stale-head-update",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.accept-stale-owner-after-takeover",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.fault-seam-never-fires",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.lease-takeover-before-expiry",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.never-sweep-eligible-objects",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.noncanonical-changed-paths-order",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.promote-staged-before-checkpoint",
+          "reason": "no Rust reproduction yet; not run"
+        },
+        {
+          "mutant": "kernel.resolve-object-across-scopes",
+          "reason": "no shared-substrate construction seam in the Rust kernel; not run"
+        },
+        {
+          "mutant": "kernel.sweep-inside-grace-window",
+          "reason": "no Rust reproduction yet; not run"
+        }
+      ]
+    },
+    {
+      "profile": "kernel.persistent-reopen",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+      "baseline": "pass",
+      "totals": {
+        "activated": 1,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 1,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "killed": [
+        "kernel.drop-uncommitted-staged-result-on-recovery"
+      ],
+      "noClaimCredit": [],
+      "earnedClaims": {
+        "kernel.drop-uncommitted-staged-result-on-recovery": [
+          "kernel.syscall.reopen.pending_count",
+          "kernel.syscall.reopen.pending_state"
+        ]
+      },
+      "unsupported": []
+    },
+    {
+      "profile": "kernel.persistent-reopen",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+      "baseline": "pass",
+      "totals": {
+        "activated": 1,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 1,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "killed": [
+        "kernel.drop-uncommitted-staged-result-on-recovery"
+      ],
+      "noClaimCredit": [],
+      "earnedClaims": {
+        "kernel.drop-uncommitted-staged-result-on-recovery": [
+          "kernel.syscall.reopen.pending_count",
+          "kernel.syscall.reopen.pending_state"
+        ]
+      },
+      "unsupported": []
+    },
+    {
+      "profile": "kernel.process-crash",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+      "baseline": "pass",
+      "totals": {
+        "activated": 1,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 1,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "killed": [
+        "kernel.expose-incomplete-checkpoint"
+      ],
+      "noClaimCredit": [],
+      "earnedClaims": {
+        "kernel.expose-incomplete-checkpoint": [
+          "kernel.syscall.process-crash.after_commit_before_ack"
+        ]
+      },
+      "unsupported": []
+    },
+    {
+      "profile": "kernel.process-crash",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+      "baseline": "pass",
+      "totals": {
+        "activated": 1,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 1,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "killed": [
+        "kernel.expose-incomplete-checkpoint"
+      ],
+      "noClaimCredit": [],
+      "earnedClaims": {
+        "kernel.expose-incomplete-checkpoint": [
+          "kernel.syscall.process-crash.after_commit_before_ack"
+        ]
+      },
+      "unsupported": []
+    },
+    {
+      "profile": "kernel.shared-backend",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+      "baseline": "pass",
+      "totals": {
+        "activated": 1,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 1,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "killed": [
+        "kernel.worker-clock-expiry"
+      ],
+      "noClaimCredit": [],
+      "earnedClaims": {
+        "kernel.worker-clock-expiry": [
+          "kernel.syscall.clock_skew.live"
+        ]
+      },
+      "unsupported": []
     }
   ]
 }

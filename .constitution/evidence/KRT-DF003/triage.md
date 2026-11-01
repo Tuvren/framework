@@ -4,7 +4,7 @@ Adapted from the prior DF003 triage for the state at commit ef893e1.
 
 | Fault point | SQLite and PostgreSQL |
 | --- | --- |
-| `before-commit` | Supported; receipt and blocking occur before checkpoint writes. |
+| `before-commit` | Supported; receipt and blocking occur after all checkpoint writes and before COMMIT (OD-25). |
 | `after-turn-node-write-before-head` | Supported; receipt and blocking occur after the TurnNode write and before the head update. |
 | `after-head-move-before-staging-clear` | Supported; receipt and blocking occur after the head update and before staging clear. |
 | `after-commit-before-ack` | Supported; receipt and blocking occur after commit and before acknowledgement. |

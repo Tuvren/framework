@@ -9,8 +9,8 @@
       "differences": 0
     },
     "coverage": {
-      "checks": 3,
-      "differences": 3
+      "checks": 2,
+      "differences": 2
     }
   },
   "implementations": [
@@ -19,18 +19,18 @@
       "summary": {
         "failedChecks": 0,
         "passedChecks": 5,
-        "totalChecks": 8,
+        "totalChecks": 7,
         "applicableChecks": 5,
-        "nonApplicableChecks": 3
+        "nonApplicableChecks": 2
       }
     },
     {
       "implementation": "typescript-kernel-postgres",
       "summary": {
         "failedChecks": 0,
-        "passedChecks": 8,
-        "totalChecks": 8,
-        "applicableChecks": 8,
+        "passedChecks": 7,
+        "totalChecks": 7,
+        "applicableChecks": 7,
         "nonApplicableChecks": 0
       }
     }
@@ -47,17 +47,7 @@
       ]
     },
     {
-      "checkId": "kernel.syscall.shared_writer.a_first",
-      "kind": "applicability",
-      "classification": "coverage",
-      "citation": "ADR-0081 §1, §3 (selection inventory)",
-      "values": [
-        false,
-        true
-      ]
-    },
-    {
-      "checkId": "kernel.syscall.shared_writer.b_first",
+      "checkId": "kernel.syscall.shared_writer.race",
       "kind": "applicability",
       "classification": "coverage",
       "citation": "ADR-0081 §1, §3 (selection inventory)",
