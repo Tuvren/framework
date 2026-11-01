@@ -477,4 +477,27 @@ closeout:
       kind: contract_shape
       paths: [tools/conformance/certification/bundle.ts, tools/conformance/harness/storage-resource.ts, tools/schemas/certification-evidence.schema.json]
       commit: "2962a85"
+  actuals:
+    diff_lines: 26648
+    files_touched: 151
+    milestones: 4
+    review_rounds: 2
+    per_ticket:
+      - id: KRT-DF001
+        diff_lines: 2956
+        review_rounds: 0
+      - id: KRT-DF002
+        diff_lines: 2956
+        review_rounds: 0
+      - id: KRT-DF003
+        diff_lines: 4677
+        review_rounds: 0
+      - id: KRT-DF004
+        diff_lines: 5443
+        review_rounds: 0
+      - id: KRT-DF005
+        diff_lines: 10616
+        review_rounds: 2
+    merged_commit: "62b9df4"
+    measured_at: 2026-11-01
   settled: []
