@@ -9,14 +9,13 @@ import { readCertificationManifest } from "./certification-manifest.js";
 import type { CertificationInventoryEntry } from "./certification-manifest.js";
 import { readClaimedProfiles } from "./profile.js";
 import type { CertificationProfile } from "./profile.js";
-import type { CertificateDigests } from "./provenance.js";
-import { computeCertificateDigests } from "./provenance.js";
+import type { SourceCertificateDigests } from "./provenance.js";
+import { computeSourceCertificateDigests } from "./provenance.js";
 
 export interface CompatibilityCertificate {
   backend: string;
-  digests: CertificateDigests;
+  digests: SourceCertificateDigests;
   implementationId: string;
-  negativeControlRunId: string;
   profile: string;
   status: "certified";
 }
@@ -38,9 +37,8 @@ const verifierFields = [
   "verifierAuthority",
 ] as const;
 const digestFields = [
-  "implementation",
   "adapterManifest",
-  ...verifierFields,
+  ...verifierFields.filter((field) => field !== "harness"),
 ] as const;
 const hashPattern = /^[0-9a-f]{64}$/u;
 const object = (value: unknown): Record<string, unknown> => {
@@ -55,7 +53,7 @@ const text = (value: unknown): string => {
   }
   return value;
 };
-const digests = (value: unknown): CertificateDigests => {
+const digests = (value: unknown): SourceCertificateDigests => {
   const input = object(value);
   const fields = Object.fromEntries(
     digestFields.map((field) => {
@@ -67,9 +65,7 @@ const digests = (value: unknown): CertificateDigests => {
     })
   );
   return {
-    implementation: text(fields.implementation),
     adapterManifest: text(fields.adapterManifest),
-    harness: text(fields.harness),
     packet: text(fields.packet),
     plans: text(fields.plans),
     catalogs: text(fields.catalogs),
@@ -123,6 +119,16 @@ const backendKind = (storage: string | undefined): string => {
 export const assertCompatibilityCertificates = async (
   rows: readonly CompatibilityCertificate[]
 ): Promise<void> => {
+  for (const row of rows) {
+    if (
+      "negativeControlRunId" in row ||
+      Object.keys(row.digests).some(
+        (field) => !digestFields.some((kept) => kept === field)
+      )
+    ) {
+      throw new Error("committed certificate contains a machine-bound field");
+    }
+  }
   const adapters = await certifiedAdapters();
   const expected = adapters
     .flatMap(({ manifest, profiles }) =>
@@ -147,7 +153,7 @@ export const assertCompatibilityCertificates = async (
     );
   }
   for (const { manifest, adapter, profiles } of adapters) {
-    const current = await computeCertificateDigests(manifest, adapter);
+    const current = await computeSourceCertificateDigests(manifest, adapter);
     for (const { profileId } of profiles) {
       const row = rows.find(
         (entry) =>
@@ -219,7 +225,7 @@ export const collectCompatibilityCertificates = async (): Promise<
         "--summary-only",
       ]);
       let runId: string | undefined;
-      let previousDigests: CertificateDigests | undefined;
+      let previousDigests: SourceCertificateDigests | undefined;
       for (const profile of adapter.profiles) {
         const value: unknown = JSON.parse(
           await readFile(
@@ -250,7 +256,7 @@ export const collectCompatibilityCertificates = async (): Promise<
           control.status !== "pass" ||
           control.id !== controlId ||
           verifierFields.some(
-            (field) => currentDigests[field] !== controlDigests[field]
+            (field) => object(bundle.digests)[field] !== controlDigests[field]
           ) ||
           (runId !== undefined && runId !== currentRun) ||
           (previousDigests !== undefined &&
@@ -266,7 +272,6 @@ export const collectCompatibilityCertificates = async (): Promise<
           backend,
           digests: currentDigests,
           implementationId: adapter.manifest.implementationId,
-          negativeControlRunId: controlId,
           profile: profile.profileId,
           status: "certified",
         });

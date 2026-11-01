@@ -7270,8 +7270,7 @@
     "kernel.crash-recovery.durable_fault_points",
     "kernel.restart-recovery.close_reopen_checkpoint",
     "kernel.run-liveness.clock_skew_preemption",
-    "kernel.syscall.shared_writer.a_first",
-    "kernel.syscall.shared_writer.b_first"
+    "kernel.syscall.shared_writer.race"
   ],
   "project": "kernel-typescript-certification",
   "reportLabel": "TypeScript process-local kernel baseline",
@@ -7280,9 +7279,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 135,
-    "totalChecks": 147,
+    "totalChecks": 146,
     "applicableChecks": 135,
-    "nonApplicableChecks": 12
+    "nonApplicableChecks": 11
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

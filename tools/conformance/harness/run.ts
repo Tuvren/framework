@@ -118,6 +118,7 @@ import {
   CleanupError,
   StorageResourceError,
   withCheckStorage,
+  postgresServerVersion,
   withCleanup,
 } from "./storage-resource.js";
 
@@ -2218,7 +2219,27 @@ const executeScheduledCheck = async (
     const trackedExecute = async (
       ref?: string
     ): Promise<ConformanceCheckResult> => {
-      resultBeforeStorageCleanup = await execute(ref);
+      const serverVersion =
+        recordCertification &&
+        manifest.storage === "postgres-database" &&
+        ref !== undefined
+          ? await postgresServerVersion(ref)
+          : undefined;
+      const result = await execute(ref);
+      resultBeforeStorageCleanup =
+        serverVersion === undefined
+          ? result
+          : {
+              ...result,
+              details: {
+                ...result.details,
+                storageIdentity: {
+                  kind: manifest.storage,
+                  storageRef: ref,
+                  serverVersion,
+                },
+              },
+            };
       return resultBeforeStorageCleanup;
     };
     checkResult =

@@ -7,13 +7,6 @@
   "targets": {
     "codegen": {
       "executor": "nx:run-commands",
-      "dependsOn": [
-        {
-          "projects": ["kernel-rust-certification"],
-          "target": "build",
-          "params": "ignore"
-        }
-      ],
       "//": "Cross-boundary aggregator: intentionally broad inputs (every boundary's conformance evidence + adapter manifests). This target stays wide on purpose while per-boundary conformance runners are tightly scoped.",
       "inputs": [
         "default",
@@ -28,22 +21,38 @@
         "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
         "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
         "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
-        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*"
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/spec/**/*",
+        "{workspaceRoot}/tools/schemas/**/*",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/oxfmt.config.ts",
+        "{workspaceRoot}/.gitignore",
+        "{workspaceRoot}/tsconfig.json",
+        "{workspaceRoot}/tsconfig.base.json"
       ],
       "options": {
         "cwd": ".",
         "command": "bun tools/scripts/compatibility-report.ts --check"
-      }
+      },
+      "dependsOn": [
+        {
+          "target": "codegen",
+          "projects": [
+            "core-spec",
+            "host-spec",
+            "streaming-spec",
+            "runners-spec",
+            "tools-spec",
+            "providers-spec",
+            "telemetry-spec",
+            "kernel-interop-grpc"
+          ]
+        }
+      ]
     },
     "check": {
       "executor": "nx:run-commands",
-      "dependsOn": [
-        {
-          "projects": ["kernel-rust-certification"],
-          "target": "build",
-          "params": "ignore"
-        }
-      ],
       "inputs": [
         "default",
         "^production",
@@ -57,7 +66,15 @@
         "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
         "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
         "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
-        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*"
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/spec/**/*",
+        "{workspaceRoot}/tools/schemas/**/*",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/oxfmt.config.ts",
+        "{workspaceRoot}/.gitignore",
+        "{workspaceRoot}/tsconfig.json",
+        "{workspaceRoot}/tsconfig.base.json"
       ],
       "options": {
         "cwd": ".",

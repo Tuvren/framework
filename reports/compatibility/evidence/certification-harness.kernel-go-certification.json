@@ -2992,8 +2992,7 @@
     "kernel.syscall.run-liveness.stale_preemption",
     "kernel.syscall.scope-isolation.own_content",
     "kernel.syscall.scope-isolation.own_enumeration",
-    "kernel.syscall.shared_writer.a_first",
-    "kernel.syscall.shared_writer.b_first"
+    "kernel.syscall.shared_writer.race"
   ],
   "project": "kernel-go-certification",
   "reportLabel": "Go process-local kernel baseline",
@@ -3002,9 +3001,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 68,
-    "totalChecks": 147,
+    "totalChecks": 146,
     "applicableChecks": 68,
-    "nonApplicableChecks": 79
+    "nonApplicableChecks": 78
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

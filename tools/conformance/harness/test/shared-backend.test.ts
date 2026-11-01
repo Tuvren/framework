@@ -15,110 +15,103 @@ import { loadConformancePlan } from "../../plan-compiler/index.ts";
 import { readAdapterManifest } from "../run-plans.ts";
 import { runScheduledChecks } from "../run.ts";
 
-test.each(["a_first", "b_first"])(
-  "postgres shared writer race %s records both processes and receipts",
-  async (order) => {
-    const manifest = await readAdapterManifest(
-      "typescript/kernel/conformance-adapter/adapter-postgres.json"
-    );
-    const plan = await loadConformancePlan(
-      "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
-    );
-    plan.catalog = parseOperationCatalog(
-      JSON.parse(
-        await readFile("spec/conformance/kernel/operations.json", "utf8")
-      ),
-      "kernel catalog"
-    );
-    const original = plan.checks.find(({ check }) =>
-      check.checkId.endsWith(order)
-    );
-    if (original === undefined) {
-      throw new Error("missing writer check");
-    }
-    const check = structuredClone(original.check);
-    const [entry] = await runScheduledChecks(
-      manifest,
-      [{ plan, compiledCheck: { ...original, check }, index: 0 }],
-      1,
-      () => "replay",
-      true
-    );
-    expect(
-      entry?.checkResult.status,
-      JSON.stringify({
-        assertions: entry?.checkResult.assertionResults,
-        failure: {
-          classification: entry?.checkResult.failure?.classification,
-          observation: entry?.checkResult.failure?.observation,
-        },
-      })
-    ).toBe("pass");
-    const details = entry?.checkResult.details;
-    expect(details?.adapterErrors).toBeDefined();
-    expect(details?.processes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: "primary",
-          pid: expect.any(Number),
-          exit: { code: 0, signal: null },
-          stderrTail: expect.any(String),
-          epochs: expect.any(Array),
+test("postgres shared writer race records both processes and receipts", async () => {
+  const manifest = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-postgres.json"
+  );
+  const plan = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-shared-writer-syscall.json"
+  );
+  plan.catalog = parseOperationCatalog(
+    JSON.parse(
+      await readFile("spec/conformance/kernel/operations.json", "utf8")
+    ),
+    "kernel catalog"
+  );
+  const original = plan.checks.find(({ check }) =>
+    check.checkId.endsWith("race")
+  );
+  if (original === undefined) {
+    throw new Error("missing writer check");
+  }
+  const check = structuredClone(original.check);
+  const [entry] = await runScheduledChecks(
+    manifest,
+    [{ plan, compiledCheck: { ...original, check }, index: 0 }],
+    1,
+    () => "replay",
+    true
+  );
+  expect(
+    entry?.checkResult.status,
+    JSON.stringify({
+      assertions: entry?.checkResult.assertionResults,
+      failure: {
+        classification: entry?.checkResult.failure?.classification,
+        observation: entry?.checkResult.failure?.observation,
+      },
+    })
+  ).toBe("pass");
+  const details = entry?.checkResult.details;
+  expect(details?.adapterErrors).toBeDefined();
+  expect(details?.processes).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        name: "primary",
+        pid: expect.any(Number),
+        exit: { code: 0, signal: null },
+        stderrTail: expect.any(String),
+        epochs: expect.any(Array),
+      }),
+      expect.objectContaining({
+        name: "second",
+        pid: expect.any(Number),
+        exit: { code: 0, signal: null },
+        stderrTail: expect.any(String),
+        epochs: expect.any(Array),
+      }),
+    ])
+  );
+  if (!Array.isArray(details?.processes)) {
+    throw new Error("missing process evidence");
+  }
+  expect(
+    new Set(details.processes.map((entry: { pid: number }) => entry.pid)).size
+  ).toBe(2);
+  const schedule = details?.schedule;
+  if (!Array.isArray(schedule)) {
+    throw new Error("missing schedule");
+  }
+  expect(schedule).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        stepId: "firstReceipt",
+        process: "primary",
+        receipt: expect.objectContaining({
+          barrierId: "writers",
+          seam: "kernel.persistence.before-transact",
+          operationHandle: expect.any(String),
         }),
-        expect.objectContaining({
-          name: "second",
-          pid: expect.any(Number),
-          exit: { code: 0, signal: null },
-          stderrTail: expect.any(String),
-          epochs: expect.any(Array),
+      }),
+      expect.objectContaining({
+        stepId: "secondReceipt",
+        process: "second",
+        receipt: expect.objectContaining({
+          barrierId: "writers",
+          seam: "kernel.persistence.before-transact",
+          operationHandle: expect.any(String),
         }),
-      ])
-    );
-    if (!Array.isArray(details?.processes)) {
-      throw new Error("missing process evidence");
-    }
-    expect(
-      new Set(details.processes.map((entry: { pid: number }) => entry.pid)).size
-    ).toBe(2);
-    const schedule = details?.schedule;
-    if (!Array.isArray(schedule)) {
-      throw new Error("missing schedule");
-    }
-    expect(schedule).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          stepId: "firstReceipt",
-          process: "primary",
-          receipt: expect.objectContaining({
-            barrierId: "writers",
-            seam: "kernel.persistence.before-transact",
-            operationHandle: expect.any(String),
-          }),
+      }),
+      expect.objectContaining({
+        stepId: "release",
+        participants: ["firstStart", "secondStart"],
+        input: expect.objectContaining({
+          operationHandles: expect.any(Array),
         }),
-        expect.objectContaining({
-          stepId: "secondReceipt",
-          process: "second",
-          receipt: expect.objectContaining({
-            barrierId: "writers",
-            seam: "kernel.persistence.before-transact",
-            operationHandle: expect.any(String),
-          }),
-        }),
-        expect.objectContaining({
-          stepId: "release",
-          participants:
-            order === "a_first"
-              ? ["firstStart", "secondStart"]
-              : ["secondStart", "firstStart"],
-          input: expect.objectContaining({
-            operationHandles: expect.any(Array),
-          }),
-        }),
-      ])
-    );
-  },
-  60_000
-);
+      }),
+    ])
+  );
+}, 60_000);
 
 test("non-certification multi-process summaries omit winner-dependent diagnostics", async () => {
   const manifest = await readAdapterManifest(
@@ -146,6 +139,7 @@ test("non-certification multi-process summaries omit winner-dependent diagnostic
   );
   expect(entry?.checkResult.status).toBe("pass");
   expect(entry?.checkResult.details?.adapterErrors).toBeUndefined();
+  expect(entry?.checkResult.details?.storageIdentity).toBeUndefined();
 }, 60_000);
 
 test("postgres clock skew uses the server clock for both preemption decisions", async () => {

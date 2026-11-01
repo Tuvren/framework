@@ -288,10 +288,17 @@ for (const backend of ["sqlite", "postgres"]) {
         (record) =>
           record.trigger === "faultReached" && record.processEpoch === 1
       );
-      expect(reached?.reply?.result?.value?.result?.activation).toMatchObject({
+      const beforeArming =
+        reached?.activationBeforeArming?.result?.value?.result?.activation;
+      const atCrash = reached?.reply?.result?.value?.result?.activation;
+      expect(beforeArming?.activationCount).toBeGreaterThan(0);
+      expect(
+        atCrash?.activationCount - beforeArming?.activationCount,
+        JSON.stringify(reached)
+      ).toBe(1);
+      expect(atCrash).toMatchObject({
         mutantId: "kernel.expose-incomplete-checkpoint",
         activated: true,
-        activationCount: expect.any(Number),
       });
     } finally {
       await rm(directory, { recursive: true, force: true });

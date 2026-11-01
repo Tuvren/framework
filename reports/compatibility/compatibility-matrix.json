@@ -4,133 +4,112 @@
     {
       "backend": "memory",
       "digests": {
-        "implementation": "29299924a9e090fc450f73e964ca4c25cf2a9ed8dfcda27652c5ad724f8ef8ee",
         "adapterManifest": "b241fe9b6fef765e3631434a6954db6a1fbb3aef423e8d4f3bae32054160e4bd",
-        "harness": "80b56faee4792eadbcfcc11f96e21549274288cf802d3ddd6256e93e20fb4c3b",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b165b60b8fe19730e799ca624df6149323a8351a535676029bda65ed0788a55d"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
       },
       "implementationId": "rust-kernel",
-      "negativeControlRunId": "75c5d40018dba32a02e85c584ab80089ef3197a02a4efc0c5f508f94da03bec5",
       "profile": "kernel.memory",
       "status": "certified"
     },
     {
       "backend": "memory",
       "digests": {
-        "implementation": "59f439bbdf43a47bba7efd6a15d67917b0ebfd94b80f36926b2b155eeb32a68b",
         "adapterManifest": "4acfae5c3310713181146242d75c2cb2a15b5090aa5ea64f744f9745fefbfe0e",
-        "harness": "80b56faee4792eadbcfcc11f96e21549274288cf802d3ddd6256e93e20fb4c3b",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b165b60b8fe19730e799ca624df6149323a8351a535676029bda65ed0788a55d"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
       },
       "implementationId": "typescript-kernel-memory",
-      "negativeControlRunId": "75c5d40018dba32a02e85c584ab80089ef3197a02a4efc0c5f508f94da03bec5",
       "profile": "kernel.memory",
       "status": "certified"
     },
     {
       "backend": "postgres",
       "digests": {
-        "implementation": "59f439bbdf43a47bba7efd6a15d67917b0ebfd94b80f36926b2b155eeb32a68b",
         "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
-        "harness": "80b56faee4792eadbcfcc11f96e21549274288cf802d3ddd6256e93e20fb4c3b",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b165b60b8fe19730e799ca624df6149323a8351a535676029bda65ed0788a55d"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
       },
       "implementationId": "typescript-kernel-postgres",
-      "negativeControlRunId": "7c53ac029e8b074f891318b822c9eca80d268903ac3f3239ac988ad8abb97d7e",
       "profile": "kernel.persistent-reopen",
       "status": "certified"
     },
     {
       "backend": "postgres",
       "digests": {
-        "implementation": "59f439bbdf43a47bba7efd6a15d67917b0ebfd94b80f36926b2b155eeb32a68b",
         "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
-        "harness": "80b56faee4792eadbcfcc11f96e21549274288cf802d3ddd6256e93e20fb4c3b",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b165b60b8fe19730e799ca624df6149323a8351a535676029bda65ed0788a55d"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
       },
       "implementationId": "typescript-kernel-postgres",
-      "negativeControlRunId": "a7751f2de87732e683e51cc4f729d0f8f39a5f24da74a88b07a12359a1cdf864",
       "profile": "kernel.process-crash",
       "status": "certified"
     },
     {
       "backend": "postgres",
       "digests": {
-        "implementation": "59f439bbdf43a47bba7efd6a15d67917b0ebfd94b80f36926b2b155eeb32a68b",
         "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
-        "harness": "80b56faee4792eadbcfcc11f96e21549274288cf802d3ddd6256e93e20fb4c3b",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b165b60b8fe19730e799ca624df6149323a8351a535676029bda65ed0788a55d"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
       },
       "implementationId": "typescript-kernel-postgres",
-      "negativeControlRunId": "3c46314d7ef64b5f5a09c8d64c3b6713e1ae1e7893ae77bda6542f8d947f0b1b",
       "profile": "kernel.shared-backend",
       "status": "certified"
     },
     {
       "backend": "sqlite",
       "digests": {
-        "implementation": "59f439bbdf43a47bba7efd6a15d67917b0ebfd94b80f36926b2b155eeb32a68b",
         "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8",
-        "harness": "80b56faee4792eadbcfcc11f96e21549274288cf802d3ddd6256e93e20fb4c3b",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b165b60b8fe19730e799ca624df6149323a8351a535676029bda65ed0788a55d"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
       },
       "implementationId": "typescript-kernel-sqlite",
-      "negativeControlRunId": "7c53ac029e8b074f891318b822c9eca80d268903ac3f3239ac988ad8abb97d7e",
       "profile": "kernel.persistent-reopen",
       "status": "certified"
     },
     {
       "backend": "sqlite",
       "digests": {
-        "implementation": "59f439bbdf43a47bba7efd6a15d67917b0ebfd94b80f36926b2b155eeb32a68b",
         "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8",
-        "harness": "80b56faee4792eadbcfcc11f96e21549274288cf802d3ddd6256e93e20fb4c3b",
         "packet": "07303f746132998d3b5ed22aa81240898095c0edc53348db97d6ec6a42702007",
-        "plans": "0616ac84c9033788d1be7e21a1b42e9722019e6aeef3b7d35cc5bbe8c62135a9",
+        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
         "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "12563e0d005233842c71b38b723d64d780039aac43e3e840c0d311f387b931e2",
+        "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "b165b60b8fe19730e799ca624df6149323a8351a535676029bda65ed0788a55d"
+        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
       },
       "implementationId": "typescript-kernel-sqlite",
-      "negativeControlRunId": "a7751f2de87732e683e51cc4f729d0f8f39a5f24da74a88b07a12359a1cdf864",
       "profile": "kernel.process-crash",
       "status": "certified"
     }
@@ -864,9 +843,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 135,
-            "totalChecks": 147,
+            "totalChecks": 146,
             "applicableChecks": 135,
-            "nonApplicableChecks": 12
+            "nonApplicableChecks": 11
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1043,9 +1022,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 141,
-            "totalChecks": 147,
+            "totalChecks": 146,
             "applicableChecks": 141,
-            "nonApplicableChecks": 6
+            "nonApplicableChecks": 5
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1222,14 +1201,13 @@
             "kernel.scope-isolation.store_has_is_scope_confined",
             "kernel.syscall.scope-isolation.own_content",
             "kernel.syscall.scope-isolation.own_enumeration",
-            "kernel.syscall.shared_writer.a_first",
-            "kernel.syscall.shared_writer.b_first"
+            "kernel.syscall.shared_writer.race"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 147,
-            "totalChecks": 147,
-            "applicableChecks": 147,
+            "passedChecks": 146,
+            "totalChecks": 146,
+            "applicableChecks": 146,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -1487,9 +1465,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 123,
-            "totalChecks": 147,
+            "totalChecks": 146,
             "applicableChecks": 123,
-            "nonApplicableChecks": 24
+            "nonApplicableChecks": 23
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1590,9 +1568,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 147,
+            "totalChecks": 146,
             "applicableChecks": 68,
-            "nonApplicableChecks": 79
+            "nonApplicableChecks": 78
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1693,9 +1671,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 147,
+            "totalChecks": 146,
             "applicableChecks": 68,
-            "nonApplicableChecks": 79
+            "nonApplicableChecks": 78
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1796,9 +1774,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 147,
+            "totalChecks": 146,
             "applicableChecks": 68,
-            "nonApplicableChecks": 79
+            "nonApplicableChecks": 78
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

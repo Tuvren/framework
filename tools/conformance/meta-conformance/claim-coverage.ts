@@ -26,6 +26,23 @@ export const claimAssertions = (check: ConformancePlanCheck) => [
   ),
 ];
 
+export const profileSemanticAssertions = (
+  claimIds: readonly string[],
+  plans: readonly CompiledConformancePlan[]
+): string[] => {
+  const claims = new Set(claimIds);
+  return plans.flatMap(({ checks }) =>
+    checks.flatMap(({ check }) =>
+      claimAssertions(check)
+        .filter(
+          (entry) =>
+            entry.detecting && entry.claimIds.some((claim) => claims.has(claim))
+        )
+        .map((entry) => entry.assertionId)
+    )
+  );
+};
+
 export const profileConditionalAssertions = (
   claimIds: readonly string[],
   plans: readonly CompiledConformancePlan[]

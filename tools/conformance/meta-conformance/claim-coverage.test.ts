@@ -302,3 +302,29 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
     )
   ).toThrow(firstGap);
 });
+
+test("a designated legacy kill earns no profile claim credit", () => {
+  expect(() =>
+    assertClaimCoverage(
+      "example.profile",
+      ["profile.claim"],
+      [
+        {
+          claimIds: ["legacy.claim"],
+          designatedAssertions: ["legacy.1.resultField"],
+          kind: "implementation",
+          mutantId: "legacy",
+          profiles: ["example.profile"],
+        },
+      ],
+      {},
+      [
+        {
+          assertions: [
+            { assertionId: "legacy.1.resultField", claimIds: ["legacy.claim"] },
+          ],
+        },
+      ]
+    )
+  ).toThrow("profile.claim");
+});

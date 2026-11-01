@@ -59,6 +59,7 @@ import {
   assertNegativeControlGate,
   claimAssertions,
   profileConditionalAssertions,
+  profileSemanticAssertions,
 } from "./claim-coverage.ts";
 import { NEGATIVE_CONTROL_PORTS } from "./negative-control-config.ts";
 import type { NegativeControlPortConfig } from "./negative-control-config.ts";
@@ -247,6 +248,8 @@ const readProfileObligations = async (
       negativeControls: string[];
       conditionalAssertions: string[];
       branchChecks: string[];
+      semanticAssertions: string[];
+      claimIds: string[];
     }
   | undefined
 > => {
@@ -335,7 +338,16 @@ const readProfileObligations = async (
         : []
     )
   );
-  return { negativeControls, conditionalAssertions, branchChecks };
+  return {
+    negativeControls,
+    claimIds: readStrings(profile.claimIds),
+    conditionalAssertions,
+    branchChecks,
+    semanticAssertions: profileSemanticAssertions(
+      readStrings(profile.claimIds),
+      plans
+    ),
+  };
 };
 
 const readAdapterManifest = async (
@@ -737,7 +749,9 @@ const describeControl = (control: ControlEntry) => ({
 export const classifyMutantRun = (
   control: ControlEntry,
   run: HarnessRun,
-  unsupportedReason?: string
+  unsupportedReason?: string,
+  profileAssertions?: readonly string[],
+  profileClaims?: readonly string[]
 ): Omit<MutantReport, "replay"> => {
   const activationCount = run.activations.reduce(
     (total, activation) => total + activation.activationCount,
@@ -769,7 +783,14 @@ export const classifyMutantRun = (
   if (run.failure !== undefined || evidence === undefined) {
     return result("invalid", run.failure ?? "harness produced no evidence");
   }
-  const designated = new Set(control.designatedAssertions);
+  const designated = new Set(
+    (control.designatedAssertions ?? []).filter(
+      (id) =>
+        profileAssertions === undefined ||
+        !control.claimIds.some((claim) => profileClaims?.includes(claim)) ||
+        profileAssertions.includes(id)
+    )
+  );
   const failing = failingAssertions(evidence);
   base.designatedFailures = failing
     .filter(({ assertionId }) => designated.has(assertionId))
@@ -1136,7 +1157,9 @@ export const runNegativeControls = async (
           ...classifyMutantRun(
             control,
             run,
-            config.unsupportedReasons?.[control.mutantId]
+            config.unsupportedReasons?.[control.mutantId],
+            obligations?.semanticAssertions,
+            obligations?.claimIds
           ),
           ...(run.artifacts === undefined ? {} : { artifacts: run.artifacts }),
           replay: replayCommand(config, control.mutantId),
