@@ -2,7 +2,7 @@ id: DH
 name: Certify the Python kernel on the kernel catalog
 kind: product
 capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
-depends_on: [DE, DN]
+depends_on: [DE, DS]
 priority: 9
 scope:
   paths:
