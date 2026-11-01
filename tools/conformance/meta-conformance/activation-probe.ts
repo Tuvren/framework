@@ -26,7 +26,8 @@ import { createInterface } from "node:readline";
  * Before forwarding faultReached or a shutdown request (or when the
  * harness closes stdin), it dispatches the mutant activation control
  * operation and records the raw reply, or the adapter's exit, as
- * `<record>/<pid>.json`. Every other frame passes through unchanged.
+ * `<record>/<pid>.json`. It also injects an activation snapshot probe before
+ * armFault. Original frames pass through unchanged.
  */
 
 const ACTIVATION_PROBE_ID = "tuvren-negative-control-activation-probe";

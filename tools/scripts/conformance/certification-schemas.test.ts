@@ -1269,6 +1269,18 @@ describe("certification evidence schema", () => {
     );
   });
 
+  test("rejects a PostgreSQL bundle without serverVersion", () => {
+    expectInvalid(
+      "certificationEvidence",
+      mutated(PINNED_CERTIFICATION_EVIDENCE as Json, (draft) => {
+        at(draft, "environment").backend = {
+          kind: "postgres",
+          version: "1.0.0",
+        };
+      })
+    );
+  });
+
   test("accepts an uncertified certificate without certification fields", () => {
     expectValid(
       "certificationEvidence",

@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 
 import { spawn } from "bun";
@@ -144,6 +151,7 @@ for (const backend of ["sqlite", "postgres"]) {
   }, 90_000);
 
   test(`${backend} records mutant activation before the faulted epoch dies`, async () => {
+    await mkdir(path.resolve(".cache"), { recursive: true });
     const directory = await mkdtemp(path.resolve(".cache/df004-probe-"));
     try {
       const manifest = JSON.parse(
@@ -224,6 +232,7 @@ for (const backend of ["sqlite", "postgres"]) {
   }, 90_000);
 
   test(`${backend} before-commit crash rolls back the incomplete-checkpoint mutation`, async () => {
+    await mkdir(path.resolve(".cache"), { recursive: true });
     const directory = await mkdtemp(
       path.resolve(".cache/df-m4-before-commit-")
     );
@@ -306,6 +315,7 @@ for (const backend of ["sqlite", "postgres"]) {
   }, 90_000);
 
   test(`${backend} reopen detects an activated dropped uncommitted result`, async () => {
+    await mkdir(path.resolve(".cache"), { recursive: true });
     const directory = await mkdtemp(path.resolve(".cache/df004-reopen-probe-"));
     try {
       const manifest = JSON.parse(
@@ -392,6 +402,7 @@ for (const backend of ["sqlite", "postgres"]) {
 test.each(["missing", "early"])(
   "a %s fault receipt invalidates a crash run instead of passing",
   async (mode) => {
+    await mkdir(path.resolve(".cache"), { recursive: true });
     const directory = await mkdtemp(path.resolve(".cache/df004-withheld-"));
     try {
       const manifest = JSON.parse(
@@ -450,6 +461,7 @@ test.each(["missing", "early"])(
 );
 
 test("a receipt followed by a completed operation invalidates the crash run", async () => {
+  await mkdir(path.resolve(".cache"), { recursive: true });
   const directory = await mkdtemp(path.resolve(".cache/df004-settled-"));
   try {
     const manifest = JSON.parse(

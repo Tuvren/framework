@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { readAdapterManifest } from "../harness/run-plans.ts";
@@ -25,6 +25,31 @@ test("committed certificate inventory and source digests match this checkout", a
   ).rejects.toThrow("inventory");
 });
 
+test("rejects a stale source digest", async () => {
+  const rows = await committedRows();
+  const row = rows[0];
+  if (row === undefined) {
+    throw new Error("missing certified row");
+  }
+  row.digests.adapterManifest =
+    row.digests.adapterManifest === "0".repeat(64)
+      ? "1".repeat(64)
+      : "0".repeat(64);
+  await expect(assertCompatibilityCertificates(rows)).rejects.toThrow(
+    "stale certificate digest adapterManifest"
+  );
+});
+
+test("rejects a machine-bound harness digest", async () => {
+  const rows = (await committedRows()).map((row) => ({
+    ...row,
+    digests: { ...row.digests, harness: "a".repeat(64) },
+  }));
+  await expect(assertCompatibilityCertificates(rows)).rejects.toThrow(
+    "machine-bound field"
+  );
+});
+
 test("source digest recomputation observes changed manifest bytes", async () => {
   const adapter = "typescript/kernel/conformance-adapter/adapter.json";
   const manifest = await readAdapterManifest(adapter);
@@ -35,6 +60,7 @@ test("source digest recomputation observes changed manifest bytes", async () => 
   if (row === undefined) {
     throw new Error("missing certified row");
   }
+  await mkdir(path.resolve(".cache"), { recursive: true });
   const directory = await mkdtemp(
     path.resolve(".cache/certificate-source-test-")
   );

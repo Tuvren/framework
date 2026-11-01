@@ -11,7 +11,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+        "verifierAuthority": "e9b5ae0a4a71fc91b31a57eca4d3666402a5a023c90313ef90f21519a8789319"
       },
       "implementationId": "rust-kernel",
       "profile": "kernel.memory",
@@ -27,7 +27,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+        "verifierAuthority": "e9b5ae0a4a71fc91b31a57eca4d3666402a5a023c90313ef90f21519a8789319"
       },
       "implementationId": "typescript-kernel-memory",
       "profile": "kernel.memory",
@@ -43,7 +43,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+        "verifierAuthority": "e9b5ae0a4a71fc91b31a57eca4d3666402a5a023c90313ef90f21519a8789319"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
@@ -59,7 +59,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+        "verifierAuthority": "e9b5ae0a4a71fc91b31a57eca4d3666402a5a023c90313ef90f21519a8789319"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
@@ -75,7 +75,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+        "verifierAuthority": "e9b5ae0a4a71fc91b31a57eca4d3666402a5a023c90313ef90f21519a8789319"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
@@ -91,7 +91,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+        "verifierAuthority": "e9b5ae0a4a71fc91b31a57eca4d3666402a5a023c90313ef90f21519a8789319"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.persistent-reopen",
@@ -107,7 +107,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "db7574d1aee95e7bc29e831a47852952bdd0a530ec8aba6343b9479d631621f4",
         "controls": "87d78cefafcadc434c061374dec558703415d5886ef9e76bc0b22113e8fa68f4",
-        "verifierAuthority": "a6cbe192790036d1b0599d966c776ca8ddf5604722ec53d4305d2967fe9cfe36"
+        "verifierAuthority": "e9b5ae0a4a71fc91b31a57eca4d3666402a5a023c90313ef90f21519a8789319"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.process-crash",

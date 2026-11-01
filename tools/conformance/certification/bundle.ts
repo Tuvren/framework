@@ -153,13 +153,13 @@ const certificationEnvironment = async (
     })
   );
   const serverVersion = [...serverVersions][0];
-  if (
-    backendKind === "postgres" &&
-    (serverVersions.size !== 1 || serverVersion === undefined)
-  ) {
+  if (backendKind === "postgres" && serverVersions.size > 1) {
     throw new Error(
       "cannot determine a single PostgreSQL server version from provisioned storage"
     );
+  }
+  if (backendKind === "postgres" && serverVersion === undefined) {
+    return undefined;
   }
   const values = {
     architecture: arch(),
@@ -465,6 +465,7 @@ export const finishCertificate = async (
   }
   const negativeControlRunId = await controlRun(options, profile, plans, after);
   const complete =
+    environment !== undefined &&
     negativeControlRunId !== undefined &&
     status === "pass" &&
     profilePassed(profile, plans, results) &&
