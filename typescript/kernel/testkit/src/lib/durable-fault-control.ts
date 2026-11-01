@@ -159,6 +159,9 @@ export const createDurableFaultControl = (
         },
         {
           afterCommit: async () => {
+            if (armed !== transactionFault) {
+              return;
+            }
             if (armed?.selector.operation === undefined) {
               const branch = armed?.selector.branchId;
               if (branch === undefined || branches.has(branch)) {

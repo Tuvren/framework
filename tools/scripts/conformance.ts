@@ -223,7 +223,14 @@ try {
       }
     }
   }
+} catch (error: unknown) {
+  exitCode = 1;
+  throw error;
 } finally {
-  rmSync(directory, { recursive: true, force: true });
+  if (exitCode === 0) {
+    rmSync(directory, { recursive: true, force: true });
+  } else {
+    console.error(`Conformance artifacts retained at ${directory}`);
+  }
 }
 process.exit(exitCode);

@@ -296,6 +296,64 @@ test("certificate environment identifies the adapter storage backend", async () 
   }
 }, 120_000);
 
+test("missing PostgreSQL version leaves an incomplete bundle and conflicting versions reject", async () => {
+  const adapter = "typescript/kernel/conformance-adapter/adapter-postgres.json";
+  const manifest = await readAdapterManifest(adapter);
+  const [profile] = await readClaimedProfiles(
+    manifest,
+    manifest.authorityPackets
+  );
+  if (profile === undefined) {
+    throw new Error("missing PostgreSQL profile");
+  }
+  const digests = await computeCertificateDigests(manifest, adapter);
+  const options = {
+    adapter,
+    capabilities: [],
+    checks: [],
+    packets: [],
+    plans: [],
+  };
+  const failed = {
+    checkId: "setup",
+    status: "fail" as const,
+    assertionResults: [],
+    details: { error: "PostgreSQL unavailable" },
+  };
+  const bundle = await finishCertificate(
+    options,
+    manifest,
+    profile,
+    [],
+    [failed],
+    "fail",
+    digests,
+    digests
+  );
+  expect(bundle.certificate).toEqual({
+    complete: false,
+    profile: profile.profileId,
+    status: "uncertified",
+  });
+  expect(bundle.digests).toEqual(digests);
+  expect(bundle.environment).toBeUndefined();
+  await expect(
+    finishCertificate(
+      options,
+      manifest,
+      profile,
+      [],
+      ["17.1", "17.2"].map((serverVersion) => ({
+        ...failed,
+        details: { storageIdentity: { serverVersion } },
+      })),
+      "fail",
+      digests,
+      digests
+    )
+  ).rejects.toThrow("single PostgreSQL server version");
+}, 120_000);
+
 test("a survived tagged control leaves the certificate uncertified", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "de006-control-link-"));
   try {

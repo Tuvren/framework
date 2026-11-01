@@ -163,20 +163,25 @@ export const sweepStaleDatabases = async (before: number): Promise<void> => {
 export const postgresServerVersion = async (
   database: string
 ): Promise<string> => {
-  const { stdout } = await exec("psql", [
-    "-XAt",
-    "-v",
-    "ON_ERROR_STOP=1",
-    "-d",
-    database,
-    "-c",
-    "SHOW server_version",
-  ]);
-  const version = stdout.trim();
-  if (version.length === 0) {
-    throw new Error("PostgreSQL returned no server_version");
-  }
-  return version;
+  return await storageOperation(
+    "read PostgreSQL server version for",
+    async () => {
+      const { stdout } = await exec("psql", [
+        "-XAt",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-d",
+        database,
+        "-c",
+        "SHOW server_version",
+      ]);
+      const version = stdout.trim();
+      if (version.length === 0) {
+        throw new Error("PostgreSQL returned no server_version");
+      }
+      return version;
+    }
+  );
 };
 
 export const withCheckStorage = async <T>(

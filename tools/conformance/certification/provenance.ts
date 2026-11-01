@@ -221,7 +221,7 @@ export const computeSourceVerifierDigests = async (
       "--",
       "spec",
       "tools/schemas",
-      "tools/conformance/adapter-protocol",
+      "tools/conformance/adapter-protocol/*.schema.json",
       "tools/conformance/certification/certified-projects.json",
     ],
     { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 }
