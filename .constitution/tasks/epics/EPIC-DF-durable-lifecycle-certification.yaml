@@ -123,6 +123,8 @@ tickets:
           - typescript/kernel/runtime
           - .changeset/durable-transaction-clock.md
         justification: "Arming the fault capability exposed the PostgreSQL clock-domain defect; the OD-20 interim fix lives in the kernel runtime's transaction bodies and needs a changeset for @tuvren/kernel-runtime."
+      - files: [typescript/kernel/protocol/src/lib/kernel-types.ts]
+        justification: "Doc comments on the transaction clock and the grace-horizon clock state the OD-20 interim contract next to the types backends implement."
       - files:
           - spec/conformance/kernel/operations.json
           - spec/conformance/kernel/profiles.json
@@ -140,6 +142,8 @@ tickets:
         justification: "Real-adapter fault and certificate suites must be registered after the build phase."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
+      - files: [reports/compatibility/project.json, tools/scripts/oxc-preparation.test.ts]
+        justification: "PR review round 1: the compatibility check no longer needs the Rust build and waits for the authority generators it digests; a fixture excluded under an ignored TMPDIR was corrected."
     status: done
   - id: KRT-DF004
     title: Certify process-crash recovery on SQLite and PostgreSQL
@@ -342,6 +346,37 @@ decisions:
         - typescript/kernel/backends/postgres
         - rust/kernel-conformance-adapter
         - KRT-DF005
+  - id: OD-25
+    question: "ADR-0076 decision 4 lists the first checkpoint fault point as 'before any checkpoint write', while ADR-0082 decision 8 says a before-commit fault fires inside the backend transaction callback before COMMIT. Where does the certified before-commit point hold?"
+    blocks: [KRT-DF003, KRT-DF004]
+    options:
+      - name: Hold after all checkpoint writes and before COMMIT
+        pros:
+          - "A write that escaped the transaction is visible on recovery, and no write can happen after the hold and before COMMIT, so this subsumes the earlier position."
+          - "Matches ADR-0082 and the before-commit name in the operation catalog."
+        cons:
+          - "ADR-0076 decision 4 needs an amendment."
+      - name: Hold before any checkpoint write, as ADR-0076 states
+        pros:
+          - "No ADR change."
+        cons:
+          - "Nothing has been written at the hold, so a crash there tests almost nothing, and no point holds between the last write and COMMIT."
+          - "Contradicts ADR-0082."
+    recommendation: Hold after all checkpoint writes and before COMMIT
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-11-01
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ 2962a85
+    interim:
+      assumption: "Under a checkpoint selector, before-commit holds in the beforeCommit callback of the armed transaction, after all checkpoint writes."
+      applied_by:
+        - typescript/kernel/testkit/src/lib/durable-fault-control.ts
+        - spec/conformance/kernel/kernel-process-crash-undetected.json
+        - KRT-DF003
+        - KRT-DF004
 closeout:
   tickets_completed: [KRT-DF001, KRT-DF002, KRT-DF003, KRT-DF004, KRT-DF005]
   tickets_deferred: []
@@ -350,9 +385,11 @@ closeout:
   changelog_entries:
     - directory: tasks
       type: added
-      text: "EPIC-DF certified the TypeScript SQLite and PostgreSQL kernels under the durable profiles: kernel.persistent-reopen and kernel.process-crash for both, and kernel.shared-backend for PostgreSQL, alongside the kernel.memory certificates for TypeScript and Rust. The harness owns storage per check, supervises adapter process groups with survivor checks, holds blocking fault seams with receipts, and observes backend capabilities. Certification found and fixed a PostgreSQL clock-domain mix (OD-20) and a controls plan that encoded the memory kernel's clock domain. One run produces per-profile certificate bundles linked to per-profile control runs, and compatibility checks recompute their digests."
+      text: "EPIC-DF certified the TypeScript SQLite and PostgreSQL kernels under the durable profiles: kernel.persistent-reopen and kernel.process-crash for both, and kernel.shared-backend for PostgreSQL, alongside the kernel.memory certificates for TypeScript and Rust. The harness owns storage per check, supervises adapter process groups with survivor checks, holds blocking fault seams with receipts, and observes backend capabilities. Certification found and fixed a PostgreSQL clock-domain mix (OD-20) and a controls plan that encoded the memory kernel's clock domain. One run produces per-profile certificate bundles linked to per-profile control runs, and committed compatibility rows keep only source-bound digests that any checkout can recheck."
   candidate_terms: []
   routed_upstream:
+    - stage: tech-spec
+      item: "OD-25: amend ADR-0076 decision 4 so the first checkpoint fault point holds after all checkpoint writes and before COMMIT, matching ADR-0082 decision 8."
     - stage: tech-spec
       item: "OD-20: every kernel-stamped durable timestamp in a transaction comes from one transaction clock (tx.now on shared-lease-clock backends, otherwise the injected clock); record it against ADR-0050 and KrakenKernelSpecification section 5.2, and rule whether a backward-stepping backend clock rejects or clamps."
     - stage: tech-spec
@@ -368,11 +405,15 @@ closeout:
     - stage: tech-spec
       item: "Lease expiry inclusivity (expiresAtMs equal to now) is undecided in the specification; the clock-skew plan avoids the boundary."
     - stage: tech-spec
-      item: "The tuvren.kernel.protocol suite-level certified entries were removed for SQLite and PostgreSQL in favour of profile certificates; record that compatibility rows are keyed by profile."
+      item: "The tuvren.kernel.protocol suite-level certified entries were removed for SQLite and PostgreSQL in favour of profile certificates; record that compatibility rows are keyed by profile and carry source-bound digests only, with implementation, harness, and control-run identity kept in the run-scoped ADR-0081 bundles."
   follow_ups:
     - "The legacy SQLite restart-recovery path in typescript/kernel/conformance-adapter still spawns kernel child processes for the unchanged legacy close-reopen plan; EPIC-DJ removes it with that plan."
-    - "kernel.syscall.shared_writer.a_first and b_first have no detecting control: the PostgreSQL stale-head mutant activates in one writer process while the shared collect still observes one result and one error; design a cross-process mutant before kernel.shared-backend claims those assertions as detected."
+    - "kernel.syscall.shared_writer.race has no detecting control: the PostgreSQL stale-head mutant activates in one writer process while the shared collect still observes one result and one error; design a cross-process mutant before kernel.shared-backend claims it as detected."
     - "kernel.syscall.clock_skew.expired has no designated negative control in the shared-backend profile."
+    - "Three of the four kernel.process-crash claims (before_commit, after_turn_node_write_before_head, after_head_move_before_staging_clear) have no detecting control; only after_commit_before_ack does. A defective backend that commits checkpoint writes outside the transaction needs an autocommit SPI bridge or another storage mutation seam."
+    - "Four of the six kernel.persistent-reopen claims (committed_state, checkpoint_lineage, recovery_head, completed_step) have no detecting control."
+    - "Nothing observes that setClock source server really reads PostgreSQL: an adapter serving an injected backend clock under that source would pass. Compare against a clock the harness reads from the database it provisioned."
+    - "assertProfileClaimInventory is one-way: a durable claim removed from a profile leaves its check outside the profile with no failure, unlike the strict memory inventory."
     - "The Rust certification executable is built outside the Nx cache so the certificate digests what ran; Cargo incremental builds keep it cheap, but a content-addressed Nx output would restore caching."
     - "Rust has no durable backend, so the durable profiles certify the TypeScript backends only."
     - "The in-memory backend still exposes its symbol-keyed fault control on public construction; move it behind the testkit commit seam as ef893e1 did for SQLite and PostgreSQL."
@@ -410,7 +451,7 @@ closeout:
         - tools/conformance/adapter-protocol
         - rust/kernel-conformance-adapter/src/host_syscalls.rs
       commit: 6911dd5
-    - summary: "One run finalizes a certificate bundle per claimed profile with a shared runId, each linked to its own control run in controlRuns[]; compatibility rows are keyed by profile, compatibility --check recomputes certificate digests, summaries report outsideProfileChecks, and --control-report requires --evidence-out."
+    - summary: "One run finalizes a certificate bundle per claimed profile with a shared runId, each linked to its own control run in controlRuns[]; compatibility rows are keyed by profile and hold source-bound digests that compatibility --check recomputes, summaries report outsideProfileChecks, and --control-report requires --evidence-out."
       kind: contract_shape
       paths:
         - tools/conformance/certification/profile-bundles.ts
@@ -428,4 +469,12 @@ closeout:
       kind: pattern
       paths: [typescript/kernel/testkit/src/lib/commit-fault-seam.ts]
       commit: ef893e1
+    - summary: "A mutant with a claim in a profile is killed for that profile only when an assertion of that profile's claims fails; a mutant with no claim in the profile keeps the ADR-0079 rule and earns no claim coverage there."
+      kind: pattern
+      paths: [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/certification/control-link.ts]
+      commit: "2962a85"
+    - summary: "PostgreSQL certificates record environment.backend.serverVersion, read by the harness from the database it provisioned, and the fingerprint includes it."
+      kind: contract_shape
+      paths: [tools/conformance/certification/bundle.ts, tools/conformance/harness/storage-resource.ts, tools/schemas/certification-evidence.schema.json]
+      commit: "2962a85"
   settled: []

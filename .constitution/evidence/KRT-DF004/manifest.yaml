@@ -1,8 +1,8 @@
 owner: KRT-DF004
 mode: contract_test
 produced:
-  date: 2026-10-28
-  commit: "44e9481"
+  date: 2026-11-01
+  commit: "2962a85"
   command: "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts; bun run verify:kernel; bun run conformance"
 result: pass
 pass_criteria: "Every supported point has a receipt followed by forced death of the same epoch; recovery assertions pass or are triaged red; a missing receipt invalidates the run; the incomplete-checkpoint mutant is killed."
@@ -12,10 +12,10 @@ files:
     bytes: 3397
     role: transcript
   - path: test-outcomes.json
-    sha256: b26a002349ccd03f6ed59d060f410186747cf5a3619fbd14c4bed590aec0cdb6
-    bytes: 3004
+    sha256: 86a78748f72af5bfcdcd45be576db6d20dfccae7f86b342cfd44d8743132dc47
+    bytes: 3752
     role: measurement
   - path: triage.md
-    sha256: c038c32bcd23337d23a8d01b779f05b0b78d63b884a00f654d69328281538812
-    bytes: 1103
+    sha256: 503c320b53424f6f3c5c11b650852abcaf211d84c479d5ce3cc6b6252ba151dd
+    bytes: 1687
     role: transcript

@@ -1,13 +1,13 @@
 {
-  "commit": "44e9481",
-  "date": "2026-10-28",
+  "commit": "2962a85",
+  "date": "2026-11-01",
   "command": "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts",
   "exit_status": 0,
-  "tests": 77,
+  "tests": 76,
   "failures": 0,
   "outcomes": [
     {
-      "test": "PostgreSQL shared-writer race records both process receipts in both orderings",
+      "test": "postgres shared writer race records both processes and receipts",
       "status": "pass"
     },
     {
@@ -31,14 +31,14 @@
   ],
   "verification_lanes": [
     {
-      "command": "bun run verify:kernel",
+      "command": "bun run verify",
       "exit_status": 0,
-      "result": "pass"
+      "result": "pass, from a state with the kernel dist outputs removed"
     },
     {
-      "command": "bun run conformance",
+      "command": "bun tools/scripts/compatibility-report.ts --check",
       "exit_status": 0,
-      "result": "pass"
+      "result": "pass in a fresh clone at another absolute path with no Rust build"
     }
   ]
 }

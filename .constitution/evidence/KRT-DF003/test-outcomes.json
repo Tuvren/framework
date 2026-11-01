@@ -1,9 +1,9 @@
 {
-  "commit": "ef893e1",
-  "date": "2026-10-28",
+  "commit": "2962a85",
+  "date": "2026-11-01",
   "command": "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts",
   "exit_status": 0,
-  "tests": 77,
+  "tests": 76,
   "failures": 0,
   "outcomes": [
     {
