@@ -11,6 +11,7 @@ scope:
     - "tools/conformance/meta-conformance"
     - "tools/conformance/certification"
     - "reports/compatibility"
+    - "tools/scripts/compatibility-report.ts"
   tech_spec_patchable: []
 estimated_diff_lines: 11000
 estimate_source: planned
@@ -71,6 +72,7 @@ tickets:
         - "tools/conformance/meta-conformance"
         - "tools/conformance/certification"
         - "reports/compatibility"
+        - "tools/scripts/compatibility-report.ts"
     verification:
       command: "bun run conformance"
       expected: "Exit 0; the Rust memory profile and all applicable implementation-matched controls pass."
@@ -79,7 +81,7 @@ tickets:
     description: "Run the complete unfiltered Rust memory profile and its implementation-matched controls after the new reproductions, then restore the Rust profile to the certified fleet. Retain the real Rust executable and manifest identity; the existing adapter selection is rust/kernel-conformance-adapter/adapter.json."
     acceptance:
       mode: contract_test
-      evidence: "The Rust certificate links its own matching control run, every tagged control is killed in its runtime, pre- and post-mutant checks pass, the certificate reports the memory register exactly, and the certified fleet includes the restored Rust profile."
+      evidence: "The Rust certificate links its own matching control run, every tagged control is killed in its runtime, pre- and post-mutant checks pass, the certificate reports the memory register exactly, the certified fleet includes the restored Rust profile, and reports/compatibility/compatibility-matrix.json contains the restored Rust certificate row."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned

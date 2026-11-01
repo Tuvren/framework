@@ -1,5 +1,6 @@
 id: DO
 name: "Detect durable backend control gaps"
+# DO002 through DO006 run on the OD-21 rollback interim. Closing DO007 requires the owner ruling; choosing roll-forward requires replanning the control and its fleet branch coverage.
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DF]
@@ -70,12 +71,12 @@ tickets:
     stop_conditions:
       - "STOP if either backend rejects the mutant before the designated fault or a claim cannot be detected; route a decision with the measured result rather than retaining an undetected claim."
       - "STOP if the test needs a ruling on recovery for a correct separately durable implementation; OD-21 remains proposed and must not be settled by the mutant."
-    description: "Implement the non-atomic mutant chosen by the spike below the testkit fault seam. Designate the before_commit, after_turn_node_write_before_head, and after_head_move_before_staging_clear recovery assertions. Preserve the real SQLite and PostgreSQL substrate and use the spike measurements to choose safe write grouping. Use the existing OD-21 interim for their single-transaction baseline without ruling on separately durable ports. The designated kills depend on the rollback interim of still-proposed OD-21. Re-check the non-atomic control acceptance against the final ruling before declaring closure."
+    description: "Implement the non-atomic mutant chosen by the spike below the testkit fault seam. Designate the before_commit, after_turn_node_write_before_head, and after_head_move_before_staging_clear recovery assertions. Preserve the real SQLite and PostgreSQL substrate and use the spike measurements to choose safe write grouping. Use the existing OD-21 interim for their single-transaction baseline without ruling on separately durable ports. The designated kills depend on the rollback interim of still-proposed OD-21. DO007 re-checks the detecting assertions against the final ruling before durable-register closure."
     acceptance:
       mode: contract_test
-      evidence: "On both backends each of the three claims has a designated assertion killed with mutant activation and matching fault receipt, and its unmutated baseline passes. The process-crash undetected register has no entries. The OD-21 ruling is closed and the three detecting assertions have been re-checked against it before durable-register closure."
+      evidence: "On both backends each of the three claims has a designated assertion killed with mutant activation and matching fault receipt, and its unmutated baseline passes. The process-crash undetected register has no entries."
     flows: ["flow-crash-mid-checkpoint-recovery"]
-    certainty: assumed
+    certainty: open
     status: planned
   - id: KRT-DO003
     title: "Detect state lost across durable reopen"
@@ -202,11 +203,11 @@ tickets:
       expected: "Exit 0 with the operator-provided PostgreSQL service; all three durable control inventories are complete."
     stop_conditions:
       - "STOP if any durable claim remains undetected or a control is invalid or survives; route the finding instead of weakening the bar."
-      - "STOP while OD-21 is open; durable registers cannot be declared closed until the owner rules and DO002 acceptance is re-checked."
+      - "STOP while OD-21 is open; durable registers cannot be declared closed until the owner rules and the three detecting assertions from DO002 are re-checked."
     description: "Run the full applicable durable control sets and retain the smallest evidence needed to prove each designation and each backend result. Do not clear a register entry merely because another backend or an unrelated assertion failed."
     acceptance:
       mode: contract_test
-      evidence: "All three durable undetected registers are empty; SQLite and PostgreSQL each kill their applicable reopen and crash controls, and PostgreSQL kills every shared-backend control with matching activation and designated failures."
+      evidence: "All three durable undetected registers are empty; SQLite and PostgreSQL each kill their applicable reopen and crash controls, and PostgreSQL kills every shared-backend control with matching activation and designated failures. The OD-21 ruling is closed and the three detecting assertions have been re-checked against it before durable-register closure."
     flows: ["flow-multi-implementation-conformance-compatibility", "flow-crash-mid-checkpoint-recovery"]
-    certainty: assumed
+    certainty: open
     status: planned
