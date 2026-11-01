@@ -78,14 +78,9 @@
   ],
   "verification_lanes": [
     {
-      "command": "bun run verify:kernel",
+      "command": "bun run verify",
       "exit_status": 0,
-      "result": "pass"
-    },
-    {
-      "command": "bun run conformance",
-      "exit_status": 0,
-      "result": "pass"
+      "result": "pass at 2962a85, including its conformance phase, from a state with the kernel dist outputs removed"
     }
   ],
   "before_commit_measurements": [

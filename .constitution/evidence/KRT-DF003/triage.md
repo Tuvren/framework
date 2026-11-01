@@ -1,6 +1,6 @@
 # KRT-DF003 durable fault-point triage
 
-Adapted from the prior DF003 triage for the state at commit ef893e1.
+Adapted from the prior DF003 triage for the state at commit 2962a85.
 
 | Fault point | SQLite and PostgreSQL |
 | --- | --- |
