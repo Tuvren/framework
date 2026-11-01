@@ -3,6 +3,7 @@ name: Staged TypeScript dependency layers 0 to 2
 kind: tooling
 capabilities: []
 depends_on: [CD]
+priority: 22
 scope:
   paths:
     - typescript/host/session-client/BUILD.bazel

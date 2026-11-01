@@ -2,7 +2,7 @@ id: DP
 name: "Bind durable control evidence to certificates"
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
-depends_on: [DF]
+depends_on: [DO]
 priority: 2
 scope:
   paths:
@@ -15,6 +15,8 @@ scope:
     - "tools/scripts/conformance"
     - "tools/scripts/lib/conformance-contract.ts"
     - "spec/kernel/authority-packet.json"
+    - "reports/compatibility"
+    - "tools/scripts/compatibility-report.ts"
   tech_spec_patchable: []
 estimated_diff_lines: 11000
 estimate_source: planned
@@ -121,15 +123,17 @@ tickets:
         - "tools/conformance/meta-conformance"
         - "tools/schemas"
         - "tools/scripts/conformance"
+        - "reports/compatibility"
+        - "tools/scripts/compatibility-report.ts"
     verification:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if the same configuration cannot be identified, a failure can be misclassified as a kill, or the fleet cannot honestly withhold Rust while its reproductions are pending; route the issue."
-    description: "Preserve the implementation and adapter-manifest comparison already in tools/conformance/certification/control-link.ts, and require the linked control report to represent the tested implementation and profile configuration. Require every tagged control killed, a passing designated-check rerun after mutation, and the control-run in-process statement. Do not allow out-of-tree host unsupported reasons. Until DS supplies the missing Rust reproductions, withhold its profile from the certified fleet and keep its positive and diagnostic results visible; never borrow TypeScript kills."
+    description: "Change tools/conformance/certification/control-link.ts so control kills and report validity are evaluated per implementation rather than unioned across fleet reports with reports.every(validReport). Preserve identity, adapter-manifest, profile, and configuration matching and require a post-mutant designated-check baseline. A host certificate requires only the conditional branch selected by the backend's observed capability; fleet-wide coverage of both branches remains release-CI evidence about the plans under ADR-0079 decision 4. Remove Rust from certified-projects.json's certified list until DS, retaining its inventory, positive conformance lane, and negative-control diagnostic. Remove its compatibility certificate row and keep the suite result in the matrix implementations section. Update bundle-contract.test.ts (the Rust adapter list and --require-certified assertions), certification-manifest.test.ts, compatibility-certificates.ts, tools/scripts/compatibility-report.ts, and tools/conformance/meta-conformance/rust-memory.test.ts. Require the in-process control statement only for published-testkit certificates. Out-of-tree hosts cannot declare tagged controls unsupported."
     acceptance:
       mode: contract_test
-      evidence: "Mismatched implementation or manifest, a substituted memory run, a missing rerun, an invalid or survived control, or an out-of-tree unsupported reason withholds certification. Matching runs include the same profile, authority digests, and in-process statement. A Rust run with missing reproductions is visibly uncertified rather than counted as passing."
+      evidence: "Mismatched identity, manifest, profile or authority, a substituted memory run, a missing rerun, and invalid or surviving required controls withhold certification. Test both directions: Rust cannot borrow TypeScript kills, and an invalid or unsupported Rust report cannot invalidate TypeScript's link. A host with either observed capability evaluates its selected conditional branch and certifies without evaluating the other; missing the selected branch fails. Rust has no certified entry or matrix certificate row, while its positive suite remains in implementations and its diagnostic retains the original subset of 13 controls, 3 kills, and 10 unsupported until DS; subsequent new mutants extend the inventory with explicit unsupported reasons. Matching published-testkit certificates disclose in-process control execution."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned

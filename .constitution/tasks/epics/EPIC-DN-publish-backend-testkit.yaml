@@ -3,9 +3,10 @@ name: Publish the runtime-portable backend testkit
 kind: product
 capabilities: [CAP-036, CAP-038]
 depends_on: [DL]
-priority: 13
+priority: 8
 scope:
   paths:
+    - "tools/scripts/publish-registry.ts"
     - typescript/kernel/testkit
     - typescript/kernel/backends/memory
     - typescript/kernel/backends/sqlite
@@ -115,7 +116,7 @@ tickets:
     description: "ADR-0082 decisions 7, 11, and 12. Expose createBackendCertification, certify, and a { describe, test } registration. Inventory values are applicable, not_applicable with a reason, and unsupported with a reason; a claimed profile with a not_applicable required check fails. The certificate records the host-declared implementation identity, transport, processBoundary, and the digest of the binding's generated adapter manifest. Update the certification-evidence schema and the adapter protocol and manifest schemas for an in-process transport and host storage. Bundle the core, generated authority modules, and precompiled validators."
     acceptance:
       mode: contract_test
-      evidence: "Registration is proven with bun:test and node:test, with one test per applicable check and no skipped tests. The inventory test fails a filtered or unclaimable run; a claimed profile with a not_applicable required check fails certify(), and an unsupported fault point never fails a claimed profile. Assert that the certificate carries the declared implementation identity, transport, processBoundary when a boundary is used, the generated adapter-manifest digest, and the linked control-run id, and that the pinned evidence example validates against the updated schema."
+      evidence: "Registration is proven with bun:test and node:test, with one test per applicable check and no skipped tests. The inventory test fails a filtered or unclaimable run; a claimed profile with a not_applicable required check fails certify(), and an unsupported fault point never fails a claimed profile. Assert that the certificate carries the declared implementation identity, transport, processBoundary when a boundary is used, the generated adapter-manifest digest, and the linked control-run id, and that the pinned evidence example validates against the updated schema. certify() evaluates the conditional branch selected by observed backend capability and does not require the other branch; fleet-wide branch coverage remains release-CI evidence. TypeScript backends claim kernel.backend-spi separately from kernel.memory and durable profiles."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -123,22 +124,24 @@ tickets:
     title: Run the negative controls in the backend's own runtime
     type: Feature
     effort: 3
-    depends_on: [KRT-DN002]
+    depends_on: [KRT-DN002, KRT-DN004]
     scope:
       in:
         - typescript/kernel/testkit
         - tools/conformance/meta-conformance
         - tools/conformance/harness
         - reports/compatibility
+        - "tools/scripts/publish-registry.ts"
+        - "tools/conformance/certification"
     verification:
       command: bun run verify:kernel
       expected: "Exit 0; the in-process control gate passes."
     stop_conditions:
       - "STOP if a control cannot wrap a frozen backend or load without node:async_hooks, if a host can declare a required control unsupported, or if a failed control can produce a certificate; don't improvise."
-    description: "ADR-0084 and ADR-0082 decision 10. For each claimed profile, run its tagged seam wrappers over the host implementation with the same substrate, transport, and process boundary as the positive run. Link the passing run using matching implementation identity, adapter-manifest digest, and verifier-authority digests, and state that its control run ran in-process. Run the reference memory controls automatically only after a host control fails, as a diagnostic that cannot certify the host. Release CI retains the reference memory controls as verifier evidence. Make the durable wrapper decorate rather than mutate a frozen backend; use the AsyncLocalStorage-free seams from DL."
+    description: "ADR-0084 and ADR-0082 decision 10. For each claimed profile, run its tagged seam wrappers over the host implementation with the same substrate, transport, and process boundary as the positive run. Link the passing run using matching implementation identity, adapter-manifest digest, and verifier-authority digests, and state that its control run ran in-process. Run the reference memory controls automatically only after a host control fails, as a diagnostic that cannot certify the host. Release CI retains the reference memory controls as verifier evidence. Make the durable wrapper decorate rather than mutate a frozen backend; use the AsyncLocalStorage-free seams from DL. Add the named testkit-undetected-claims gate to tools/scripts/publish-registry.ts preflight. Fail on any nonempty durable register or memory reason without a referenced closed OD in .constitution/reports/open-decisions.yaml; reject missing, unknown, or open OD ids. Remaining memory reasons carry their closed OD id."
     acceptance:
       mode: contract_test
-      evidence: "For each claimed profile, every control the manifest tags for that profile is killed in the same runtime and configuration as the certificate's positive run; unsupported is not admitted for out-of-tree runs. Invalid, unactivated, surviving, mismatched, or missing controls withhold the certificate. Designated unmutated checks pass before and after mutation. Every required backend wrapper accepts a frozen backend, and the core import path has no node:async_hooks. A failing control triggers the reference-memory diagnostic, a successful control run does not, and the diagnostic never changes the certificate result or its link. The certificate states that the control run ran in-process. Durable undetected registers are empty; memory gaps are closed by class or each remaining claim has an owner ruling. Certificates list all remaining undetected claims and reasons."
+      evidence: "For each claimed profile, every control the manifest tags for that profile is killed in the same runtime and configuration as the certificate's positive run; unsupported is not admitted for out-of-tree runs. Invalid, unactivated, surviving, mismatched, or missing controls withhold the certificate. Designated unmutated checks pass before and after mutation. Every required backend wrapper accepts a frozen backend, and the core import path has no node:async_hooks. A failing control triggers the reference-memory diagnostic, a successful control run does not, and the diagnostic never changes the certificate result or its link. The certificate states that the control run ran in-process. Durable undetected registers are empty; memory gaps are closed by class or each remaining claim has an owner ruling. Certificates list all remaining undetected claims and reasons. Exercise process-crash and shared-backend control kills through the public package entries over the actual durable backends, with the process boundary supplied by DN004. Add the named testkit-undetected-claims gate to tools/scripts/publish-registry.ts preflight. Fail on any nonempty durable register or memory reason without a referenced closed OD in .constitution/reports/open-decisions.yaml; reject missing, unknown, or open OD ids. Remaining memory reasons carry their closed OD id. Tests cover empty registers, an allowed closed OD, and missing or open rulings."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -194,7 +197,7 @@ tickets:
   - id: KRT-DN006
     title: Prove the packed package works outside the workspace
     type: Chore
-    effort: 2
+    effort: 5
     depends_on: [KRT-DN005]
     scope:
       in:
@@ -203,11 +206,11 @@ tickets:
     verification:
       command: bun run check
       expected: "Exit 0; the smoke script typechecks, lints, and passes its unit test; the recipe run is the epic's live probe."
-    description: "Write the smoke script behind the backend-testkit-packed-consumer live-verification recipe. It packs @tuvren/backend-testkit and its public @tuvren/* dependencies, installs the tarballs in a scratch consumer outside the workspace with no workspace links, runs certify() against the memory backend, prints backend-testkit packed consumer certified kernel.memory, and removes the scratch directory."
+    description: "Write the smoke script behind the backend-testkit-packed-consumer recipe. Pack @tuvren/backend-testkit and its public dependencies and install tarballs in an isolated scratch consumer without workspace links or first-party backend imports. Supply a foreign fixture backend authored outside the first-party backend packages, durable across a real close and fresh reopen. Run certify() claiming kernel.memory, kernel.persistent-reopen, and kernel.process-crash through the public core and Node driver entries. Retain evidence of real child death, fresh-process recovery against the same storage, implementation-matched kills, and complete certificates, then clean up owned resources."
     acceptance:
       mode: live_probe
       recipe: backend-testkit-packed-consumer
-      evidence: "A run of the recipe from a fresh checkout prints backend-testkit packed consumer certified kernel.memory, and the scratch consumer has no workspace links."
+      evidence: "The packed consumer imports only public tarball entries and runs a foreign fixture backend without first-party backend imports or workspace links. It certifies kernel.memory, kernel.persistent-reopen, and kernel.process-crash with complete inventories and same-implementation control kills. Persist a sentinel before close, read it after fresh reopen, force child death with a matched activation receipt, and observe recovery through a fresh child against retained storage. Invalid or surviving controls prevent certification; certificates list all undetected claims and reasons. Print backend-testkit packed consumer certified kernel.memory kernel.persistent-reopen kernel.process-crash. Cleanup removes the scratch consumer and its owned durable storage."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -225,10 +228,10 @@ tickets:
       expected: "Exit 0; the guide and the package README describe the published workflow and no longer mention the fault-injection control symbol."
     stop_conditions:
       - "STOP if the guide would have to state behavior that no plan or ADR records; don't improvise."
-    description: "ADR-0082 consequences. Rewrite docs/guides/add-a-kernel-backend.md for implementers outside the repository. Cover the substrate, claims and profiles, applicability, running certify() or the registration, reading a certificate, the ADR-0081 failure artifacts and replay, and the in-runtime controls. Remove the instruction to implement FAULT_INJECTION_CONTROL. Add a package README with the same flow."
+    description: "ADR-0082 consequences. Rewrite docs/guides/add-a-kernel-backend.md for implementers outside the repository. Cover the substrate, claims and profiles, applicability, running certify() or the registration, reading a certificate, the ADR-0081 failure artifacts and replay, and the implementation-matched controls in the backend runtime. Remove the instruction to implement FAULT_INJECTION_CONTROL. Add a package README with the same flow. Document undetected-claim lists, the failure-only reference-memory diagnostic, and why that diagnostic cannot certify the host."
     acceptance:
       mode: contract_test
-      evidence: "Assert that the guide names the package, the substrate calls, every kernel profile, not_applicable reporting, and the certificate fields, that it has no FAULT_INJECTION_CONTROL instruction, and that the README's example compiles in the package's typecheck."
+      evidence: "Assert that the guide names the package, the substrate calls, every kernel profile, not_applicable reporting, and the certificate fields, that it explains the supported testkit fault seam without instructing users to implement a production fault-control hook, and that the README's example compiles in the package's typecheck. The guide and compiling README example show undetectedClaims, matching control identity, failure artifacts, and the failure-only diagnostic, including an invalid control that withholds certification."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned

@@ -3,6 +3,7 @@ name: Bazel TypeSpec and telemetry freshness
 kind: tooling
 capabilities: []
 depends_on: [CL]
+priority: 23
 scope:
   paths:
     - tools/bazel/source-codegen.bzl

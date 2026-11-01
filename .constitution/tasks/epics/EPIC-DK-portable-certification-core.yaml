@@ -3,7 +3,7 @@ name: Portable certification core
 kind: product
 capabilities: [CAP-036, CAP-038]
 depends_on: [DF, DO, DP, DQ, DR]
-priority: 11
+priority: 6
 scope:
   paths:
     - tools/conformance/harness
@@ -134,10 +134,10 @@ tickets:
       expected: "Exit 0; certificates produced from the module source and from the filesystem source carry identical authority digests."
     stop_conditions:
       - "STOP if a canonical digest computed from module data differs from the filesystem digest for the same file; don't improvise."
-    description: "ADR-0082 decision 3. Generate modules that export the kernel authority packet, plans, operation catalog, profiles, negative-control manifest, identity recipes, encoding schema, and fixtures with their canonical digests, from the one generator in guidelines 5.11.3. Give the core an authority source backed by those modules beside the Node driver's filesystem source. Prove in meta-conformance that both sources yield identical digests and identical plan selection for the kernel port."
+    description: "ADR-0082 decision 3. Generate modules that export the kernel authority packet, plans, operation catalog, profiles, negative-control manifest, identity recipes, encoding schema, and fixtures with their canonical digests, from the one generator in guidelines 5.11.3. Give the core an authority source backed by those modules beside the Node driver's filesystem source. Prove in meta-conformance that both sources yield identical digests and identical plan selection for the kernel port. Include every packet-referenced undetected register in generated authority modules and their freshness inputs."
     acceptance:
       mode: contract_test
-      evidence: "Meta-conformance asserts digest and selection equality between the module and filesystem authority sources for every kernel profile. Neither source includes the legacy packet in TypeScript or Rust certification. A changed included spec file fails the generator's freshness check."
+      evidence: "Meta-conformance asserts digest and selection equality between the module and filesystem authority sources for every kernel profile. Neither source includes the legacy packet in TypeScript or Rust certification. A changed included spec file fails the generator's freshness check. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest. Equality is checked for the same adapter selection, including selected register digests; changing an undetected register fails freshness."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     status: planned

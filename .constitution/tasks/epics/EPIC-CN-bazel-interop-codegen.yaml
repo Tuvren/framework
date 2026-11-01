@@ -3,6 +3,7 @@ name: Bazel proto and conformance freshness
 kind: tooling
 capabilities: []
 depends_on: [CL]
+priority: 24
 scope:
   paths:
     - tools/bazel/interop-codegen.bzl

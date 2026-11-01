@@ -26,6 +26,11 @@ scope:
     - "python/kernel-conformance-adapter/adapter.json"
     - "dart/kernel-conformance-adapter/adapter.json"
     - "reports/compatibility"
+    - "tools/scripts/portability-gate.ts"
+    - ".constitution/reports/epic-al-portability-inventory.json"
+    - ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
+    - "tools/scripts/conformance/generate-kernel-plans.ts"
+    - ".changeset/kernel-dq-canonical-plans.md"
   tech_spec_patchable: []
 estimated_diff_lines: 15000
 estimate_source: planned
@@ -80,11 +85,11 @@ tickets:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
-      - "STOP if the two scopes cannot share a substrate without a production hook or if either control cannot be detected; route a decision."
+      - "STOP if the two scopes cannot share a substrate without a production hook or if either TypeScript control cannot be detected; route a decision."
     description: "Add syscall or catalogued codec assertions that kill accept-noncanonical-cbor and resolve-object-across-scopes without either legacy composite. Add kernel.scope-isolation and the cross-scope claims to the memory profile. Implement the named-instance routing in the plan companion so two scopes share one isolated substrate in a single process; the current runner tracks one instance per process in tools/conformance/harness/multi-trace.ts. Give Rust a test-only shared-substrate construction seam if needed. Remove every legacy assertion designation from the profile controls after replacing it with a valid canonical designation. The legacy-only designations are in spec/conformance/kernel/negative-controls.json."
     acceptance:
       mode: contract_test
-      evidence: "Each control has a profile-scoped designated assertion and activation; both TypeScript and Rust produce the expected kill without loading a legacy plan. Two named instances use different scopes on the same isolated substrate; unknown and duplicate names fail. The memory inventory rejects an omitted scope capability or cross-scope claim. Own-scope checks and the cross-scope miss are independently observable, and no control designation references a legacy assertion."
+      evidence: "Each control has a profile-scoped designated assertion and activation; TypeScript produces the expected kill and Rust passes the positive canonical checks without loading a legacy plan. Two named instances use different scopes on the same isolated substrate; unknown and duplicate names fail. The memory inventory rejects an omitted scope capability or cross-scope claim. Own-scope checks and the cross-scope miss are independently observable, and no control designation references a legacy assertion."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
@@ -110,15 +115,22 @@ tickets:
         - "python/kernel-conformance-adapter/adapter.json"
         - "dart/kernel-conformance-adapter/adapter.json"
         - "reports/compatibility"
+        - "tools/scripts/portability-gate.ts"
+        - ".constitution/reports/epic-al-portability-inventory.json"
+        - ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
+        - "tools/scripts/conformance/generate-kernel-plans.ts"
+        - ".changeset/kernel-dq-canonical-plans.md"
+        - "typescript/kernel/conformance-adapter"
+        - "rust/kernel-conformance-adapter"
     verification:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if the packet changes expected observations, hides a required canonical claim, or requires a Go, Python, or Dart kernel migration to publish the testkit; report the evidence instead."
-    description: "Implement the temporary legacy-packet contract in conformance-certification.md. Move the six legacy plan references out of the primary packet into spec/kernel/legacy/authority-packet.json and change the plans' packetId to tuvren.kernel.legacy. Preserve their plan IDs, assertions, fixtures, and expected observations. Add the packet to the three unmigrated adapter manifests. Update loading, report-only compiler operation discovery, source provenance, compatibility reporting, guardrails, and the control gate; retain global validation of the legacy files. Provenance must hash the legacy packet and plans without requiring a catalog, profile, or control manifest from that unprofiled packet."
+    description: "Implement the temporary legacy-packet contract in conformance-certification.md. Move the six legacy plans to tuvren.kernel.legacy, preserving IDs, assertions, fixtures, and observations, and move all 21 composite operations from the canonical catalog to spec/conformance/kernel/legacy-operations.json owned by the legacy packet. Keep lossless observation encoding and schema validation for Go, Python, and Dart. Delete TypeScript and Rust composite handlers in this ticket. Declare transitionalAdapters as the exact adapter-manifest paths for the three remaining lanes; portability-gate.ts requires exactly that declared set to reference a transitional packet, rejecting omitted and unexpected references. Ordinary packets keep boundary-wide coverage. Revise EXPECTED_PACKET_TOPOLOGY, the AL inventory JSON and Markdown companion, authority schemas and guardrails together. Fix generate-kernel-plans.ts's hard-coded packetId. Load and digest the selected legacy catalog and plans without inventing profiles or a control manifest for this report-only packet. Remove Go, Python, and Dart's tuvren.kernel.protocol certified entries with the stated reason that the temporary packet is unprofiled; keep their positive inventory and matrix implementations results until their canonical certification tickets restore kernel.memory. Add the changeset for removed public handlers if their package surface changes. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest."
     acceptance:
       mode: contract_test
-      evidence: "Go, Python, and Dart resolve the same legacy checks and observations, with refreshed packet-bound provenance, without kernel implementation migration. TypeScript and Rust load none of the legacy packet or its six plans in normal, certificate, control, compatibility, or generated-authority inputs. A claimed-profile certificate cannot rely on the legacy packet, and no language or adapter ID selects a plan."
+      evidence: "Go, Python, and Dart resolve the same legacy checks and observations, with refreshed packet-bound provenance, without kernel implementation migration. TypeScript and Rust load none of the legacy packet or its six plans in normal, certificate, control, compatibility, or generated-authority inputs. A claimed-profile certificate cannot rely on the legacy packet, and no language or adapter ID selects a plan. The 21 composites exist only in the legacy-owned catalog. Missing or extra transitional adapter references and stale topology inventories fail. All three legacy lanes retain lossless observation and schema rejection tests. TypeScript and Rust handlers are deleted. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest."
     flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
@@ -141,10 +153,10 @@ tickets:
       expected: "Exit 0 with the operator-provided PostgreSQL service; canonical TypeScript and Rust inventories and the retained legacy selections validate."
     stop_conditions:
       - "STOP if a passing result requires suppressing a required claim or treating an absent check as a pass."
-    description: "Check the complete, unfiltered TypeScript and Rust memory profiles against the canonical packet and retained codec obligations. Refresh the compatibility evidence affected by the packet selection; do not delete the legacy packet while any adapter uses it."
+    description: "Check the complete, unfiltered TypeScript and Rust positive memory-profile runs against the canonical packet and retained codec obligations. Refresh the compatibility evidence affected by the packet selection; do not delete the legacy packet while any adapter uses it."
     acceptance:
       mode: contract_test
-      evidence: "TypeScript and Rust report no legacy packet, plan, designation, or input digest, while the three unmigrated adapters still select the legacy packet. Missing canonical assertions and accidental filtered certification fail."
+      evidence: "TypeScript and Rust report no legacy packet, plan, designation, or input digest, while the three unmigrated adapters still select the legacy packet. Missing canonical assertions and accidental filtered certification fail. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest. Assert that mutating a legacy-only input changes only selecting adapters' aggregate digest. Rust provides a positive run, without requiring a Rust control kill before DS."
     flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned

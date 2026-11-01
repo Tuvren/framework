@@ -3,7 +3,7 @@ name: "Match Rust memory controls to its implementation"
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DR, DN]
-priority: 14
+priority: 9
 scope:
   paths:
     - "rust/kernel"
@@ -52,10 +52,10 @@ tickets:
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if a rule cannot be detected or a Rust mutant remains unsupported, invalid, or surviving; route a ruling rather than reporting a Rust certificate."
-    description: "Implement Rust equivalents of the schema-roundtrip and rule-class mutants from DR. Reuse the shared manifest identities and designated assertions; do not borrow the TypeScript implementation control run."
+    description: "Implement Rust equivalents of the schema-roundtrip and rule-class mutants from DR. Reuse the shared manifest identities and designated assertions; do not borrow the TypeScript implementation control run. Cover every kernel.memory control added by DT and DR, including codec and scope reproductions and syscall-observable round trips added by DL. kernel.backend-spi is TypeScript-only and is excluded."
     acceptance:
       mode: contract_test
-      evidence: "Every control tagged for kernel.memory activates and is killed against the Rust implementation, including the 18 schema-roundtrip claims and each remaining rule class."
+      evidence: "Every control tagged for kernel.memory activates and is killed against the Rust implementation, including the 18 schema-roundtrip claims and each remaining rule class. Every DR memory control, including DR006, and every DL syscall round-trip mutant tagged kernel.memory has a Rust reproduction; none is omitted because it was added after the original 13-control baseline."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned

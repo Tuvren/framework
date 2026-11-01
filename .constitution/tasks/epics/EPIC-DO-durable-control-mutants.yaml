@@ -6,6 +6,8 @@ depends_on: [DF]
 priority: 1
 scope:
   paths:
+    - "reports/compatibility"
+    - "tools/conformance/harness"
     - ".constitution/spikes/SPK-KRT-DO001.md"
     - "typescript/kernel/testkit"
     - "typescript/kernel/backends/memory"
@@ -19,6 +21,8 @@ scope:
     - "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json"
     - "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json"
     - ".changeset/durable-control-gaps.md"
+    - "spec/conformance/kernel/plans"
+    - "tools/conformance/meta-conformance"
   tech_spec_patchable: []
 estimated_diff_lines: 15000
 estimate_source: planned
@@ -57,16 +61,19 @@ tickets:
         - "spec/conformance/kernel/profiles.json"
         - "spec/conformance/kernel/kernel-process-crash-undetected.json"
         - "tools/conformance/harness/test/durable-control-mutants.test.ts"
+        - "spec/conformance/kernel/plans"
+        - "tools/conformance/meta-conformance"
+        - "tools/conformance/harness"
     verification:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if either backend rejects the mutant before the designated fault or a claim cannot be detected; route a decision with the measured result rather than retaining an undetected claim."
       - "STOP if the test needs a ruling on recovery for a correct separately durable implementation; OD-21 remains proposed and must not be settled by the mutant."
-    description: "Implement the non-atomic mutant chosen by the spike below the testkit fault seam. Designate the before_commit, after_turn_node_write_before_head, and after_head_move_before_staging_clear recovery assertions. Preserve the real SQLite and PostgreSQL substrate and use the spike measurements to choose safe write grouping. Use the existing OD-21 interim for their single-transaction baseline without ruling on separately durable ports."
+    description: "Implement the non-atomic mutant chosen by the spike below the testkit fault seam. Designate the before_commit, after_turn_node_write_before_head, and after_head_move_before_staging_clear recovery assertions. Preserve the real SQLite and PostgreSQL substrate and use the spike measurements to choose safe write grouping. Use the existing OD-21 interim for their single-transaction baseline without ruling on separately durable ports. The designated kills depend on the rollback interim of still-proposed OD-21. Re-check the non-atomic control acceptance against the final ruling before declaring closure."
     acceptance:
       mode: contract_test
-      evidence: "On both backends each of the three claims has a designated assertion killed with mutant activation and matching fault receipt, and its unmutated baseline passes. The process-crash undetected register has no entries."
+      evidence: "On both backends each of the three claims has a designated assertion killed with mutant activation and matching fault receipt, and its unmutated baseline passes. The process-crash undetected register has no entries. The OD-21 ruling is closed and the three detecting assertions have been re-checked against it before durable-register closure."
     flows: ["flow-crash-mid-checkpoint-recovery"]
     certainty: assumed
     status: planned
@@ -83,6 +90,9 @@ tickets:
         - "spec/conformance/kernel/profiles.json"
         - "spec/conformance/kernel/kernel-persistent-reopen-undetected.json"
         - "tools/conformance/harness/test/durable-control-mutants.test.ts"
+        - "spec/conformance/kernel/plans"
+        - "tools/conformance/meta-conformance"
+        - "tools/conformance/harness"
     verification:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
@@ -108,6 +118,9 @@ tickets:
         - "spec/conformance/kernel/profiles.json"
         - "spec/conformance/kernel/kernel-shared-backend-undetected.json"
         - "tools/conformance/harness/test/durable-control-mutants.test.ts"
+        - "spec/conformance/kernel/plans"
+        - "tools/conformance/meta-conformance"
+        - "tools/conformance/harness"
     verification:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
@@ -133,6 +146,9 @@ tickets:
         - "spec/conformance/kernel/profiles.json"
         - "spec/conformance/kernel/kernel-shared-backend-undetected.json"
         - "tools/conformance/harness/test/durable-control-mutants.test.ts"
+        - "spec/conformance/kernel/plans"
+        - "tools/conformance/meta-conformance"
+        - "tools/conformance/harness"
     verification:
       command: "bun run conformance"
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
@@ -180,11 +196,13 @@ tickets:
         - "spec/conformance/kernel/kernel-shared-backend-undetected.json"
         - "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json"
         - "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json"
+        - "reports/compatibility"
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0 with the operator-provided PostgreSQL service; all three durable control inventories are complete."
     stop_conditions:
       - "STOP if any durable claim remains undetected or a control is invalid or survives; route the finding instead of weakening the bar."
+      - "STOP while OD-21 is open; durable registers cannot be declared closed until the owner rules and DO002 acceptance is re-checked."
     description: "Run the full applicable durable control sets and retain the smallest evidence needed to prove each designation and each backend result. Do not clear a register entry merely because another backend or an unrelated assertion failed."
     acceptance:
       mode: contract_test

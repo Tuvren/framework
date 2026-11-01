@@ -3,6 +3,7 @@ name: Staged TypeScript dependency layer 3
 kind: tooling
 capabilities: []
 depends_on: [CI]
+priority: 25
 scope:
   paths:
     - typescript/kernel/backends/memory/BUILD.bazel

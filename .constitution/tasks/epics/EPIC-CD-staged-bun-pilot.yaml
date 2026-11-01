@@ -3,6 +3,7 @@ name: Staged Bun workspace pilot and CI sandbox gate
 kind: tooling
 capabilities: []
 depends_on: [CC]
+priority: 16
 scope:
   paths:
     - tools/bazel/bun-workspace.bzl

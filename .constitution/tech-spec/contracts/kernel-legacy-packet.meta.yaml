@@ -4,5 +4,5 @@ flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conf
 boundaries: [BND-27, BND-29]
 companion: conformance-certification.md
 certainty: assumed
-assumption: "A separate temporary packet preserves the six legacy plans for unmigrated adapters without loading them into TypeScript or Rust certification."
-settles_when: "A closeout cites packet resolution and compatibility evidence for the three unmigrated adapters and proves that TypeScript and Rust load none of the packet's plans."
+assumption: "A separate temporary packet with its own catalog of 21 composites and exact transitionalAdapters gate preserves the six legacy plans for unmigrated adapters without loading them into TypeScript or Rust certification."
+settles_when: "A closeout cites packet resolution and compatibility evidence for the three unmigrated adapters and proves that TypeScript and Rust load none of the packet's paths, and the retained lanes still validate lossless observations against the legacy-owned catalog."

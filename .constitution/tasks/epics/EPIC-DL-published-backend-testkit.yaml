@@ -3,7 +3,7 @@ name: Backend testkit binding and plan families
 kind: product
 capabilities: [CAP-036, CAP-038]
 depends_on: [DO, DP, DQ, DR, DK]
-priority: 12
+priority: 7
 scope:
   paths:
     - typescript/kernel/testkit
@@ -57,10 +57,10 @@ tickets:
     stop_conditions:
       - "STOP if DO left a fault or barrier hook on a publicly constructed backend; don't improvise."
       - "STOP if the binding has to see a plan, fixture, or expected value to drive a backend; don't improvise."
-    description: "Inject faults through the testkit transaction seam in typescript/kernel/testkit/src/lib/commit-fault-seam.ts and typescript/kernel/testkit/src/lib/durable-fault-control.ts; the KRT-DF003 closeout says \"Commit-phase fault hooks exist only in the testkit\" (ef893e1 at the time of writing). ADR-0082 decisions 5 and 6. Extract the TypeScript kernel binding from the stdio host so it implements the adapter-protocol methods over a host-supplied substrate. The host supplies the implementation identity, durability, provision, open with the scope and clock options the binding passes, close, release, optional concurrent attachment, and an optional process boundary. Provide the in-process transport, whose observations still round-trip through the ADR-0078 encoding. Keep the stdio host as a thin wrapper over the same binding. Express the memory, SQLite, and PostgreSQL backends as substrates."
+    description: "Inject faults through the testkit transaction seam in typescript/kernel/testkit/src/lib/commit-fault-seam.ts and typescript/kernel/testkit/src/lib/durable-fault-control.ts; the KRT-DF003 closeout says \"Commit-phase fault hooks exist only in the testkit\" (ef893e1 at the time of writing). ADR-0082 decisions 5 and 6. Extract the TypeScript kernel binding from the stdio host so it implements the adapter-protocol methods over a host-supplied substrate. The host supplies the implementation identity, durability, provision, open with the scope and clock options the binding passes, close, release, optional concurrent attachment, and an optional process boundary. Provide the in-process transport, whose observations still round-trip through the ADR-0078 encoding. Keep the stdio host as a thin wrapper over the same binding. Express the memory, SQLite, and PostgreSQL backends as substrates. An out-of-tree substrate declares a host-side server-clock reader. Without that reader clock.backend-server and kernel.shared-backend are not claimable. The first-party harness compares with its own read of the provisioned database clock."
     acceptance:
       mode: contract_test
-      evidence: "Assert identical verdicts and observation digests for kernel.memory over the stdio and in-process transports. Assert that the binding receives only SPI-level inputs. The durable lanes still certify kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend as before."
+      evidence: "Assert identical verdicts and observation digests for kernel.memory over the stdio and in-process transports. Assert that the binding receives only SPI-level inputs. The durable lanes still certify kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend as before. Durable backends also certify kernel.memory and TypeScript backends claim kernel.backend-spi; missing server-clock readers reject clock.backend-server and kernel.shared-backend claims."
     flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -108,10 +108,10 @@ tickets:
       expected: "Exit 0; the kernel.backend-spi checks and their mutants pass the negative-control gate on memory, SQLite, and PostgreSQL."
     stop_conditions:
       - "STOP if an SPI obligation cannot be expressed through catalogued operations and closed observation schemas; don't improvise."
-    description: "ADR-0082 decision 9 and guidelines 5.10.6. Write the claimId obligation map for every assertion in registerBackendConformanceSuite, registerBackendInvariantSuite, and registerBackendRecoverySuite. Each assertion maps to an existing claim, a new kernel syscall check, a new kernel.backend-spi check observable only at the SPI (such as defensive cloning or nested-transaction rejection), or a deletion with a reason. Catalogue the SPI operations, add the plan family with its mutants to negative-controls.json, and certify the three first-party backends on it."
+    description: "ADR-0082 decision 9 and guidelines 5.10.6. Write the claimId obligation map for every assertion in registerBackendConformanceSuite, registerBackendInvariantSuite, and registerBackendRecoverySuite. Each assertion maps to an existing claim, a new kernel syscall check, a new kernel.backend-spi check observable only at the SPI (such as defensive cloning or nested-transaction rejection), or a deletion with a reason. Catalogue the SPI operations, add the plan family with its mutants to negative-controls.json, and certify the three first-party backends on it. Put RuntimeBackend-only checks in a separate kernel.backend-spi profile claimed by TypeScript backends; they cannot bind to Rust. Amend ADR-0082 decision 7 through ADR-0084."
     acceptance:
       mode: contract_test
-      evidence: "The obligation map accounts for every legacy assertion. Every new claimId has a designated detecting mutant that the control run kills, and the three backends pass the family."
+      evidence: "The obligation map accounts for every legacy assertion. The separate profile has its packet-referenced kernel-backend-spi-undetected.json register, validated by the shared schema and included in generated authority. Every new claimId has a designated detecting mutant that the control run kills, and the three backends pass the family. Only TypeScript backends claim kernel.backend-spi, whose claims and mutants never become Rust kernel.memory requirements."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     status: planned
@@ -133,10 +133,10 @@ tickets:
       expected: "Exit 0; the round-trip family and its field-dropping mutants pass the control gate on memory, SQLite, and PostgreSQL."
     stop_conditions:
       - "STOP if a stored field has no catalogued read-back path; don't improvise."
-    description: "ADR-0082 decision 9. For every stored record kind, write values covering every field, with each optional field both present and absent. Read them back on the same instance and, under kernel.persistent-reopen, after reopen. Compare against plan literals, and compare opaque objects, including large objects and chunked ordered paths, by digest. Add mutants that drop an optional field, truncate a large object, and reorder chunks."
+    description: "ADR-0082 decision 9. For every stored record kind, write values covering every field, with each optional field both present and absent. Read them back on the same instance and, under kernel.persistent-reopen, after reopen. Compare against plan literals, and compare opaque objects, including large objects and chunked ordered paths, by digest. Add mutants that drop an optional field, truncate a large object, and reorder chunks. Round-trip checks observable through syscalls remain in kernel.memory or kernel.persistent-reopen, with their mutants tagged for those profiles. SPI-only observations belong to kernel.backend-spi."
     acceptance:
       mode: contract_test
-      evidence: "Every stored record field appears in at least one round-trip assertion. Each field-dropping or truncating mutant is killed, and the three backends pass."
+      evidence: "Every stored record field appears in at least one round-trip assertion. Each field-dropping or truncating mutant is killed, and the three backends pass. The obligation map distinguishes syscall-observable round trips from TypeScript-only SPI checks and asserts the corresponding mutant profile tags."
     flows: [flow-authority-packet-driven-conformance, flow-crash-mid-checkpoint-recovery]
     certainty: assumed
     status: planned

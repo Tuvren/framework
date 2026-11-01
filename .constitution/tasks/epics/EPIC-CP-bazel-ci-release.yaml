@@ -3,6 +3,7 @@ name: Bazel affected selection CI and release rehearsal
 kind: tooling
 capabilities: []
 depends_on: [CO]
+priority: 28
 scope:
   paths:
     - tools/bazel/affected-selection

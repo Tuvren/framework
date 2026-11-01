@@ -3,13 +3,17 @@ name: Certify the Go kernel on the kernel catalog
 kind: product
 capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
 depends_on: [DE, DS]
-priority: 8
+priority: 10
 scope:
   paths:
     - go/kernel
     - go/kernel-conformance-adapter
     - go/kernel-certification
     - reports/compatibility/evidence/certification-harness.kernel-go-certification.json
+    - "tools/conformance/meta-conformance/negative-control-config.ts"
+    - "tools/conformance/certification/provenance.ts"
+    - "tools/conformance/certification/certified-projects.json"
+    - "spec/kernel/legacy/authority-packet.json"
   tech_spec_patchable: []
 estimated_diff_lines: 7000
 estimate_source: planned
@@ -28,7 +32,8 @@ tickets:
       expected: "Exit 0; the rewritten protocol plans pass or are triaged against the Go kernel adapter, which encodes observations per the encoding profile."
     stop_conditions:
       - "STOP if a protocol syscall has no public Go kernel API; record it as an implementation finding; do not improvise."
-    description: "ADR-0075, ADR-0078, ADR-0080, and OD-16. Add the Go observation encoding helpers, replace the protocol composites with syscall bindings that forward native results and errors unchanged, bind the canonical kernel.codec operations, remove any adapter-side sorting, and make the Go kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml."
+      - "STOP before implementation and replan the certification-control estimates against DS actuals; five points versus DS fifteen is unmeasured."
+    description: "ADR-0075, ADR-0078, ADR-0080, and OD-16. Add the Go observation encoding helpers, replace the protocol composites with syscall bindings that forward native results and errors unchanged, bind the canonical kernel.codec operations, remove any adapter-side sorting, and make the Go kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml. Retain all composite handlers while this adapter selects the legacy packet; bind canonical operations alongside them. Deduplicate plan selection by packet and plan ID when both scope-isolation capabilities select plans."
     acceptance:
       mode: contract_test
       evidence: "Assert the canonical protocol and kernel.codec plans pass or have triage entries, all 68 migrated codec obligations are selected, observations validate against the encoding profile, and the adapter performs no comparison, sorting, or normalization."
@@ -49,7 +54,7 @@ tickets:
       expected: "Exit 0; isolation, reclamation, liveness, and in-process recovery plans pass or are triaged against the Go kernel with runner-owned clocks and armed faults."
     stop_conditions:
       - "STOP if recovery requires an adapter-inserted reconcile call; record a specification or implementation finding; do not improvise."
-    description: "ADR-0076. Re-express the existing Go fault-injecting backend at the storage-boundary points with throw mode and activation tokens, inject backend and worker clocks through setClock, and replace the scope, reclamation, liveness, and in-process recovery composites with syscall bindings. Remove adapter-side reconciliation and expected-value derivation. Any observable partial checkpoint state between separate durable writes is an implementation finding against the all-or-nothing invariant."
+    description: "ADR-0076. Re-express the existing Go fault-injecting backend at the storage-boundary points with throw mode and activation tokens, inject backend and worker clocks through setClock, and replace the scope, reclamation, liveness, and in-process recovery composites with syscall bindings. Remove adapter-side reconciliation and expected-value derivation. Any observable partial checkpoint state between separate durable writes is an implementation finding against the all-or-nothing invariant. Retain all composite handlers while this adapter selects the legacy packet; bind canonical operations alongside them. Deduplicate plan selection by packet and plan ID when both scope-isolation capabilities select plans."
     acceptance:
       mode: contract_test
       evidence: "Assert armed faults produce activation evidence, no adapter code derives an expected head or reconciles, and every failure has a triage entry."
@@ -88,16 +93,20 @@ tickets:
         - go/kernel-conformance-adapter
         - go/kernel-certification
         - reports/compatibility/evidence/certification-harness.kernel-go-certification.json
+        - "tools/conformance/meta-conformance/negative-control-config.ts"
+        - "tools/conformance/certification/provenance.ts"
+        - "tools/conformance/certification/certified-projects.json"
+        - "spec/kernel/legacy/authority-packet.json"
     verification:
       command: bun run conformance
       expected: "Exit 0; the Go kernel claims kernel.memory with every required check applicable, and its certificate validates or its red checks are triaged."
     stop_conditions:
       - "STOP if certifying requires weakening a plan; record the finding instead; do not improvise."
       - "STOP and replan this ticket if reproducing the profile controls exceeds its five-point budget; do not claim certification with missing controls."
-    description: "ADR-0081 and ADR-0084. Once all canonical bindings are complete, drop the legacy packet and claim kernel.memory. Reproduce the profile-tagged controls over the Go implementation, launch the built executable directly, and emit its implementation-matched certificate bundle. The certified list is updated when the legacy plans retire. Fix small local implementation findings and file the rest with replay commands. Classify every finding in this ticket's certification-triage.yaml."
+    description: "ADR-0081 and ADR-0084. Once all canonical bindings are complete, drop the legacy packet and claim kernel.memory. Reproduce the profile-tagged controls over the Go implementation, launch the built executable directly, and emit its implementation-matched certificate bundle. The certified list is updated when the legacy plans retire. Fix small local implementation findings and file the rest with replay commands. Classify every finding in this ticket's certification-triage.yaml. Delete this adapter's composite handlers in the same ticket that removes its legacy packet reference and transitionalAdapters entry. Update shared negative-control configuration, packet-bound provenance and certified-projects.json to claim kernel.memory; the prior tuvren.kernel.protocol entry was withheld because the legacy packet has no profile."
     acceptance:
       mode: contract_test
-      evidence: "Assert the kernel.memory run is complete without the legacy packet, every profile-tagged control is killed against Go with matching identity and unmutated reruns, the certificate lists remaining undetected claims, and each failure has a triage entry and, for implementation findings, an issue with a replay command."
+      evidence: "Assert the kernel.memory run is complete without the legacy packet, every profile-tagged control is killed against Go with matching identity and unmutated reruns, the certificate lists remaining undetected claims, and each failure has a triage entry and, for implementation findings, an issue with a replay command. No handler is removed while selected by a retained legacy plan; the packet reference, transitional adapter entry and all composite handlers retire together. Both scope-isolation plan selections are deduplicated."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned

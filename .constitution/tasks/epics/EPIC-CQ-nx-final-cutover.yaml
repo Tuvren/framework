@@ -3,6 +3,7 @@ name: Final Nx removal and owner handoff
 kind: tooling
 capabilities: []
 depends_on: [CP]
+priority: 29
 scope:
   paths:
     - nx.json
