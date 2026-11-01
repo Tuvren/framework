@@ -72,6 +72,7 @@ const child = spawn(executable ?? "", executableArgs, {
   stdio: ["pipe", "pipe", "inherit"],
 });
 let recorded = false;
+let activationBeforeArming: unknown;
 let exited = false;
 let resolveProbe: ((frame: unknown) => void) | undefined;
 
@@ -86,7 +87,7 @@ const record = (entry: Record<string, unknown>): void => {
   );
 };
 
-const probe = async (trigger: string): Promise<void> => {
+const probe = async (trigger: string, snapshot = false): Promise<void> => {
   if (recorded || exited || !child.stdin.writable) {
     return;
   }
@@ -106,7 +107,12 @@ const probe = async (trigger: string): Promise<void> => {
   const frame = await reply.promise;
   clearTimeout(timer);
   resolveProbe = undefined;
+  if (snapshot) {
+    activationBeforeArming = frame;
+    return;
+  }
   record({
+    activationBeforeArming,
     trigger,
     processEpoch: Number(process.env.TUVREN_CONFORMANCE_PROCESS_EPOCH),
     ...(frame === null
@@ -153,6 +159,9 @@ process.on("SIGTERM", () => {
 });
 
 for await (const line of createInterface({ input: process.stdin })) {
+  if (readFrame(line)?.method === "armFault") {
+    await probe("armFault", true);
+  }
   if (readFrame(line)?.method === "shutdown") {
     await probe("shutdown");
   }

@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   lstat,
@@ -9,6 +10,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { promisify } from "node:util";
 
 import type { AdapterManifest } from "../harness/adapter-client.js";
 
@@ -21,6 +23,13 @@ export interface VerifierDigests {
   profiles: string;
   controls: string;
   verifierAuthority: string;
+}
+
+export interface SourceCertificateDigests extends Omit<
+  VerifierDigests,
+  "harness"
+> {
+  adapterManifest: string;
 }
 
 export interface CertificateDigests extends VerifierDigests {
@@ -163,9 +172,9 @@ const reference = (value: unknown, label: string): string => {
   return path.resolve(ROOT, value);
 };
 
-export const computeVerifierDigests = async (
+export const computeSourceVerifierDigests = async (
   packetPaths: readonly string[]
-): Promise<VerifierDigests> => {
+): Promise<Omit<VerifierDigests, "harness">> => {
   const packets = packetPaths.map((packet) => path.resolve(ROOT, packet));
   const plans: string[] = [];
   const catalogs: string[] = [];
@@ -201,14 +210,48 @@ export const computeVerifierDigests = async (
       }
     }
   }
-  const authority = [
-    ...(await filesUnder(path.join(ROOT, "spec"))),
-    ...(await filesUnder(path.join(ROOT, "tools/schemas"))),
-    path.join(ROOT, "tools/conformance/certification/certified-projects.json"),
-    ...(
-      await filesUnder(path.join(ROOT, "tools/conformance/adapter-protocol"))
-    ).filter((file) => file.endsWith(".schema.json")),
-  ];
+  const { stdout } = await promisify(execFile)(
+    "git",
+    [
+      "ls-files",
+      "--cached",
+      "--others",
+      "--exclude-standard",
+      "-z",
+      "--",
+      "spec",
+      "tools/schemas",
+      "tools/conformance/adapter-protocol",
+      "tools/conformance/certification/certified-projects.json",
+    ],
+    { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 }
+  );
+  const authority = stdout
+    .split("\0")
+    .filter(Boolean)
+    .map((file) => path.join(ROOT, file));
+  return {
+    packet: await digestWorkspaceInputs(packets),
+    plans: await digestWorkspaceInputs(plans),
+    catalogs: await digestWorkspaceInputs(catalogs),
+    fixtures: await digestWorkspaceInputs(fixtures),
+    profiles: await digestWorkspaceInputs(profiles),
+    controls: await digestWorkspaceInputs(controls),
+    verifierAuthority: await digestWorkspaceInputs([
+      ...authority,
+      ...packets,
+      ...plans,
+      ...catalogs,
+      ...profiles,
+      ...controls,
+      ...fixtures,
+    ]),
+  };
+};
+
+export const computeVerifierDigests = async (
+  packetPaths: readonly string[]
+): Promise<VerifierDigests> => {
   const harness = [
     ...(await filesUnder(path.join(ROOT, "tools/conformance"))).filter((file) =>
       HARNESS_FILE.test(file)
@@ -228,21 +271,7 @@ export const computeVerifierDigests = async (
       .update(await nodeModulesDigest())
       .update(await readFile(process.execPath))
       .digest("hex"),
-    packet: await digestWorkspaceInputs(packets),
-    plans: await digestWorkspaceInputs(plans),
-    catalogs: await digestWorkspaceInputs(catalogs),
-    fixtures: await digestWorkspaceInputs(fixtures),
-    profiles: await digestWorkspaceInputs(profiles),
-    controls: await digestWorkspaceInputs(controls),
-    verifierAuthority: await digestWorkspaceInputs([
-      ...authority,
-      ...packets,
-      ...plans,
-      ...catalogs,
-      ...profiles,
-      ...controls,
-      ...fixtures,
-    ]),
+    ...(await computeSourceVerifierDigests(packetPaths)),
   };
 };
 
@@ -316,3 +345,11 @@ export const digestAdapterManifest = async (
   createHash("sha256")
     .update(await readFile(path.resolve(ROOT, manifestPath)))
     .digest("hex");
+
+export const computeSourceCertificateDigests = async (
+  manifest: AdapterManifest,
+  manifestPath: string
+): Promise<SourceCertificateDigests> => ({
+  ...(await computeSourceVerifierDigests(manifest.authorityPackets)),
+  adapterManifest: await digestAdapterManifest(manifestPath),
+});

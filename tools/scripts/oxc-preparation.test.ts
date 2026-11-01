@@ -404,12 +404,23 @@ describe("native read-only formatter check", () => {
       writeFileSync(badTypeScript, typeScriptSource);
       writeFileSync(badJson, jsonSource);
 
-      // The scoped scratch invocation uses the repository's own Oxfmt config
-      // and the same native binary as the whole-tree check.
+      const fixtureConfig = path.join(directory, "oxfmt.config.mjs");
+      const fixtureIgnore = path.join(directory, "empty.ignore");
+      writeFileSync(
+        fixtureConfig,
+        `import config from ${JSON.stringify(pathToFileURL(OXFMT_CONFIG).href)};
+export default { ...config, ignorePatterns: config.ignorePatterns.filter(pattern => pattern !== "**/.cache") };
+`
+      );
+      writeFileSync(fixtureIgnore, "");
+
+      // Preserve repository formatting options while allowing ignored TMPDIR fixtures.
       const result = runBun([
         OXFMT_BIN,
         "-c",
-        OXFMT_CONFIG,
+        fixtureConfig,
+        "--ignore-path",
+        fixtureIgnore,
         "--check",
         badTypeScript,
         badJson,
@@ -428,7 +439,9 @@ describe("native read-only formatter check", () => {
       const good = runBun([
         OXFMT_BIN,
         "-c",
-        OXFMT_CONFIG,
+        fixtureConfig,
+        "--ignore-path",
+        fixtureIgnore,
         "--check",
         goodTypeScript,
       ]);

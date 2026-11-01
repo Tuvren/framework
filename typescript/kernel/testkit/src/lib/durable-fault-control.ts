@@ -95,6 +95,7 @@ export const createDurableFaultControl = (
       ) {
         return await inner.transact(work);
       }
+      const transactionFault = armed;
       let runBranch: string | undefined;
       let checkpointBranch: string | undefined;
       const branches = new Set<string>();
@@ -110,9 +111,6 @@ export const createDurableFaultControl = (
                 branches.add(branchId);
                 if (branch !== null && branchId === runBranch) {
                   checkpointBranch = branchId;
-                  if (checkpointContext.getStore() === true) {
-                    await activate("before-commit", branchId);
-                  }
                 }
                 return branch;
               },
@@ -171,11 +169,16 @@ export const createDurableFaultControl = (
             }
           },
           beforeCommit: async () => {
+            if (armed !== transactionFault) {
+              return;
+            }
             if (armed?.selector.operation === undefined) {
               const branch = armed?.selector.branchId;
               if (branch === undefined || branches.has(branch)) {
                 await activate("before-commit", branch);
               }
+            } else if (checkpointBranch !== undefined) {
+              await activate("before-commit", checkpointBranch);
             }
           },
         }

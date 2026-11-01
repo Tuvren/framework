@@ -1,17 +1,22 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { spawn } from "bun";
+import { spawn, which } from "bun";
 
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
 import { selectCheck } from "../harness/check-selection.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import {
+  postgresServerVersion,
+  withCheckStorage,
+} from "../harness/storage-resource.ts";
+import {
   claimAssertions,
   profileConditionalAssertions,
+  profileSemanticAssertions,
 } from "../meta-conformance/claim-coverage.ts";
 import { finishCertificate } from "./bundle.ts";
 import {
@@ -19,7 +24,7 @@ import {
   controlRunId,
   matchesControlRun,
 } from "./control-link.ts";
-import { readClaimedProfiles } from "./profile.ts";
+import { readClaimedProfiles, readProfileScopedControls } from "./profile.ts";
 import { computeCertificateDigests } from "./provenance.ts";
 import type { VerifierDigests } from "./provenance.ts";
 
@@ -91,6 +96,8 @@ test("certificate links require passing, provenance-bound fleet branch observati
   const expected = {
     ...primary,
     conditionalAssertions: ["worker", "shared"],
+    scopedControls: ["mutant"],
+    semanticAssertions: ["detector"],
     negativeControls: ["mutant"],
     profile: "kernel.memory",
     verifierDigests,
@@ -141,6 +148,19 @@ test("certificate links require passing, provenance-bound fleet branch observati
   };
   const passing = makeRun("pass", true, "applied");
   expect(matchesControlRun(passing, expected)).toBe(passing.controlRun.id);
+  expect(
+    matchesControlRun(passing, {
+      ...expected,
+      semanticAssertions: ["outside-profile"],
+    })
+  ).toBeUndefined();
+  expect(
+    matchesControlRun(passing, {
+      ...expected,
+      scopedControls: [],
+      semanticAssertions: ["outside-profile"],
+    })
+  ).toBe(passing.controlRun.id);
   expect(
     matchesControlRun(makeRun("fail", true, "applied"), expected)
   ).toBeUndefined();
@@ -214,6 +234,8 @@ test("a PostgreSQL kill cannot certify SQLite's unreasoned non-activation", () =
         profile,
         verifierDigests,
         negativeControls: ["mutant"],
+        scopedControls: ["mutant"],
+        semanticAssertions: ["detector"],
         conditionalAssertions: [],
       })
     ).toBeUndefined();
@@ -236,12 +258,25 @@ test("certificate environment identifies the adapter storage backend", async () 
     ["sqlite-directory", "sqlite"],
     ["postgres-database", "postgres"],
   ] as const) {
+    const serverVersion =
+      storage === "postgres-database"
+        ? await withCheckStorage(storage, postgresServerVersion)
+        : undefined;
     const bundle = await finishCertificate(
       { adapter, capabilities: [], checks: [], packets: [], plans: [] },
       { ...manifest, storage },
       profile,
       [],
-      [],
+      serverVersion === undefined
+        ? []
+        : [
+            {
+              checkId: "version",
+              status: "pass",
+              assertionResults: [],
+              details: { storageIdentity: { serverVersion } },
+            },
+          ],
       "pass",
       before
     );
@@ -256,6 +291,7 @@ test("certificate environment identifies the adapter storage backend", async () 
     expect(record(bundle.environment).backend).toEqual({
       kind,
       version: packageValue.version,
+      ...(serverVersion === undefined ? {} : { serverVersion }),
     });
   }
 }, 120_000);
@@ -277,7 +313,9 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
       requiredEvidence: [],
     };
     const check = {
-      assertions: [],
+      assertions: [
+        { kind: "resultField" as const, field: "$.value", equals: 1 },
+      ],
       checkId: "synthetic.check",
       claimIds: ["synthetic.claim"],
       operation: "synthetic.operation",
@@ -326,7 +364,9 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
               outcome: requiredOutcome,
               activated: true,
               designatedFailures:
-                requiredOutcome === "killed" ? ["assertion"] : [],
+                requiredOutcome === "killed"
+                  ? ["synthetic.check.1.resultField"]
+                  : [],
             },
             {
               mutantId: "tagged",
@@ -334,7 +374,9 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
               outcome: taggedOutcome,
               activated: true,
               designatedFailures:
-                taggedOutcome === "killed" ? ["assertion"] : [],
+                taggedOutcome === "killed"
+                  ? ["synthetic.check.1.resultField"]
+                  : [],
             },
           ],
         },
@@ -357,6 +399,8 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
       verifierDigests,
       negativeControls: profile.negativeControls,
       conditionalAssertions: [],
+      scopedControls: ["required", "tagged"],
+      semanticAssertions: ["synthetic.check.1.resultField"],
     };
     const reportPath = path.join(directory, "controls.json");
     const options = {
@@ -552,6 +596,8 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
 const checkDesignatedFailures = (
   report: unknown,
   manifest: unknown,
+  applicableAssertions: ReadonlySet<string>,
+  profileClaims: ReadonlySet<string>,
   profileAssertions: ReadonlySet<string>
 ): void => {
   const reports = record(report).reports;
@@ -576,19 +622,25 @@ const checkDesignatedFailures = (
       if (
         control === undefined ||
         !Array.isArray(control.designatedAssertions) ||
+        !Array.isArray(control.claimIds) ||
         !Array.isArray(mutant.designatedFailures)
       ) {
         throw new TypeError("missing designated assertion evidence");
       }
       expect(mutant.designatedFailures.length).toBeGreaterThan(0);
       if (adapter === adapters[0]) {
+        const scoped = control.claimIds.some((claim) =>
+          profileClaims.has(string(claim))
+        );
         const applicable = control.designatedAssertions.filter(
           (assertion) =>
-            typeof assertion === "string" && profileAssertions.has(assertion)
+            typeof assertion === "string" &&
+            applicableAssertions.has(assertion) &&
+            (!scoped || profileAssertions.has(assertion))
         );
         expect(applicable.length).toBeGreaterThan(0);
-        for (const assertion of applicable) {
-          expect(mutant.designatedFailures).toContain(assertion);
+        for (const assertion of mutant.designatedFailures) {
+          expect(applicable).toContain(assertion);
         }
       }
     }
@@ -639,7 +691,6 @@ test("real fleet controls certify both complete bundles and reject changed verif
         })
       )
     );
-    checkDesignatedFailures(report, controlManifest, applicable);
     const controlRun = record(record(report).controlRun);
     expect(controlRun.status).toBe("pass");
     const controlRunIdentifier = string(controlRun.id);
@@ -677,6 +728,13 @@ test("real fleet controls certify both complete bundles and reject changed verif
     }
     const negativeControls = profile.negativeControls.map(string);
     const claims = profile.claimIds.map(string);
+    checkDesignatedFailures(
+      report,
+      controlManifest,
+      applicable,
+      new Set(claims),
+      new Set(profileSemanticAssertions(claims, plans))
+    );
     for (const adapter of adapters) {
       const evidencePath = path.join(
         directory,
@@ -727,9 +785,17 @@ test("real fleet controls certify both complete bundles and reject changed verif
         };
         const before = await computeCertificateDigests(manifest, adapter);
         const plans = await readPlans(manifest, { packets: [], plans: [] });
+        const git = which("git");
+        if (git === null) {
+          throw new Error("source provenance requires Git");
+        }
+        const gitPath = await mkdtemp(path.join(directory, "git-path-"));
+        await symlink(git, path.join(gitPath, "git"));
         const previousPath = process.env.PATH;
-        process.env.PATH = "";
+        process.env.PATH = gitPath;
         try {
+          expect(which("rustc", { PATH: gitPath })).toBeNull();
+          expect(which("cargo", { PATH: gitPath })).toBeNull();
           const complete = await finishCertificate(
             options,
             manifest,
@@ -819,6 +885,17 @@ test("real fleet controls certify both complete bundles and reject changed verif
         profile: "kernel.memory",
         verifierDigests,
         negativeControls,
+        scopedControls: await readProfileScopedControls(
+          await readAdapterManifest(adapter),
+          { profileId: "kernel.memory", claimIds: claims }
+        ),
+        semanticAssertions: profileSemanticAssertions(
+          claims,
+          await readPlans(await readAdapterManifest(adapter), {
+            packets: [],
+            plans: [],
+          })
+        ),
         conditionalAssertions: profileConditionalAssertions(
           claims,
           await readPlans(await readAdapterManifest(adapter), {
@@ -948,3 +1025,26 @@ test("real fleet controls certify both complete bundles and reject changed verif
     await rm(directory, { recursive: true, force: true });
   }
 }, 180_000);
+
+test("control assertion scoping follows manifest claims alone", async () => {
+  const manifest = await readAdapterManifest(adapters[0]);
+  const [profile] = await readClaimedProfiles(
+    manifest,
+    manifest.authorityPackets
+  );
+  if (profile === undefined) {
+    throw new Error("missing memory profile");
+  }
+  const scoped = await readProfileScopedControls(manifest, profile);
+  expect(scoped).toContain("kernel.drop-uncommitted-staged-result-on-recovery");
+  expect(scoped).not.toContain("kernel.accept-noncanonical-cbor");
+  expect(scoped).not.toContain("kernel.resolve-object-across-scopes");
+  const reassigned = await readProfileScopedControls(manifest, {
+    ...profile,
+    claimIds: ["kernel.protocol.canonical_rejection"],
+  });
+  expect(reassigned).toContain("kernel.accept-noncanonical-cbor");
+  expect(reassigned).not.toContain(
+    "kernel.drop-uncommitted-staged-result-on-recovery"
+  );
+});

@@ -188,7 +188,7 @@ test("shared-backend race and clock claims are designated or have explicit gaps"
       )
     ),
   ];
-  expect(claims).toHaveLength(4);
+  expect(claims).toHaveLength(3);
   expect(() =>
     assertClaimCoverage(
       "kernel.shared-backend",
@@ -198,7 +198,7 @@ test("shared-backend race and clock claims are designated or have explicit gaps"
       checks
     )
   ).not.toThrow();
-  reasons["kernel.syscall.shared_writer.a_first"] = "";
+  reasons["kernel.syscall.shared_writer.race"] = "";
   expect(() =>
     assertClaimCoverage(
       "kernel.shared-backend",
@@ -207,7 +207,7 @@ test("shared-backend race and clock claims are designated or have explicit gaps"
       reasons,
       checks
     )
-  ).toThrow("kernel.syscall.shared_writer.a_first");
+  ).toThrow("kernel.syscall.shared_writer.race");
 });
 
 test("pending process-crash node fixture matches the independent identity encoder", async () => {

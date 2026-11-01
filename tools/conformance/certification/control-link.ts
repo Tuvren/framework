@@ -89,6 +89,8 @@ interface ControlExpectation {
   implementation: string;
   negativeControls: readonly string[];
   conditionalAssertions: readonly string[];
+  semanticAssertions: readonly string[];
+  scopedControls: readonly string[];
   profile: string;
   verifierDigests: VerifierDigests;
 }
@@ -139,10 +141,16 @@ const validMutants = (
       }
       continue;
     }
+    const mutantId = mutant.mutantId;
     const detected =
       mutant.kind === "implementation"
         ? Array.isArray(mutant.designatedFailures) &&
-          mutant.designatedFailures.length > 0
+          mutant.designatedFailures.some(
+            (id: unknown) =>
+              typeof id === "string" &&
+              (!expected.scopedControls.includes(mutantId) ||
+                expected.semanticAssertions.includes(id))
+          )
         : (mutant.kind === "observation" ||
             mutant.kind === "instrumentation") &&
           typeof mutant.expectedRejection === "string";

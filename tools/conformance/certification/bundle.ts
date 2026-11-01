@@ -13,9 +13,13 @@ import type {
 } from "../../scripts/lib/conformance-contract.js";
 import type { AdapterManifest } from "../harness/adapter-client.js";
 import { readAdapterManifest } from "../harness/run-plans.js";
-import { profileConditionalAssertions } from "../meta-conformance/claim-coverage.js";
+import {
+  profileConditionalAssertions,
+  profileSemanticAssertions,
+} from "../meta-conformance/claim-coverage.js";
 import type { CompiledConformancePlan } from "../plan-compiler/index.js";
 import { matchesControlRun, profileControlReport } from "./control-link.js";
+import { readProfileScopedControls } from "./profile.js";
 import type { CertificationProfile } from "./profile.js";
 import {
   computeCertificateDigests,
@@ -81,7 +85,10 @@ const backendKindForStorage = (storage: AdapterManifest["storage"]) => {
   }
 };
 
-const certificationEnvironment = async (manifest: AdapterManifest) => {
+const certificationEnvironment = async (
+  manifest: AdapterManifest,
+  results: readonly ConformanceCheckResult[]
+) => {
   const backendKind = backendKindForStorage(manifest.storage);
   if (manifest.language === "rust" && backendKind !== "memory") {
     throw new Error(`unsupported Rust certificate backend ${backendKind}`);
@@ -137,9 +144,30 @@ const certificationEnvironment = async (manifest: AdapterManifest) => {
       `unsupported certificate implementation ${manifest.language}`
     );
   }
+  const serverVersions = new Set(
+    results.flatMap((result) => {
+      const storage = result.details?.storageIdentity;
+      return isRecord(storage) && typeof storage.serverVersion === "string"
+        ? [storage.serverVersion]
+        : [];
+    })
+  );
+  const serverVersion = [...serverVersions][0];
+  if (
+    backendKind === "postgres" &&
+    (serverVersions.size !== 1 || serverVersion === undefined)
+  ) {
+    throw new Error(
+      "cannot determine a single PostgreSQL server version from provisioned storage"
+    );
+  }
   const values = {
     architecture: arch(),
-    backend: { kind: backendKind, version: backendVersion },
+    backend: {
+      kind: backendKind,
+      version: backendVersion,
+      ...(backendKind === "postgres" ? { serverVersion } : {}),
+    },
     operatingSystem: { platform: platform(), release: release() },
     toolchains: {
       bun: bunVersion,
@@ -388,10 +416,15 @@ const controlRun = async (
       adapterManifest,
       implementation,
       negativeControls: profile.negativeControls,
+      scopedControls: await readProfileScopedControls(
+        await readAdapterManifest(options.adapter),
+        profile
+      ),
       conditionalAssertions: profileConditionalAssertions(
         profile.claimIds,
         plans
       ),
+      semanticAssertions: profileSemanticAssertions(profile.claimIds, plans),
       profile: profile.profileId,
       verifierDigests,
     });
@@ -426,7 +459,7 @@ export const finishCertificate = async (
   const after =
     snapshotAfter ??
     (await computeCertificateDigests(manifest, options.adapter));
-  const environment = await certificationEnvironment(manifest);
+  const environment = await certificationEnvironment(manifest, results);
   if (JSON.stringify(before) !== JSON.stringify(after)) {
     return { ...incomplete, environment };
   }

@@ -231,8 +231,7 @@
       "claimIds": [
         "kernel.syscall.clock_skew.expired",
         "kernel.syscall.clock_skew.live",
-        "kernel.syscall.shared_writer.a_first",
-        "kernel.syscall.shared_writer.b_first"
+        "kernel.syscall.shared_writer.race"
       ],
       "faultPoints": [],
       "negativeControls": ["kernel.worker-clock-expiry"],

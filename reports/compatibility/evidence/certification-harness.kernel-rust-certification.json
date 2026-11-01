@@ -6762,8 +6762,7 @@
     "kernel.scope-isolation.enumeration_is_scope_confined",
     "kernel.scope-isolation.store_get_is_scope_confined",
     "kernel.scope-isolation.store_has_is_scope_confined",
-    "kernel.syscall.shared_writer.a_first",
-    "kernel.syscall.shared_writer.b_first"
+    "kernel.syscall.shared_writer.race"
   ],
   "project": "kernel-rust-certification",
   "reportLabel": "Rust process-local kernel baseline",
@@ -6772,9 +6771,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 123,
-    "totalChecks": 147,
+    "totalChecks": 146,
     "applicableChecks": 123,
-    "nonApplicableChecks": 24
+    "nonApplicableChecks": 23
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

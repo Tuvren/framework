@@ -199,3 +199,47 @@ export const assertProfileClaimInventory = (
     );
   }
 };
+
+export const readProfileScopedControls = async (
+  manifest: AdapterManifest,
+  profile: Pick<CertificationProfile, "profileId" | "claimIds">
+): Promise<string[]> => {
+  const scoped = new Set<string>();
+  for (const packetPath of manifest.authorityPackets) {
+    const packet = await readJson(packetPath);
+    if (
+      !isRecord(packet) ||
+      typeof packet.negativeControlManifest !== "string"
+    ) {
+      continue;
+    }
+    const document = await readJson(packet.negativeControlManifest);
+    const errors = [
+      ...validateCertificationDocument("negativeControlManifest", document),
+      ...collectCertificationIntegrityFailures(
+        "negativeControlManifest",
+        document
+      ),
+    ];
+    if (
+      errors.length > 0 ||
+      !isRecord(document) ||
+      !Array.isArray(document.controls)
+    ) {
+      throw new Error("invalid negative-control manifest");
+    }
+    for (const control of document.controls) {
+      if (
+        isRecord(control) &&
+        typeof control.mutantId === "string" &&
+        strings(control.profiles).includes(profile.profileId) &&
+        strings(control.claimIds).some((claim) =>
+          profile.claimIds.includes(claim)
+        )
+      ) {
+        scoped.add(control.mutantId);
+      }
+    }
+  }
+  return [...scoped];
+};

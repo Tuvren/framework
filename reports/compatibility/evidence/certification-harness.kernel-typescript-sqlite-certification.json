@@ -538,7 +538,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -547,7 +547,7 @@
                 }
               },
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -565,7 +565,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -574,7 +574,7 @@
               }
             },
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -882,7 +882,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -891,7 +891,7 @@
                 }
               },
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -909,7 +909,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -918,7 +918,7 @@
               }
             },
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1226,7 +1226,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1235,7 +1235,7 @@
                 }
               },
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1253,7 +1253,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1262,7 +1262,7 @@
               }
             },
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1570,7 +1570,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1579,7 +1579,7 @@
                 }
               },
               {
-                "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+                "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1597,7 +1597,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1606,7 +1606,7 @@
               }
             },
             {
-              "executableDigest": "c89f73d7964db659eaaffc900b6eccf65c1f28a4f91b347d727905c0a1aaa78a",
+              "executableDigest": "c6bdf4cc5e51d9cdcc8c1074468e928566962a3f057df80db69eabc8d644b0f2",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -8871,8 +8871,7 @@
     "kernel.syscall.concurrent_writer.a_first",
     "kernel.syscall.concurrent_writer.b_first",
     "kernel.run-liveness.clock_skew_preemption",
-    "kernel.syscall.shared_writer.a_first",
-    "kernel.syscall.shared_writer.b_first"
+    "kernel.syscall.shared_writer.race"
   ],
   "project": "kernel-typescript-sqlite-certification",
   "reportLabel": "TypeScript SQLite durable kernel",
@@ -8881,9 +8880,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 141,
-    "totalChecks": 147,
+    "totalChecks": 146,
     "applicableChecks": 141,
-    "nonApplicableChecks": 6
+    "nonApplicableChecks": 5
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

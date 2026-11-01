@@ -40,6 +40,7 @@ const FIXTURE_ADAPTER = nodePath.resolve(
   "fixtures/synthetic-mutant-adapter.ts"
 );
 const MUTANT_ENV = "SYNTHETIC_NEGATIVE_CONTROL_MUTANT";
+const ADAPTER_REPLAY = /--adapter (\S+) /u;
 const ALPHA = "synthetic.alpha_check.1.resultField";
 const BETA = "synthetic.beta_check.1.resultField";
 const GAMMA = "synthetic.gamma_check.1.resultField";
@@ -392,7 +393,9 @@ describe("negative-control runner", () => {
     const artifacts = killed.artifacts ?? [];
 
     expect(artifacts.length).toBeGreaterThan(0);
-    expect(killed.replay).toContain(`--adapter ${mutantAdapter} `);
+    expect(
+      nodePath.resolve(killed.replay?.match(ADAPTER_REPLAY)?.[1] ?? "")
+    ).toBe(mutantAdapter);
 
     for (const file of artifacts) {
       expect(file.startsWith(logDirectory)).toBe(true);
@@ -406,7 +409,10 @@ describe("negative-control runner", () => {
       expect(replays.length).toBeGreaterThan(0);
       for (const replay of replays) {
         expect(replay).toStartWith(
-          `${MUTANT_ENV}=synthetic.wrong-alpha bun tools/conformance/harness/run.ts --adapter ${mutantAdapter} `
+          `${MUTANT_ENV}=synthetic.wrong-alpha bun tools/conformance/harness/run.ts --adapter `
+        );
+        expect(nodePath.resolve(replay.match(ADAPTER_REPLAY)?.[1] ?? "")).toBe(
+          mutantAdapter
         );
         expect(replay).not.toContain("tuvren-negative-controls-");
       }
@@ -477,6 +483,43 @@ describe("mutant run classification", () => {
     mutantId: MUTANT,
     profiles: ["synthetic.profile"],
   };
+
+  test("a designated failure outside the claiming profile does not kill its mutant", () => {
+    const run = activatedRun([
+      failedCheck("alpha", "implementation"),
+      {
+        checkId: "synthetic.beta_check",
+        status: "pass",
+        assertionResults: [{ assertionId: BETA, status: "pass" }],
+      },
+    ]);
+    const designated = { ...control, designatedAssertions: [ALPHA, BETA] };
+    expect(
+      classifyMutantRun(
+        designated,
+        run,
+        undefined,
+        [ALPHA],
+        ["synthetic.claim"]
+      ).outcome
+    ).toBe("killed");
+    expect(
+      classifyMutantRun(designated, run, undefined, [BETA], ["synthetic.claim"])
+        .outcome
+    ).toBe("survived");
+  });
+
+  test("a mutant without a profile claim keeps its designated semantic kill", () => {
+    const classified = classifyMutantRun(
+      control,
+      activatedRun([failedCheck("alpha", "implementation")]),
+      undefined,
+      [BETA],
+      ["another.claim"]
+    );
+    expect(classified.outcome).toBe("killed");
+    expect(classified.designatedFailures).toEqual([ALPHA]);
+  });
 
   test.each(["adapter_protocol", "environment", "verification"] as const)(
     "invalidates a designated kill when another check failed with %s",
