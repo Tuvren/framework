@@ -2,7 +2,7 @@ id: DG
 name: Certify the Go kernel on the kernel catalog
 kind: product
 capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
-depends_on: [DE]
+depends_on: [DE, DN]
 priority: 8
 scope:
   paths:
@@ -28,10 +28,10 @@ tickets:
       expected: "Exit 0; the rewritten protocol plans pass or are triaged against the Go kernel adapter, which encodes observations per the encoding profile."
     stop_conditions:
       - "STOP if a protocol syscall has no public Go kernel API; record it as an implementation finding; do not improvise."
-    description: "ADR-0075, ADR-0078, ADR-0080. Add the Go observation encoding helpers, replace the protocol composites with syscall bindings that forward native results and errors unchanged, remove any adapter-side sorting, and make the Go kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml."
+    description: "ADR-0075, ADR-0078, ADR-0080, and OD-16. Add the Go observation encoding helpers, replace the protocol composites with syscall bindings that forward native results and errors unchanged, bind the canonical kernel.codec operations, remove any adapter-side sorting, and make the Go kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml."
     acceptance:
       mode: contract_test
-      evidence: "Assert the protocol plans pass or have triage entries, observations validate against the encoding profile, and the adapter performs no comparison, sorting, or normalization for these operations."
+      evidence: "Assert the canonical protocol and kernel.codec plans pass or have triage entries, all 68 migrated codec obligations are selected, observations validate against the encoding profile, and the adapter performs no comparison, sorting, or normalization."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -93,10 +93,11 @@ tickets:
       expected: "Exit 0; the Go kernel claims kernel.memory with every required check applicable, and its certificate validates or its red checks are triaged."
     stop_conditions:
       - "STOP if certifying requires weakening a plan; record the finding instead; do not improvise."
-    description: "ADR-0081. Claim kernel.memory in the Go adapter manifest, launch the built executable directly, emit the certificate bundle (the certified list itself is updated when the legacy kernel plans retire), fix small local implementation findings, and file the rest as issues with replay commands. Every finding is classified in this ticket's certification-triage.yaml."
+      - "STOP and replan this ticket if reproducing the profile controls exceeds its five-point budget; do not claim certification with missing controls."
+    description: "ADR-0081 and ADR-0084. Once all canonical bindings are complete, drop the legacy packet and claim kernel.memory. Reproduce the profile-tagged controls over the Go implementation, launch the built executable directly, and emit its implementation-matched certificate bundle. The certified list is updated when the legacy plans retire. Fix small local implementation findings and file the rest with replay commands. Classify every finding in this ticket's certification-triage.yaml."
     acceptance:
       mode: contract_test
-      evidence: "Assert the kernel.memory run is complete, each failure has a triage entry and, for implementation findings, an issue with a replay command."
+      evidence: "Assert the kernel.memory run is complete without the legacy packet, every profile-tagged control is killed against Go with matching identity and unmutated reruns, the certificate lists remaining undetected claims, and each failure has a triage entry and, for implementation findings, an issue with a replay command."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned

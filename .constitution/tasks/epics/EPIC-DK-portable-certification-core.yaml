@@ -2,7 +2,7 @@ id: DK
 name: Portable certification core
 kind: product
 capabilities: [CAP-036, CAP-038]
-depends_on: [DF, DJ]
+depends_on: [DF, DO, DP, DQ, DR]
 priority: 11
 scope:
   paths:
@@ -83,7 +83,7 @@ tickets:
         - reports/compatibility
     verification:
       command: bun run verify
-      expected: "Exit 0; every certification lane in every language produces the same verdicts and certificate contents as before, apart from the harness digest, and the core entry has no node: import."
+      expected: "Exit 0; certification lanes retain the verdicts and certificate contents established after DO through DR, apart from changed verifier digests, and the core entry has no node: import."
     stop_conditions:
       - "STOP if a kernel or framework adapter must change its imports of tools/conformance/adapter-protocol to keep working; keep that import path stable and don't improvise."
       - "STOP if any check's verdict changes; don't improvise."
@@ -91,7 +91,7 @@ tickets:
     description: "ADR-0082 decision 2 and guidelines 5.11.1. Move plan loading and selection, step execution, the assertion engine, observation validation, lossless encoding, integrity assertions, fault-activation and barrier rules, applicability, certificate assembly, and the negative-control runner's selection, activation and kill rules into a portable core. That core reads authority through an injected source and talks to adapters through a transport interface. Keep filesystem access, process spawning and supervision, the stdio transport, storage provisioning, and the CLI in a Node driver over the same core. Replace node:crypto digests with WebCrypto, and route every other node: use in the core through the driver. Refresh the checked-in certification evidence whose harness digest changes."
     acceptance:
       mode: contract_test
-      evidence: "A meta-conformance test bundles the core entry for a platform-neutral target with no node: externals. Every certification lane's evidence differs from its pre-change baseline only in harness and aggregate verifier digests, and compatibility:check passes."
+      evidence: "A meta-conformance test bundles the core entry for a platform-neutral target with no node: externals. Each lane matches its post-DO-through-DR baseline except for harness and aggregate verifier digests, and compatibility:check passes. The TypeScript and Rust inputs contain no legacy packet."
     flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -137,7 +137,7 @@ tickets:
     description: "ADR-0082 decision 3. Generate modules that export the kernel authority packet, plans, operation catalog, profiles, negative-control manifest, identity recipes, encoding schema, and fixtures with their canonical digests, from the one generator in guidelines 5.11.3. Give the core an authority source backed by those modules beside the Node driver's filesystem source. Prove in meta-conformance that both sources yield identical digests and identical plan selection for the kernel port."
     acceptance:
       mode: contract_test
-      evidence: "Meta-conformance asserts digest and selection equality between the module and filesystem authority sources for every kernel profile. A changed spec file fails the generator's freshness check."
+      evidence: "Meta-conformance asserts digest and selection equality between the module and filesystem authority sources for every kernel profile. Neither source includes the legacy packet in TypeScript or Rust certification. A changed included spec file fails the generator's freshness check."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     status: planned

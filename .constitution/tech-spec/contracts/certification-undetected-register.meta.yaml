@@ -1,0 +1,8 @@
+artifact_path: tools/schemas/certification-undetected-register.schema.json
+surface: json
+flows: [flow-multi-implementation-conformance-compatibility]
+boundaries: [BND-27, BND-29]
+companion: conformance-certification.md
+certainty: assumed
+assumption: "ADR-0084: the four profile registers use one schema and are referenced by the kernel authority packet."
+settles_when: "A closeout cites schema rejection cases, packet resolution, two-way claim inventory, certificate gap lists, and empty durable registers."

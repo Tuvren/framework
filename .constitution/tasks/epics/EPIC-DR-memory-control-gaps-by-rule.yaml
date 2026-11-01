@@ -1,0 +1,133 @@
+id: DR
+name: "Close kernel.memory control gaps by rule"
+kind: product
+capabilities: [CAP-035, CAP-037, CAP-038]
+depends_on: [DQ]
+priority: 4
+scope:
+  paths:
+    - "spec/conformance/kernel"
+    - "typescript/kernel/testkit"
+    - "typescript/kernel/conformance-adapter"
+    - "tools/conformance/meta-conformance"
+    - "tools/conformance/harness/test"
+    - "reports/compatibility"
+  tech_spec_patchable: []
+estimated_diff_lines: 15000
+estimate_source: planned
+tickets:
+  - id: KRT-DR001
+    title: "Detect schema-roundtrip corruption across fixtures"
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - "spec/conformance/kernel"
+        - "typescript/kernel/testkit"
+        - "typescript/kernel/conformance-adapter"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if any fixture cannot expose the corruption; route that claim for a ruling rather than marking it detected."
+    description: "Introduce one schema-roundtrip corruption mutant and designate the aggregate claim and its 17 fixture-specific claims in spec/conformance/kernel/kernel-memory-undetected.json. Keep the committed fixture expectations independent of the implementation."
+    acceptance:
+      mode: contract_test
+      evidence: "The mutant activates and every designated schema-roundtrip claim has a detecting assertion; the unmutated checks pass and all 18 corresponding register entries are removed."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DR002
+    title: "Detect edge-validation and lineage rule violations"
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DR001]
+    scope:
+      in:
+        - "spec/conformance/kernel"
+        - "typescript/kernel/testkit"
+        - "typescript/kernel/conformance-adapter"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP for a ruling on any rule that cannot be violated and observed without invalid setup; do not preserve it silently."
+    description: "Add one distinct implementation mutant per remaining edge-validation and lineage rule: lateral branch head, out-of-order step, missing event object, busy branch, duplicate schema path, missing required tree path, tree schema mismatch, and cross-thread lineage. The affected claims and reasons are in spec/conformance/kernel/kernel-memory-undetected.json."
+    acceptance:
+      mode: contract_test
+      evidence: "Each listed rule has its own activated mutant and profile-scoped designated failing assertion; unmutated checks pass and only proven entries leave the register."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DR003
+    title: "Detect logical and identity rule violations"
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DR002]
+    scope:
+      in:
+        - "spec/conformance/kernel"
+        - "typescript/kernel/testkit"
+        - "typescript/kernel/conformance-adapter"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP and route a ruling if a rule has no observable failure or a mutant only causes collateral failures."
+    description: "Add one mutant per remaining logical and identity rule, covering branch and thread listing, verdict composition including its fixture claim, node identity walk, canonical schema encoding, and tree manifest identity. The remaining claim IDs are in spec/conformance/kernel/kernel-memory-undetected.json."
+    acceptance:
+      mode: contract_test
+      evidence: "Each distinct rule has an activated mutant and designated failing assertion; related fixture claims are mapped explicitly and unmutated checks pass."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DR004
+    title: "Detect clock, liveness, reclamation, and scope rule violations"
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DR003]
+    scope:
+      in:
+        - "spec/conformance/kernel"
+        - "typescript/kernel/testkit"
+        - "typescript/kernel/conformance-adapter"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP and route a ruling when an applicable rule cannot be detected or its mutant makes the run invalid."
+    description: "Add one mutant per remaining rule for the shared-clock descriptor, expired listing, paused-run exclusion, stale preemption, ciphertext retention and lineage, own-scope content, and own-scope enumeration. Use the claims and reasons in spec/conformance/kernel/kernel-memory-undetected.json; do not conflate them with cross-scope or live-lease controls."
+    acceptance:
+      mode: contract_test
+      evidence: "Every remaining rule in these classes has its own activated mutant and designated failing assertion. The positive checks pass and any claimed detected entry leaves the register only after the kill."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DR005
+    title: "Reconcile the complete memory coverage register"
+    type: Chore
+    effort: 2
+    depends_on: [KRT-DR004]
+    scope:
+      in:
+        - "spec/conformance/kernel"
+        - "tools/conformance/meta-conformance"
+        - "tools/conformance/harness/test"
+        - "reports/compatibility"
+    verification:
+      command: "bun run verify:kernel"
+      expected: "Exit 0 for complete applicable checks, with every unresolved claim explicitly routed and reported."
+    stop_conditions:
+      - "STOP if a remaining claim lacks a proposed ruling or a designated kill is based on an invalid or collateral failure."
+    description: "Recompute the kernel.memory claim inventory and detector mapping after the rule-class mutants land. For any claim that could not be detected, route its precise evidence as an owner decision; an unexplained register entry is not closure."
+    acceptance:
+      mode: contract_test
+      evidence: "The memory register is empty, or every remaining claim is tied to a proposed decision with its failed measurement and an owner ruling path. Every certificate lists the actual remaining claims and reasons."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned

@@ -529,8 +529,8 @@ decisions:
           - "Canonical rejection of noncanonical input is no longer certified anywhere; it falls back to package-local tests per language."
     recommendation: Catalogue codec operations under a kernel.codec capability
     closure: ruling
-    ruler: "Owner, after the EPIC-DB merge"
-    status: proposed
+    ruler: Owner
+    status: closed
     asked:
       date: 2026-10-23
       in: EPIC-DB
@@ -542,6 +542,11 @@ decisions:
         - spec/conformance/kernel/plans/kernel-protocol-extended.json
         - spec/conformance/kernel/negative-controls.json
         - KRT-DB004
+    ruling:
+      ref: .constitution/research/2026-11-01-testkit-control-gaps-rulings.md
+      date: 2026-11-01
+      summary: "Catalogue deterministic codec operations under kernel.codec and migrate the legacy codec assertions to that capability."
+      chosen: Catalogue codec operations under a kernel.codec capability
   - id: OD-17
     question: "The memory kernels apply a branch-head compare-and-set under a per-scope exclusive lock, so a barrier seam at the compare-and-set would serialize the contenders. What does the syscall concurrent-writer check certify?"
     blocks: [KRT-DE003, KRT-DE005, KRT-DE006]
@@ -826,8 +831,8 @@ decisions:
           - Contradicts ADR-0082.
     recommendation: Hold after all checkpoint writes and before COMMIT
     closure: ruling
-    ruler: "Owner, after the EPIC-DF merge"
-    status: proposed
+    ruler: Owner
+    status: closed
     asked:
       date: 2026-11-01
       in: EPIC-DF
@@ -839,3 +844,8 @@ decisions:
         - spec/conformance/kernel/kernel-process-crash-undetected.json
         - KRT-DF003
         - KRT-DF004
+    ruling:
+      ref: .constitution/research/2026-11-01-testkit-control-gaps-rulings.md
+      date: 2026-11-01
+      summary: "The before-commit hold follows all checkpoint writes and precedes COMMIT; amend ADR-0076 decision 4."
+      chosen: Hold after all checkpoint writes and before COMMIT

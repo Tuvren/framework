@@ -2,7 +2,7 @@ id: DL
 name: Backend testkit binding and plan families
 kind: product
 capabilities: [CAP-036, CAP-038]
-depends_on: [DJ, DK]
+depends_on: [DO, DP, DQ, DR, DK]
 priority: 12
 scope:
   paths:
@@ -55,7 +55,7 @@ tickets:
       command: bun run verify:kernel
       expected: "Exit 0; the memory, SQLite, and PostgreSQL kernel lanes certify through the stdio host wrapping the extracted binding, with unchanged verdicts, and an in-process run of kernel.memory gives the same verdicts."
     stop_conditions:
-      - "STOP if the merged durable-lifecycle work still exposes fault or barrier hooks on publicly constructed backends; don't improvise."
+      - "STOP if DO left a fault or barrier hook on a publicly constructed backend; don't improvise."
       - "STOP if the binding has to see a plan, fixture, or expected value to drive a backend; don't improvise."
     description: "Inject faults through the testkit transaction seam in typescript/kernel/testkit/src/lib/commit-fault-seam.ts and typescript/kernel/testkit/src/lib/durable-fault-control.ts; the KRT-DF003 closeout says \"Commit-phase fault hooks exist only in the testkit\" (ef893e1 at the time of writing). ADR-0082 decisions 5 and 6. Extract the TypeScript kernel binding from the stdio host so it implements the adapter-protocol methods over a host-supplied substrate. The host supplies the implementation identity, durability, provision, open with the scope and clock options the binding passes, close, release, optional concurrent attachment, and an optional process boundary. Provide the in-process transport, whose observations still round-trip through the ADR-0078 encoding. Keep the stdio host as a thin wrapper over the same binding. Express the memory, SQLite, and PostgreSQL backends as substrates."
     acceptance:

@@ -133,10 +133,12 @@ tickets:
     verification:
       command: bun run verify:kernel
       expected: "Exit 0; the in-process control gate passes."
-    description: "ADR-0082 decision 10. certify() runs the control set in the same runtime through the core's control runner and links the passing control run by verifier-authority digests. Release CI coverage is the existing verify gate, whose conformance lane runs the control gate, so no workflow changes are needed."
+    stop_conditions:
+      - "STOP if a control cannot wrap a frozen backend or load without node:async_hooks, if a host can declare a required control unsupported, or if a failed control can produce a certificate; don't improvise."
+    description: "ADR-0084 and ADR-0082 decision 10. For each claimed profile, run its tagged seam wrappers over the host implementation with the same substrate, transport, and process boundary as the positive run. Link the passing run using matching implementation identity, adapter-manifest digest, and verifier-authority digests, and state that its control run ran in-process. Run the reference memory controls automatically only after a host control fails, as a diagnostic that cannot certify the host. Release CI retains the reference memory controls as verifier evidence. Make the durable wrapper decorate rather than mutate a frozen backend; use the AsyncLocalStorage-free seams from DL."
     acceptance:
       mode: contract_test
-      evidence: "A certify() run whose control run is missing or fails is uncertified, and an in-process control run kills every manifest mutant."
+      evidence: "For each claimed profile, every control the manifest tags for that profile is killed in the same runtime and configuration as the certificate's positive run; unsupported is not admitted for out-of-tree runs. Invalid, unactivated, surviving, mismatched, or missing controls withhold the certificate. Designated unmutated checks pass before and after mutation. Every required backend wrapper accepts a frozen backend, and the core import path has no node:async_hooks. A failing control triggers the reference-memory diagnostic, a successful control run does not, and the diagnostic never changes the certificate result or its link. The certificate states that the control run ran in-process. Durable undetected registers are empty; memory gaps are closed by class or each remaining claim has an owner ruling. Certificates list all remaining undetected claims and reasons."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned
@@ -185,7 +187,7 @@ tickets:
     description: "ADR-0082 decision 14 and guidelines 5.11.5. Switch the memory, SQLite, and PostgreSQL certification lanes to the package's public entries, each defining its substrate as an outside implementer would. Add the portability lanes to the package's test target, with workerd as a pinned test-only development dependency. The workerd lane runs kernel.memory over the memory substrate through certify() with the disallow_eval_during_startup compatibility flag and no Node compatibility flags."
     acceptance:
       mode: contract_test
-      evidence: "Assert that the first-party lanes import only public entries and that each portability lane produces a passing kernel.memory certificate in its runtime. In the workerd and Node no-codegen lanes, the in-runtime control run kills every manifest mutant."
+      evidence: "Assert that the first-party lanes import only public entries and that each portability lane produces a passing kernel.memory certificate in its runtime. In the workerd and Node no-codegen lanes, the in-process run kills every control tagged for kernel.memory. The three durable undetected registers are empty; every certificate lists the remaining claims and reasons."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: planned

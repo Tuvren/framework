@@ -1,0 +1,150 @@
+id: DQ
+name: "Move TypeScript and Rust to canonical kernel plans"
+kind: product
+capabilities: [CAP-035, CAP-037, CAP-038]
+depends_on: [DO, DP]
+priority: 3
+scope:
+  paths:
+    - "spec/kernel/authority-packet.json"
+    - "spec/kernel/legacy/authority-packet.json"
+    - "spec/conformance/kernel"
+    - "tools/schemas"
+    - "tools/conformance/adapter-protocol"
+    - "tools/conformance/harness"
+    - "tools/conformance/plan-compiler"
+    - "tools/conformance/certification"
+    - "tools/conformance/meta-conformance"
+    - "tools/scripts/authority-guardrails"
+    - "tools/scripts/compatibility-report.ts"
+    - "typescript/kernel/protocol"
+    - "typescript/kernel/conformance-adapter"
+    - "typescript/kernel/testkit"
+    - "rust/kernel"
+    - "rust/kernel-conformance-adapter"
+    - "go/kernel-conformance-adapter/adapter.json"
+    - "python/kernel-conformance-adapter/adapter.json"
+    - "dart/kernel-conformance-adapter/adapter.json"
+    - "reports/compatibility"
+  tech_spec_patchable: []
+estimated_diff_lines: 15000
+estimate_source: planned
+tickets:
+  - id: KRT-DQ001
+    title: "Catalogue kernel.codec and migrate the 68 codec assertions"
+    type: Feature
+    effort: 8
+    depends_on: []
+    scope:
+      in:
+        - "spec/kernel/authority-packet.json"
+        - "spec/conformance/kernel"
+        - "typescript/kernel/protocol"
+        - "typescript/kernel/conformance-adapter"
+        - "rust/kernel"
+        - "rust/kernel-conformance-adapter"
+        - "tools/conformance/plan-compiler"
+        - "tools/conformance/certification"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if a codec operation needs an adapter-computed verdict or an assertion has no authority-backed mapping; route the gap."
+    description: "Apply OD-16 and the catalog companion: expose native encode, decode, opaque hash, and identity hash actions under kernel.codec and bind them in TypeScript and Rust. Add kernel.codec and its claims to the memory profile. Extend the memory claim inventory to include codec-only plans; tools/conformance/certification/profile.ts currently restricts its strict inventory to kernel.syscall plans. Migrate the 54 deterministic-hash and 14 canonical-rejection assertions from spec/conformance/kernel/plans/kernel-protocol-core.json and spec/conformance/kernel/plans/kernel-protocol-extended.json with a stable obligation map and committed expectations."
+    acceptance:
+      mode: contract_test
+      evidence: "The map accounts for all 68 existing assertions, valid and noncanonical inputs are observed through codec operations, TypeScript and Rust run the canonical checks, and the accept-noncanonical-cbor mutant has a designated detecting assertion. The memory inventory fails if a codec claim or required kernel.codec capability is omitted."
+    flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DQ002
+    title: "Move both legacy-only controls to observable plan assertions"
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DQ001]
+    scope:
+      in:
+        - "spec/kernel/authority-packet.json"
+        - "spec/conformance/kernel"
+        - "typescript/kernel/conformance-adapter"
+        - "typescript/kernel/testkit"
+        - "rust/kernel"
+        - "rust/kernel-conformance-adapter"
+        - "tools/schemas"
+        - "tools/conformance/harness"
+        - "tools/conformance/adapter-protocol"
+        - "tools/conformance/plan-compiler"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if the two scopes cannot share a substrate without a production hook or if either control cannot be detected; route a decision."
+    description: "Add syscall or catalogued codec assertions that kill accept-noncanonical-cbor and resolve-object-across-scopes without either legacy composite. Add kernel.scope-isolation and the cross-scope claims to the memory profile. Implement the named-instance routing in the plan companion so two scopes share one isolated substrate in a single process; the current runner tracks one instance per process in tools/conformance/harness/multi-trace.ts. Give Rust a test-only shared-substrate construction seam if needed. Remove every legacy assertion designation from the profile controls after replacing it with a valid canonical designation. The legacy-only designations are in spec/conformance/kernel/negative-controls.json."
+    acceptance:
+      mode: contract_test
+      evidence: "Each control has a profile-scoped designated assertion and activation; both TypeScript and Rust produce the expected kill without loading a legacy plan. Two named instances use different scopes on the same isolated substrate; unknown and duplicate names fail. The memory inventory rejects an omitted scope capability or cross-scope claim. Own-scope checks and the cross-scope miss are independently observable, and no control designation references a legacy assertion."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DQ003
+    title: "Isolate the six legacy kernel plans in their own packet"
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DQ002]
+    scope:
+      in:
+        - "spec/kernel/authority-packet.json"
+        - "spec/kernel/legacy/authority-packet.json"
+        - "spec/conformance/kernel"
+        - "tools/schemas"
+        - "tools/conformance/adapter-protocol"
+        - "tools/conformance/harness"
+        - "tools/conformance/plan-compiler"
+        - "tools/conformance/certification"
+        - "tools/conformance/meta-conformance"
+        - "tools/scripts/authority-guardrails"
+        - "tools/scripts/compatibility-report.ts"
+        - "go/kernel-conformance-adapter/adapter.json"
+        - "python/kernel-conformance-adapter/adapter.json"
+        - "dart/kernel-conformance-adapter/adapter.json"
+        - "reports/compatibility"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if the packet changes expected observations, hides a required canonical claim, or requires a Go, Python, or Dart kernel migration to publish the testkit; report the evidence instead."
+    description: "Implement the temporary legacy-packet contract in conformance-certification.md. Move the six legacy plan references out of the primary packet into spec/kernel/legacy/authority-packet.json and change the plans' packetId to tuvren.kernel.legacy. Preserve their plan IDs, assertions, fixtures, and expected observations. Add the packet to the three unmigrated adapter manifests. Update loading, report-only compiler operation discovery, source provenance, compatibility reporting, guardrails, and the control gate; retain global validation of the legacy files. Provenance must hash the legacy packet and plans without requiring a catalog, profile, or control manifest from that unprofiled packet."
+    acceptance:
+      mode: contract_test
+      evidence: "Go, Python, and Dart resolve the same legacy checks and observations, with refreshed packet-bound provenance, without kernel implementation migration. TypeScript and Rust load none of the legacy packet or its six plans in normal, certificate, control, compatibility, or generated-authority inputs. A claimed-profile certificate cannot rely on the legacy packet, and no language or adapter ID selects a plan."
+    flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DQ004
+    title: "Verify canonical-only TypeScript and Rust selection"
+    type: Chore
+    effort: 3
+    depends_on: [KRT-DQ003]
+    scope:
+      in:
+        - "spec/conformance/kernel"
+        - "tools/conformance/harness"
+        - "tools/conformance/plan-compiler"
+        - "tools/conformance/certification"
+        - "tools/conformance/meta-conformance"
+        - "tools/scripts/compatibility-report.ts"
+        - "reports/compatibility"
+    verification:
+      command: "bun run verify:kernel"
+      expected: "Exit 0 with the operator-provided PostgreSQL service; canonical TypeScript and Rust inventories and the retained legacy selections validate."
+    stop_conditions:
+      - "STOP if a passing result requires suppressing a required claim or treating an absent check as a pass."
+    description: "Check the complete, unfiltered TypeScript and Rust memory profiles against the canonical packet and retained codec obligations. Refresh the compatibility evidence affected by the packet selection; do not delete the legacy packet while any adapter uses it."
+    acceptance:
+      mode: contract_test
+      evidence: "TypeScript and Rust report no legacy packet, plan, designation, or input digest, while the three unmigrated adapters still select the legacy packet. Missing canonical assertions and accidental filtered certification fail."
+    flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned

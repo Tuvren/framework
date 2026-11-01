@@ -1,0 +1,135 @@
+id: DP
+name: "Bind durable control evidence to certificates"
+kind: product
+capabilities: [CAP-035, CAP-037, CAP-038]
+depends_on: [DF]
+priority: 2
+scope:
+  paths:
+    - "tools/conformance/harness/storage-resource.ts"
+    - "tools/conformance/harness/run.ts"
+    - "tools/conformance/harness/test/server-clock-verification.test.ts"
+    - "tools/conformance/certification"
+    - "tools/conformance/meta-conformance"
+    - "tools/schemas"
+    - "tools/scripts/conformance"
+    - "tools/scripts/lib/conformance-contract.ts"
+    - "spec/kernel/authority-packet.json"
+  tech_spec_patchable: []
+estimated_diff_lines: 11000
+estimate_source: planned
+tickets:
+  - id: KRT-DP001
+    title: "Verify the adapter server clock against the provisioned database"
+    type: Feature
+    effort: 3
+    depends_on: []
+    scope:
+      in:
+        - "tools/conformance/harness/storage-resource.ts"
+        - "tools/conformance/harness/run.ts"
+        - "tools/conformance/harness/test/server-clock-verification.test.ts"
+    verification:
+      command: "bun run verify:kernel"
+      expected: "Exit 0 with the operator-provided PostgreSQL service; real and deliberately wrong clock observations are distinguished."
+    stop_conditions:
+      - "STOP if the comparison needs the harness to start or stop PostgreSQL, or no meaningful clock bound can be measured; route the finding."
+    description: "Compare the setClock source server observation with a clock read by the harness from the PostgreSQL database it provisioned. Bound the comparison with measured request timing instead of comparing adapter values to themselves. The existing resource manager is tools/conformance/harness/storage-resource.ts."
+    acceptance:
+      mode: contract_test
+      evidence: "A real PostgreSQL server-clock observation falls within the harness-measured interval, while an adapter returning an injected or shifted worker clock fails; the harness provisions and releases the same resource."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DP002
+    title: "Enforce the durable profile claim inventory in both directions"
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DP001]
+    scope:
+      in:
+        - "tools/conformance/certification"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if profile ownership cannot be determined without guessing or dropping an applicable claim; route the contract question."
+    description: "Make assertProfileClaimInventory compare applicable plan claims and profile claimIds in both directions, with explicit ownership for shared checks. Its present one-way check is in tools/conformance/certification/profile.ts."
+    acceptance:
+      mode: contract_test
+      evidence: "Tests fail when a required plan claim is removed from a profile or when a profile names a missing claim, and accept the exact inventory for each durable profile."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DP003
+    title: "Schema and reference the undetected registers"
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DP002]
+    scope:
+      in:
+        - "tools/schemas"
+        - "tools/scripts/conformance"
+        - "tools/conformance/meta-conformance"
+        - "tools/conformance/certification"
+        - "spec/kernel/authority-packet.json"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if the packet cannot represent the four profiles without inventing a second authority; route a contract change."
+    description: "Create tools/schemas/certification-undetected-register.schema.json and reference each existing profile register from spec/kernel/authority-packet.json as ADR-0084 and the contract companion specify. Validate claim membership and stale detected entries, and include the selected register in verifier-authority digests."
+    acceptance:
+      mode: contract_test
+      evidence: "Valid empty and populated registers pass; malformed reasons, unknown claims, stale detected claims, missing profile references, and register digest drift fail. All four existing registers are resolved through the packet."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DP004
+    title: "List undetected claims in every certificate"
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DP003]
+    scope:
+      in:
+        - "tools/schemas"
+        - "tools/scripts/conformance"
+        - "tools/scripts/lib/conformance-contract.ts"
+        - "tools/conformance/certification"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if a certificate can silently omit a profile gap or the evidence schema cannot represent its reason."
+    description: "Extend the evidence schema and bundle assembly to include each profile register as claimId and reason entries, including an explicit empty list. The current certificate schema and link are tools/schemas/certification-evidence.schema.json and tools/conformance/certification/control-link.ts."
+    acceptance:
+      mode: contract_test
+      evidence: "Round-trip certificates with empty and nonempty registers; reject omitted, altered, or unrelated claims and verify the register is covered by verifier-authority provenance."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DP005
+    title: "Require implementation-matched control evidence and a post-mutant baseline"
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DP004]
+    scope:
+      in:
+        - "tools/conformance/certification"
+        - "tools/conformance/meta-conformance"
+        - "tools/schemas"
+        - "tools/scripts/conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if the same configuration cannot be identified, a failure can be misclassified as a kill, or the fleet cannot honestly withhold Rust while its reproductions are pending; route the issue."
+    description: "Preserve the implementation and adapter-manifest comparison already in tools/conformance/certification/control-link.ts, and require the linked control report to represent the tested implementation and profile configuration. Require every tagged control killed, a passing designated-check rerun after mutation, and the control-run in-process statement. Do not allow out-of-tree host unsupported reasons. Until DS supplies the missing Rust reproductions, withhold its profile from the certified fleet and keep its positive and diagnostic results visible; never borrow TypeScript kills."
+    acceptance:
+      mode: contract_test
+      evidence: "Mismatched implementation or manifest, a substituted memory run, a missing rerun, an invalid or survived control, or an out-of-tree unsupported reason withholds certification. Matching runs include the same profile, authority digests, and in-process statement. A Rust run with missing reproductions is visibly uncertified rather than counted as passing."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
