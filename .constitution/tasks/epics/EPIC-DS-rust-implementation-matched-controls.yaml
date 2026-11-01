@@ -1,0 +1,85 @@
+id: DS
+name: "Match Rust memory controls to its implementation"
+kind: product
+capabilities: [CAP-035, CAP-037, CAP-038]
+depends_on: [DR, DN]
+priority: 14
+scope:
+  paths:
+    - "rust/kernel"
+    - "rust/kernel-conformance-adapter"
+    - "tools/conformance/meta-conformance"
+    - "tools/conformance/certification"
+    - "reports/compatibility"
+  tech_spec_patchable: []
+estimated_diff_lines: 11000
+estimate_source: planned
+tickets:
+  - id: KRT-DS001
+    title: "Reproduce the existing memory controls in Rust"
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - "rust/kernel"
+        - "rust/kernel-conformance-adapter"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if a required control cannot be implemented without a production hook or observable violation; route a decision."
+    description: "Provide Rust equivalents for every existing kernel.memory control that lacks one, including instrumentation, codec, stale-writer, lease, and scope cases. The current three reproductions and unsupported reasons are in rust/kernel/src/testkit/mutants.rs and tools/conformance/meta-conformance/negative-control-config.ts."
+    acceptance:
+      mode: contract_test
+      evidence: "Each previously unsupported tagged control activates and is killed against the Rust implementation with its own designated assertion or expected rejection; remove the corresponding unsupported exemptions."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DS002
+    title: "Reproduce the new memory rule controls in Rust"
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DS001]
+    scope:
+      in:
+        - "rust/kernel"
+        - "rust/kernel-conformance-adapter"
+        - "tools/conformance/meta-conformance"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+    stop_conditions:
+      - "STOP if a rule cannot be detected or a Rust mutant remains unsupported, invalid, or surviving; route a ruling rather than reporting a Rust certificate."
+    description: "Implement Rust equivalents of the schema-roundtrip and rule-class mutants from DR. Reuse the shared manifest identities and designated assertions; do not borrow the TypeScript implementation control run."
+    acceptance:
+      mode: contract_test
+      evidence: "Every control tagged for kernel.memory activates and is killed against the Rust implementation, including the 18 schema-roundtrip claims and each remaining rule class."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned
+  - id: KRT-DS003
+    title: "Validate the Rust implementation-matched certificate"
+    type: Chore
+    effort: 5
+    depends_on: [KRT-DS002]
+    scope:
+      in:
+        - "rust/kernel"
+        - "rust/kernel-conformance-adapter"
+        - "tools/conformance/meta-conformance"
+        - "tools/conformance/certification"
+        - "reports/compatibility"
+    verification:
+      command: "bun run conformance"
+      expected: "Exit 0; the Rust memory profile and all applicable implementation-matched controls pass."
+    stop_conditions:
+      - "STOP if certification depends on a TypeScript or memory-reference kill in place of a Rust kill, or if an undetected claim is omitted."
+    description: "Run the complete unfiltered Rust memory profile and its implementation-matched controls after the new reproductions, then restore the Rust profile to the certified fleet. Retain the real Rust executable and manifest identity; the existing adapter selection is rust/kernel-conformance-adapter/adapter.json."
+    acceptance:
+      mode: contract_test
+      evidence: "The Rust certificate links its own matching control run, every tagged control is killed in its runtime, pre- and post-mutant checks pass, the certificate reports the memory register exactly, and the certified fleet includes the restored Rust profile."
+    flows: ["flow-multi-implementation-conformance-compatibility"]
+    certainty: assumed
+    status: planned

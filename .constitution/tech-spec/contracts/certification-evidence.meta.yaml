@@ -6,5 +6,5 @@ boundaries:
   - BND-29
 companion: "conformance-certification.md"
 certainty: "assumed"
-assumption: "Certificates and failure artifacts follow this schema, extending the evidence contract in tools/scripts/lib/conformance-contract.ts (ADR-0081)."
-settles_when: "A complete kernel.memory run emits a bundle that validates against this schema and compatibility reporting reads it in a cited closeout."
+assumption: "Certificates and failure artifacts follow this schema, extending the evidence contract in tools/scripts/lib/conformance-contract.ts (ADR-0081 and ADR-0084). Each certificate lists undetected claims and links an implementation-matched control run."
+settles_when: "A complete profile run emits a schema-valid bundle, including an exact undetected-claim list and matching control identity; compatibility reporting reads it in a cited closeout."

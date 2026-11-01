@@ -4,7 +4,7 @@ Companion for the certification sidecars in this directory: `conformance-operati
 
 ## Operation catalog (pinned)
 
-One file per port, `spec/conformance/<port>/operations.json`, referenced from the port's authority packet.
+One file per port, `spec/conformance/<port>/operations.json`, referenced from the port's authority packet. OD-16 assigns deterministic codec operations to `kernel.codec`: encode a kernel record to canonical bytes, decode bytes to a record or a native rejection, and hash opaque bytes and kernel identities. Catalog each as `kind: syscall`. Each invokes one native codec action and returns data or a native error; the runner compares it to committed vectors and identity recipes. The TypeScript codec exposes these actions in `typescript/kernel/protocol/src/lib/kernel-record-identity.ts` and `typescript/kernel/protocol/src/lib/kernel-identity.ts`. The cross-language binding and observations remain assumed until the migrated plans exercise them.
 
 - `catalogId`, `catalogVersion` (semver), `packetId`.
 - `operations[]`, each with:
@@ -44,6 +44,8 @@ Line-delimited JSON-RPC 2.0 over stdio. An error member carries an `ErrorEnvelop
 
 **Planned additive change (ADR-0082):** The adapter manifest's `protocol.transport` gains `in-process` and `host` values carrying the same messages, and adapter manifest `storage` gains `host` for host-supplied substrates.
 
+**Temporary legacy packet:** `spec/kernel/legacy/authority-packet.json` has the distinct packet ID `tuvren.kernel.legacy` and references the six legacy plans as authoritative sources, conformance plans, and verification paths. Update each legacy plan's `packetId` to match while preserving its plan ID, checks, assertions, fixtures, and expected observations. Go, Python, and Dart load this packet alongside the canonical kernel packet through their adapter manifests; TypeScript and Rust load only the canonical packet. The canonical packet no longer references the six legacy plans. The legacy packet is report-only and has no certification profile or control manifest; its composite operations are not promoted as a new catalog. Plan loading, compiler operation discovery, compatibility inventory, guardrails, and provenance must recognize and hash the selected legacy packet and plans while keeping canonical profile certification fail-closed. A claimed-profile certificate cannot rely on the legacy packet. Each remaining adapter drops the legacy packet when it migrates, and DJ deletes the packet and its plans. Selection uses manifest-declared packets and capabilities, never language or adapter identity.
+
 ## Plan extensions (pinned)
 
 Additions to `tools/schemas/conformance-plan.schema.json`:
@@ -54,6 +56,7 @@ Additions to `tools/schemas/conformance-plan.schema.json`:
 - `steps[].capture[]`: `{name, path}` entries. `path` reads the step's observation (`result`, `events`, or `state`) and must lie inside the catalog's observation schema; `name` is unique within the check and is read later as `capture.<name>`.
 - `barrier` steps: `{barrierId, seam, participants[]}`. A barrier step arms the gate and must come before the `start` steps of its participants; the runner waits for the adapter's arming acknowledgement before starting any participant, and the compiler rejects a barrier that follows a participant's `start`. `seam` is a `seamId` from the catalog. `participants[]` are `stepId`s of later `start` steps. The runner holds each participant at the seam and records its implementation-entry receipt; it releases none until every participant has arrived.
 - `release` steps: `{barrierId, participants[]?}`, releasing all held participants or only those listed, in list order.
+- **Planned cross-scope selection:** `steps[].instance` is a logical instance name scoped to the selected process. A `createInstance` step creates a named instance with an explicit scope on the check's isolated substrate; later steps route through that instance's opaque handle. An omitted selector uses the primary instance. Two named instances can bind different scopes to the same per-check substrate, including an in-process memory substrate. The runner owns names and routing; the adapter receives only ordinary instance handles and scope options. Duplicate names, unknown names, or a request to reuse a released substrate fail compilation or execution. The existing runner tracks only one instance per process (`tools/conformance/harness/multi-trace.ts`); this addition is assumed until the cross-scope syscall checks exercise it.
 - New assertion fields:
   - `notEquals` and `notEqualsPath`;
   - `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual`, each with a literal or path;
@@ -71,11 +74,17 @@ Additions to `tools/schemas/conformance-plan.schema.json`:
 
 `spec/conformance/<port>/profiles.json`: `profiles[]`, each with `profileId` (for example `kernel.memory`, `kernel.persistent-reopen`, `kernel.process-crash`, `kernel.shared-backend`), `requiredCapabilities[]`, `claimIds[]`, `faultPoints[]`, `negativeControls[]`, and `requiredEvidence[]`.
 
+Under OD-16, `kernel.memory` requires `kernel.codec` and includes the migrated codec claims. It also requires `kernel.scope-isolation` and includes the cross-scope syscall claims needed by the scope-resolution control. Its two-way inventory includes applicable codec-only plans as well as syscall plans; omitting a required claim or capability cannot produce a certificate. The Rust shared-substrate binding remains assumed until DQ exercises it.
+
 ## Negative-control manifest
 
 `spec/conformance/<port>/negative-controls.json`: `controls[]`, each with `mutantId`, `rule` (an authority reference), `claimIds[]`, `activation` (the precondition and the signal proving the mutant executed, which is distinct from fault-activation evidence), `profiles[]`, and `kind`: `implementation` (a behavioral mutant, detected by `designatedAssertions[]`), `observation` (a corrupted observation path, detected by the runner's rejection named in `expectedRejection`), or `instrumentation` (a fault seam that never fires, detected by the runner's rejection for missing fault-activation evidence, also named in `expectedRejection`).
 
-Run outcomes per mutant are `activated`, `killed`, `survived`, `equivalent`, `unsupported`, and `invalid`.
+Run outcomes per mutant are `activated`, `killed`, `survived`, `equivalent`, `unsupported`, and `invalid`. An out-of-tree host cannot declare a tagged control unsupported; a survived, invalid, unsupported, or unactivated required control withholds its certificate (ADR-0084). Each designated check passes unmutated before and after its mutant run.
+
+## Undetected claim registers
+
+`tools/schemas/certification-undetected-register.schema.json` validates one object per profile, mapping `claimId` to a nonempty reason string. Keys must belong to that profile and must not already have a designated, killed detector. The kernel packet's `undetectedRegisters` maps every declared profile ID to one repository-relative register path and contains no unknown profile IDs. The gate validates both the schema and the exact profile claim inventory. The selected register participates in verifier-authority provenance. An empty object means no undetected claims.
 
 ## Certification evidence
 
@@ -85,7 +94,9 @@ The existing evidence fields, plus:
 - `digests {implementation, adapterManifest, harness, packet, plans, catalogs, fixtures, profiles, controls, verifierAuthority}`, where `verifierAuthority` is one aggregate digest over every authority input the runner reads, including identity recipes, generated record schemas, and encoding schemas;
 - `environment`;
 - `selection[]`, with a reason for every exclusion;
-- `negativeControlRunId`: a passing control run whose `harness`, `packet`, `plans`, `catalogs`, `fixtures`, `profiles`, `controls`, and `verifierAuthority` digests equal the certificate's.
+- `negativeControlRunId`: a passing implementation-matched control run whose implementation identity, adapter-manifest digest, `harness`, `packet`, `plans`, `catalogs`, `fixtures`, `profiles`, `controls`, and `verifierAuthority` digests equal the certificate's;
+- `undetectedClaims[]`: `{claimId, reason}` entries for the profile register, including an empty list when there are no gaps;
+- the control-run execution boundary; a published-testkit certificate records `in-process` for the binding and backend runtime, distinct from the positive run's `transport` and `processBoundary`.
 
 **Planned additive change (ADR-0082):** `tools/schemas/certification-evidence.schema.json` allows `digests.implementation` to hold a digest or a host-declared identity. A generated adapter manifest carried by the in-process binding supplies `digests.adapterManifest`. The evidence adds `transport` (`stdio`, `in-process`, or `host`) and `processBoundary` (kind and description), distinct from the top-level `boundary` authority boundary. For an out-of-tree backend, this amends ADR-0081 decision 3: a host-declared identity replaces the implementation-artifact digest, which weakens provenance for out-of-tree certificates, and the certificate says so.
 
@@ -115,7 +126,7 @@ Each failed check adds `failure`:
   - an optional process boundary, which starts a binding behind a transport and kills it, reporting the epoch and signal.
 - **Claims.** The profile ids the author claims from `spec/conformance/kernel/profiles.json`.
 - **Inventory.** Every selected check with `applicable`, `not_applicable` with a reason, or `unsupported` with a reason for a fault point the seam cannot reach. Profiles list only fault points the SPI seam can reach, so `unsupported` never fails a claimed profile; a claimed profile with a `not_applicable` required check fails.
-- **Certificate.** The ADR-0081 evidence bundle, recording the host-declared implementation identity, the `transport` and `processBoundary` fields, and the id of the in-runtime negative-control run, which carries matching verifier-authority digests.
+- **Certificate.** The ADR-0081 evidence bundle records the host-declared implementation identity, `transport`, `processBoundary`, the in-process control-run statement, and the id of the implementation-matched control run. The run matches implementation identity, adapter-manifest digest, and verifier-authority digests. The bundle lists every remaining undetected profile claim and reason (ADR-0084).
 
 ## Invariants
 
@@ -123,5 +134,5 @@ Each failed check adds `failure`:
 - An in-process binding passes only SPI calls to the backend under test, never plans, fixtures, or expected values (ADR-0082).
 - Every observation is schema-validated before any assertion runs.
 - Expected values reach only the runner.
-- A certificate requires a complete run, a passing negative-control run with matching harness, plan, catalog, fixture, profile, and control digests, and proven fault activation for every claimed fault point.
+- A certificate requires a complete run, a passing implementation-matched control run with matching identity, adapter-manifest and verifier-authority digests, and proven fault activation for every claimed fault point. Release CI runs memory controls as verifier evidence; a host memory diagnostic runs only after a control failure and never supplies the certificate's linked run.
 - `tree.diff` returns `changedPaths` in canonical UTF-8 byte order (ADR-0080).

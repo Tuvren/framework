@@ -6,8 +6,6 @@ flows:
 boundaries: [BND-23, BND-27]
 companion: conformance-certification.md
 pinned: true
-certainty: settled
-evidence:
-  kind: repository
-  ref: tools/conformance/plan-compiler/certification-rules.test.ts
-  date: 2026-10-23
+certainty: assumed
+assumption: "The existing plan schema is exercised by tools/conformance/plan-compiler/certification-rules.test.ts. Named instance selection for cross-scope checks is planned and not yet exercised."
+settles_when: "A closeout cites schema and runner tests for two scoped instances on one substrate, including rejected unknown and duplicate names."
