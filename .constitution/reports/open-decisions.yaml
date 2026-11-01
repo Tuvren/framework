@@ -717,3 +717,125 @@ decisions:
     interim:
       assumption: "KRT-DM003 is deferred, so the failure path keeps today's head behavior. KRT-DM002's checks are written against it, and the backend head mismatch from finalization appears only as a subsequent error. When the rewind lands, finalization stops failing. The two runtime-lifecycle-ext.tool-admission checks must then drop their subsequentErrors length and non-fatal-event assertions, or they go red."
       applied_by: [KRT-DM002]
+  - id: OD-20
+    question: "On a backend that advertises a shared backend clock, which clock stamps the kernel's non-lease durable timestamps (thread, branch, turn, run, node, staged-result, checkpoint createdAtMs and updatedAtMs)? The specification assigns only lease stamping to backend time (section 5.2, ADR-0050)."
+    blocks: [KRT-DF003, KRT-DF004, KRT-DF005]
+    options:
+      - name: One transaction clock per durable store
+        pros:
+          - "Matches the run API's existing resolveTransactionClock (tx.now on shared-lease-clock backends); only the lineage API never adopted it."
+          - "Reclamation compares updatedAtMs against backend-derived horizons, which stays in one domain; two workers with skewed clocks cannot reorder records."
+          - "Memory and SQLite keep the injected clock; other language ports state the same rule through the capability flag."
+        cons:
+          - "A record created by a worker clock ahead of backend time rejects later updates until backend time passes it, the same residue ADR-0050 accepts for leases."
+      - name: "Worker time for every non-lease timestamp, clamped to stay ordered"
+        pros: [One rule for every backend.]
+        cons:
+          - "Clamping manufactures timestamps and hides regressions, and reclamation horizons become cross-domain under skew."
+    recommendation: One transaction clock per durable store
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-10-28
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ a88de97
+    interim:
+      assumption: "Within a kernel transaction every kernel-stamped durable timestamp comes from one transaction clock: tx.now when the backend advertises shared-lease-clock, otherwise the injected kernel clock. updatedAtMs >= createdAtMs and non-regressing updatedAtMs stay strict; no clamping and no migration. Whether a backward-stepping backend clock should reject or clamp is left open."
+      applied_by:
+        - typescript/kernel/runtime
+        - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
+        - spec/conformance/kernel/operations.json
+        - KRT-DF003
+  - id: OD-21
+    question: "At the intermediate checkpoint fault points (after-turn-node-write-before-head, after-head-move-before-staging-clear), must recovery roll back to the baseline, or must an implementation whose turn-node write or head move was separately durable roll forward (KrakenKernelSpecification section 5.5: a durably visible post-checkpoint TurnNode means the checkpoint committed)?"
+    blocks: [KRT-DF004]
+    options:
+      - name: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
+        pros:
+          - "Both TypeScript durable backends write the checkpoint in one transaction, so a kill inside it is a rollback; the assertion is exact for them."
+          - "The conditional-coverage gate stays satisfiable, because no current backend could exercise a roll-forward branch."
+        cons:
+          - A correct port with separately durable writes (ADR-0076 names Python) would fail these checks until the plan branches on observed durability.
+      - name: "Branch on observed durability now (node present means head references it; absent means head equals baseline)"
+        pros: [States the section 5.5 invariant for every implementation.]
+        cons:
+          - "The roll-forward branch is unexercised by any current backend, which the ADR-0079 fleet branch-coverage gate rejects."
+    recommendation: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-10-28
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ a88de97
+    interim:
+      assumption: "The crash-recovery syscall plan asserts rollback to baseline at the intermediate points; when a port with separately durable checkpoint writes is certified, the plan gains observed-durability branches exercised by that port."
+      applied_by:
+        - spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json
+        - KRT-DF004
+  - id: OD-22
+    question: "How do conformance plans certify a two-process durable writer race, real server-clock skew, and several durable profiles per backend, when the pinned plan contract has no order-agnostic outcome selection, no per-step process routing, no server clock source, and one certificate per run?"
+    blocks: [KRT-DF005]
+    options:
+      - name: "Additive runner-owned shapes (collect step, process selector with spawn, setClock source server, per-profile bundles)"
+        pros:
+          - "The winner is selected deterministically by the runner from grouped outcomes, so assertions stay unconditional and ADR-0079 gains no unexercisable branch; sequential contenders still cannot certify because collect participants must hold barrier receipts recorded before release."
+          - "Adapters still grade nothing; other kernel languages implement the same additive protocol."
+          - "kernel.shared-backend requires clock.backend-server, so a shared-backend claim cannot dodge the real-clock skew check; per-profile bundles keep ADR-0081's one certificate per implementation, backend, and profile."
+        cons:
+          - "collect is the first runner-synthesized observation; ADR-0077 decision 5 needs an amendment that release order does not fix the winner across processes."
+      - name: Defer KRT-DF005 until a Stage 3 pass specifies the shapes
+        pros: [No new contract shape lands before review.]
+        cons:
+          - "EPIC-DF would close without the shared-backend, persistent-reopen, and process-crash certificates it exists to produce."
+    recommendation: "Additive runner-owned shapes (collect step, process selector with spawn, setClock source server, per-profile bundles)"
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-10-28
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ a88de97
+    interim:
+      assumption: "The design recorded for KRT-DF005: collect (kernel.harness.collect control observation with outcomes and byKind), steps[].process with spawn (one instance per process, handle-owned routing for await/cancel/release/barrier/collect), setClock source server gated by clock.backend-server with relative skew assertions, and per-profile certificate bundles from one run linked to per-profile control gates."
+      applied_by:
+        - tools/schemas/conformance-plan.schema.json
+        - tools/conformance/adapter-protocol
+        - tools/conformance/plan-compiler
+        - tools/conformance/harness
+        - tools/conformance/certification
+        - spec/conformance/kernel
+        - typescript/kernel/testkit
+        - typescript/kernel/backends/postgres
+        - rust/kernel-conformance-adapter
+        - KRT-DF005
+  - id: OD-25
+    question: "ADR-0076 decision 4 lists the first checkpoint fault point as 'before any checkpoint write', while ADR-0082 decision 8 says a before-commit fault fires inside the backend transaction callback before COMMIT. Where does the certified before-commit point hold?"
+    blocks: [KRT-DF003, KRT-DF004]
+    options:
+      - name: Hold after all checkpoint writes and before COMMIT
+        pros:
+          - "A write that escaped the transaction is visible on recovery, and no write can happen after the hold and before COMMIT, so this subsumes the earlier position."
+          - Matches ADR-0082 and the before-commit name in the operation catalog.
+        cons: [ADR-0076 decision 4 needs an amendment.]
+      - name: "Hold before any checkpoint write, as ADR-0076 states"
+        pros: [No ADR change.]
+        cons:
+          - "Nothing has been written at the hold, so a crash there tests almost nothing, and no point holds between the last write and COMMIT."
+          - Contradicts ADR-0082.
+    recommendation: Hold after all checkpoint writes and before COMMIT
+    closure: ruling
+    ruler: "Owner, after the EPIC-DF merge"
+    status: proposed
+    asked:
+      date: 2026-11-01
+      in: EPIC-DF
+    proposed_by: EPIC-DF @ a88de97
+    interim:
+      assumption: "Under a checkpoint selector, before-commit holds in the beforeCommit callback of the armed transaction, after all checkpoint writes."
+      applied_by:
+        - typescript/kernel/testkit/src/lib/durable-fault-control.ts
+        - spec/conformance/kernel/kernel-process-crash-undetected.json
+        - KRT-DF003
+        - KRT-DF004

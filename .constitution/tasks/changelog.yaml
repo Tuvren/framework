@@ -1,4 +1,27 @@
 entries:
+  - version: v0.51.2
+    date: 2026-11-01
+    changed:
+      - "EPIC-DF Durable lifecycle certification for SQLite and PostgreSQL archived: 5 tickets, 28 points, 36287 diff lines, 3 review rounds"
+    added:
+      - "EPIC-DF certified the TypeScript SQLite and PostgreSQL kernels under the durable profiles: kernel.persistent-reopen and kernel.process-crash for both, and kernel.shared-backend for PostgreSQL, alongside the kernel.memory certificates for TypeScript and Rust. The harness owns storage per check, supervises adapter process groups with survivor checks, holds blocking fault seams with receipts, and observes backend capabilities. Certification found and fixed a PostgreSQL clock-domain mix (OD-20) and a controls plan that encoded the memory kernel's clock domain. One run produces per-profile certificate bundles linked to per-profile control runs, and committed compatibility rows keep only source-bound digests that any checkout can recheck."
+      - "Follow-up from EPIC-DF: The legacy SQLite restart-recovery path in typescript/kernel/conformance-adapter still spawns kernel child processes for the unchanged legacy close-reopen plan; EPIC-DJ removes it with that plan."
+      - "Follow-up from EPIC-DF: kernel.syscall.shared_writer.race has no detecting control: the PostgreSQL stale-head mutant activates in one writer process while the shared collect still observes one result and one error; design a cross-process mutant before kernel.shared-backend claims it as detected."
+      - "Follow-up from EPIC-DF: kernel.syscall.clock_skew.expired has no designated negative control in the shared-backend profile."
+      - "Follow-up from EPIC-DF: Three of the four kernel.process-crash claims (before_commit, after_turn_node_write_before_head, after_head_move_before_staging_clear) have no detecting control; only after_commit_before_ack does. A defective backend that commits checkpoint writes outside the transaction needs an autocommit SPI bridge or another storage mutation seam."
+      - "Follow-up from EPIC-DF: Four of the six kernel.persistent-reopen claims (committed_state, checkpoint_lineage, recovery_head, completed_step) have no detecting control."
+      - "Follow-up from EPIC-DF: Nothing observes that setClock source server really reads PostgreSQL: an adapter serving an injected backend clock under that source would pass. Compare against a clock the harness reads from the database it provisioned."
+      - "Follow-up from EPIC-DF: assertProfileClaimInventory is one-way: a durable claim removed from a profile leaves its check outside the profile with no failure, unlike the strict memory inventory."
+      - "Follow-up from EPIC-DF: The Rust certification executable is built outside the Nx cache so the certificate digests what ran; Cargo incremental builds keep it cheap, but a content-addressed Nx output would restore caching."
+      - "Follow-up from EPIC-DF: Rust has no durable backend, so the durable profiles certify the TypeScript backends only."
+      - "Follow-up from EPIC-DF: The in-memory backend still exposes its symbol-keyed fault control on public construction; move it behind the testkit commit seam as ef893e1 did for SQLite and PostgreSQL."
+      - "Follow-up from EPIC-DF: docs/guides/add-a-kernel-backend.md still describes the removed symbol-based fault integration; rewrite it for the testkit commit seam."
+    by: reconcile
+    fast_lane_through: a88de9773a11503eb734cedeadd93f0716b44954
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.49.0
   - version: v0.51.1
     date: 2026-10-30
     changed:

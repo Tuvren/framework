@@ -1,0 +1,72 @@
+date: 2026-11-01
+commit: a88de97
+epics: [DF]
+routed:
+  - stage: tech-spec
+    item: "OD-25: amend ADR-0076 decision 4 so the first checkpoint fault point holds after all checkpoint writes and before COMMIT, matching ADR-0082 decision 8."
+    from: DF
+  - stage: tech-spec
+    item: "OD-20: every kernel-stamped durable timestamp in a transaction comes from one transaction clock (tx.now on shared-lease-clock backends, otherwise the injected clock); record it against ADR-0050 and KrakenKernelSpecification section 5.2, and rule whether a backward-stepping backend clock rejects or clamps."
+    from: DF
+  - stage: tech-spec
+    item: "OD-21: the crash-recovery plan asserts rollback at the intermediate checkpoint fault points; record that a port with separately durable checkpoint writes adds observed-durability branches exercised by that port (KrakenKernelSpecification section 5.5, ADR-0076)."
+    from: DF
+  - stage: tech-spec
+    item: "OD-22: add the collect step (kernel.harness.collect, outcomes and byKind), steps[].process with spawn and handle-owned routing, setClock source server gated by clock.backend-server, and per-profile certificate bundles to the pinned plan and protocol sections of conformance-certification.md; amend ADR-0077 decision 5 so release order does not fix the winner across processes."
+    from: DF
+  - stage: tech-spec
+    item: "The adapter protocol leaves the createInstance clock members, the processExit evidence field shape, and capture.default unspecified; specify them in conformance-certification.md."
+    from: DF
+  - stage: tech-spec
+    item: "The collect closed schema rejects arbitrary native error details, and the commit-outcome-unknown error is omitted from the durable plans; decide whether collect admits catalogued details and whether commit-outcome-unknown needs an observed branch."
+    from: DF
+  - stage: tech-spec
+    item: "The per-profile undetected registers (kernel-memory, kernel-persistent-reopen, kernel-process-crash, kernel-shared-backend under spec/conformance/kernel/) have no schema or authority-packet reference; specify one shape for all four."
+    from: DF
+  - stage: tech-spec
+    item: "Lease expiry inclusivity (expiresAtMs equal to now) is undecided in the specification; the clock-skew plan avoids the boundary."
+    from: DF
+  - stage: tech-spec
+    item: "The tuvren.kernel.protocol suite-level certified entries were removed for SQLite and PostgreSQL in favour of profile certificates; record that compatibility rows are keyed by profile and carry source-bound digests only, with implementation, harness, and control-run identity kept in the run-scoped ADR-0081 bundles."
+    from: DF
+  - stage: tech-spec
+    item: "code decision (pattern): The harness provisions one storage resource per check (a SQLite directory or a tuvren_cert_ PostgreSQL database), passes opaque storageRef values to createInstance and openInstance, drops it afterwards including on failure, and sweeps stale resources best effort; adapters no longer choose storage locations. [tools/conformance/harness/storage-resource.ts] at c5c68e5"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (pattern): A process supervisor owns each adapter process group, kills by group, checks for survivors, and records a processExit observation per process. [tools/conformance/harness/process-supervisor.ts] at c5c68e5"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (contract_shape): Blocking fault seams hold at the named point and return a faultReached receipt; a check whose seam never held fails as seam_did_not_hold. [tools/conformance/harness/fault-activation.ts, spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json] at 426f57d"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (contract_shape): kernel.backend.capabilities observes the backend descriptor (KrakenKernelSpecification section 9.1), and plans select clock-domain expectations from it instead of encoding one backend's clock. [spec/conformance/kernel/operations.json, spec/conformance/kernel/plans/kernel-protocol-core-syscall.json] at 79471ed"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (pattern): The runtime resolves one transaction clock per durable store for lineage and run writes (OD-20 interim). [typescript/kernel/runtime/src/lib/runtime-kernel-clock.ts] at b0a9552"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (contract_shape): The collect step, steps[].process with spawn, and setClock source server are additive plan and protocol shapes; adapters without a server clock answer clock_source_unsupported (OD-22 interim). [tools/conformance/harness/collect-steps.ts, tools/schemas/conformance-plan.schema.json, tools/conformance/adapter-protocol, rust/kernel-conformance-adapter/src/host_syscalls.rs] at 6911dd5"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (contract_shape): One run finalizes a certificate bundle per claimed profile with a shared runId, each linked to its own control run in controlRuns[]; compatibility rows are keyed by profile and hold source-bound digests that compatibility --check recomputes, summaries report outsideProfileChecks, and --control-report requires --evidence-out. [tools/conformance/certification/profile-bundles.ts, tools/conformance/certification/compatibility-certificates.ts, tools/schemas/certification-evidence.schema.json, reports/compatibility/compatibility-matrix.schema.json] at aa6858b"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (convention): Every manifest mutant tagged for a profile must be a required control of that profile and be killed; an unsupported control needs a per-port reason, so a profile cannot certify on another backend's kill. [tools/conformance/meta-conformance/negative-controls.ts, spec/conformance/kernel/negative-controls.json] at 44e9481"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (pattern): Commit-phase fault hooks exist only in the testkit: one transaction seam with beforeCommit and afterCommit callbacks serves both the receipt-and-block control and the legacy fault-injecting wrapper, and public backend construction exposes no hook. [typescript/kernel/testkit/src/lib/commit-fault-seam.ts] at ef893e1"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (pattern): A mutant with a claim in a profile is killed for that profile only when an assertion of that profile's claims fails; a mutant with no claim in the profile keeps the ADR-0079 rule and earns no claim coverage there. [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/certification/control-link.ts] at 2962a85"
+    from: DF
+  - stage: tech-spec
+    item: "code decision (contract_shape): PostgreSQL certificates record environment.backend.serverVersion, read by the harness from the database it provisioned, and the fingerprint includes it. [tools/conformance/certification/bundle.ts, tools/conformance/harness/storage-resource.ts, tools/schemas/certification-evidence.schema.json] at 2962a85"
+    from: DF
+proposed_decisions: [OD-20, OD-21, OD-22, OD-25]
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-DF003/manifest.yaml: KRT-DF003"
+  - ".constitution/evidence/KRT-DF001/manifest.yaml: KRT-DF001"
+  - ".constitution/evidence/KRT-DF004/manifest.yaml: KRT-DF004"
+  - ".constitution/evidence/KRT-DF002/manifest.yaml: KRT-DF002"
+  - ".constitution/evidence/KRT-DF005/manifest.yaml: KRT-DF005"

@@ -21,7 +21,7 @@ scope:
     - reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json
     - ".changeset/certification-df-durable-backends.md"
   tech_spec_patchable:
-    - .constitution/tech-spec/contracts/certification-profile.meta.yaml
+    - ".constitution/tech-spec/contracts/certification-profile.meta.yaml"
 estimated_diff_lines: 12000
 estimate_source: planned
 tickets:
@@ -36,7 +36,7 @@ tickets:
         - tools/conformance/adapter-protocol
         - typescript/kernel/conformance-adapter
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0 after bun run services:up; each check gets a fresh SQLite directory or PostgreSQL database, openInstance reattaches without reseeding, and resources are dropped afterwards."
     stop_conditions:
       - "STOP if provisioning would require the harness to start PostgreSQL; do not improvise."
@@ -58,7 +58,7 @@ tickets:
         - spec/conformance/kernel/plans
         - typescript/kernel/conformance-adapter
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; restart, kill, and respawn steps run against the built adapter executable, evidence records PIDs, epochs, signals, and exits, and the close-reopen checks pass on SQLite and PostgreSQL."
     stop_conditions:
       - "STOP if the supervised executable is a launcher whose child survives a kill; do not improvise."
@@ -79,7 +79,7 @@ tickets:
       - files:
           - tools/scripts/verify.ts
           - typescript/kernel/protocol/test/kernel-certification-authority.test.ts
-          - .changeset/certification-df-durable-backends.md
+          - ".changeset/certification-df-durable-backends.md"
         justification: "Real-adapter suites must run after the targeted builds and new suites must be registered; the kernel certification authority test must recognize lifecycle controls, which requires a changeset for its publishable package."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence for every kernel adapter is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
@@ -102,7 +102,7 @@ tickets:
         - typescript/kernel/conformance-adapter
         - ".changeset/certification-df-durable-backends.md"
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; armFault with mode block emits faultReached with the arming token inside the real transaction at each instrumentable point and holds until killed."
     stop_conditions:
       - "STOP if a hook would be reachable without constructing the test-only seam; do not improvise."
@@ -121,10 +121,10 @@ tickets:
         justification: "armFault, the faultReached notification, and the supervisor's process epoch travel through the shared stdio transport and harness client; real-database fault tests live with the harness."
       - files:
           - typescript/kernel/runtime
-          - .changeset/durable-transaction-clock.md
+          - ".changeset/durable-transaction-clock.md"
         justification: "Arming the fault capability exposed the PostgreSQL clock-domain defect; the OD-20 interim fix lives in the kernel runtime's transaction bodies and needs a changeset for @tuvren/kernel-runtime."
       - files: [typescript/kernel/protocol/src/lib/kernel-types.ts]
-        justification: "Doc comments on the transaction clock and the grace-horizon clock state the OD-20 interim contract next to the types backends implement."
+        justification: Doc comments on the transaction clock and the grace-horizon clock state the OD-20 interim contract next to the types backends implement.
       - files:
           - spec/conformance/kernel/operations.json
           - spec/conformance/kernel/profiles.json
@@ -136,13 +136,13 @@ tickets:
           - tools/conformance/certification
           - tools/conformance/meta-conformance/negative-controls.ts
         justification: "The controls checks asserted the memory kernel's clock domain for every backend; selecting the expectation from the observed BackendCapability descriptor needed a catalogued observation, a kernel.memory claim, bindings in every adapter that runs the plan including Rust, and fleet branch provenance for conditional coverage."
-      - files:
-          - tools/scripts/verify.ts
-          - tools/scripts/verify-kernel.ts
-        justification: "Real-adapter fault and certificate suites must be registered after the build phase."
+      - files: [tools/scripts/verify.ts, tools/scripts/verify-kernel.ts]
+        justification: Real-adapter fault and certificate suites must be registered after the build phase.
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
-      - files: [reports/compatibility/project.json, tools/scripts/oxc-preparation.test.ts]
+      - files:
+          - reports/compatibility/project.json
+          - tools/scripts/oxc-preparation.test.ts
         justification: "PR review round 1: the compatibility check no longer needs the Rust build and waits for the authority generators it digests; a fixture excluded under an ignored TMPDIR was corrected."
     status: done
   - id: KRT-DF004
@@ -157,7 +157,7 @@ tickets:
         - tools/conformance/harness
         - typescript/kernel/testkit
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; each crash check arms a point, receives the receipt, kills the process, respawns on the same storage, and passes recovery assertions; the incomplete-checkpoint mutant is killed."
     stop_conditions:
       - "STOP if a backend shows partial checkpoint state after a kill; record the implementation finding and keep the check red; do not improvise."
@@ -190,7 +190,7 @@ tickets:
           - tools/scripts/lib/conformance-contract.test.ts
           - tools/scripts/verify.ts
           - tools/scripts/verify-kernel.ts
-          - .changeset/durable-crash-negative-control.md
+          - ".changeset/durable-crash-negative-control.md"
         justification: "Checked-in evidence normalizes per-run process values, real-adapter crash suites run after the build phase, and the touched publishable packages need direct changesets."
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
@@ -210,7 +210,7 @@ tickets:
         - reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json
         - reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; two adapter processes race on one PostgreSQL storageRef with entry receipts, clock-skew preemption follows the backend clock, and the persistent-reopen, process-crash, and shared-backend profiles produce certificates."
     stop_conditions:
       - "STOP if PostgreSQL cannot provide a backend-authoritative clock observation; record a specification finding; do not improvise."
@@ -236,7 +236,7 @@ tickets:
           - tools/scripts/verify.ts
           - tools/scripts/verify-kernel.ts
           - tools/scripts/lib/conformance-contract.ts
-          - .changeset
+          - ".changeset"
         justification: "Real-adapter two-process suites run after the build phase, checked-in evidence normalizes per-process values, and touched publishable packages need direct changesets."
       - files:
           - tools/conformance/meta-conformance
@@ -249,134 +249,6 @@ tickets:
       - files: [reports/compatibility]
         justification: "Generated compatibility evidence is refreshed with bun run compatibility:evidence."
     status: done
-decisions:
-  - id: OD-20
-    question: "On a backend that advertises a shared backend clock, which clock stamps the kernel's non-lease durable timestamps (thread, branch, turn, run, node, staged-result, checkpoint createdAtMs and updatedAtMs)? The specification assigns only lease stamping to backend time (section 5.2, ADR-0050)."
-    blocks: [KRT-DF003, KRT-DF004, KRT-DF005]
-    options:
-      - name: One transaction clock per durable store
-        pros:
-          - "Matches the run API's existing resolveTransactionClock (tx.now on shared-lease-clock backends); only the lineage API never adopted it."
-          - "Reclamation compares updatedAtMs against backend-derived horizons, which stays in one domain; two workers with skewed clocks cannot reorder records."
-          - "Memory and SQLite keep the injected clock; other language ports state the same rule through the capability flag."
-        cons:
-          - "A record created by a worker clock ahead of backend time rejects later updates until backend time passes it, the same residue ADR-0050 accepts for leases."
-      - name: Worker time for every non-lease timestamp, clamped to stay ordered
-        pros:
-          - "One rule for every backend."
-        cons:
-          - "Clamping manufactures timestamps and hides regressions, and reclamation horizons become cross-domain under skew."
-    recommendation: One transaction clock per durable store
-    closure: ruling
-    ruler: "Owner, after the EPIC-DF merge"
-    status: proposed
-    asked:
-      date: 2026-10-28
-      in: EPIC-DF
-    proposed_by: EPIC-DF @ 5b25cd7
-    interim:
-      assumption: "Within a kernel transaction every kernel-stamped durable timestamp comes from one transaction clock: tx.now when the backend advertises shared-lease-clock, otherwise the injected kernel clock. updatedAtMs >= createdAtMs and non-regressing updatedAtMs stay strict; no clamping and no migration. Whether a backward-stepping backend clock should reject or clamp is left open."
-      applied_by:
-        - typescript/kernel/runtime
-        - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
-        - spec/conformance/kernel/operations.json
-        - KRT-DF003
-  - id: OD-21
-    question: "At the intermediate checkpoint fault points (after-turn-node-write-before-head, after-head-move-before-staging-clear), must recovery roll back to the baseline, or must an implementation whose turn-node write or head move was separately durable roll forward (KrakenKernelSpecification section 5.5: a durably visible post-checkpoint TurnNode means the checkpoint committed)?"
-    blocks: [KRT-DF004]
-    options:
-      - name: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
-        pros:
-          - "Both TypeScript durable backends write the checkpoint in one transaction, so a kill inside it is a rollback; the assertion is exact for them."
-          - "The conditional-coverage gate stays satisfiable, because no current backend could exercise a roll-forward branch."
-        cons:
-          - "A correct port with separately durable writes (ADR-0076 names Python) would fail these checks until the plan branches on observed durability."
-      - name: Branch on observed durability now (node present means head references it; absent means head equals baseline)
-        pros:
-          - "States the section 5.5 invariant for every implementation."
-        cons:
-          - "The roll-forward branch is unexercised by any current backend, which the ADR-0079 fleet branch-coverage gate rejects."
-    recommendation: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
-    closure: ruling
-    ruler: "Owner, after the EPIC-DF merge"
-    status: proposed
-    asked:
-      date: 2026-10-28
-      in: EPIC-DF
-    proposed_by: EPIC-DF @ 426f57d
-    interim:
-      assumption: "The crash-recovery syscall plan asserts rollback to baseline at the intermediate points; when a port with separately durable checkpoint writes is certified, the plan gains observed-durability branches exercised by that port."
-      applied_by:
-        - spec/conformance/kernel/plans/kernel-crash-recovery-durable-syscall.json
-        - KRT-DF004
-  - id: OD-22
-    question: "How do conformance plans certify a two-process durable writer race, real server-clock skew, and several durable profiles per backend, when the pinned plan contract has no order-agnostic outcome selection, no per-step process routing, no server clock source, and one certificate per run?"
-    blocks: [KRT-DF005]
-    options:
-      - name: Additive runner-owned shapes (collect step, process selector with spawn, setClock source server, per-profile bundles)
-        pros:
-          - "The winner is selected deterministically by the runner from grouped outcomes, so assertions stay unconditional and ADR-0079 gains no unexercisable branch; sequential contenders still cannot certify because collect participants must hold barrier receipts recorded before release."
-          - "Adapters still grade nothing; other kernel languages implement the same additive protocol."
-          - "kernel.shared-backend requires clock.backend-server, so a shared-backend claim cannot dodge the real-clock skew check; per-profile bundles keep ADR-0081's one certificate per implementation, backend, and profile."
-        cons:
-          - "collect is the first runner-synthesized observation; ADR-0077 decision 5 needs an amendment that release order does not fix the winner across processes."
-      - name: Defer KRT-DF005 until a Stage 3 pass specifies the shapes
-        pros:
-          - "No new contract shape lands before review."
-        cons:
-          - "EPIC-DF would close without the shared-backend, persistent-reopen, and process-crash certificates it exists to produce."
-    recommendation: Additive runner-owned shapes (collect step, process selector with spawn, setClock source server, per-profile bundles)
-    closure: ruling
-    ruler: "Owner, after the EPIC-DF merge"
-    status: proposed
-    asked:
-      date: 2026-10-28
-      in: EPIC-DF
-    proposed_by: EPIC-DF @ 23af796
-    interim:
-      assumption: "The design recorded for KRT-DF005: collect (kernel.harness.collect control observation with outcomes and byKind), steps[].process with spawn (one instance per process, handle-owned routing for await/cancel/release/barrier/collect), setClock source server gated by clock.backend-server with relative skew assertions, and per-profile certificate bundles from one run linked to per-profile control gates."
-      applied_by:
-        - tools/schemas/conformance-plan.schema.json
-        - tools/conformance/adapter-protocol
-        - tools/conformance/plan-compiler
-        - tools/conformance/harness
-        - tools/conformance/certification
-        - spec/conformance/kernel
-        - typescript/kernel/testkit
-        - typescript/kernel/backends/postgres
-        - rust/kernel-conformance-adapter
-        - KRT-DF005
-  - id: OD-25
-    question: "ADR-0076 decision 4 lists the first checkpoint fault point as 'before any checkpoint write', while ADR-0082 decision 8 says a before-commit fault fires inside the backend transaction callback before COMMIT. Where does the certified before-commit point hold?"
-    blocks: [KRT-DF003, KRT-DF004]
-    options:
-      - name: Hold after all checkpoint writes and before COMMIT
-        pros:
-          - "A write that escaped the transaction is visible on recovery, and no write can happen after the hold and before COMMIT, so this subsumes the earlier position."
-          - "Matches ADR-0082 and the before-commit name in the operation catalog."
-        cons:
-          - "ADR-0076 decision 4 needs an amendment."
-      - name: Hold before any checkpoint write, as ADR-0076 states
-        pros:
-          - "No ADR change."
-        cons:
-          - "Nothing has been written at the hold, so a crash there tests almost nothing, and no point holds between the last write and COMMIT."
-          - "Contradicts ADR-0082."
-    recommendation: Hold after all checkpoint writes and before COMMIT
-    closure: ruling
-    ruler: "Owner, after the EPIC-DF merge"
-    status: proposed
-    asked:
-      date: 2026-11-01
-      in: EPIC-DF
-    proposed_by: EPIC-DF @ 2962a85
-    interim:
-      assumption: "Under a checkpoint selector, before-commit holds in the beforeCommit callback of the armed transaction, after all checkpoint writes."
-      applied_by:
-        - typescript/kernel/testkit/src/lib/durable-fault-control.ts
-        - spec/conformance/kernel/kernel-process-crash-undetected.json
-        - KRT-DF003
-        - KRT-DF004
 closeout:
   tickets_completed: [KRT-DF001, KRT-DF002, KRT-DF003, KRT-DF004, KRT-DF005]
   tickets_deferred: []
@@ -409,7 +281,7 @@ closeout:
   follow_ups:
     - "The legacy SQLite restart-recovery path in typescript/kernel/conformance-adapter still spawns kernel child processes for the unchanged legacy close-reopen plan; EPIC-DJ removes it with that plan."
     - "kernel.syscall.shared_writer.race has no detecting control: the PostgreSQL stale-head mutant activates in one writer process while the shared collect still observes one result and one error; design a cross-process mutant before kernel.shared-backend claims it as detected."
-    - "kernel.syscall.clock_skew.expired has no designated negative control in the shared-backend profile."
+    - kernel.syscall.clock_skew.expired has no designated negative control in the shared-backend profile.
     - "Three of the four kernel.process-crash claims (before_commit, after_turn_node_write_before_head, after_head_move_before_staging_clear) have no detecting control; only after_commit_before_ack does. A defective backend that commits checkpoint writes outside the transaction needs an autocommit SPI bridge or another storage mutation seam."
     - "Four of the six kernel.persistent-reopen claims (committed_state, checkpoint_lineage, recovery_head, completed_step) have no detecting control."
     - "Nothing observes that setClock source server really reads PostgreSQL: an adapter serving an injected backend clock under that source would pass. Compare against a clock the harness reads from the database it provisioned."
@@ -439,7 +311,7 @@ closeout:
         - spec/conformance/kernel/operations.json
         - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
       commit: 79471ed
-    - summary: "The runtime resolves one transaction clock per durable store for lineage and run writes (OD-20 interim)."
+    - summary: The runtime resolves one transaction clock per durable store for lineage and run writes (OD-20 interim).
       kind: pattern
       paths: [typescript/kernel/runtime/src/lib/runtime-kernel-clock.ts]
       commit: b0a9552
@@ -471,33 +343,38 @@ closeout:
       commit: ef893e1
     - summary: "A mutant with a claim in a profile is killed for that profile only when an assertion of that profile's claims fails; a mutant with no claim in the profile keeps the ADR-0079 rule and earns no claim coverage there."
       kind: pattern
-      paths: [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/certification/control-link.ts]
-      commit: "2962a85"
+      paths:
+        - tools/conformance/meta-conformance/negative-controls.ts
+        - tools/conformance/certification/control-link.ts
+      commit: 2962a85
     - summary: "PostgreSQL certificates record environment.backend.serverVersion, read by the harness from the database it provisioned, and the fingerprint includes it."
       kind: contract_shape
-      paths: [tools/conformance/certification/bundle.ts, tools/conformance/harness/storage-resource.ts, tools/schemas/certification-evidence.schema.json]
-      commit: "2962a85"
+      paths:
+        - tools/conformance/certification/bundle.ts
+        - tools/conformance/harness/storage-resource.ts
+        - tools/schemas/certification-evidence.schema.json
+      commit: 2962a85
   actuals:
-    diff_lines: 26648
-    files_touched: 151
-    milestones: 4
-    review_rounds: 2
+    diff_lines: 36287
+    files_touched: 179
+    milestones: 15
+    review_rounds: 3
     per_ticket:
       - id: KRT-DF001
-        diff_lines: 2956
+        diff_lines: 8957
         review_rounds: 0
       - id: KRT-DF002
-        diff_lines: 2956
+        diff_lines: 0
         review_rounds: 0
       - id: KRT-DF003
-        diff_lines: 4677
-        review_rounds: 0
+        diff_lines: 8724
+        review_rounds: 2
       - id: KRT-DF004
-        diff_lines: 5443
+        diff_lines: 7250
         review_rounds: 0
       - id: KRT-DF005
-        diff_lines: 10616
-        review_rounds: 2
-    merged_commit: "62b9df4"
+        diff_lines: 11356
+        review_rounds: 1
+    merged_commit: a88de97
     measured_at: 2026-11-01
   settled: []
