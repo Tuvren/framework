@@ -3,19 +3,19 @@ mode: contract_test
 produced:
   date: 2026-11-01
   commit: "2962a85"
-  command: "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts; bun run nx run-many -t test --projects=backend-sqlite,backend-postgres,kernel-testkit --skip-nx-cache"
+  command: "bun test tools/conformance/harness/test/durable-faults.test.ts tools/conformance/harness/test/durable-crash.test.ts tools/conformance/harness/test/fault-activation.test.ts tools/conformance/harness/test/shared-backend.test.ts tools/conformance/harness/test/durable-claims.test.ts; bun run verify"
 result: pass
 pass_criteria: "Each supported point emits exactly one receipt with the arming token before blocking; unsupported points report unsupported; production construction paths cannot reach the hooks."
 files:
   - path: test-outcomes.json
-    sha256: 0441b45acda425fe251621f2319c6cbf083251c91d0e294cbf8d633d2ca53066
-    bytes: 4275
+    sha256: 8c20b84ca5da4e5b6a33377b8afccd1abcb2ff58bfb0f8545d03cfebc25f9e2b
+    bytes: 4263
     role: measurement
   - path: public-construction-probe.json
     sha256: 2ad3f3e461d25d610bf75d3d13d6213140b88b81d9bac7f815c75aa8725365fe
     bytes: 1165
     role: measurement
   - path: triage.md
-    sha256: fa2330b9eb40f90013be5e719825eab7228083bff3e8e9a9d4833de0b70cd85e
+    sha256: e3d1b511e1d1081ae87fb74f407fab0c6fbcc763535996cfe8d2fb56f5243bf7
     bytes: 1842
     role: transcript
