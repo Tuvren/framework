@@ -24,7 +24,7 @@
   "dependencies": {
     "@tuvren/backend-shared": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
-    "better-sqlite3": "12.8.0"
+    "better-sqlite3": "12.11.1"
   },
   "devDependencies": {
     "@tuvren/kernel-runtime": "workspace:*",
