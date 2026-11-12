@@ -247,6 +247,8 @@ decisions:
           - "Backend validators stay active, and the separately durable node is exposed at both genuine callback phases."
         cons:
           - "Segmentation, clock capture, and fault cancellation are unmeasured on both backends."
+          - "Both backends bind transaction handles to the transaction's async context, so the dependent tail cannot hold a handle open; each call must run inside the real transact callback."
+          - "The runtime writes the run record only after the staging clear, and both backends require an active run, its turn, and its branch to agree on the head at commit. A wrapper that keeps the runtime's write order therefore cannot make the head move durable before the staging clear. A kill at before-commit or after-head-move rolls the tail back, and recovery sees only the leaked TurnNode, the same defect that kills the node-write claim; the head-specific recovery assertions are not exercised."
       - name: A kernel-aware control that commits a valid checkpoint early and then reaches the genuine seam
         pros: [Uses explicit knowledge of the full consistency group.]
         cons:
@@ -255,12 +257,13 @@ decisions:
         pros: [Certification stays truthful with no speculative implementation.]
         cons: [The durable registers cannot close and publication stays blocked.]
     recommendation: Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction
-    closure: spike
-    spike: SPK-KRT-DO001
+    closure: ruling
+    ruler: "Owner, after the EPIC-DO merge"
+    waiting_on: "KRT-DO002's measurement of the early-node control on SQLite and PostgreSQL, including whether a head-durable variant is reachable at the after-head-move point"
     status: proposed
     asked:
       date: 2026-11-12
       in: EPIC-DO
     interim:
-      assumption: "KRT-DO002 first measures the early-node-then-real-tail control on both backends. A claim leaves the process-crash register only after baseline, mutant, baseline runs show the genuine fault receipt, mutant activation, and the designated assertion failing. If the measurement fails, that claim stays in the register with its reason and KRT-DO007 is deferred for the process-crash register."
+      assumption: "KRT-DO002 first measures the early-node-then-real-tail control on both backends, and makes one bounded attempt at a variant that also makes the head move durable before the after-head-move hold. A claim counts as detected when, at its genuine fault point with a matching receipt and mutant activation, a designated recovery assertion fails on durable state the non-atomic backend leaked, and the baseline passes before and after. A leaked-TurnNode kill is accepted at before-commit and after-head-move when no head-durable variant passes backend validation; the head-specific assertions that stay unexercised are then named in the closeout follow-ups. A claim whose fault is not genuinely reached stays in the register with its reason, and KRT-DO007 is deferred for the process-crash register."
       applied_by: [KRT-DO002]
