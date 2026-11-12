@@ -48,7 +48,7 @@ tickets:
       evidence: "Record the prototype, commands, backend and process configuration, activation counts, fault receipts, recovery observations, and designated assertion outcomes for both SQLite and PostgreSQL. Record the shared-writer interleaving, both writer outcomes, the lock and barrier evidence, and a testable race-control recommendation or an explicit unresolved decision. Retain no prototype source in the spike output."
     flows: ["flow-authority-packet-driven-conformance", "flow-crash-mid-checkpoint-recovery"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DO002
     title: "Detect non-atomic checkpoint commits"
     type: Feature
@@ -211,3 +211,56 @@ tickets:
     flows: ["flow-multi-implementation-conformance-compatibility", "flow-crash-mid-checkpoint-recovery"]
     certainty: open
     status: planned
+decisions:
+  - id: OD-21
+    question: "At the intermediate checkpoint fault points (after-turn-node-write-before-head, after-head-move-before-staging-clear), must recovery roll back to the baseline, or must an implementation whose turn-node write or head move was separately durable roll forward (KrakenKernelSpecification section 5.5: a durably visible post-checkpoint TurnNode means the checkpoint committed)?"
+    blocks: [KRT-DF004, KRT-DO002, KRT-DO007]
+    options:
+      - name: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
+        pros:
+          - "Both TypeScript durable backends write the checkpoint in one transaction, so a kill inside it is a rollback; the assertion is exact for them."
+          - "The conditional-coverage gate stays satisfiable, because no current backend could exercise a roll-forward branch."
+        cons:
+          - A correct port with separately durable writes (ADR-0076 names Python) would fail these checks until the plan branches on observed durability.
+      - name: "Branch on observed durability now (node present means head references it; absent means head equals baseline)"
+        pros: [States the section 5.5 invariant for every implementation.]
+        cons:
+          - "The roll-forward branch is unexercised by any current backend, which the ADR-0079 fleet branch-coverage gate rejects."
+    recommendation: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
+    closure: ruling
+    ruler: "Owner, at the EPIC-DO wave plan approval"
+    status: closed
+    asked:
+      date: 2026-10-28
+      in: EPIC-DF
+    ruling:
+      ref: "Owner approval of the EPIC-DO wave plan on 2026-11-12, whose Step-0 rulings state the OD-21 ruling"
+      date: 2026-11-12
+      summary: "Recovery asserts rollback to baseline at the intermediate checkpoint fault points for single-transaction backends. A port with separately durable checkpoint writes is routed when it arrives, and the plan then gains observed-durability branches exercised by that port."
+      chosen: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
+  - id: OD-26
+    question: "SPK-KRT-DO001 measured that a generic non-atomic backend control reaches the after-turn-node-write-before-head fault on SQLite and PostgreSQL, but never reaches before-commit or after-head-move-before-staging-clear, because both backends reject an isolated branch-head write while a run is active. How must the control keep the branch, turn, staging, and run writes valid while still reaching those two genuine fault seams after separately durable node work?"
+    blocks: [KRT-DO002, KRT-DO007]
+    options:
+      - name: Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction
+        pros:
+          - "Backend validators stay active, and the separately durable node is exposed at both genuine callback phases."
+        cons:
+          - "Segmentation, clock capture, and fault cancellation are unmeasured on both backends."
+      - name: A kernel-aware control that commits a valid checkpoint early and then reaches the genuine seam
+        pros: [Uses explicit knowledge of the full consistency group.]
+        cons:
+          - "More kernel coupling and a broader review of which rule the mutant violates; no feasibility evidence."
+      - name: Leave before-commit and after-head-move undetected until a separately planned investigation
+        pros: [Certification stays truthful with no speculative implementation.]
+        cons: [The durable registers cannot close and publication stays blocked.]
+    recommendation: Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction
+    closure: spike
+    spike: SPK-KRT-DO001
+    status: proposed
+    asked:
+      date: 2026-11-12
+      in: EPIC-DO
+    interim:
+      assumption: "KRT-DO002 first measures the early-node-then-real-tail control on both backends. A claim leaves the process-crash register only after baseline, mutant, baseline runs show the genuine fault receipt, mutant activation, and the designated assertion failing. If the measurement fails, that claim stays in the register with its reason and KRT-DO007 is deferred for the process-crash register."
+      applied_by: [KRT-DO002]
