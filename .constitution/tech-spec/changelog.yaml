@@ -1,4 +1,17 @@
 entries:
+  - version: v0.50.1
+    date: 2026-11-13
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "Alignment pass for the tech-spec items routed by reports/2026-11-13-reconciliation.yaml (EPIC-DO). ADR-0084 decision 5 now points at the measured non-atomic control, and the ADR's observed consequences record it. Per-call commits are rejected by both backends, a tree commits with its paths, and an isolated head move fails active-run head alignment. The tree with its paths and the TurnNode commit early, and the dependent tail runs in one real backend transaction through a command queue, bound to the armed fault plan. Its feasibility is settled by kernel-mutant-non-atomic.ts and durable-control-mutants.test.ts. The shared-writer, reopen, and expired-lease kills are recorded the same way. ADR-0082 decision 8 points at that record."
+      - "Stated the OD-26 interim honestly. The three intermediate process-crash kills rest on the leaked TurnNode, and the head, node, lineage, and head-derived visibility recovery assertions stay unexercised by any mutant. If the owner rules that a head-durable control is required, those claims return to the process-crash register. OD-26 stays proposed and is not ruled here."
+      - "Recorded the OD-21 owner ruling against ADR-0076: rollback to baseline at the intermediate checkpoint fault points for single-transaction backends, and roll-forward ports routed when they arrive with observed-durability branches. Reworded ADR-0076's Python consequence to match. docs/KrakenKernelSpecification.md is outside this directory and unchanged."
+      - "Recorded ADR-0084 decision 7's durable precondition as met: the three durable undetected registers are {} and durable-claims.test.ts asserts it. The preflight gate (KRT-DN003), the memory register (EPIC-DR), and the certificate undetectedClaims list of decision 6 (KRT-DP004) remain. Recorded the decision 5 portability gaps with their owners: Reflect.set in kernel-mutants-durable.ts (KRT-DN003); node:async_hooks through kernel-mutants-storage.ts, kernel-mutants-clock.ts, and the barrier and fault controls (KRT-DL002, gated again by KRT-DN003). No active ticket names kernel-mutants-clock.ts explicitly."
+      - "Adopted EPIC-DO's five code decisions as guidelines 5.10 rule 10: splitting transactions through real ones, reopen defects that appear only after a reopen, activation that counts only the violating write, diagnostics kept out of the adapter protocol through readDiagnostics, and coverage gaps proved by removing control designations. The certification companion now states that the kernel.mutant.activation observation is closed. Code decision commits cite master SHAs (b6bc5a6 and 08b6107, 743dc25, 3b9352e, 37e8b6b, a67066f) in place of the closeout's pre-rebase branch SHAs."
+      - "No sidecar settles in this pass. backend-testkit.meta.yaml and certification-undetected-register.meta.yaml keep their DP and DN settling conditions. Not handled in this pass and still carried: the tech-spec items routed by reports/2026-10-28, 2026-10-30, and 2026-11-01 reconciliation reports that earlier passes left open."
   - version: v0.50.0
     date: 2026-11-01
     by: stage
