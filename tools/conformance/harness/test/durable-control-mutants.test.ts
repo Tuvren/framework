@@ -465,8 +465,13 @@ test("postgres stale shared writer commits both siblings and activates only the 
         throw new Error("missing fallback activation count");
       }
       counts.push(count);
-      expect(field(activation, "guardBypassCount") ?? 0).toBe(count);
-      expect(field(activation, "activated")).toBe(count > 0);
+      expect(activation).toEqual({
+        activated: count > 0,
+        activationCount: count,
+        kind: "implementation",
+        mutantId: raceMutant,
+        signal: "mutant.accept-stale-shared-writer.entered",
+      });
       const outcome = raceTrace(
         mutant,
         processName === "primary" ? "firstOutcome" : "secondOutcome"
