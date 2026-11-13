@@ -156,7 +156,7 @@ const createUnsupportedFaultPointError = (
   point: FaultPoint
 ): TuvrenPersistenceError =>
   new TuvrenPersistenceError(
-    `fault point "${point}" requires backend-local test hooks`,
+    `fault point "${point}" is not reachable through the testkit transaction seam`,
     {
       code: "kernel_fault_point_unsupported",
       details: { point },

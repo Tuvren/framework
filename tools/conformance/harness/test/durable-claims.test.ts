@@ -9,9 +9,50 @@ import {
   assertClaimCoverage,
   claimAssertions,
 } from "../../meta-conformance/claim-coverage.ts";
+import type { CoverageControl } from "../../meta-conformance/claim-coverage.ts";
 import { loadConformancePlan } from "../../plan-compiler/index.ts";
 import { computeIdentity } from "../kernel-integrity.ts";
 import { readAdapterManifest, readPlans } from "../run-plans.ts";
+
+const expectClaimCoverage = (
+  profile: string,
+  claims: readonly string[],
+  controls: readonly CoverageControl[],
+  reasons: Readonly<Record<string, string>>,
+  checks: Parameters<typeof assertClaimCoverage>[4]
+): void => {
+  expect(reasons).toEqual({});
+  expect(() =>
+    assertClaimCoverage(profile, claims, controls, reasons, checks)
+  ).not.toThrow();
+  for (const claim of claims) {
+    const withoutDesignation = controls.map((control) => ({
+      ...control,
+      claimIds: control.claimIds.filter((id) => id !== claim),
+    }));
+    expect(() =>
+      assertClaimCoverage(profile, claims, withoutDesignation, reasons, checks)
+    ).toThrow(claim);
+    expect(() =>
+      assertClaimCoverage(
+        profile,
+        claims,
+        withoutDesignation,
+        { ...reasons, [claim]: " " },
+        checks
+      )
+    ).toThrow(claim);
+    expect(() =>
+      assertClaimCoverage(
+        profile,
+        claims,
+        withoutDesignation,
+        { ...reasons, [claim]: "Detector unavailable." },
+        checks
+      )
+    ).not.toThrow();
+  }
+};
 
 test("a durable profile cannot claim an obligation without a loaded check", async () => {
   const adapter = await readAdapterManifest(
@@ -94,30 +135,13 @@ test("durable reopen claims have designated controls or explicit gaps and stay o
     true
   );
   expect(claims.every((claim) => !memory.claimIds.includes(claim))).toBe(true);
-  expect(() =>
-    assertClaimCoverage(
-      "kernel.persistent-reopen",
-      claims,
-      controls,
-      reasons,
-      checks
-    )
-  ).not.toThrow();
-  const missing = { ...reasons };
-  const claim = claims[0];
-  if (claim === undefined) {
-    throw new Error("missing reopen claim");
-  }
-  delete missing[claim];
-  expect(() =>
-    assertClaimCoverage(
-      "kernel.persistent-reopen",
-      claims,
-      controls,
-      missing,
-      checks
-    )
-  ).toThrow(claim);
+  expectClaimCoverage(
+    "kernel.persistent-reopen",
+    claims,
+    controls,
+    reasons,
+    checks
+  );
 });
 
 test("process-crash claims are covered by a designated detector or a documented gap", async () => {
@@ -140,15 +164,13 @@ test("process-crash claims are covered by a designated detector or a documented 
     assertions: claimAssertions(check),
   }));
   expect(claims).toHaveLength(4);
-  expect(() =>
-    assertClaimCoverage(
-      "kernel.process-crash",
-      claims,
-      controls,
-      reasons,
-      checks
-    )
-  ).not.toThrow();
+  expectClaimCoverage(
+    "kernel.process-crash",
+    claims,
+    controls,
+    reasons,
+    checks
+  );
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter.json"
   );
@@ -189,25 +211,13 @@ test("shared-backend race and clock claims are designated or have explicit gaps"
     ),
   ];
   expect(claims).toHaveLength(3);
-  expect(() =>
-    assertClaimCoverage(
-      "kernel.shared-backend",
-      claims,
-      controls,
-      reasons,
-      checks
-    )
-  ).not.toThrow();
-  reasons["kernel.syscall.shared_writer.race"] = "";
-  expect(() =>
-    assertClaimCoverage(
-      "kernel.shared-backend",
-      claims,
-      controls,
-      reasons,
-      checks
-    )
-  ).toThrow("kernel.syscall.shared_writer.race");
+  expectClaimCoverage(
+    "kernel.shared-backend",
+    claims,
+    controls,
+    reasons,
+    checks
+  );
 });
 
 test("pending process-crash node fixture matches the independent identity encoder", async () => {
