@@ -54,6 +54,20 @@
       ]
     },
     {
+      "mutantId": "kernel.accept-stale-shared-writer",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#branch-head-movement",
+      "claimIds": ["kernel.syscall.shared_writer.race"],
+      "activation": {
+        "precondition": "after the kernel rejects a lateral move against a head this backend wrapper did not commit, the control bypasses that guard and the backend rejects the stale sibling head write and the control successfully writes the real common parent and requested sibling in the same transaction; guard bypass on a valid forward move does not activate the control, and PostgreSQL scope locking may serialize the writers",
+        "signal": "mutant.accept-stale-shared-writer.entered"
+      },
+      "profiles": ["kernel.shared-backend"],
+      "designatedAssertions": [
+        "kernel.syscall.shared_writer.race.collect.1.resultField"
+      ]
+    },
+    {
       "mutantId": "kernel.delete-object-reachable-through-live-root",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",

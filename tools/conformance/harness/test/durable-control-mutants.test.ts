@@ -31,7 +31,8 @@ const field = (value: unknown, ...keys: readonly string[]): unknown => {
 const runCheck = async (
   adapter: string,
   checkId: string,
-  expectedExit: 0 | 1
+  expectedExit: 0 | 1,
+  mutantId = MUTANT
 ): Promise<ConformanceCheckResult> => {
   const child = Bun.spawn({
     cmd: [
@@ -41,8 +42,9 @@ const runCheck = async (
       adapter,
       "--check",
       checkId,
+      "--capture-observations",
     ],
-    env: { ...process.env, TUVREN_KERNEL_MUTANT: MUTANT },
+    env: { ...process.env, TUVREN_KERNEL_MUTANT: mutantId },
     stderr: "pipe",
     stdout: "pipe",
   });
@@ -53,7 +55,7 @@ const runCheck = async (
   ]);
   expect(exit, stderr).toBe(expectedExit);
   const evidence: unknown = JSON.parse(stdout);
-  assertConformanceEvidence(evidence, "non-atomic checkpoint control");
+  assertConformanceEvidence(evidence, "durable negative control");
   expect(evidence.checkResults).toHaveLength(1);
   const [check] = evidence.checkResults;
   if (check === undefined) {
@@ -257,3 +259,211 @@ for (const backend of ["sqlite", "postgres"]) {
     }, 180_000);
   }
 }
+
+const raceId = "kernel.syscall.shared_writer.race";
+const raceMutant = "kernel.accept-stale-shared-writer";
+const raceAssertion = `${raceId}.collect.1.resultField`;
+
+test("postgres stale shared writer preserves the sequential lateral-lineage rejection plan", async () => {
+  const check = await runCheck(
+    "typescript/kernel/conformance-adapter/adapter-postgres-mutant.json",
+    "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+    0,
+    raceMutant
+  );
+  expect(check.status).toBe("pass");
+});
+
+test("shared-writer control module loads for browser targets without node async hooks", async () => {
+  const result = await Bun.build({
+    entrypoints: [
+      "typescript/kernel/testkit/src/lib/kernel-mutant-shared-writer.ts",
+    ],
+    target: "browser",
+  });
+  expect(result.success, result.logs.join("\n")).toBe(true);
+});
+
+test("postgres shared-writer control wraps frozen backends, preserves optional clocks, and counts only stale fallback writes", async () => {
+  await withCheckStorage("postgres-database", async (storageRef) => {
+    const child = Bun.spawn({
+      cmd: [
+        "node",
+        "tools/conformance/harness/test/fixtures/shared-writer-backend-surface.mjs",
+        storageRef,
+      ],
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+    const [stdout, stderr, exit] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    expect(exit, stderr).toBe(0);
+    expect(stdout).toBe("");
+  });
+}, 30_000);
+
+const raceTrace = (check: ConformanceCheckResult, stepId: string): unknown => {
+  const observations = check.details?.traceObservations;
+  if (!Array.isArray(observations)) {
+    throw new Error("missing race observations");
+  }
+  return observations.find(
+    (entry: unknown) => field(entry, "stepId") === stepId
+  );
+};
+
+const assertRaceReceipts = (check: ConformanceCheckResult): void => {
+  const schedule = check.details?.schedule;
+  if (!Array.isArray(schedule)) {
+    throw new Error("missing race schedule");
+  }
+  const releases = schedule.filter(
+    (entry: unknown) => field(entry, "stepId") === "release"
+  );
+  expect(releases).toHaveLength(1);
+  for (const [stepId, processName] of [
+    ["firstReceipt", "primary"],
+    ["secondReceipt", "second"],
+  ]) {
+    const receipt: unknown = schedule.find(
+      (entry: unknown) => field(entry, "stepId") === stepId
+    );
+    expect(receipt).toMatchObject({
+      process: processName,
+      receipt: {
+        barrierId: "writers",
+        seam: "kernel.persistence.before-transact",
+        operationHandle: expect.any(String),
+      },
+    });
+    const arrival = field(receipt, "arrivalSequence");
+    if (typeof arrival !== "number") throw new Error("missing entry arrival");
+    for (const release of releases) {
+      const released = field(release, "arrivalSequence");
+      if (typeof released !== "number")
+        throw new Error("missing release arrival");
+      expect(arrival).toBeLessThan(released);
+    }
+  }
+};
+
+test("postgres stale shared writer commits both siblings and activates only the lateral fallback between passing baselines", async () => {
+  const baseline =
+    "typescript/kernel/conformance-adapter/adapter-postgres.json";
+  const before = await runCheck(baseline, raceId, 0, raceMutant);
+  expect(before.status).toBe("pass");
+  expect(before.assertionResults).toContainEqual({
+    assertionId: raceAssertion,
+    status: "pass",
+  });
+  assertRaceReceipts(before);
+
+  const directory = await mkdtemp(
+    path.join(tmpdir(), "tuvren-shared-writer-control-")
+  );
+  try {
+    const mutant = await runCheck(
+      await probeManifest("postgres", directory),
+      raceId,
+      1,
+      raceMutant
+    );
+    expect(mutant.status).toBe("fail");
+    expect(mutant.failure?.classification).toBe("implementation");
+    expect(mutant.details?.experimentStatus).not.toBe("invalid");
+    expect(mutant.assertionResults).toContainEqual({
+      assertionId: raceAssertion,
+      status: "fail",
+    });
+    expect(mutant.assertionResults).toContainEqual({
+      assertionId: `${raceId}.collect.2.resultField`,
+      status: "fail",
+    });
+    assertRaceReceipts(mutant);
+    const processes = mutant.details?.processes;
+    if (!Array.isArray(processes)) throw new Error("missing race processes");
+    expect(
+      processes.map((entry: unknown) => field(entry, "name")).toSorted()
+    ).toEqual(["primary", "second"]);
+    expect(
+      new Set(processes.map((entry: unknown) => field(entry, "pid"))).size
+    ).toBe(2);
+    const counts: number[] = [];
+    const heads: string[] = [];
+    for (const processName of ["primary", "second"]) {
+      const owner: unknown = processes.find(
+        (entry: unknown) => field(entry, "name") === processName
+      );
+      expect(owner).toMatchObject({ exit: { code: 0, signal: null } });
+      const pid = field(owner, "pid");
+      if (typeof pid !== "number") throw new Error("missing process pid");
+      const record: unknown = JSON.parse(
+        await readFile(path.join(directory, `${pid}.json`), "utf-8")
+      );
+      const activation = field(
+        record,
+        "reply",
+        "result",
+        "value",
+        "result",
+        "activation"
+      );
+      expect(activation).toMatchObject({
+        mutantId: raceMutant,
+      });
+      const count = field(activation, "activationCount");
+      if (typeof count !== "number")
+        throw new Error("missing fallback activation count");
+      counts.push(count);
+      expect(field(activation, "guardBypassCount") ?? 0).toBe(count);
+      expect(field(activation, "activated")).toBe(count > 0);
+      const outcome = raceTrace(
+        mutant,
+        processName === "primary" ? "firstOutcome" : "secondOutcome"
+      );
+      expect(field(outcome, "outcome", "kind")).toBe("result");
+      const head = field(
+        outcome,
+        "outcome",
+        "value",
+        "result",
+        "branch",
+        "headTurnNodeHash"
+      );
+      if (typeof head !== "string")
+        throw new Error("missing committed writer head");
+      heads.push(head);
+      const checkpoint = raceTrace(
+        mutant,
+        processName === "primary" ? "aCheckpoint" : "bCheckpoint"
+      );
+      expect(head).toBe(
+        field(checkpoint, "outcome", "value", "result", "turnNodeHash")
+      );
+    }
+    expect(counts.toSorted()).toEqual([0, 1]);
+    expect(heads[0]).not.toBe(heads[1]);
+    expect(heads).toContain(
+      field(
+        raceTrace(mutant, "head"),
+        "outcome",
+        "value",
+        "result",
+        "headTurnNodeHash"
+      )
+    );
+  } finally {
+    await rm(directory, { force: true, recursive: true });
+  }
+
+  const after = await runCheck(baseline, raceId, 0, raceMutant);
+  expect(after.status).toBe("pass");
+  expect(after.assertionResults).toContainEqual({
+    assertionId: raceAssertion,
+    status: "pass",
+  });
+  assertRaceReceipts(after);
+}, 90_000);

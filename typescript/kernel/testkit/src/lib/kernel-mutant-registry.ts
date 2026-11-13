@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { SHARED_WRITER_KERNEL_MUTANT } from "./kernel-mutant-shared-writer.js";
 import type {
   KernelMutantDefinition,
   KernelMutantSeamName,
@@ -30,6 +31,7 @@ const KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   ...PROTOCOL_KERNEL_MUTANTS,
   ...STORAGE_KERNEL_MUTANTS,
   ...DURABLE_KERNEL_MUTANTS,
+  SHARED_WRITER_KERNEL_MUTANT,
 ].toSorted((left, right) => left.mutantId.localeCompare(right.mutantId));
 
 const SEAM_NAMES: readonly KernelMutantSeamName[] = [
@@ -66,7 +68,12 @@ export const selectKernelMutant = (mutantId: string): SelectedKernelMutant => {
   const summary = summarize(definition);
   const seams = definition.createSeams();
   let activationCount = 0;
-  const activate = (): void => {
+  let guardBypassCount = 0;
+  const activate = (diagnostic?: "guard-bypass"): void => {
+    if (diagnostic === "guard-bypass") {
+      guardBypassCount += 1;
+      return;
+    }
     activationCount += 1;
   };
 
@@ -76,6 +83,7 @@ export const selectKernelMutant = (mutantId: string): SelectedKernelMutant => {
       ...summary,
       activated: activationCount > 0,
       activationCount,
+      ...(guardBypassCount === 0 ? {} : { guardBypassCount }),
     }),
     seams: SEAM_NAMES.filter((name) => seams[name] !== undefined),
     wrapBackend: (backend, context = {}) =>

@@ -47,7 +47,7 @@ export type FaultInjectingBackendFactory = (
   plan: FaultPlan
 ) => RuntimeBackend;
 
-export type KernelMutantActivate = () => void;
+export type KernelMutantActivate = (diagnostic?: "guard-bypass") => void;
 
 export interface KernelMutantSeams {
   readonly backend?: (
@@ -90,6 +90,7 @@ export interface KernelMutantSummary {
 export interface KernelMutantActivation extends KernelMutantSummary {
   readonly activated: boolean;
   readonly activationCount: number;
+  readonly guardBypassCount?: number;
 }
 
 /**

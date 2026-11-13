@@ -53,6 +53,7 @@ const EXPECTED_MUTANTS = [
   ["kernel.accept-noncanonical-cbor", "implementation"],
   ["kernel.accept-stale-head-update", "implementation"],
   ["kernel.accept-stale-owner-after-takeover", "implementation"],
+  ["kernel.accept-stale-shared-writer", "implementation"],
   ["kernel.delete-object-reachable-through-live-root", "implementation"],
   ["kernel.drop-uncommitted-staged-result-on-recovery", "implementation"],
   ["kernel.expose-incomplete-checkpoint", "implementation"],
@@ -338,6 +339,7 @@ describe("kernel negative-control manifest", () => {
       [...registered.keys()].toSorted()
     );
     const additionalProfiles: Readonly<Record<string, string[]>> = {
+      "kernel.accept-stale-shared-writer": ["kernel.shared-backend"],
       "kernel.drop-uncommitted-staged-result-on-recovery": [
         "kernel.memory",
         "kernel.persistent-reopen",

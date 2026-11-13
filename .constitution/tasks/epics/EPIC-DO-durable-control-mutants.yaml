@@ -164,7 +164,7 @@ tickets:
       evidence: "The control demonstrably violates the shared-writer rule and a designated assertion for kernel.syscall.shared_writer.race fails; the unmutated two-process race passes and both entry receipts precede release."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DO006
     title: "Move the memory fault control behind the testkit seam"
     type: Feature
