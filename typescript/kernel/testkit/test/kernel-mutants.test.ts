@@ -59,6 +59,7 @@ const EXPECTED_MUTANTS = [
   ["kernel.fault-seam-never-fires", "instrumentation"],
   ["kernel.lease-takeover-before-expiry", "implementation"],
   ["kernel.never-sweep-eligible-objects", "implementation"],
+  ["kernel.non-atomic-checkpoint", "implementation"],
   ["kernel.noncanonical-changed-paths-order", "implementation"],
   ["kernel.promote-staged-before-checkpoint", "implementation"],
   ["kernel.resolve-object-across-scopes", "implementation"],
@@ -342,6 +343,7 @@ describe("kernel negative-control manifest", () => {
         "kernel.persistent-reopen",
       ],
       "kernel.expose-incomplete-checkpoint": ["kernel.process-crash"],
+      "kernel.non-atomic-checkpoint": ["kernel.process-crash"],
       "kernel.worker-clock-expiry": ["kernel.shared-backend"],
     };
     for (const control of controls) {

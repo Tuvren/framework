@@ -77,7 +77,10 @@ tickets:
       evidence: "On both backends each of the three claims has a designated assertion killed with mutant activation and matching fault receipt, and its unmutated baseline passes. The process-crash undetected register has no entries."
     flows: ["flow-crash-mid-checkpoint-recovery"]
     certainty: open
-    status: planned
+    status: done
+    deviations:
+      - files: [tools/scripts/verify-kernel.ts]
+        justification: "The kernel verify lane lists its durable harness test files by hand, so the new durable-control-mutants test must be added there to run in bun run verify:kernel. The wave plan authorized this one-line addition outside the epic's owned paths."
   - id: KRT-DO003
     title: "Detect state lost across durable reopen"
     type: Feature

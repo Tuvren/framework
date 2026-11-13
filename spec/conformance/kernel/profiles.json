@@ -205,7 +205,10 @@
         "after-head-move-before-staging-clear",
         "after-commit-before-ack"
       ],
-      "negativeControls": ["kernel.expose-incomplete-checkpoint"],
+      "negativeControls": [
+        "kernel.expose-incomplete-checkpoint",
+        "kernel.non-atomic-checkpoint"
+      ],
       "requiredEvidence": [
         "trace.durableNode.result",
         "trace.lineage.result",
