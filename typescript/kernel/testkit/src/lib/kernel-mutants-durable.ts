@@ -1,6 +1,7 @@
 import type { RuntimeBackend, RuntimeBackendTx } from "@tuvren/kernel-protocol";
 
 import { decorateBackend } from "./kernel-mutant-backend.js";
+import { NON_ATOMIC_CHECKPOINT_MUTANT } from "./kernel-mutant-non-atomic.js";
 import type { KernelMutantDefinition } from "./kernel-mutant-types.js";
 
 const clearPending = async (
@@ -17,6 +18,7 @@ const clearPending = async (
 };
 
 export const DURABLE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
+  NON_ATOMIC_CHECKPOINT_MUTANT,
   {
     createSeams: () => ({
       backend: (backend: RuntimeBackend, _context, activate) => {

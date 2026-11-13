@@ -111,6 +111,26 @@
       ]
     },
     {
+      "mutantId": "kernel.non-atomic-checkpoint",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
+      "claimIds": [
+        "kernel.syscall.process-crash.before_commit",
+        "kernel.syscall.process-crash.after_turn_node_write_before_head",
+        "kernel.syscall.process-crash.after_head_move_before_staging_clear"
+      ],
+      "activation": {
+        "precondition": "an armed checkpoint commits its tree and paths, then its TurnNode, before executing the dependent branch, turn, staging, and run writes in one real transaction; the genuine fault leaves the separately durable TurnNode visible",
+        "signal": "mutant.non-atomic-checkpoint.entered"
+      },
+      "profiles": ["kernel.process-crash"],
+      "designatedAssertions": [
+        "kernel.syscall.process-crash.before_commit.pendingNode.1.resultField",
+        "kernel.syscall.process-crash.after_turn_node_write_before_head.pendingNode.1.resultField",
+        "kernel.syscall.process-crash.after_head_move_before_staging_clear.pendingNode.1.resultField"
+      ]
+    },
+    {
       "mutantId": "kernel.fault-seam-never-fires",
       "kind": "instrumentation",
       "rule": "ADR-0076",
