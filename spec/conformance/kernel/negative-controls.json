@@ -59,7 +59,7 @@
       "rule": "docs/KrakenKernelSpecification.md#branch-head-movement",
       "claimIds": ["kernel.syscall.shared_writer.race"],
       "activation": {
-        "precondition": "after the kernel rejects a lateral move against a head this backend wrapper did not commit, the control bypasses that guard and the backend rejects the stale sibling head write and the control successfully writes the real common parent and requested sibling in the same transaction; guard bypass on a valid forward move does not activate the control, and PostgreSQL scope locking may serialize the writers",
+        "precondition": "after the kernel rejects a lateral move against a head this backend wrapper did not commit, the control bypasses that guard, the backend rejects the stale sibling head write, and the backend accepts writes of the real common parent and requested sibling inside the same transaction before commit; a bypassed write accepted by the backend without this fallback does not activate the control, head tracking is wrapper-scoped, and PostgreSQL scope locking may serialize the writers",
         "signal": "mutant.accept-stale-shared-writer.entered"
       },
       "profiles": ["kernel.shared-backend"],

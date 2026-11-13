@@ -37,7 +37,7 @@ const verify = async (omitClock) => {
     createRuntimeKernel({ backend, now: () => 200 }),
     backend
   );
-  const prefix = omitClock ? "without_clock" : "with_clock";
+  const prefix = "with_clock";
   const schema = await kernel.schema.register({
     incorporationRules: [{ objectType: "message", targetPath: "messages" }],
     paths: [{ collection: "ordered", path: "messages" }],
@@ -75,7 +75,7 @@ const verify = async (omitClock) => {
   assert.notEqual(a, b);
   await kernel.branch.setHead(common, a);
   assert.equal(mutant.readActivation().activationCount, 0);
-  assert.equal(mutant.readActivation().guardBypassCount, undefined);
+  assert.equal(mutant.readDiagnostics().guardBypassCount, 0);
   await assert.rejects(kernel.branch.setHead(common, b), {
     code: "kernel_runtime_lateral_head_movement",
   });
@@ -88,7 +88,7 @@ const verify = async (omitClock) => {
   );
   await contenderKernel.branch.setHead(common, b);
   assert.equal(contender.readActivation().activationCount, 1);
-  assert.equal(contender.readActivation().guardBypassCount, 1);
+  assert.equal(contender.readDiagnostics().guardBypassCount, 1);
   assert.equal(
     (await inner.transact(async (tx) => await tx.branches.get(common)))
       .headTurnNodeHash,

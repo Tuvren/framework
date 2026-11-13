@@ -90,7 +90,6 @@ export interface KernelMutantSummary {
 export interface KernelMutantActivation extends KernelMutantSummary {
   readonly activated: boolean;
   readonly activationCount: number;
-  readonly guardBypassCount?: number;
 }
 
 /**
@@ -99,6 +98,7 @@ export interface KernelMutantActivation extends KernelMutantSummary {
  */
 export interface SelectedKernelMutant extends KernelMutantSummary {
   readonly readActivation: () => KernelMutantActivation;
+  readonly readDiagnostics: () => { readonly guardBypassCount: number };
   readonly seams: readonly KernelMutantSeamName[];
   readonly wrapBackend: (
     backend: RuntimeBackend,

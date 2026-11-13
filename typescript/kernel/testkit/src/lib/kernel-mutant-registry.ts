@@ -83,8 +83,8 @@ export const selectKernelMutant = (mutantId: string): SelectedKernelMutant => {
       ...summary,
       activated: activationCount > 0,
       activationCount,
-      ...(guardBypassCount === 0 ? {} : { guardBypassCount }),
     }),
+    readDiagnostics: () => ({ guardBypassCount }),
     seams: SEAM_NAMES.filter((name) => seams[name] !== undefined),
     wrapBackend: (backend, context = {}) =>
       seams.backend?.(backend, context, activate) ?? backend,
