@@ -338,6 +338,76 @@
         "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField",
         "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField"
       ]
+    },
+    {
+      "mutantId": "kernel.ignore-expired-lease-preemption",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
+      "claimIds": ["kernel.syscall.clock_skew.expired"],
+      "activation": {
+        "precondition": "A running leased run on a shared-clock backend has lease expiry at or before the real transaction server clock; preemption returns recovery without fencing or checkpointing the expired owner. Live leases and non-shared backends delegate unchanged.",
+        "signal": "mutant.ignore-expired-lease-preemption.entered"
+      },
+      "profiles": ["kernel.shared-backend"],
+      "designatedAssertions": [
+        "kernel.syscall.clock_skew.preemption.expiredPreempt.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.reload-loses-checkpoint-lineage",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
+      "claimIds": ["kernel.syscall.reopen.checkpoint_lineage"],
+      "activation": {
+        "precondition": "A persisted lineage root is decoded with its identity replaced by a zero hash only when the node was not written by this backend instance; local writes remain readable and a fresh process loses the terminal lineage identity on reload.",
+        "signal": "mutant.reload-loses-checkpoint-lineage.entered"
+      },
+      "profiles": ["kernel.persistent-reopen"],
+      "designatedAssertions": [
+        "kernel.syscall.reopen.close_reopen_checkpoint.15.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.reload-loses-committed-state",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
+      "claimIds": ["kernel.syscall.reopen.committed_state"],
+      "activation": {
+        "precondition": "A persisted tree manifest with committed references is decoded with those references replaced by zero hashes only when the tree was not written by this backend instance; local writes remain readable and a fresh process over retained storage loses the references on reload.",
+        "signal": "mutant.reload-loses-committed-state.entered"
+      },
+      "profiles": ["kernel.persistent-reopen"],
+      "designatedAssertions": [
+        "kernel.syscall.reopen.close_reopen_checkpoint.13.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.reload-loses-completed-step",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
+      "claimIds": ["kernel.syscall.reopen.completed_step"],
+      "activation": {
+        "precondition": "A persisted run with a completed step is decoded with step index zero only when that record was not written by this backend instance; local writes remain readable, and a fresh process over retained storage loses the field on reload.",
+        "signal": "mutant.reload-loses-completed-step.entered"
+      },
+      "profiles": ["kernel.persistent-reopen"],
+      "designatedAssertions": [
+        "kernel.syscall.reopen.close_reopen_checkpoint.6.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.reload-loses-recovery-head",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
+      "claimIds": ["kernel.syscall.reopen.recovery_head"],
+      "activation": {
+        "precondition": "The writer stores an additional valid sibling checkpoint without consumed-work provenance in the same real transaction; only when reloading a run not written by this backend instance does the mutant replace its saved head with that distinct sibling after confirming the sibling exists in durable storage. Storing the unreferenced sibling alone never activates the mutant.",
+        "signal": "mutant.reload-loses-recovery-head.entered"
+      },
+      "profiles": ["kernel.persistent-reopen"],
+      "designatedAssertions": [
+        "kernel.syscall.reopen.close_reopen_checkpoint.1.resultField"
+      ]
     }
   ]
 }

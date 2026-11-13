@@ -175,7 +175,13 @@
         "kernel.syscall.reopen.recovery_head"
       ],
       "faultPoints": [],
-      "negativeControls": ["kernel.drop-uncommitted-staged-result-on-recovery"],
+      "negativeControls": [
+        "kernel.drop-uncommitted-staged-result-on-recovery",
+        "kernel.reload-loses-checkpoint-lineage",
+        "kernel.reload-loses-committed-state",
+        "kernel.reload-loses-completed-step",
+        "kernel.reload-loses-recovery-head"
+      ],
       "requiredEvidence": [
         "trace.durableNode.result",
         "trace.lineage.result",
@@ -239,6 +245,7 @@
       "faultPoints": [],
       "negativeControls": [
         "kernel.accept-stale-shared-writer",
+        "kernel.ignore-expired-lease-preemption",
         "kernel.worker-clock-expiry"
       ],
       "requiredEvidence": [
