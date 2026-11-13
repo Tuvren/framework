@@ -187,7 +187,7 @@ tickets:
       evidence: "Public memory construction has no symbol-keyed fault control; before-commit and after-commit activation and recovery checks still pass through the testkit seam."
     flows: ["flow-crash-mid-checkpoint-recovery"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DO007
     title: "Close the durable undetected registers"
     type: Chore
