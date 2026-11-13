@@ -3,6 +3,8 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { build, spawn } from "bun";
+
 import { assertConformanceEvidence } from "../../../scripts/lib/conformance-contract.ts";
 import type { ConformanceCheckResult } from "../../../scripts/lib/conformance-contract.ts";
 import { withCheckStorage } from "../storage-resource.ts";
@@ -34,7 +36,7 @@ const runCheck = async (
   expectedExit: 0 | 1,
   mutantId = MUTANT
 ): Promise<ConformanceCheckResult> => {
-  const child = Bun.spawn({
+  const child = spawn({
     cmd: [
       "bun",
       "tools/conformance/harness/run.ts",
@@ -132,11 +134,48 @@ const probeManifest = async (
 };
 
 for (const backend of ["sqlite", "postgres"]) {
+  test(`${backend} armed checkpoint does not affect a later reclamation check in the same process`, async () => {
+    const child = spawn({
+      cmd: [
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        `typescript/kernel/conformance-adapter/adapter-${backend}-mutant.json`,
+        "--check",
+        "kernel.syscall.controls.before_commit",
+        "--check",
+        "kernel.reclamation.unreachable_past_grace_is_released",
+        "--concurrency",
+        "1",
+      ],
+      env: { ...process.env, TUVREN_KERNEL_MUTANT: MUTANT },
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+    const [stdout, stderr, exit] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    expect(exit, stderr).toBe(0);
+    const evidence: unknown = JSON.parse(stdout);
+    assertConformanceEvidence(evidence, "checkpoint scope regression");
+    expect(
+      evidence.checkResults.map(({ checkId, status }) => ({ checkId, status }))
+    ).toEqual([
+      { checkId: "kernel.syscall.controls.before_commit", status: "pass" },
+      {
+        checkId: "kernel.reclamation.unreachable_past_grace_is_released",
+        status: "pass",
+      },
+    ]);
+  }, 90_000);
+
   test(`${backend} non-atomic checkpoint preserves frozen backend capabilities and optional transaction clocks`, async () => {
     await withCheckStorage(
       backend === "sqlite" ? "sqlite-directory" : "postgres-database",
       async (storageRef) => {
-        const child = Bun.spawn({
+        const child = spawn({
           cmd: [
             "node",
             "tools/conformance/harness/test/fixtures/non-atomic-backend-surface.mjs",
@@ -275,7 +314,7 @@ test("postgres stale shared writer preserves the sequential lateral-lineage reje
 });
 
 test("shared-writer control module loads for browser targets without node async hooks", async () => {
-  const result = await Bun.build({
+  const result = await build({
     entrypoints: [
       "typescript/kernel/testkit/src/lib/kernel-mutant-shared-writer.ts",
     ],
@@ -286,7 +325,7 @@ test("shared-writer control module loads for browser targets without node async 
 
 test("postgres shared-writer control wraps frozen backends, preserves optional clocks, and counts only stale fallback writes", async () => {
   await withCheckStorage("postgres-database", async (storageRef) => {
-    const child = Bun.spawn({
+    const child = spawn({
       cmd: [
         "node",
         "tools/conformance/harness/test/fixtures/shared-writer-backend-surface.mjs",
@@ -340,11 +379,14 @@ const assertRaceReceipts = (check: ConformanceCheckResult): void => {
       },
     });
     const arrival = field(receipt, "arrivalSequence");
-    if (typeof arrival !== "number") throw new Error("missing entry arrival");
+    if (typeof arrival !== "number") {
+      throw new Error("missing entry arrival");
+    }
     for (const release of releases) {
       const released = field(release, "arrivalSequence");
-      if (typeof released !== "number")
+      if (typeof released !== "number") {
         throw new Error("missing release arrival");
+      }
       expect(arrival).toBeLessThan(released);
     }
   }
@@ -384,7 +426,9 @@ test("postgres stale shared writer commits both siblings and activates only the 
     });
     assertRaceReceipts(mutant);
     const processes = mutant.details?.processes;
-    if (!Array.isArray(processes)) throw new Error("missing race processes");
+    if (!Array.isArray(processes)) {
+      throw new Error("missing race processes");
+    }
     expect(
       processes.map((entry: unknown) => field(entry, "name")).toSorted()
     ).toEqual(["primary", "second"]);
@@ -399,7 +443,9 @@ test("postgres stale shared writer commits both siblings and activates only the 
       );
       expect(owner).toMatchObject({ exit: { code: 0, signal: null } });
       const pid = field(owner, "pid");
-      if (typeof pid !== "number") throw new Error("missing process pid");
+      if (typeof pid !== "number") {
+        throw new Error("missing process pid");
+      }
       const record: unknown = JSON.parse(
         await readFile(path.join(directory, `${pid}.json`), "utf-8")
       );
@@ -415,8 +461,9 @@ test("postgres stale shared writer commits both siblings and activates only the 
         mutantId: raceMutant,
       });
       const count = field(activation, "activationCount");
-      if (typeof count !== "number")
+      if (typeof count !== "number") {
         throw new Error("missing fallback activation count");
+      }
       counts.push(count);
       expect(field(activation, "guardBypassCount") ?? 0).toBe(count);
       expect(field(activation, "activated")).toBe(count > 0);
@@ -433,8 +480,9 @@ test("postgres stale shared writer commits both siblings and activates only the 
         "branch",
         "headTurnNodeHash"
       );
-      if (typeof head !== "string")
+      if (typeof head !== "string") {
         throw new Error("missing committed writer head");
+      }
       heads.push(head);
       const checkpoint = raceTrace(
         mutant,
