@@ -126,6 +126,7 @@ const writePending = async (
 const splitCheckpoint = async <T>(
   inner: RuntimeBackend,
   activate: KernelMutantActivate,
+  disarm: () => void,
   work: RepositoryWork<T>
 ): Promise<T> => {
   const { clock, surface: snapshot } = await inner.transact(
@@ -209,22 +210,37 @@ const splitCheckpoint = async <T>(
   } catch (error: unknown) {
     await tail?.finish({ cause: error });
     throw error;
+  } finally {
+    if (tail !== undefined) {
+      disarm();
+    }
   }
 };
 
 export const NON_ATOMIC_CHECKPOINT_MUTANT: KernelMutantDefinition = {
   createSeams: () => {
-    let enabled = false;
+    let armed: object | undefined;
     return {
       backend: (inner, _context, activate) =>
         decorateBackend(inner, {
-          transact: async <T>(work: RepositoryWork<T>): Promise<T> =>
-            enabled
-              ? await splitCheckpoint(inner, activate, work)
-              : await inner.transact(work),
+          transact: async <T>(work: RepositoryWork<T>): Promise<T> => {
+            const checkpoint = armed;
+            return checkpoint === undefined
+              ? await inner.transact(work)
+              : await splitCheckpoint(
+                  inner,
+                  activate,
+                  () => {
+                    if (armed === checkpoint) {
+                      armed = undefined;
+                    }
+                  },
+                  work
+                );
+          },
         }),
       faultInjection: (factory) => (inner, plan) => {
-        enabled = true;
+        armed = plan;
         return factory(inner, plan);
       },
     };

@@ -28,6 +28,7 @@ const verifyClock = async (omitClock) => {
         return await work(omitClock ? repositories : tx);
       }),
   });
+  const originalProperties = Object.getOwnPropertyDescriptors(frozen);
   const mutant = selectKernelMutant("kernel.non-atomic-checkpoint");
   const wrapped = mutant.wrapBackend(frozen);
   mutant.wrapFaultInjection((inner) => inner)(wrapped, {
@@ -37,7 +38,6 @@ const verifyClock = async (omitClock) => {
     token: "surface-probe",
   });
   assert.deepEqual(wrapped.capabilities(), frozen.capabilities());
-  assert.equal(Object.isFrozen(frozen), true);
   await wrapped.transact(async (tx) => {
     assert.equal(Object.hasOwn(tx, "now"), !omitClock);
     assert.equal(tx.now?.(), omitClock ? undefined : 200);
@@ -46,6 +46,10 @@ const verifyClock = async (omitClock) => {
     assert.equal(tx.now?.(), omitClock ? undefined : 200);
   });
   assert.equal(mutant.readActivation().activationCount, 0);
+  assert.deepEqual(
+    Object.getOwnPropertyDescriptors(frozen),
+    originalProperties
+  );
 };
 
 try {

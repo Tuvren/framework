@@ -79,8 +79,8 @@ tickets:
     certainty: open
     status: done
     deviations:
-      - files: [tools/scripts/verify-kernel.ts]
-        justification: "The kernel verify lane lists its durable harness test files by hand, so the new durable-control-mutants test must be added there to run in bun run verify:kernel. The wave plan authorized this one-line addition outside the epic's owned paths."
+      - files: [tools/scripts/verify-kernel.ts, tools/scripts/verify.ts]
+        justification: "Both verify lanes list their durable harness test files by hand, so the new durable-control-mutants test must be added to each to run in bun run verify:kernel and bun run verify. The wave plan and its 2026-11-13 amendment authorized these two one-line additions outside the epic's owned paths."
   - id: KRT-DO003
     title: "Detect state lost across durable reopen"
     type: Feature
@@ -262,7 +262,7 @@ decisions:
     recommendation: Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction
     closure: ruling
     ruler: "Owner, after the EPIC-DO merge"
-    waiting_on: "KRT-DO002's measurement of the early-node control on SQLite and PostgreSQL, including whether a head-durable variant is reachable at the after-head-move point"
+    waiting_on: "Owner review of the KRT-DO002 measurement. Measured on SQLite and PostgreSQL at 60a1136: the early-node control reaches all three genuine fault points with matching receipts and activation 2, and kernel.syscall.process-crash.<point>.pendingNode.1.resultField fails at each while baselines pass before and after. A variant that commits the real dependent tail immediately after branches.set, before the after-head-move seam, is rejected at transaction write-set validation with sqlite_backend_active_run_branch_head_mismatch and postgres_backend_active_run_branch_head_mismatch, records activation 2 and no fault receipt, and is classified invalid (missing_fault_activation). No mutant therefore exercises the head, node, and lineage recovery assertions 3, 4, 5, 9, 10, 14, 16, 17, and 20, nor the head-derived visibility assertions 15, 18, and 21, of the three intermediate checks."
     status: proposed
     asked:
       date: 2026-11-12

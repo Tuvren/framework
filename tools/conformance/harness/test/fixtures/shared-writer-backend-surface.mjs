@@ -28,8 +28,11 @@ const verify = async (omitClock) => {
   await backend.transact(async (tx) => {
     assert.equal(Object.hasOwn(tx, "now"), !omitClock);
     assert.equal(tx.now?.(), omitClock ? undefined : 200);
+    await Promise.resolve();
   });
-  if (omitClock) return;
+  if (omitClock) {
+    return;
+  }
   const kernel = mutant.wrapKernel(
     createRuntimeKernel({ backend, now: () => 200 }),
     backend
