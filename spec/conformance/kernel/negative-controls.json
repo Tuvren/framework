@@ -345,7 +345,7 @@
       "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
       "claimIds": ["kernel.syscall.clock_skew.expired"],
       "activation": {
-        "precondition": "A running leased run on a shared-clock backend has lease expiry at or before the real transaction server clock; preemption returns recovery without fencing or checkpointing the expired owner. Live leases and non-shared backends delegate unchanged.",
+        "precondition": "A running leased run on a shared-clock backend has lease expiry at or before the transaction clock (the real server clock under clock.backend-server); preemption returns recovery without fencing or checkpointing the expired owner. Live leases and non-shared backends delegate unchanged.",
         "signal": "mutant.ignore-expired-lease-preemption.entered"
       },
       "profiles": ["kernel.shared-backend"],
