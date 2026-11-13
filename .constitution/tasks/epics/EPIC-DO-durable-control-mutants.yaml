@@ -188,6 +188,9 @@ tickets:
     flows: ["flow-crash-mid-checkpoint-recovery"]
     certainty: assumed
     status: done
+    deviations:
+      - files: [docs/guides/add-a-kernel-backend.md]
+        justification: "The backend author guide still told implementers to expose the symbol-keyed fault control this ticket removed, contradicting ADR-0082 decision 8. The wave plan's 2026-11-13 amendment authorized correcting that passage outside the epic's owned paths; the edit landed with KRT-DO007's commit."
   - id: KRT-DO007
     title: "Close the durable undetected registers"
     type: Chore
@@ -213,7 +216,7 @@ tickets:
       evidence: "All three durable undetected registers are empty; SQLite and PostgreSQL each kill their applicable reopen and crash controls, and PostgreSQL kills every shared-backend control with matching activation and designated failures. The OD-21 ruling is closed and the three detecting assertions have been re-checked against it before durable-register closure."
     flows: ["flow-multi-implementation-conformance-compatibility", "flow-crash-mid-checkpoint-recovery"]
     certainty: open
-    status: planned
+    status: done
 decisions:
   - id: OD-21
     question: "At the intermediate checkpoint fault points (after-turn-node-write-before-head, after-head-move-before-staging-clear), must recovery roll back to the baseline, or must an implementation whose turn-node write or head move was separately durable roll forward (KrakenKernelSpecification section 5.5: a durably visible post-checkpoint TurnNode means the checkpoint committed)?"
