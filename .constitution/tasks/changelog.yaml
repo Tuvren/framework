@@ -1,4 +1,16 @@
 entries:
+  - version: v0.52.2
+    date: 2026-11-13
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.50.1
+    changed:
+      - "Patch-lane pass for the tasks items routed by reports/2026-11-13-reconciliation.yaml. OD-21 is closed by the owner's 2026-11-12 ruling: rollback at the intermediate checkpoint fault points for single-transaction backends, with roll-forward ports routed when they arrive. This supersedes v0.52.0's statement that OD-21 remains open and stops durable closure. No active epic still names OD-21. The archived EPIC-DO file keeps its historical KRT-DO002 and KRT-DO007 stop conditions unedited."
+      - "Re-checked EPIC-DP against what EPIC-DO landed: empty durable registers, seven new durable-only controls, durable-claims.test.ts proving gaps through control designations, and hand-listed harness tests in both verify lanes. EPIC-DP now owns tools/conformance/harness/test/durable-claims.test.ts, tools/scripts/verify-kernel.ts, and tools/scripts/verify.ts. KRT-DP001's new server-clock test runs in no lane unless it is registered in those lists. KRT-DP002 and KRT-DP003 change the inventory and register logic that durable-claims.test.ts consumes, and that test runs only in bun run verify, so their verification moves to bun run verify. CQ, the only other owner of the verify scripts, is in a later wave, so the rendered waves and longest chain are unchanged."
+      - "KRT-DP004 now requires every certificate whose register is empty to serialize an explicit empty undetectedClaims list, and the committed SQLite and PostgreSQL durable-profile certificates to carry it (ADR-0081 decision 3, ADR-0084 decision 6). KRT-DP003 and KRT-DP004 may refresh reports/compatibility, already owned by the epic, because their schema and packet changes alter verifier-authority digests. KRT-DP004 verifies with bun run verify:kernel, which runs compatibility:check and the certificate contract tests. Effort, estimated diff lines, and the epic graph are unchanged; INFO-CAL is 1.27 over 30 completed epics."
+      - "EPIC-DO follow-ups stay outstanding without new tickets. KRT-DP002 already plans EPIC-DF's one-way inventory follow-up, and KRT-DP001 plans the server-clock follow-up. Neither carries a replaces link. No active ticket owns EPIC-DO's test-lane gap for durable-claims.test.ts, although EPIC-DP now owns both files it touches."
   - version: v0.52.1
     date: 2026-11-13
     changed:

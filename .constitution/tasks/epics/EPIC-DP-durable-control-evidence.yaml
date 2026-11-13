@@ -9,6 +9,9 @@ scope:
     - "tools/conformance/harness/storage-resource.ts"
     - "tools/conformance/harness/run.ts"
     - "tools/conformance/harness/test/server-clock-verification.test.ts"
+    - "tools/conformance/harness/test/durable-claims.test.ts"
+    - "tools/scripts/verify-kernel.ts"
+    - "tools/scripts/verify.ts"
     - "tools/conformance/certification"
     - "tools/conformance/meta-conformance"
     - "tools/schemas"
@@ -31,12 +34,14 @@ tickets:
         - "tools/conformance/harness/storage-resource.ts"
         - "tools/conformance/harness/run.ts"
         - "tools/conformance/harness/test/server-clock-verification.test.ts"
+        - "tools/scripts/verify-kernel.ts"
+        - "tools/scripts/verify.ts"
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0 with the operator-provided PostgreSQL service; real and deliberately wrong clock observations are distinguished."
     stop_conditions:
       - "STOP if the comparison needs the harness to start or stop PostgreSQL, or no meaningful clock bound can be measured; route the finding."
-    description: "Compare the setClock source server observation with a clock read by the harness from the PostgreSQL database it provisioned. Bound the comparison with measured request timing instead of comparing adapter values to themselves. The existing resource manager is tools/conformance/harness/storage-resource.ts."
+    description: "Compare the setClock source server observation with a clock read by the harness from the PostgreSQL database it provisioned. Bound the comparison with measured request timing instead of comparing adapter values to themselves. The existing resource manager is tools/conformance/harness/storage-resource.ts. Neither verify lane discovers harness tests: register the new test in the hand-maintained lists in tools/scripts/verify-kernel.ts and tools/scripts/verify.ts, as EPIC-DO had to for durable-control-mutants.test.ts. Do not schedule it concurrently with tools/conformance/harness/test/durable-instance.test.ts, which fails when another lane creates databases on the same PostgreSQL server."
     acceptance:
       mode: contract_test
       evidence: "A real PostgreSQL server-clock observation falls within the harness-measured interval, while an adapter returning an injected or shifted worker clock fails; the harness provisions and releases the same resource."
@@ -52,12 +57,13 @@ tickets:
       in:
         - "tools/conformance/certification"
         - "tools/conformance/meta-conformance"
+        - "tools/conformance/harness/test/durable-claims.test.ts"
     verification:
-      command: "bun run conformance"
-      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+      command: "bun run verify"
+      expected: "Exit 0; tools/conformance/certification/profile.test.ts and tools/conformance/harness/test/durable-claims.test.ts pass, and both run only in this lane."
     stop_conditions:
       - "STOP if profile ownership cannot be determined without guessing or dropping an applicable claim; route the contract question."
-    description: "Make assertProfileClaimInventory compare applicable plan claims and profile claimIds in both directions, with explicit ownership for shared checks. Its present one-way check is in tools/conformance/certification/profile.ts."
+    description: "Make assertProfileClaimInventory compare applicable plan claims and profile claimIds in both directions, with explicit ownership for shared checks. Its present one-way check is in tools/conformance/certification/profile.ts. tools/conformance/harness/test/durable-claims.test.ts already exercises the one-way direction for kernel.persistent-reopen. Since EPIC-DO it also asserts empty durable registers for the 13 durable claims and proves a gap by removing a claim's control designations (guidelines 5.10 rule 10). Keep it consistent with the two-way inventory."
     acceptance:
       mode: contract_test
       evidence: "Tests fail when a required plan claim is removed from a profile or when a profile names a missing claim, and accept the exact inventory for each durable profile."
@@ -76,12 +82,14 @@ tickets:
         - "tools/conformance/meta-conformance"
         - "tools/conformance/certification"
         - "spec/kernel/authority-packet.json"
+        - "tools/conformance/harness/test/durable-claims.test.ts"
+        - "reports/compatibility"
     verification:
-      command: "bun run conformance"
-      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+      command: "bun run verify"
+      expected: "Exit 0; the register, claim-coverage, and durable-claims tests pass, and compatibility:check accepts the committed evidence at this ticket's commit."
     stop_conditions:
       - "STOP if the packet cannot represent the four profiles without inventing a second authority; route a contract change."
-    description: "Create tools/schemas/certification-undetected-register.schema.json and reference each existing profile register from spec/kernel/authority-packet.json as ADR-0084 and the contract companion specify. Validate claim membership and stale detected entries, and include the selected register in verifier-authority digests."
+    description: "Create tools/schemas/certification-undetected-register.schema.json and reference each existing profile register from spec/kernel/authority-packet.json as ADR-0084 and the contract companion specify. Validate claim membership and stale detected entries, and include the selected register in verifier-authority digests. Since EPIC-DO the persistent-reopen, process-crash, and shared-backend registers are {}, and only kernel-memory-undetected.json has entries. tools/conformance/harness/test/durable-claims.test.ts reads the durable registers by path and asserts they stay empty; keep it passing when register resolution moves to the packet. The new schema and packet reference change verifier-authority digests, so refresh the committed compatibility evidence in this ticket rather than leaving intermediate commits stale as happened in EPIC-DO."
     acceptance:
       mode: contract_test
       evidence: "Valid empty and populated registers pass; malformed reasons, unknown claims, stale detected claims, missing profile references, and register digest drift fail. All four existing registers are resolved through the packet."
@@ -100,15 +108,16 @@ tickets:
         - "tools/scripts/lib/conformance-contract.ts"
         - "tools/conformance/certification"
         - "tools/conformance/meta-conformance"
+        - "reports/compatibility"
     verification:
-      command: "bun run conformance"
-      expected: "Exit 0; the scoped conformance and negative-control assertions pass."
+      command: "bun run verify:kernel"
+      expected: "Exit 0 with the operator-provided PostgreSQL service; the certificate contract tests pass and compatibility:check accepts the regenerated certificates."
     stop_conditions:
       - "STOP if a certificate can silently omit a profile gap or the evidence schema cannot represent its reason."
-    description: "Extend the evidence schema and bundle assembly to include each profile register as claimId and reason entries, including an explicit empty list. The current certificate schema and link are tools/schemas/certification-evidence.schema.json and tools/conformance/certification/control-link.ts."
+    description: "Extend the evidence schema and bundle assembly to include each profile register as claimId and reason entries, including an explicit empty list (ADR-0081 decision 3, ADR-0084 decision 6). The current certificate schema and link are tools/schemas/certification-evidence.schema.json and tools/conformance/certification/control-link.ts. Since EPIC-DO the three durable registers are {}, so every TypeScript SQLite and PostgreSQL certificate for kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend must carry an explicit empty undetectedClaims list. The kernel.memory certificates list the remaining memory entries. KRT-DO007 recorded that the committed bundles do not yet serialize the list; regenerate them in this ticket."
     acceptance:
       mode: contract_test
-      evidence: "Round-trip certificates with empty and nonempty registers; reject omitted, altered, or unrelated claims and verify the register is covered by verifier-authority provenance."
+      evidence: "Round-trip certificates with empty and nonempty registers; reject omitted, altered, or unrelated claims and verify the register is covered by verifier-authority provenance. A certificate whose register is empty serializes undetectedClaims as an explicit empty list, and a certificate without the field fails schema validation. The committed SQLite and PostgreSQL durable-profile certificates in reports/compatibility carry undetectedClaims: [], and the committed kernel.memory certificates list every kernel-memory-undetected.json entry with its reason."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
