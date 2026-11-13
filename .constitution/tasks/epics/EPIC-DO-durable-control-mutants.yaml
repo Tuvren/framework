@@ -272,4 +272,104 @@ decisions:
       in: EPIC-DO
     interim:
       assumption: "KRT-DO002 first measures the early-node-then-real-tail control on both backends, and makes one bounded attempt at a variant that also makes the head move durable before the after-head-move hold. A claim counts as detected when, at its genuine fault point with a matching receipt and mutant activation, a designated recovery assertion fails on durable state the non-atomic backend leaked, and the baseline passes before and after. A leaked-TurnNode kill is accepted at before-commit and after-head-move when no head-durable variant passes backend validation; the head-specific assertions that stay unexercised are then named in the closeout follow-ups. A claim whose fault is not genuinely reached stays in the register with its reason, and KRT-DO007 is deferred for the process-crash register."
-      applied_by: [KRT-DO002]
+      applied_by: [KRT-DO002, KRT-DO007, spec/conformance/kernel/kernel-process-crash-undetected.json]
+closeout:
+  tickets_completed: [KRT-DO001, KRT-DO002, KRT-DO003, KRT-DO004, KRT-DO005, KRT-DO006, KRT-DO007]
+  tickets_deferred: []
+  points_completed: 21
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: added
+      text: "EPIC-DO gave every durable claim a detecting negative control and emptied the persistent-reopen, process-crash, and shared-backend undetected registers. New controls: kernel.non-atomic-checkpoint (the three intermediate crash claims, SQLite and PostgreSQL), four kernel.reload-loses-* controls (one per reopen claim, both backends), kernel.accept-stale-shared-writer and kernel.ignore-expired-lease-preemption (PostgreSQL). The memory backend no longer exposes a symbol-keyed fault control. OD-21 was ruled by the owner as rollback for single-transaction backends; OD-26 is proposed because the three crash kills rest on a leaked TurnNode and the head-specific recovery assertions stay unexercised."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "ADR-0084 decision 5 left the non-atomic mutant's feasibility assumed until the spike. SPK-KRT-DO001 and KRT-DO002 measured it: per-call commits are rejected by both backends, a tree must commit with its paths, and the control commits the tree, paths, and TurnNode early and runs the dependent tail in one real transaction. Record the measured design and settle or amend the decision."
+    - stage: tech-spec
+      item: "OD-26: all three intermediate process-crash kills rest on the leaked TurnNode. Both backends reject a durable head move before the staging clear (active-run head alignment at write-set validation), so no mutant exercises recovery assertions 3, 4, 5, 9, 10, 14, 16, 17, 20 or the head-derived visibility assertions 15, 18, 21 of the three intermediate checks. Rule whether the leaked-node kill suffices or a kernel-aware head-durable control is required."
+    - stage: tech-spec
+      item: "ADR-0084 decision 5 asks that controls load without node:async_hooks on the public core import path. The new control modules comply, but the testkit entry still reaches node:async_hooks through kernel-mutants-clock.ts and kernel-mutants-storage.ts, which predate this epic."
+    - stage: tech-spec
+      item: "OD-21 is closed by owner ruling (rollback at the intermediate checkpoint fault points for single-transaction backends; roll-forward ports are routed when they arrive). Record it against ADR-0076 and KrakenKernelSpecification section 5.5."
+    - stage: tasks
+      item: "The EPIC-DO header comment, KRT-DO002's and KRT-DO007's stop conditions, and tasks/changelog.yaml still describe OD-21 as proposed; align the wording with the closed ruling."
+    - stage: tasks
+      item: "The durable certificate bundles do not serialize an explicit undetected-claims list (ADR-0081 decision 3, ADR-0084 decision 6); KRT-DP004 owns it. With all three durable registers empty, KRT-DP004 must cover the explicit empty list."
+  follow_ups:
+    - "OD-26 interim: no mutant exercises the head, node, and lineage recovery assertions 3, 4, 5, 9, 10, 14, 16, 17, 20 or the head-derived visibility assertions 15, 18, 21 of kernel.syscall.process-crash.before_commit, after_turn_node_write_before_head, and after_head_move_before_staging_clear; nor 3, 4, 5, 6, 7, 13 to 19 and recoveredHead.1 of after_commit_before_ack."
+    - "KRT-DO007 re-checked the three designated assertions of kernel.non-atomic-checkpoint against the closed OD-21 ruling: each requires the pending TurnNode to be null after recovery. A roll-forward port needs observed-durability branches before it can certify."
+    - "Through the two-process harness the primary writer won the PostgreSQL scope lock in every observed run of kernel.syscall.shared_writer.race; the reverse order was exercised only in process. ADR-0077 asks plans to exercise both contender orderings."
+    - "tools/conformance/harness/test/durable-claims.test.ts runs only in the full bun run verify lane, not in bun run check or bun run verify:kernel, so a change to the claim inventory can pass both narrower lanes and fail the release gate."
+    - "tools/conformance/harness/test/durable-instance.test.ts asserts that the PostgreSQL server's database list is unchanged, so it fails when any other work creates disposable databases on the same server; it cannot run beside another PostgreSQL lane."
+    - "Timing-sensitive tests exceed their five-second limits under machine load: a high-iteration framework-runtime memory test, host REPL tests, and the biome lint-partition tooling test. bun run check passed only with NX_PARALLEL=1 on a loaded machine."
+    - "The durable certificate control fleet test has a 600-second limit and now runs seven more controls; it timed out once under concurrent load and passed in the clean full verify run."
+    - "docs/guides/add-a-kernel-backend.md line 56 lists backend capabilities without kernel.fault-injection, kernel.syscall, kernel.edge-validation.composite, kernel.barrier, and clock.backend-server, which the adapter manifests declare."
+    - "Compatibility certificate digests were stale at the intermediate commits between KRT-DO002 and KRT-DO006, so compatibility:check may fail when bisecting into that range; the final head is current."
+  obligation_resolutions:
+    - source: "EPIC-DF#follow-up:a3eeceeb56c8"
+      outcome: delivered
+      evidence:
+        kind: repository
+        ref: typescript/kernel/testkit/src/lib/kernel-mutant-shared-writer.ts
+        date: 2026-11-13
+        note: "kernel.accept-stale-shared-writer kills kernel.syscall.shared_writer.race.collect.1.resultField over PostgreSQL."
+    - source: "EPIC-DF#follow-up:24d142993a36"
+      outcome: delivered
+      evidence:
+        kind: repository
+        ref: typescript/kernel/testkit/src/lib/kernel-mutant-expired-lease.ts
+        date: 2026-11-13
+        note: "kernel.ignore-expired-lease-preemption kills kernel.syscall.clock_skew.preemption.expiredPreempt.1.resultField over PostgreSQL."
+    - source: "EPIC-DF#follow-up:10e41de18ba0"
+      outcome: delivered
+      evidence:
+        kind: repository
+        ref: typescript/kernel/testkit/src/lib/kernel-mutant-non-atomic.ts
+        date: 2026-11-13
+        note: "kernel.non-atomic-checkpoint kills the pendingNode assertion of the three intermediate crash checks on SQLite and PostgreSQL; OD-26 records the remaining sensitivity limit."
+    - source: "EPIC-DF#follow-up:d2fd76377d03"
+      outcome: delivered
+      evidence:
+        kind: repository
+        ref: typescript/kernel/testkit/src/lib/kernel-mutants-reopen.ts
+        date: 2026-11-13
+        note: "Four kernel.reload-loses-* controls kill one designated reopen assertion each on SQLite and PostgreSQL."
+    - source: "EPIC-DF#follow-up:42d2c4ba98cb"
+      outcome: delivered
+      evidence:
+        kind: repository
+        ref: typescript/kernel/backends/memory/test/backend-memory.fault-seam.test.ts
+        date: 2026-11-13
+        note: "A constructed memory backend has no own symbols; faults go through the testkit transaction seam."
+    - source: "EPIC-DF#follow-up:14e3b30212f9"
+      outcome: delivered
+      evidence:
+        kind: repository
+        ref: docs/guides/add-a-kernel-backend.md
+        date: 2026-11-13
+        note: "The fault-integration passage now describes the testkit transaction seam."
+  code_decisions:
+    - summary: "Durable negative controls that must split a kernel transaction commit the tree with its paths and the TurnNode as separate real transactions and replay the dependent tail through a command queue inside one real backend transaction, so backend validators and the genuine fault seams stay active. The mutation is bound to the armed fault plan and cleared when that checkpoint ends."
+      kind: pattern
+      paths: [typescript/kernel/testkit/src/lib/kernel-mutant-non-atomic.ts]
+      commit: 6951a73
+    - summary: "Reopen controls track the records each wrapped backend instance wrote and alter a record on read only when the instance did not write it, so the defect appears only for state read back from storage after a reopen."
+      kind: pattern
+      paths: [typescript/kernel/testkit/src/lib/kernel-mutants-reopen.ts]
+      commit: 42ede82
+    - summary: "The shared-writer control composes a kernel lateral-guard bypass with acceptance of the backend's rejected sibling write through the common parent, tracks committed heads per wrapper, and counts activation only for the accepted stale write."
+      kind: pattern
+      paths: [typescript/kernel/testkit/src/lib/kernel-mutant-shared-writer.ts]
+      commit: 60a1136
+    - summary: "Mutant diagnostics that are not part of the catalogued kernel.mutant.activation observation are exposed through a testkit-only readDiagnostics accessor and never sent over the adapter protocol."
+      kind: convention
+      paths:
+        - typescript/kernel/testkit/src/lib/kernel-mutant-registry.ts
+        - typescript/kernel/testkit/src/lib/kernel-mutant-types.ts
+      commit: 565b8c2
+    - summary: "The claim-coverage tests prove a gap by removing a claim's control designations from the real inventory, not by deleting a register reason."
+      kind: convention
+      paths: [tools/conformance/harness/test/durable-claims.test.ts]
+      commit: 3449db0
+  settled: []
