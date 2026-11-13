@@ -237,7 +237,10 @@
         "kernel.syscall.shared_writer.race"
       ],
       "faultPoints": [],
-      "negativeControls": ["kernel.worker-clock-expiry"],
+      "negativeControls": [
+        "kernel.accept-stale-shared-writer",
+        "kernel.worker-clock-expiry"
+      ],
       "requiredEvidence": [
         "result.trace.livePreempt.outcome",
         "trace.backendNow.result",

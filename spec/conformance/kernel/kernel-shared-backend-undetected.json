@@ -1,4 +1,3 @@
 {
-  "kernel.syscall.shared_writer.race": "The PostgreSQL stale-head mutant activates in one writer process, but the other process reports no activation and the shared collect observes one result and one error. The measured race does not expose a stale competing write.",
   "kernel.syscall.clock_skew.expired": "No designated negative control yet exercises the expired-lease preemption in the shared-backend profile."
 }
