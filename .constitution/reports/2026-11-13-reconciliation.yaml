@@ -1,0 +1,45 @@
+date: 2026-11-13
+commit: 98af76b
+epics: [DO]
+routed:
+  - stage: tasks
+    item: decision OD-21 closed in place with the ruling EPIC-DO carried
+    from: DO
+  - stage: tech-spec
+    item: "ADR-0084 decision 5 left the non-atomic mutant's feasibility assumed until the spike. SPK-KRT-DO001 and KRT-DO002 measured it: per-call commits are rejected by both backends, a tree must commit with its paths, and the control commits the tree, paths, and TurnNode early and runs the dependent tail in one real transaction. Record the measured design and settle or amend the decision."
+    from: DO
+  - stage: tech-spec
+    item: "OD-26: all three intermediate process-crash kills rest on the leaked TurnNode. Both backends reject a durable head move before the staging clear (active-run head alignment at write-set validation), so no mutant exercises recovery assertions 3, 4, 5, 9, 10, 14, 16, 17, 20 or the head-derived visibility assertions 15, 18, 21 of the three intermediate checks. Rule whether the leaked-node kill suffices or a kernel-aware head-durable control is required."
+    from: DO
+  - stage: tech-spec
+    item: "ADR-0084 decision 5 asks that controls load without node:async_hooks on the public core import path. The new control modules comply, but the testkit entry still reaches node:async_hooks through kernel-mutants-clock.ts and kernel-mutants-storage.ts, which predate this epic."
+    from: DO
+  - stage: tech-spec
+    item: "OD-21 is closed by owner ruling (rollback at the intermediate checkpoint fault points for single-transaction backends; roll-forward ports are routed when they arrive). Record it against ADR-0076 and KrakenKernelSpecification section 5.5."
+    from: DO
+  - stage: tasks
+    item: "The EPIC-DO header comment, KRT-DO002's and KRT-DO007's stop conditions, and tasks/changelog.yaml still describe OD-21 as proposed; align the wording with the closed ruling."
+    from: DO
+  - stage: tasks
+    item: "The durable certificate bundles do not serialize an explicit undetected-claims list (ADR-0081 decision 3, ADR-0084 decision 6); KRT-DP004 owns it. With all three durable registers empty, KRT-DP004 must cover the explicit empty list."
+    from: DO
+  - stage: tech-spec
+    item: "code decision (pattern): Durable negative controls that must split a kernel transaction commit the tree with its paths and the TurnNode as separate real transactions and replay the dependent tail through a command queue inside one real backend transaction, so backend validators and the genuine fault seams stay active. The mutation is bound to the armed fault plan and cleared when that checkpoint ends. [typescript/kernel/testkit/src/lib/kernel-mutant-non-atomic.ts] at 6951a73"
+    from: DO
+  - stage: tech-spec
+    item: "code decision (pattern): Reopen controls track the records each wrapped backend instance wrote and alter a record on read only when the instance did not write it, so the defect appears only for state read back from storage after a reopen. [typescript/kernel/testkit/src/lib/kernel-mutants-reopen.ts] at 42ede82"
+    from: DO
+  - stage: tech-spec
+    item: "code decision (pattern): The shared-writer control composes a kernel lateral-guard bypass with acceptance of the backend's rejected sibling write through the common parent, tracks committed heads per wrapper, and counts activation only for the accepted stale write. [typescript/kernel/testkit/src/lib/kernel-mutant-shared-writer.ts] at 60a1136"
+    from: DO
+  - stage: tech-spec
+    item: "code decision (convention): Mutant diagnostics that are not part of the catalogued kernel.mutant.activation observation are exposed through a testkit-only readDiagnostics accessor and never sent over the adapter protocol. [typescript/kernel/testkit/src/lib/kernel-mutant-registry.ts, typescript/kernel/testkit/src/lib/kernel-mutant-types.ts] at 565b8c2"
+    from: DO
+  - stage: tech-spec
+    item: "code decision (convention): The claim-coverage tests prove a gap by removing a claim's control designations from the real inventory, not by deleting a register reason. [tools/conformance/harness/test/durable-claims.test.ts] at 3449db0"
+    from: DO
+proposed_decisions: [OD-26]
+candidate_terms: []
+stale_owners:
+  - ".constitution/spikes/SPK-KRT-DO001.md: KRT-DO001"
+  - ".constitution/spikes/SPK-KRT-DO001.md: KRT-DO007"

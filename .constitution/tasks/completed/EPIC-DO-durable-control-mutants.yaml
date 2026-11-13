@@ -1,42 +1,40 @@
 id: DO
-name: "Detect durable backend control gaps"
-# DO002 through DO006 run on the OD-21 rollback interim. Closing DO007 requires the owner ruling; choosing roll-forward requires replanning the control and its fleet branch coverage.
+name: Detect durable backend control gaps
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DF]
 priority: 1
 scope:
   paths:
-    - "reports/compatibility"
-    - "tools/conformance/harness"
+    - reports/compatibility
+    - tools/conformance/harness
     - ".constitution/spikes/SPK-KRT-DO001.md"
-    - "typescript/kernel/testkit"
-    - "typescript/kernel/backends/memory"
-    - "typescript/kernel/conformance-adapter"
-    - "spec/conformance/kernel/negative-controls.json"
-    - "spec/conformance/kernel/profiles.json"
-    - "spec/conformance/kernel/kernel-persistent-reopen-undetected.json"
-    - "spec/conformance/kernel/kernel-process-crash-undetected.json"
-    - "spec/conformance/kernel/kernel-shared-backend-undetected.json"
-    - "tools/conformance/harness/test/durable-control-mutants.test.ts"
-    - "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json"
-    - "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json"
+    - typescript/kernel/testkit
+    - typescript/kernel/backends/memory
+    - typescript/kernel/conformance-adapter
+    - spec/conformance/kernel/negative-controls.json
+    - spec/conformance/kernel/profiles.json
+    - spec/conformance/kernel/kernel-persistent-reopen-undetected.json
+    - spec/conformance/kernel/kernel-process-crash-undetected.json
+    - spec/conformance/kernel/kernel-shared-backend-undetected.json
+    - tools/conformance/harness/test/durable-control-mutants.test.ts
+    - reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json
+    - reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json
     - ".changeset/durable-control-gaps.md"
-    - "spec/conformance/kernel/plans"
-    - "tools/conformance/meta-conformance"
+    - spec/conformance/kernel/plans
+    - tools/conformance/meta-conformance
   tech_spec_patchable: []
 estimated_diff_lines: 15000
 estimate_source: planned
 tickets:
   - id: KRT-DO001
-    title: "Measure a non-atomic mutant and investigate the shared-writer race"
+    title: Measure a non-atomic mutant and investigate the shared-writer race
     type: Spike
     effort: 5
     depends_on: []
     spike: SPK-KRT-DO001
     scope:
-      in:
-        - ".constitution/spikes/SPK-KRT-DO001.md"
+      in: [".constitution/spikes/SPK-KRT-DO001.md"]
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0 for the applicable baseline and focused checks; the spike records the measured mutant results and any unresolved finding."
@@ -46,27 +44,29 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Record the prototype, commands, backend and process configuration, activation counts, fault receipts, recovery observations, and designated assertion outcomes for both SQLite and PostgreSQL. Record the shared-writer interleaving, both writer outcomes, the lock and barrier evidence, and a testable race-control recommendation or an explicit unresolved decision. Retain no prototype source in the spike output."
-    flows: ["flow-authority-packet-driven-conformance", "flow-crash-mid-checkpoint-recovery"]
+    flows:
+      - flow-authority-packet-driven-conformance
+      - flow-crash-mid-checkpoint-recovery
     certainty: assumed
     status: done
   - id: KRT-DO002
-    title: "Detect non-atomic checkpoint commits"
+    title: Detect non-atomic checkpoint commits
     type: Feature
     effort: 3
     depends_on: [KRT-DO001]
     scope:
       in:
-        - "typescript/kernel/testkit"
-        - "typescript/kernel/conformance-adapter"
-        - "spec/conformance/kernel/negative-controls.json"
-        - "spec/conformance/kernel/profiles.json"
-        - "spec/conformance/kernel/kernel-process-crash-undetected.json"
-        - "tools/conformance/harness/test/durable-control-mutants.test.ts"
-        - "spec/conformance/kernel/plans"
-        - "tools/conformance/meta-conformance"
-        - "tools/conformance/harness"
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - spec/conformance/kernel/negative-controls.json
+        - spec/conformance/kernel/profiles.json
+        - spec/conformance/kernel/kernel-process-crash-undetected.json
+        - tools/conformance/harness/test/durable-control-mutants.test.ts
+        - spec/conformance/kernel/plans
+        - tools/conformance/meta-conformance
+        - tools/conformance/harness
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if either backend rejects the mutant before the designated fault or a claim cannot be detected; route a decision with the measured result rather than retaining an undetected claim."
@@ -75,30 +75,30 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "On both backends each of the three claims has a designated assertion killed with mutant activation and matching fault receipt, and its unmutated baseline passes. The process-crash undetected register has no entries."
-    flows: ["flow-crash-mid-checkpoint-recovery"]
+    flows: [flow-crash-mid-checkpoint-recovery]
     certainty: open
     status: done
     deviations:
       - files: [tools/scripts/verify-kernel.ts, tools/scripts/verify.ts]
         justification: "Both verify lanes list their durable harness test files by hand, so the new durable-control-mutants test must be added to each to run in bun run verify:kernel and bun run verify. The wave plan and its 2026-11-13 amendment authorized these two one-line additions outside the epic's owned paths."
   - id: KRT-DO003
-    title: "Detect state lost across durable reopen"
+    title: Detect state lost across durable reopen
     type: Feature
     effort: 3
     depends_on: [KRT-DO002]
     scope:
       in:
-        - "typescript/kernel/testkit"
-        - "typescript/kernel/conformance-adapter"
-        - "spec/conformance/kernel/negative-controls.json"
-        - "spec/conformance/kernel/profiles.json"
-        - "spec/conformance/kernel/kernel-persistent-reopen-undetected.json"
-        - "tools/conformance/harness/test/durable-control-mutants.test.ts"
-        - "spec/conformance/kernel/plans"
-        - "tools/conformance/meta-conformance"
-        - "tools/conformance/harness"
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - spec/conformance/kernel/negative-controls.json
+        - spec/conformance/kernel/profiles.json
+        - spec/conformance/kernel/kernel-persistent-reopen-undetected.json
+        - tools/conformance/harness/test/durable-control-mutants.test.ts
+        - spec/conformance/kernel/plans
+        - tools/conformance/meta-conformance
+        - tools/conformance/harness
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if a mutant cannot survive the real process boundary or no assertion detects a listed claim; route the evidence for a decision."
@@ -106,27 +106,27 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Each of the four claims is killed by a designated assertion with activation on both backends, the unmutated checks pass, and the persistent-reopen undetected register is empty."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
   - id: KRT-DO004
-    title: "Detect expired-lease preemption defects"
+    title: Detect expired-lease preemption defects
     type: Feature
     effort: 2
     depends_on: [KRT-DO003]
     scope:
       in:
-        - "typescript/kernel/testkit"
-        - "typescript/kernel/conformance-adapter"
-        - "spec/conformance/kernel/negative-controls.json"
-        - "spec/conformance/kernel/profiles.json"
-        - "spec/conformance/kernel/kernel-shared-backend-undetected.json"
-        - "tools/conformance/harness/test/durable-control-mutants.test.ts"
-        - "spec/conformance/kernel/plans"
-        - "tools/conformance/meta-conformance"
-        - "tools/conformance/harness"
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - spec/conformance/kernel/negative-controls.json
+        - spec/conformance/kernel/profiles.json
+        - spec/conformance/kernel/kernel-shared-backend-undetected.json
+        - tools/conformance/harness/test/durable-control-mutants.test.ts
+        - spec/conformance/kernel/plans
+        - tools/conformance/meta-conformance
+        - tools/conformance/harness
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if the expired lease cannot be distinguished from a live lease on the measured backend clock; route the claim for a decision."
@@ -134,27 +134,27 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "The expired-lease mutant activates and its designated kernel.syscall.clock_skew.expired assertion fails over PostgreSQL; the unmutated check passes and no existing control loses its designation."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
   - id: KRT-DO005
-    title: "Detect the shared-writer race using the spike result"
+    title: Detect the shared-writer race using the spike result
     type: Feature
     effort: 3
     depends_on: [KRT-DO001]
     scope:
       in:
-        - "typescript/kernel/testkit"
-        - "typescript/kernel/conformance-adapter"
-        - "spec/conformance/kernel/negative-controls.json"
-        - "spec/conformance/kernel/profiles.json"
-        - "spec/conformance/kernel/kernel-shared-backend-undetected.json"
-        - "tools/conformance/harness/test/durable-control-mutants.test.ts"
-        - "spec/conformance/kernel/plans"
-        - "tools/conformance/meta-conformance"
-        - "tools/conformance/harness"
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - spec/conformance/kernel/negative-controls.json
+        - spec/conformance/kernel/profiles.json
+        - spec/conformance/kernel/kernel-shared-backend-undetected.json
+        - tools/conformance/harness/test/durable-control-mutants.test.ts
+        - spec/conformance/kernel/plans
+        - tools/conformance/meta-conformance
+        - tools/conformance/harness
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if the spike or implementation cannot make the violating race observable; route a decision and leave the profile uncertified."
@@ -162,22 +162,22 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "The control demonstrably violates the shared-writer rule and a designated assertion for kernel.syscall.shared_writer.race fails; the unmutated two-process race passes and both entry receipts precede release."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
   - id: KRT-DO006
-    title: "Move the memory fault control behind the testkit seam"
+    title: Move the memory fault control behind the testkit seam
     type: Feature
     effort: 3
     depends_on: [KRT-DO005]
     scope:
       in:
-        - "typescript/kernel/testkit"
-        - "typescript/kernel/backends/memory"
-        - "typescript/kernel/conformance-adapter"
+        - typescript/kernel/testkit
+        - typescript/kernel/backends/memory
+        - typescript/kernel/conformance-adapter
         - ".changeset/durable-control-gaps.md"
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if a production backend hook or a compatibility shim is required; route the design rather than adding it."
@@ -185,96 +185,49 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Public memory construction has no symbol-keyed fault control; before-commit and after-commit activation and recovery checks still pass through the testkit seam."
-    flows: ["flow-crash-mid-checkpoint-recovery"]
+    flows: [flow-crash-mid-checkpoint-recovery]
     certainty: assumed
     status: done
     deviations:
       - files: [docs/guides/add-a-kernel-backend.md]
         justification: "The backend author guide still told implementers to expose the symbol-keyed fault control this ticket removed, contradicting ADR-0082 decision 8. The wave plan's 2026-11-13 amendment authorized correcting that passage outside the epic's owned paths; the edit landed with KRT-DO007's commit."
   - id: KRT-DO007
-    title: "Close the durable undetected registers"
+    title: Close the durable undetected registers
     type: Chore
     effort: 2
     depends_on: [KRT-DO002, KRT-DO003, KRT-DO004, KRT-DO005, KRT-DO006]
     scope:
       in:
-        - "spec/conformance/kernel/kernel-persistent-reopen-undetected.json"
-        - "spec/conformance/kernel/kernel-process-crash-undetected.json"
-        - "spec/conformance/kernel/kernel-shared-backend-undetected.json"
-        - "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json"
-        - "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json"
-        - "reports/compatibility"
+        - spec/conformance/kernel/kernel-persistent-reopen-undetected.json
+        - spec/conformance/kernel/kernel-process-crash-undetected.json
+        - spec/conformance/kernel/kernel-shared-backend-undetected.json
+        - reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json
+        - reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json
+        - reports/compatibility
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0 with the operator-provided PostgreSQL service; all three durable control inventories are complete."
     stop_conditions:
       - "STOP if any durable claim remains undetected or a control is invalid or survives; route the finding instead of weakening the bar."
       - "STOP while OD-21 is open; durable registers cannot be declared closed until the owner rules and the three detecting assertions from DO002 are re-checked."
-    description: "Run the full applicable durable control sets and retain the smallest evidence needed to prove each designation and each backend result. Do not clear a register entry merely because another backend or an unrelated assertion failed."
+    description: Run the full applicable durable control sets and retain the smallest evidence needed to prove each designation and each backend result. Do not clear a register entry merely because another backend or an unrelated assertion failed.
     acceptance:
       mode: contract_test
       evidence: "All three durable undetected registers are empty; SQLite and PostgreSQL each kill their applicable reopen and crash controls, and PostgreSQL kills every shared-backend control with matching activation and designated failures. The OD-21 ruling is closed and the three detecting assertions have been re-checked against it before durable-register closure."
-    flows: ["flow-multi-implementation-conformance-compatibility", "flow-crash-mid-checkpoint-recovery"]
+    flows:
+      - flow-multi-implementation-conformance-compatibility
+      - flow-crash-mid-checkpoint-recovery
     certainty: open
     status: done
-decisions:
-  - id: OD-21
-    question: "At the intermediate checkpoint fault points (after-turn-node-write-before-head, after-head-move-before-staging-clear), must recovery roll back to the baseline, or must an implementation whose turn-node write or head move was separately durable roll forward (KrakenKernelSpecification section 5.5: a durably visible post-checkpoint TurnNode means the checkpoint committed)?"
-    blocks: [KRT-DF004, KRT-DO002, KRT-DO007]
-    options:
-      - name: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
-        pros:
-          - "Both TypeScript durable backends write the checkpoint in one transaction, so a kill inside it is a rollback; the assertion is exact for them."
-          - "The conditional-coverage gate stays satisfiable, because no current backend could exercise a roll-forward branch."
-        cons:
-          - A correct port with separately durable writes (ADR-0076 names Python) would fail these checks until the plan branches on observed durability.
-      - name: "Branch on observed durability now (node present means head references it; absent means head equals baseline)"
-        pros: [States the section 5.5 invariant for every implementation.]
-        cons:
-          - "The roll-forward branch is unexercised by any current backend, which the ADR-0079 fleet branch-coverage gate rejects."
-    recommendation: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
-    closure: ruling
-    ruler: "Owner, at the EPIC-DO wave plan approval"
-    status: closed
-    asked:
-      date: 2026-10-28
-      in: EPIC-DF
-    ruling:
-      ref: "Owner approval of the EPIC-DO wave plan on 2026-11-12, whose Step-0 rulings state the OD-21 ruling"
-      date: 2026-11-12
-      summary: "Recovery asserts rollback to baseline at the intermediate checkpoint fault points for single-transaction backends. A port with separately durable checkpoint writes is routed when it arrives, and the plan then gains observed-durability branches exercised by that port."
-      chosen: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
-  - id: OD-26
-    question: "SPK-KRT-DO001 measured that a generic non-atomic backend control reaches the after-turn-node-write-before-head fault on SQLite and PostgreSQL, but never reaches before-commit or after-head-move-before-staging-clear, because both backends reject an isolated branch-head write while a run is active. How must the control keep the branch, turn, staging, and run writes valid while still reaching those two genuine fault seams after separately durable node work?"
-    blocks: [KRT-DO002, KRT-DO007]
-    options:
-      - name: Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction
-        pros:
-          - "Backend validators stay active, and the separately durable node is exposed at both genuine callback phases."
-        cons:
-          - "Segmentation, clock capture, and fault cancellation are unmeasured on both backends."
-          - "Both backends bind transaction handles to the transaction's async context, so the dependent tail cannot hold a handle open; each call must run inside the real transact callback."
-          - "The runtime writes the run record only after the staging clear, and both backends require an active run, its turn, and its branch to agree on the head at commit. A wrapper that keeps the runtime's write order therefore cannot make the head move durable before the staging clear. A kill at before-commit or after-head-move rolls the tail back, and recovery sees only the leaked TurnNode, the same defect that kills the node-write claim; the head-specific recovery assertions are not exercised."
-      - name: A kernel-aware control that commits a valid checkpoint early and then reaches the genuine seam
-        pros: [Uses explicit knowledge of the full consistency group.]
-        cons:
-          - "More kernel coupling and a broader review of which rule the mutant violates; no feasibility evidence."
-      - name: Leave before-commit and after-head-move undetected until a separately planned investigation
-        pros: [Certification stays truthful with no speculative implementation.]
-        cons: [The durable registers cannot close and publication stays blocked.]
-    recommendation: Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction
-    closure: ruling
-    ruler: "Owner, after the EPIC-DO merge"
-    waiting_on: "Owner review of the KRT-DO002 measurement. Measured on SQLite and PostgreSQL at 60a1136: the early-node control reaches all three genuine fault points with matching receipts and activation 2, and kernel.syscall.process-crash.<point>.pendingNode.1.resultField fails at each while baselines pass before and after. A variant that commits the real dependent tail immediately after branches.set, before the after-head-move seam, is rejected at transaction write-set validation with sqlite_backend_active_run_branch_head_mismatch and postgres_backend_active_run_branch_head_mismatch, records activation 2 and no fault receipt, and is classified invalid (missing_fault_activation). No mutant therefore exercises the head, node, and lineage recovery assertions 3, 4, 5, 9, 10, 14, 16, 17, and 20, nor the head-derived visibility assertions 15, 18, and 21, of the three intermediate checks."
-    status: proposed
-    asked:
-      date: 2026-11-12
-      in: EPIC-DO
-    interim:
-      assumption: "KRT-DO002 first measures the early-node-then-real-tail control on both backends, and makes one bounded attempt at a variant that also makes the head move durable before the after-head-move hold. A claim counts as detected when, at its genuine fault point with a matching receipt and mutant activation, a designated recovery assertion fails on durable state the non-atomic backend leaked, and the baseline passes before and after. A leaked-TurnNode kill is accepted at before-commit and after-head-move when no head-durable variant passes backend validation; the head-specific assertions that stay unexercised are then named in the closeout follow-ups. A claim whose fault is not genuinely reached stays in the register with its reason, and KRT-DO007 is deferred for the process-crash register."
-      applied_by: [KRT-DO002, KRT-DO007, spec/conformance/kernel/kernel-process-crash-undetected.json]
 closeout:
-  tickets_completed: [KRT-DO001, KRT-DO002, KRT-DO003, KRT-DO004, KRT-DO005, KRT-DO006, KRT-DO007]
+  tickets_completed:
+    - KRT-DO001
+    - KRT-DO002
+    - KRT-DO003
+    - KRT-DO004
+    - KRT-DO005
+    - KRT-DO006
+    - KRT-DO007
   tickets_deferred: []
   points_completed: 21
   spec_patches: []
@@ -313,14 +266,14 @@ closeout:
         kind: repository
         ref: typescript/kernel/testkit/src/lib/kernel-mutant-shared-writer.ts
         date: 2026-11-13
-        note: "kernel.accept-stale-shared-writer kills kernel.syscall.shared_writer.race.collect.1.resultField over PostgreSQL."
+        note: kernel.accept-stale-shared-writer kills kernel.syscall.shared_writer.race.collect.1.resultField over PostgreSQL.
     - source: "EPIC-DF#follow-up:24d142993a36"
       outcome: delivered
       evidence:
         kind: repository
         ref: typescript/kernel/testkit/src/lib/kernel-mutant-expired-lease.ts
         date: 2026-11-13
-        note: "kernel.ignore-expired-lease-preemption kills kernel.syscall.clock_skew.preemption.expiredPreempt.1.resultField over PostgreSQL."
+        note: kernel.ignore-expired-lease-preemption kills kernel.syscall.clock_skew.preemption.expiredPreempt.1.resultField over PostgreSQL.
     - source: "EPIC-DF#follow-up:10e41de18ba0"
       outcome: delivered
       evidence:
@@ -348,7 +301,7 @@ closeout:
         kind: repository
         ref: docs/guides/add-a-kernel-backend.md
         date: 2026-11-13
-        note: "The fault-integration passage now describes the testkit transaction seam."
+        note: The fault-integration passage now describes the testkit transaction seam.
   code_decisions:
     - summary: "Durable negative controls that must split a kernel transaction commit the tree with its paths and the TurnNode as separate real transactions and replay the dependent tail through a command queue inside one real backend transaction, so backend validators and the genuine fault seams stay active. The mutation is bound to the armed fault plan and cleared when that checkpoint ends."
       kind: pattern
@@ -362,7 +315,7 @@ closeout:
       kind: pattern
       paths: [typescript/kernel/testkit/src/lib/kernel-mutant-shared-writer.ts]
       commit: 60a1136
-    - summary: "Mutant diagnostics that are not part of the catalogued kernel.mutant.activation observation are exposed through a testkit-only readDiagnostics accessor and never sent over the adapter protocol."
+    - summary: Mutant diagnostics that are not part of the catalogued kernel.mutant.activation observation are exposed through a testkit-only readDiagnostics accessor and never sent over the adapter protocol.
       kind: convention
       paths:
         - typescript/kernel/testkit/src/lib/kernel-mutant-registry.ts
@@ -373,3 +326,32 @@ closeout:
       paths: [tools/conformance/harness/test/durable-claims.test.ts]
       commit: 3449db0
   settled: []
+  actuals:
+    diff_lines: 2743
+    files_touched: 29
+    milestones: 8
+    review_rounds: 2
+    per_ticket:
+      - id: KRT-DO001
+        diff_lines: 309
+        review_rounds: 1
+      - id: KRT-DO002
+        diff_lines: 705
+        review_rounds: 1
+      - id: KRT-DO003
+        diff_lines: 854
+        review_rounds: 0
+      - id: KRT-DO004
+        diff_lines: 0
+        review_rounds: 0
+      - id: KRT-DO005
+        diff_lines: 509
+        review_rounds: 0
+      - id: KRT-DO006
+        diff_lines: 149
+        review_rounds: 0
+      - id: KRT-DO007
+        diff_lines: 217
+        review_rounds: 0
+    merged_commit: 98af76b
+    measured_at: 2026-11-13

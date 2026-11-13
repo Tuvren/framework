@@ -543,9 +543,9 @@ decisions:
         - spec/conformance/kernel/negative-controls.json
         - KRT-DB004
     ruling:
-      ref: .constitution/research/2026-11-01-testkit-control-gaps-rulings.md
+      ref: ".constitution/research/2026-11-01-testkit-control-gaps-rulings.md"
       date: 2026-11-01
-      summary: "Catalogue deterministic codec operations under kernel.codec and migrate the legacy codec assertions to that capability."
+      summary: Catalogue deterministic codec operations under kernel.codec and migrate the legacy codec assertions to that capability.
       chosen: Catalogue codec operations under a kernel.codec capability
   - id: OD-17
     question: "The memory kernels apply a branch-head compare-and-set under a per-scope exclusive lock, so a barrier seam at the compare-and-set would serialize the contenders. What does the syscall concurrent-writer check certify?"
@@ -768,8 +768,8 @@ decisions:
           - "The roll-forward branch is unexercised by any current backend, which the ADR-0079 fleet branch-coverage gate rejects."
     recommendation: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
     closure: ruling
-    ruler: "Owner, after the EPIC-DF merge"
-    status: proposed
+    ruler: "Owner, at the EPIC-DO wave plan approval"
+    status: closed
     asked:
       date: 2026-10-28
       in: EPIC-DF
@@ -781,6 +781,11 @@ decisions:
         - KRT-DF004
         - KRT-DO002
         - KRT-DO007
+    ruling:
+      ref: "Owner approval of the EPIC-DO wave plan on 2026-11-12, whose Step-0 rulings state the OD-21 ruling"
+      date: 2026-11-12
+      summary: "Recovery asserts rollback to baseline at the intermediate checkpoint fault points for single-transaction backends. A port with separately durable checkpoint writes is routed when it arrives, and the plan then gains observed-durability branches exercised by that port."
+      chosen: Assert rollback for single-transaction backends and route roll-forward ports when they arrive
   - id: OD-22
     question: "How do conformance plans certify a two-process durable writer race, real server-clock skew, and several durable profiles per backend, when the pinned plan contract has no order-agnostic outcome selection, no per-step process routing, no server clock source, and one certificate per run?"
     blocks: [KRT-DF005]
@@ -847,7 +852,41 @@ decisions:
         - KRT-DF003
         - KRT-DF004
     ruling:
-      ref: .constitution/research/2026-11-01-testkit-control-gaps-rulings.md
+      ref: ".constitution/research/2026-11-01-testkit-control-gaps-rulings.md"
       date: 2026-11-01
       summary: "The before-commit hold follows all checkpoint writes and precedes COMMIT; amend ADR-0076 decision 4."
       chosen: Hold after all checkpoint writes and before COMMIT
+  - id: OD-26
+    question: "SPK-KRT-DO001 measured that a generic non-atomic backend control reaches the after-turn-node-write-before-head fault on SQLite and PostgreSQL, but never reaches before-commit or after-head-move-before-staging-clear, because both backends reject an isolated branch-head write while a run is active. How must the control keep the branch, turn, staging, and run writes valid while still reaching those two genuine fault seams after separately durable node work?"
+    blocks: [KRT-DO002, KRT-DO007]
+    options:
+      - name: "Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction"
+        pros:
+          - "Backend validators stay active, and the separately durable node is exposed at both genuine callback phases."
+        cons:
+          - "Segmentation, clock capture, and fault cancellation are unmeasured on both backends."
+          - "Both backends bind transaction handles to the transaction's async context, so the dependent tail cannot hold a handle open; each call must run inside the real transact callback."
+          - "The runtime writes the run record only after the staging clear, and both backends require an active run, its turn, and its branch to agree on the head at commit. A wrapper that keeps the runtime's write order therefore cannot make the head move durable before the staging clear. A kill at before-commit or after-head-move rolls the tail back, and recovery sees only the leaked TurnNode, the same defect that kills the node-write claim; the head-specific recovery assertions are not exercised."
+      - name: A kernel-aware control that commits a valid checkpoint early and then reaches the genuine seam
+        pros: [Uses explicit knowledge of the full consistency group.]
+        cons:
+          - "More kernel coupling and a broader review of which rule the mutant violates; no feasibility evidence."
+      - name: Leave before-commit and after-head-move undetected until a separately planned investigation
+        pros: [Certification stays truthful with no speculative implementation.]
+        cons:
+          - The durable registers cannot close and publication stays blocked.
+    recommendation: "Commit the tree, paths, and TurnNode early and run the dependent tail in one real transaction"
+    closure: ruling
+    ruler: "Owner, after the EPIC-DO merge"
+    waiting_on: "Owner review of the KRT-DO002 measurement. Measured on SQLite and PostgreSQL at 60a1136: the early-node control reaches all three genuine fault points with matching receipts and activation 2, and kernel.syscall.process-crash.<point>.pendingNode.1.resultField fails at each while baselines pass before and after. A variant that commits the real dependent tail immediately after branches.set, before the after-head-move seam, is rejected at transaction write-set validation with sqlite_backend_active_run_branch_head_mismatch and postgres_backend_active_run_branch_head_mismatch, records activation 2 and no fault receipt, and is classified invalid (missing_fault_activation). No mutant therefore exercises the head, node, and lineage recovery assertions 3, 4, 5, 9, 10, 14, 16, 17, and 20, nor the head-derived visibility assertions 15, 18, and 21, of the three intermediate checks."
+    status: proposed
+    asked:
+      date: 2026-11-12
+      in: EPIC-DO
+    interim:
+      assumption: "KRT-DO002 first measures the early-node-then-real-tail control on both backends, and makes one bounded attempt at a variant that also makes the head move durable before the after-head-move hold. A claim counts as detected when, at its genuine fault point with a matching receipt and mutant activation, a designated recovery assertion fails on durable state the non-atomic backend leaked, and the baseline passes before and after. A leaked-TurnNode kill is accepted at before-commit and after-head-move when no head-durable variant passes backend validation; the head-specific assertions that stay unexercised are then named in the closeout follow-ups. A claim whose fault is not genuinely reached stays in the register with its reason, and KRT-DO007 is deferred for the process-crash register."
+      applied_by:
+        - KRT-DO002
+        - KRT-DO007
+        - spec/conformance/kernel/kernel-process-crash-undetected.json
+    proposed_by: EPIC-DO @ 98af76b
