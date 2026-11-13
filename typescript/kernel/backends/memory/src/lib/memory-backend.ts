@@ -124,21 +124,6 @@ interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
-interface BackendFaultHooks {
-  afterCommitBeforeAck?: () => Promise<void>;
-  beforeCommit?: () => Promise<void>;
-}
-
-/**
- * The control surface exposed under {@link FAULT_INJECTION_CONTROL} so the
- * testkit can install {@link BackendFaultHooks} without the hooks becoming
- * part of the public backend contract.
- */
-interface BackendFaultInjectionControl {
-  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
-  supportsFaultPoint: (point: string) => boolean;
-}
-
 /** Construction options for {@link createMemoryBackend}. */
 export interface MemoryBackendOptions {
   /**
@@ -185,16 +170,6 @@ const getMemoryBackendCapabilities = (): BackendCapability =>
 /** Reports the health of the dependency-free memory backend. */
 const getMemoryBackendHealth = async (): Promise<{ ok: true }> =>
   await Promise.resolve({ ok: true });
-/**
- * Well-known symbol under which the backend exposes its
- * {@link BackendFaultInjectionControl}. The kernel testkit constructs the
- * same symbol description to discover the control surface at runtime; the
- * symbol is deliberately not exported so ordinary consumers never see it.
- */
-const FAULT_INJECTION_CONTROL = Symbol(
-  "tuvren.kernel.testkit.fault-injection-control"
-);
-
 /**
  * Builds the per-transaction repository surface over a draft state.
  *
@@ -981,17 +956,6 @@ const createRepositories = (
  * repository handles are invalidated once their transaction settles.
  */
 class MemoryBackend implements KrakenBackend {
-  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
-    setFaultHooks: (hooks) => {
-      this.faultState.hooks = hooks;
-    },
-    supportsFaultPoint: (point) =>
-      point === "before-commit" || point === "after-commit-before-ack",
-  };
-
-  private readonly faultState: { hooks: BackendFaultHooks | null } = {
-    hooks: null,
-  };
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private readonly store: MemoryScopeStore;
   private readonly scope: Scope;
@@ -1101,11 +1065,7 @@ class MemoryBackend implements KrakenBackend {
       }
 
       validateCommittedState(draftState, baseState);
-      await this.faultState.hooks?.beforeCommit?.();
-
       this.store.setState(this.scope, draftState);
-
-      await this.faultState.hooks?.afterCommitBeforeAck?.();
       return result;
     });
   }
