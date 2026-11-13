@@ -1,6 +1,1 @@
-{
-  "kernel.syscall.reopen.committed_state": "No designated control loses committed state across process restart.",
-  "kernel.syscall.reopen.checkpoint_lineage": "No designated control corrupts checkpoint lineage across reopen.",
-  "kernel.syscall.reopen.recovery_head": "No designated control returns a different recovery head after reopen.",
-  "kernel.syscall.reopen.completed_step": "No designated control loses the last completed step on reopen."
-}
+{}

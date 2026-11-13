@@ -520,3 +520,283 @@ test("postgres stale shared writer commits both siblings and activates only the 
   });
   assertRaceReceipts(after);
 }, 90_000);
+
+const reopenId = "kernel.syscall.reopen.close_reopen_checkpoint";
+const reloadControls = [
+  ["committed-state", 13, 2],
+  ["checkpoint-lineage", 15, 1],
+  ["recovery-head", 1, 2],
+  ["completed-step", 6, 2],
+] as const;
+
+for (const backend of ["sqlite", "postgres"]) {
+  for (const [defect, index, activationCount] of reloadControls) {
+    test(`${backend} reload loses ${defect} only after a real close and fresh reopen between passing baselines`, async () => {
+      const mutantId = `kernel.reload-loses-${defect}`;
+      const designated = `${reopenId}.${index}.resultField`;
+      const baseline = `typescript/kernel/conformance-adapter/adapter-${backend}.json`;
+      const before = await runCheck(baseline, reopenId, 0, mutantId);
+      expect(before.status).toBe("pass");
+      expect(before.assertionResults).toContainEqual({
+        assertionId: designated,
+        status: "pass",
+      });
+      const directory = await mkdtemp(path.join(tmpdir(), "reopen-control-"));
+      try {
+        const mutant = await runCheck(
+          await probeManifest(backend, directory),
+          reopenId,
+          1,
+          mutantId
+        );
+        expect(mutant.failure?.classification).toBe("implementation");
+        expect(mutant.details?.experimentStatus).not.toBe("invalid");
+        expect(mutant.assertionResults).toContainEqual({
+          assertionId: designated,
+          status: "fail",
+        });
+        for (const [otherDefect, otherIndex] of reloadControls) {
+          if (otherDefect !== defect) {
+            expect(mutant.assertionResults).toContainEqual({
+              assertionId: `${reopenId}.${otherIndex}.resultField`,
+              status: "pass",
+            });
+          }
+        }
+        if (defect === "recovery-head") {
+          const lineage = field(
+            raceTrace(mutant, "lineage"),
+            "outcome",
+            "value",
+            "result"
+          );
+          expect(field(lineage, "0", "hash")).not.toBe(
+            field(
+              raceTrace(mutant, "durableNode"),
+              "outcome",
+              "value",
+              "result",
+              "hash"
+            )
+          );
+          expect(field(lineage, "0", "previousTurnNodeHash")).toBe(
+            field(lineage, "1", "hash")
+          );
+          expect(field(lineage, "0", "consumedStagedResults")).toEqual([]);
+        }
+        const epochs = field(mutant.details?.process, "epochs");
+        if (!Array.isArray(epochs)) {
+          throw new Error("missing reopen epochs");
+        }
+        expect(epochs).toHaveLength(2);
+        expect(
+          new Set(epochs.map((epoch: unknown) => field(epoch, "pid"))).size
+        ).toBe(2);
+        const counts: number[] = [];
+        for (const epoch of epochs) {
+          expect(epoch).toMatchObject({
+            exit: { code: 0, signal: null },
+            signal: null,
+          });
+          const record: unknown = JSON.parse(
+            await readFile(
+              path.join(directory, `${field(epoch, "pid")}.json`),
+              "utf-8"
+            )
+          );
+          const activation = field(
+            record,
+            "reply",
+            "result",
+            "value",
+            "result",
+            "activation"
+          );
+          expect(activation).toMatchObject({ mutantId });
+          const count = field(activation, "activationCount");
+          if (typeof count !== "number") {
+            throw new Error("missing reload activation count");
+          }
+          counts.push(count);
+        }
+        expect(counts).toEqual([0, activationCount]);
+        expect(mutant.assertionResults).toContainEqual({
+          assertionId: `${reopenId}.baselineMessages.1.resultField`,
+          status: "pass",
+        });
+      } finally {
+        await rm(directory, { force: true, recursive: true });
+      }
+      const after = await runCheck(baseline, reopenId, 0, mutantId);
+      expect(after.status).toBe("pass");
+      expect(after.assertionResults).toContainEqual({
+        assertionId: designated,
+        status: "pass",
+      });
+    }, 90_000);
+  }
+}
+
+for (const backend of ["sqlite", "postgres"]) {
+  test(`${backend} reload mutants preserve frozen backends and optional clocks and do not lose records written in the same instance`, async () => {
+    await withCheckStorage(
+      backend === "sqlite" ? "sqlite-directory" : "postgres-database",
+      async (storageRef) => {
+        const child = spawn({
+          cmd: [
+            "node",
+            "tools/conformance/harness/test/fixtures/reopen-backend-surface.mjs",
+            backend,
+            storageRef,
+          ],
+          stderr: "pipe",
+          stdout: "pipe",
+        });
+        const [stdout, stderr, exit] = await Promise.all([
+          new Response(child.stdout).text(),
+          new Response(child.stderr).text(),
+          child.exited,
+        ]);
+        expect(exit, stderr).toBe(0);
+        expect(stdout).toBe("");
+      }
+    );
+  }, 30_000);
+}
+
+test("reload controls load for browser targets without node async hooks", async () => {
+  const result = await build({
+    entrypoints: ["typescript/kernel/testkit/src/lib/kernel-mutants-reopen.ts"],
+    target: "browser",
+  });
+  expect(result.success, result.logs.join("\n")).toBe(true);
+});
+
+const expiredMutant = "kernel.ignore-expired-lease-preemption";
+const clockId = "kernel.syscall.clock_skew.preemption";
+const expiredAssertion = `${clockId}.expiredPreempt.1.resultField`;
+const liveAssertion = `${clockId}.2.schemaValid`;
+
+const assertClockSeparation = (check: ConformanceCheckResult): void => {
+  const backendNow = field(
+    raceTrace(check, "backendNow"),
+    "outcome",
+    "value",
+    "result",
+    "threads",
+    "0",
+    "createdAtMs"
+  );
+  const liveExpiry = field(
+    raceTrace(check, "liveLease"),
+    "outcome",
+    "value",
+    "result",
+    "leaseExpiresAtMs"
+  );
+  const expiredExpiry = field(
+    raceTrace(check, "expiredLease"),
+    "outcome",
+    "value",
+    "result",
+    "leaseExpiresAtMs"
+  );
+  if (
+    typeof backendNow !== "number" ||
+    typeof liveExpiry !== "number" ||
+    typeof expiredExpiry !== "number"
+  ) {
+    throw new Error("missing server-clock lease measurements");
+  }
+  expect(expiredExpiry).toBeLessThan(backendNow);
+  expect(liveExpiry).toBeGreaterThan(backendNow);
+};
+
+test("postgres expired lease no-op activates once and preserves live-lease rejection between passing baselines", async () => {
+  const baseline =
+    "typescript/kernel/conformance-adapter/adapter-postgres.json";
+  const before = await runCheck(baseline, clockId, 0, expiredMutant);
+  expect(before.status).toBe("pass");
+  assertClockSeparation(before);
+  const directory = await mkdtemp(path.join(tmpdir(), "expired-control-"));
+  try {
+    const mutant = await runCheck(
+      await probeManifest("postgres", directory),
+      clockId,
+      1,
+      expiredMutant
+    );
+    expect(mutant.failure?.classification).toBe("implementation");
+    expect(mutant.details?.experimentStatus).not.toBe("invalid");
+    expect(
+      mutant.assertionResults.filter(({ status }) => status === "fail")
+    ).toEqual([{ assertionId: expiredAssertion, status: "fail" }]);
+    expect(mutant.assertionResults).toContainEqual({
+      assertionId: liveAssertion,
+      status: "pass",
+    });
+    assertClockSeparation(mutant);
+    const names = (await readdir(directory)).filter(
+      (name) => name !== "adapter.json"
+    );
+    expect(names).toHaveLength(1);
+    const record: unknown = JSON.parse(
+      await readFile(path.join(directory, names[0] ?? "missing"), "utf-8")
+    );
+    expect(
+      field(record, "reply", "result", "value", "result", "activation")
+    ).toEqual({
+      activated: true,
+      activationCount: 1,
+      kind: "implementation",
+      mutantId: expiredMutant,
+      signal: "mutant.ignore-expired-lease-preemption.entered",
+    });
+  } finally {
+    await rm(directory, { force: true, recursive: true });
+  }
+  const after = await runCheck(baseline, clockId, 0, expiredMutant);
+  expect(after.status).toBe("pass");
+  assertClockSeparation(after);
+  for (const check of [before, after]) {
+    expect(check.assertionResults).toContainEqual({
+      assertionId: expiredAssertion,
+      status: "pass",
+    });
+    expect(check.assertionResults).toContainEqual({
+      assertionId: liveAssertion,
+      status: "pass",
+    });
+  }
+}, 90_000);
+
+test("expired-lease control loads for browser targets without node async hooks", async () => {
+  const result = await build({
+    entrypoints: [
+      "typescript/kernel/testkit/src/lib/kernel-mutant-expired-lease.ts",
+    ],
+    target: "browser",
+  });
+  expect(result.success, result.logs.join("\n")).toBe(true);
+});
+
+test("postgres expired control preserves frozen backends and optional clocks and never activates on a live lease before or after an expired no-op", async () => {
+  await withCheckStorage("postgres-database", async (storageRef) => {
+    const child = spawn({
+      cmd: [
+        "node",
+        "tools/conformance/harness/test/fixtures/expired-lease-backend-surface.mjs",
+        storageRef,
+      ],
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+    const [stdout, stderr, exit] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    expect(exit, stderr).toBe(0);
+    expect(stdout).toBe("");
+  });
+}, 30_000);

@@ -108,7 +108,7 @@ tickets:
       evidence: "Each of the four claims is killed by a designated assertion with activation on both backends, the unmutated checks pass, and the persistent-reopen undetected register is empty."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DO004
     title: "Detect expired-lease preemption defects"
     type: Feature
@@ -136,7 +136,7 @@ tickets:
       evidence: "The expired-lease mutant activates and its designated kernel.syscall.clock_skew.expired assertion fails over PostgreSQL; the unmutated check passes and no existing control loses its designation."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DO005
     title: "Detect the shared-writer race using the spike result"
     type: Feature
