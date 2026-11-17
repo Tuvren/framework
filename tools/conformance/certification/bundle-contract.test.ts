@@ -912,8 +912,9 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
       )
     );
     const runs = record(report).controlRuns;
-    if (!Array.isArray(runs))
+    if (!Array.isArray(runs)) {
       throw new TypeError("missing implementation control runs");
+    }
     const controlRun = record(
       runs.find((run) => {
         const entries = record(run).adapters;
@@ -1163,7 +1164,9 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
         const changed = structuredClone(report);
         const changedDocument = record(changed);
         const changedRuns = changedDocument.controlRuns;
-        if (!Array.isArray(changedRuns)) throw new Error("missing runs");
+        if (!Array.isArray(changedRuns)) {
+          throw new Error("missing runs");
+        }
         const changedRun = record(
           changedRuns.find((run) => record(run).id === controlRunIdentifier)
         );

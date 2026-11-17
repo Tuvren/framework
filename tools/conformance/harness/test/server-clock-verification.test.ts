@@ -8,6 +8,7 @@ import { loadConformancePlan } from "../../plan-compiler/index.ts";
 import { readAdapterManifest } from "../run-plans.ts";
 import { runScheduledChecks } from "../run.ts";
 
+const DATABASE_NAME = /^tuvren_cert_\d+_\d+_[a-f0-9]+$/u;
 const exec = promisify(execFile);
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -24,7 +25,7 @@ const field = (value: unknown, ...keys: readonly string[]): unknown => {
 };
 
 const expectReleased = async (database: string): Promise<void> => {
-  expect(database).toMatch(/^tuvren_cert_\d+_\d+_[a-f0-9]+$/u);
+  expect(database).toMatch(DATABASE_NAME);
   const { stdout } = await exec("psql", [
     "-XAt",
     "-v",

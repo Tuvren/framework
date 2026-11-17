@@ -152,8 +152,9 @@ test("links are bound to identity, manifest, profile, authority and both baselin
       ...expected,
       verifierDigests: { ...verifierDigests, [key]: "changed" },
     })),
-  ])
+  ]) {
     expect(matchesControlRun(data, changed)).toBeUndefined();
+  }
   const noPost = report(typescript.adapter);
   Reflect.deleteProperty(noPost.control, "postBaseline");
   expect(matchesControlRun(document([noPost]), expected)).toBeUndefined();

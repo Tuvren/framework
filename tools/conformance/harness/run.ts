@@ -862,10 +862,13 @@ class ServerClockVerifier {
   private readonly selections: ServerClockState[] = [];
   private readonly processes = new Map<string, ServerClockState>();
 
-  constructor(
-    private readonly database: string,
-    private readonly recorder: CheckRecorder
-  ) {}
+  private readonly database: string;
+  private readonly recorder: CheckRecorder;
+
+  constructor(database: string, recorder: CheckRecorder) {
+    this.database = database;
+    this.recorder = recorder;
+  }
 
   async before(
     request: TraceStepExecution
@@ -2114,6 +2117,52 @@ const createFailure = async (
   };
 };
 
+const recordMissingFaultActivation = (
+  recorder: CheckRecorder,
+  checkResult: ConformanceCheckResult
+): ConformanceCheckResult => {
+  const missing = recorder.faults.missing();
+  const missingBlockedFault = recorder.faults.armed.some(
+    (arming) =>
+      arming.mode === "block" &&
+      !recorder.faults.isActivated(arming.token, arming.process, arming.epoch)
+  );
+  if (
+    missing.length > 0 &&
+    !(primaryError(recorder.thrown) instanceof SeamDidNotHoldError) &&
+    (missingBlockedFault ||
+      recorder.thrown === undefined ||
+      primaryError(recorder.thrown) instanceof MissingFaultActivationError)
+  ) {
+    const rejection = new MissingFaultActivationError(
+      `armed faults never activated: ${missing.join(", ")}`
+    );
+    if (
+      recorder.thrown === undefined ||
+      primaryError(recorder.thrown) instanceof MissingFaultActivationError
+    ) {
+      recorder.thrown = rejection;
+    }
+    return createCheckResult(
+      checkResult.checkId,
+      [
+        ...checkResult.assertionResults,
+        {
+          assertionId: `${checkResult.checkId}.faultActivation`,
+          message: rejection.message,
+          status: "fail",
+        },
+      ],
+      {
+        ...checkResult.details,
+        experimentStatus: "invalid",
+        rejection: { code: rejection.code, tokens: missing },
+      }
+    );
+  }
+  return checkResult;
+};
+
 const runCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -2148,45 +2197,7 @@ const runCheck = async (
     supervisor
   );
 
-  const missing = recorder.faults.missing();
-  const missingBlockedFault = recorder.faults.armed.some(
-    (arming) =>
-      arming.mode === "block" &&
-      !recorder.faults.isActivated(arming.token, arming.process, arming.epoch)
-  );
-  if (
-    missing.length > 0 &&
-    !(primaryError(recorder.thrown) instanceof SeamDidNotHoldError) &&
-    (missingBlockedFault ||
-      recorder.thrown === undefined ||
-      primaryError(recorder.thrown) instanceof MissingFaultActivationError)
-  ) {
-    const rejection = new MissingFaultActivationError(
-      `armed faults never activated: ${missing.join(", ")}`
-    );
-    if (
-      recorder.thrown === undefined ||
-      primaryError(recorder.thrown) instanceof MissingFaultActivationError
-    ) {
-      recorder.thrown = rejection;
-    }
-    checkResult = createCheckResult(
-      checkResult.checkId,
-      [
-        ...checkResult.assertionResults,
-        {
-          assertionId: `${checkResult.checkId}.faultActivation`,
-          message: rejection.message,
-          status: "fail",
-        },
-      ],
-      {
-        ...checkResult.details,
-        experimentStatus: "invalid",
-        rejection: { code: rejection.code, tokens: missing },
-      }
-    );
-  }
+  checkResult = recordMissingFaultActivation(recorder, checkResult);
   const failure = primaryError(recorder.thrown);
   if (failure instanceof SeamDidNotHoldError) {
     checkResult = createCheckResult(

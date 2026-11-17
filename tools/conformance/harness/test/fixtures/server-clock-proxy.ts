@@ -49,9 +49,9 @@ for await (const line of lines) {
 }
 adapter.stdin.end();
 await new Promise<void>((resolve) => {
-  if (adapter.exitCode !== null) {
-    resolve();
-  } else {
+  if (adapter.exitCode === null) {
     adapter.once("exit", () => resolve());
+  } else {
+    resolve();
   }
 });
