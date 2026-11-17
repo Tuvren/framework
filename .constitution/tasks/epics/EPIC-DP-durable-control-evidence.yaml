@@ -47,7 +47,10 @@ tickets:
       evidence: "A real PostgreSQL server-clock observation falls within the harness-measured interval, while an adapter returning an injected or shifted worker clock fails; the harness provisions and releases the same resource."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
+    deviations:
+      - files: [tools/conformance/harness/test/fixtures/server-clock-proxy.ts]
+        justification: "The contract test needs an adapter whose backend clock is injected or shifted so the harness bound can be shown to reject it. The proxy is a test-local fixture beside server-clock-verification.test.ts, inside the harness test directory but outside the ticket's listed files; the wave plan's M1 assignment authorized test-local helpers there."
   - id: KRT-DP002
     title: "Enforce the durable profile claim inventory in both directions"
     type: Feature

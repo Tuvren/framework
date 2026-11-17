@@ -118,6 +118,7 @@ import {
   CleanupError,
   StorageResourceError,
   withCheckStorage,
+  postgresServerClockMs,
   postgresServerVersion,
   withCleanup,
 } from "./storage-resource.js";
@@ -178,6 +179,13 @@ export interface CheckRecorder {
   diagnoses: AssertionDiagnosis[];
   observation: StepObservationRecord[];
   operationErrors: unknown[];
+  serverClockMeasurements: {
+    database: string;
+    threadId: string;
+    beforeMs: number;
+    afterMs: number;
+    observedMs: number;
+  }[];
   recordCertification: boolean;
   schedule: {
     action: string;
@@ -707,6 +715,8 @@ const rejectLegacySelectors = (input: unknown): void => {
 };
 
 class NativeOperationError extends Error {}
+class ServerClockMismatchError extends Error {}
+class ServerClockUnverifiedError extends ArgumentResolutionError {}
 class UnsupportedFaultPointError extends Error {
   readonly code: string;
 
@@ -827,8 +837,163 @@ interface TraceStepExecution {
   processName?: string;
   processEpoch?: number;
   recorder: CheckRecorder;
+  serverClock?: ServerClockVerifier;
   startedOperations: Map<string, string>;
   step: ConformancePlanStep;
+}
+
+interface ServerClockState {
+  active: boolean;
+  verified: boolean;
+  threads: Map<string, { beforeMs: number; afterMs: number }>;
+}
+
+interface ClockedThreadRequest {
+  beforeMs: number;
+  state: ServerClockState;
+  threadId: string;
+}
+
+class ServerClockVerifier {
+  private readonly states = new Map<
+    JsonRpcAdapterClient,
+    Map<unknown, ServerClockState>
+  >();
+  private readonly selections: ServerClockState[] = [];
+  private readonly processes = new Map<string, ServerClockState>();
+
+  constructor(
+    private readonly database: string,
+    private readonly recorder: CheckRecorder
+  ) {}
+
+  async before(
+    request: TraceStepExecution
+  ): Promise<ClockedThreadRequest | undefined> {
+    const state = this.states.get(request.client)?.get(request.instance);
+    if (
+      !state?.active ||
+      request.step.operation !== "kernel.thread.create" ||
+      isOperationHandleStep(request.step) ||
+      !isRecord(request.input) ||
+      typeof request.input.threadId !== "string"
+    ) {
+      return undefined;
+    }
+    return {
+      beforeMs: await postgresServerClockMs(this.database),
+      state,
+      threadId: request.input.threadId,
+    };
+  }
+
+  async after(
+    request: TraceStepExecution,
+    outcome: OperationOutcome,
+    clocked: ClockedThreadRequest | undefined
+  ): Promise<void> {
+    if (clocked !== undefined && outcome.kind === "result") {
+      const afterMs = await postgresServerClockMs(this.database);
+      if (afterMs < clocked.beforeMs) {
+        throw new StorageResourceError(
+          "measure PostgreSQL server clock for",
+          new Error("server clock moved backwards during the adapter request")
+        );
+      }
+      clocked.state.threads.set(clocked.threadId, {
+        beforeMs: clocked.beforeMs,
+        afterMs,
+      });
+    }
+    if (
+      request.step.action !== "setClock" ||
+      !isRecord(request.input) ||
+      request.input.domain !== "backend"
+    ) {
+      return;
+    }
+    if (request.input.source === "server") {
+      if (outcome.kind !== "result") {
+        throw new ServerClockMismatchError("adapter rejected the server clock");
+      }
+      const state: ServerClockState = {
+        active: true,
+        verified: false,
+        threads: new Map(),
+      };
+      const instances = this.states.get(request.client) ?? new Map();
+      instances.set(request.instance, state);
+      this.states.set(request.client, instances);
+      this.processes.set(request.processName ?? "primary", state);
+      this.selections.push(state);
+    } else {
+      const state = this.states.get(request.client)?.get(request.instance);
+      if (state !== undefined) {
+        state.active = false;
+      }
+    }
+  }
+
+  restore(
+    processName: string,
+    client: JsonRpcAdapterClient,
+    instance: unknown
+  ): void {
+    const state = this.processes.get(processName);
+    if (state === undefined || !state.active) {
+      return;
+    }
+    const instances = this.states.get(client) ?? new Map();
+    instances.set(instance, state);
+    this.states.set(client, instances);
+  }
+
+  observe(request: TraceStepExecution, result: unknown): void {
+    const state = this.states.get(request.client)?.get(request.instance);
+    if (
+      !state?.active ||
+      request.step.operation !== "kernel.thread.list" ||
+      !isRecord(result) ||
+      !Array.isArray(result.threads)
+    ) {
+      return;
+    }
+    for (const thread of result.threads) {
+      if (!isRecord(thread) || typeof thread.threadId !== "string") {
+        continue;
+      }
+      const interval = state.threads.get(thread.threadId);
+      if (interval === undefined) {
+        continue;
+      }
+      const observedMs = thread.createdAtMs;
+      if (typeof observedMs !== "number" || !Number.isSafeInteger(observedMs)) {
+        throw new ServerClockMismatchError(
+          "adapter returned an invalid server clock observation"
+        );
+      }
+      this.recorder.serverClockMeasurements.push({
+        database: this.database,
+        threadId: thread.threadId,
+        ...interval,
+        observedMs,
+      });
+      if (observedMs < interval.beforeMs || observedMs > interval.afterMs) {
+        throw new ServerClockMismatchError(
+          `adapter server clock ${observedMs} is outside PostgreSQL interval [${interval.beforeMs}, ${interval.afterMs}]`
+        );
+      }
+      state.verified = true;
+    }
+  }
+
+  finish(): void {
+    if (this.selections.some((state) => !state.verified)) {
+      throw new ServerClockUnverifiedError(
+        "server clock selection has no timed thread creation and matching thread.list observation"
+      );
+    }
+  }
 }
 
 const validateStartedInput = (
@@ -876,22 +1041,24 @@ const armBlockingFault = async (
   }
 };
 
-const observeTraceStep = async ({
-  catalogOperation,
-  check,
-  client,
-  contextInput,
-  controls,
-  input,
-  inspectQuery,
-  instance,
-  observed,
-  processName,
-  processEpoch,
-  recorder,
-  startedOperations,
-  step,
-}: TraceStepExecution) => {
+const observeTraceStep = async (request: TraceStepExecution) => {
+  const {
+    catalogOperation,
+    check,
+    client,
+    contextInput,
+    controls,
+    input,
+    inspectQuery,
+    instance,
+    observed,
+    processName,
+    processEpoch,
+    recorder,
+    serverClock,
+    startedOperations,
+    step,
+  } = request;
   const timeoutMs = controls.deadlineMs;
   const handleStep = isOperationHandleStep(step);
   const nativeOutcome = !handleStep || step.action === "await";
@@ -902,6 +1069,7 @@ const observeTraceStep = async ({
     throw new ArgumentResolutionError(inputProblem);
   }
   client.setLosslessObservations(catalogOperation !== undefined);
+  const clocked = await serverClock?.before(request);
   let outcome:
     | OperationOutcome
     | { kind: "started"; operationHandle: string }
@@ -930,6 +1098,7 @@ const observeTraceStep = async ({
     throw new Error("orchestration receipt cannot become an observation");
   }
   observed.outcome = outcome;
+  await serverClock?.after(request, outcome, clocked);
   if (nativeOutcome) {
     validateTraceFaultOutcome(
       recorder,
@@ -957,6 +1126,7 @@ const observeTraceStep = async ({
   if (outcome.kind === "error") {
     recorder.operationErrors.push(outcome.error);
   }
+  serverClock?.observe(request, context.result);
 
   const extraEvents = handleStep
     ? []
@@ -1089,6 +1259,7 @@ interface LifecycleStepRequest {
   processName?: string;
   input: unknown;
   recorder: CheckRecorder;
+  serverClock?: ServerClockVerifier;
   timeoutMs: number;
   state: LifecycleState;
   step: ConformancePlanStep;
@@ -1197,6 +1368,7 @@ const runLifecycleStep = async ({
   processName,
   input,
   recorder,
+  serverClock,
   state,
   step,
   storageRef,
@@ -1258,6 +1430,9 @@ const runLifecycleStep = async ({
         );
         if (outcome.kind !== "result") {
           throw new Error(`failed to restore ${domain} clock`);
+        }
+        if (domain === "backend" && clock.source === "server") {
+          serverClock?.restore(processName ?? "primary", client, instance);
         }
       }
       break;
@@ -1335,10 +1510,14 @@ const runTraceCheck = async (
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
   const steps = check.steps ?? [];
+  const serverClock =
+    manifest.storage === "postgres-database" && storageRef !== undefined
+      ? new ServerClockVerifier(storageRef, recorder)
+      : undefined;
   if (
     steps.some((step) => step.action === "spawn" || step.action === "collect")
   ) {
-    return await runMultiTraceCheck(
+    const result = await runMultiTraceCheck(
       {
         appendCleanupFailure,
         barrierReceipt,
@@ -1349,14 +1528,16 @@ const runTraceCheck = async (
         createTraceStepRequest,
         diagnoseTraceStep,
         isLifecycleAction,
-        observeTraceStep,
+        observeTraceStep: async (request) =>
+          await observeTraceStep({ ...request, serverClock }),
         readEvaluations,
         recordFaultAttemptHandles,
         recordFaultAttempts,
         recordSchedule,
         rejectLegacySelectors,
         rememberClock,
-        runLifecycleStep,
+        runLifecycleStep: async (request) =>
+          await runLifecycleStep({ ...request, serverClock }),
         validateStartedInput,
         withCheckCleanup,
       },
@@ -1368,6 +1549,10 @@ const runTraceCheck = async (
       storageRef,
       supervisor
     );
+    if (result.status !== "fail") {
+      serverClock?.finish();
+    }
+    return result;
   }
   const projected = steps.some((step) => step.arguments !== undefined);
   if (projected) {
@@ -1451,6 +1636,7 @@ const runTraceCheck = async (
         faultAttempts,
         input,
         recorder,
+        serverClock,
         timeoutMs: Math.min(controls.deadlineMs ?? 10_000, 10_000),
         state: { client, instance, processRunning },
         step,
@@ -1539,6 +1725,7 @@ const runTraceCheck = async (
       observed,
       processEpoch: supervisor?.current.epoch ?? 1,
       recorder,
+      serverClock,
       startedOperations,
       step,
     });
@@ -1568,7 +1755,7 @@ const runTraceCheck = async (
     diagnoseTraceStep(check, step, context, arrivals, captures, recorder);
     await visit(index + 1);
   };
-  return await withCheckCleanup(
+  const result = await withCheckCleanup(
     async () => {
       await visit(0);
       const finalContext: RunnerContext = {
@@ -1617,6 +1804,10 @@ const runTraceCheck = async (
       return appendCleanupFailure(result, error);
     }
   );
+  if (result.status !== "fail") {
+    serverClock?.finish();
+  }
+  return result;
 };
 
 const executeCheck = async (
@@ -1779,6 +1970,16 @@ const executeCheck = async (
       );
     }
     const assertionResults = [
+      ...(error instanceof ServerClockMismatchError ||
+      error instanceof ServerClockUnverifiedError
+        ? [
+            {
+              assertionId: `${check.checkId}.serverClock`,
+              message,
+              status: "fail" as const,
+            },
+          ]
+        : []),
       ...(error instanceof NativeOperationError
         ? [
             {
@@ -1834,7 +2035,10 @@ const classifyFailure = (
   if (thrown instanceof ObservationEncodingError) {
     return "adapter_protocol";
   }
-  if (thrown instanceof NativeOperationError) {
+  if (
+    thrown instanceof NativeOperationError ||
+    thrown instanceof ServerClockMismatchError
+  ) {
     return "implementation";
   }
 
@@ -1927,6 +2131,7 @@ const runCheck = async (
     faults: createFaultActivationTracker(),
     observation: [],
     operationErrors: [],
+    serverClockMeasurements: [],
     recordCertification,
     ...(!recordCertification || storageRef === undefined
       ? {}
@@ -2027,6 +2232,9 @@ const runCheck = async (
         ...checkResult.details,
         schedule: recorder.schedule,
         traceObservations: recorder.observation,
+        ...(recorder.serverClockMeasurements.length === 0
+          ? {}
+          : { serverClockMeasurements: recorder.serverClockMeasurements }),
         ...(recorder.processes === undefined
           ? {}
           : {

@@ -184,6 +184,39 @@ export const postgresServerVersion = async (
   );
 };
 
+export const postgresServerClockMs = async (
+  database: string
+): Promise<number> =>
+  await storageOperation("read PostgreSQL server clock for", async () => {
+    const { stdout } = await exec("psql", [
+      "-XAt",
+      "-F",
+      "\t",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-d",
+      database,
+      "-c",
+      "SELECT current_database(), (extract(epoch from clock_timestamp()) * 1000)::bigint",
+    ]);
+    const [connected, value, ...extra] = stdout.trim().split("\t");
+    if (
+      connected !== database ||
+      value === undefined ||
+      !/^\d+$/u.test(value) ||
+      extra.length !== 0
+    ) {
+      throw new Error("PostgreSQL returned an invalid server clock reading");
+    }
+    const nowMs = Number(value);
+    if (!Number.isSafeInteger(nowMs)) {
+      throw new Error(
+        "PostgreSQL server clock is outside the safe integer range"
+      );
+    }
+    return nowMs;
+  });
+
 export const withCheckStorage = async <T>(
   kind: DurableStorageKind,
   check: (storageRef: string) => Promise<T>
