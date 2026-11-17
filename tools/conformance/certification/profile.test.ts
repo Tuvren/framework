@@ -25,9 +25,9 @@ test("real profile bundles round-trip and validate the packet-resolved register"
   const adapterPath =
     "typescript/kernel/conformance-adapter/adapter-sqlite.json";
   const manifest = await readAdapterManifest(adapterPath);
-  const profiles = (
-    await readProfileAuthority(manifest, manifest.authorityPackets)
-  ).get("tuvren.kernel.protocol");
+  const profiles = (await readProfileAuthority(manifest.authorityPackets)).get(
+    "tuvren.kernel.protocol"
+  );
   if (profiles === undefined) {
     throw new Error("missing kernel profiles");
   }
@@ -233,14 +233,31 @@ test("the composite capability retains legacy coverage without selecting it for 
   }
 });
 
+test("packet overrides resolve claimed profiles and their authority together", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const overridden = {
+    ...adapter,
+    authorityPackets: ["spec/core/authority-packet.json"],
+  };
+  const packets = ["spec/kernel/authority-packet.json"];
+  const profiles = await readClaimedProfiles(overridden, packets);
+  const authority = await readProfileAuthority(packets);
+  const plans = await readPlans(overridden, { packets, plans: [] });
+  expect(profiles).toHaveLength(1);
+  for (const profile of profiles) {
+    expect(() =>
+      assertProfileClaimInventory(profile, plans, authority)
+    ).not.toThrow();
+  }
+});
+
 test("each kernel profile has an exact two-way claim inventory", async () => {
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-sqlite.json"
   );
-  const authority = await readProfileAuthority(
-    adapter,
-    adapter.authorityPackets
-  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
   const profiles = authority.get("tuvren.kernel.protocol");
   if (profiles === undefined) {
     throw new Error("missing kernel profiles");
@@ -287,10 +304,7 @@ test("a complete harness run rejects a changed durable inventory before launchin
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-sqlite.json"
   );
-  const authority = await readProfileAuthority(
-    adapter,
-    adapter.authorityPackets
-  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
   const profiles = authority.get("tuvren.kernel.protocol");
   if (profiles === undefined) {
     throw new Error("missing kernel profiles");
@@ -367,10 +381,7 @@ test("shared checks have one owner even when another profile has their capabilit
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-postgres.json"
   );
-  const authority = await readProfileAuthority(
-    adapter,
-    adapter.authorityPackets
-  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
   const profiles = authority.get("tuvren.kernel.protocol") ?? [];
   const memory = profiles.find((entry) => entry.profileId === "kernel.memory");
   const reopen = profiles.find(
@@ -417,10 +428,7 @@ test("inventory includes step claims and rejects claims whose checks are missing
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-sqlite.json"
   );
-  const authority = await readProfileAuthority(
-    adapter,
-    adapter.authorityPackets
-  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
   const profile = authority
     .get("tuvren.kernel.protocol")
     ?.find((entry) => entry.profileId === "kernel.persistent-reopen");
@@ -474,10 +482,7 @@ test("inventory does not accept checks from another packet or duplicate ownershi
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-postgres.json"
   );
-  const authority = await readProfileAuthority(
-    adapter,
-    adapter.authorityPackets
-  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
   const profiles = authority.get("tuvren.kernel.protocol") ?? [];
   const reopen = profiles.find(
     (entry) => entry.profileId === "kernel.persistent-reopen"
@@ -534,10 +539,7 @@ test("inventory fails closed when capability-based ownership is ambiguous", asyn
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-postgres.json"
   );
-  const authority = await readProfileAuthority(
-    adapter,
-    adapter.authorityPackets
-  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
   const profiles = authority.get("tuvren.kernel.protocol") ?? [];
   const shared = profiles.find(
     (entry) => entry.profileId === "kernel.shared-backend"

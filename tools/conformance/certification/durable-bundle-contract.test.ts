@@ -44,10 +44,7 @@ const run = async (args: string[]) => {
 
 test("empty and populated registers round-trip in every certificate, including incomplete ones", async () => {
   const manifest = await readAdapterManifest(sqlite);
-  const authority = await readProfileAuthority(
-    manifest,
-    manifest.authorityPackets
-  );
+  const authority = await readProfileAuthority(manifest.authorityPackets);
   const profiles = authority.get("tuvren.kernel.protocol");
   if (profiles === undefined) {
     throw new Error("missing profile authority");

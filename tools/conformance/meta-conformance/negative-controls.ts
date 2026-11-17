@@ -41,6 +41,12 @@ import type {
 import { createVerificationLogs } from "../../scripts/lib/verification-logs.ts";
 import type { VerificationLogs } from "../../scripts/lib/verification-logs.ts";
 import {
+  CERTIFICATION_MANIFEST_PATH,
+  findCertifiedEntriesForAdapter,
+  readCertificationManifest,
+} from "../certification/certification-manifest.ts";
+import type { CertificationManifest } from "../certification/certification-manifest.ts";
+import {
   controlOutcomes,
   controlRunId,
 } from "../certification/control-link.ts";
@@ -279,7 +285,7 @@ const readProfileObligations = async (
     return undefined;
   }
   const adapter = await readValidatedAdapterManifest(config.controlAdapter);
-  const authority = await readProfileAuthority(adapter, [config.packet]);
+  const authority = await readProfileAuthority([config.packet]);
   const profile = [...authority.values()]
     .flat()
     .find((entry) => entry.profileId === config.profile);
@@ -1458,11 +1464,40 @@ const assertRegisterGate = async (
   );
 };
 
+interface CertificationGateFleet {
+  certifiedReports: readonly NegativeControlReport[];
+  diagnosticReports: readonly NegativeControlReport[];
+}
+
+const certificationGateFleet = (
+  manifest: CertificationManifest,
+  reports: readonly NegativeControlReport[]
+): CertificationGateFleet => {
+  const certifiedReports: NegativeControlReport[] = [];
+  const diagnosticReports: NegativeControlReport[] = [];
+  for (const report of reports) {
+    const certified = findCertifiedEntriesForAdapter(
+      manifest,
+      report.control.adapter,
+      fromRoot(".")
+    ).some((entry) => entry.profile === report.profile);
+    (certified ? certifiedReports : diagnosticReports).push(report);
+  }
+  return { certifiedReports, diagnosticReports };
+};
+
 export const checkFleetGate = async (
   configs: readonly NegativeControlPortConfig[],
   reports: readonly NegativeControlReport[]
 ): Promise<string[]> => {
   const failures: string[] = [];
+  const certificationManifest = await readCertificationManifest(
+    fromRoot(CERTIFICATION_MANIFEST_PATH)
+  );
+  const { certifiedReports } = certificationGateFleet(
+    certificationManifest,
+    reports
+  );
   for (const config of configs) {
     try {
       const manifest = await readControlManifest(config.packet);
@@ -1473,7 +1508,7 @@ export const checkFleetGate = async (
       if (obligations === undefined) {
         continue;
       }
-      const fleet = reports.filter(
+      const fleet = certifiedReports.filter(
         (report) =>
           report.profile === config.profile && report.mode === "enforcing"
       );
