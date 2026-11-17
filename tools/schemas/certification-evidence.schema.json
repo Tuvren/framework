@@ -155,6 +155,15 @@
         }
       }
     },
+    "undetectedClaim": {
+      "type": "object",
+      "required": ["claimId", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "claimId": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "type": "string", "pattern": "\\S" }
+      }
+    },
     "selectionEntry": {
       "type": "object",
       "required": ["checkId", "selected"],
@@ -387,7 +396,15 @@
     },
     "negativeControlRunId": {
       "$ref": "#/$defs/nonEmptyString"
+    },
+    "undetectedClaims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/undetectedClaim" },
+      "uniqueItems": true
     }
+  },
+  "dependentRequired": {
+    "certificate": ["undetectedClaims"]
   },
   "if": {
     "required": ["certificate"],

@@ -453,6 +453,9 @@ export const PINNED_CERTIFICATION_EVIDENCE = {
   implementationId: "typescript-kernel",
   language: "typescript",
   negativeControlRunId: "control-run-1",
+  undetectedClaims: [
+    { claimId: "kernel.example.gap", reason: "No designated control." },
+  ],
   nonApplicableCheckIds: ["kernel.reclamation.sweep"],
   selection: [
     { checkId: "kernel.store.put", selected: true },

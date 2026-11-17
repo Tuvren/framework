@@ -10,6 +10,7 @@ import { version as bunVersion } from "bun";
 import type {
   ConformanceCheckResult,
   ConformanceRunStatus,
+  UndetectedClaim,
 } from "../../scripts/lib/conformance-contract.js";
 import type { AdapterManifest } from "../harness/adapter-client.js";
 import { readAdapterManifest } from "../harness/run-plans.js";
@@ -19,7 +20,11 @@ import {
 } from "../meta-conformance/claim-coverage.js";
 import type { CompiledConformancePlan } from "../plan-compiler/index.js";
 import { matchesControlRun, profileControlReport } from "./control-link.js";
-import { readProfileScopedControls } from "./profile.js";
+import {
+  assertUndetectedClaimsMatch,
+  readProfileScopedControls,
+  readProfileUndetectedClaims,
+} from "./profile.js";
 import type { CertificationProfile } from "./profile.js";
 import {
   computeCertificateDigests,
@@ -47,6 +52,12 @@ export interface BundleFields {
   digests?: CertificateDigests;
   environment?: Record<string, unknown>;
   negativeControlRunId?: string;
+  undetectedClaims?: readonly UndetectedClaim[];
+}
+
+interface CertificateSnapshot {
+  digests?: CertificateDigests;
+  undetectedClaims: readonly UndetectedClaim[];
 }
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
@@ -441,12 +452,24 @@ export const finishCertificate = async (
   results: readonly ConformanceCheckResult[],
   status: ConformanceRunStatus,
   before: CertificateDigests | undefined,
-  snapshotAfter?: CertificateDigests
+  snapshotAfter?: CertificateSnapshot
 ): Promise<BundleFields> => {
   if (profile === undefined) {
     return {};
   }
+  const undetectedClaims = await readProfileUndetectedClaims(
+    options.packets.length > 0 ? options.packets : manifest.authorityPackets,
+    profile
+  );
+  if (snapshotAfter !== undefined) {
+    assertUndetectedClaimsMatch(
+      snapshotAfter.undetectedClaims,
+      undetectedClaims,
+      profile.profileId
+    );
+  }
   const incomplete = {
+    undetectedClaims,
     certificate: {
       complete: false,
       profile: profile.profileId,
@@ -457,7 +480,7 @@ export const finishCertificate = async (
     return incomplete;
   }
   const after =
-    snapshotAfter ??
+    snapshotAfter?.digests ??
     (await computeCertificateDigests(manifest, options.adapter));
   const environment = await certificationEnvironment(manifest, results);
   if (JSON.stringify(before) !== JSON.stringify(after)) {
@@ -476,6 +499,7 @@ export const finishCertificate = async (
         result.details?.storageIdentity !== undefined
     );
   return {
+    undetectedClaims,
     certificate: {
       complete,
       profile: profile.profileId,

@@ -5,15 +5,122 @@ import path from "node:path";
 
 import { spawn } from "bun";
 
+import { PINNED_CERTIFICATION_EVIDENCE } from "../../scripts/conformance/certification-schema-examples.ts";
+import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
 import { selectCheck } from "../harness/check-selection.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
+import { finishCertificate } from "./bundle.ts";
 import {
+  assertCertificateUndetectedClaims,
   assertProfileCapabilities,
   assertProfileClaimInventory,
   findProfileSelectionFailures,
   readClaimedProfiles,
   readProfileAuthority,
+  readProfileUndetectedClaims,
+  readUndetectedRegister,
 } from "./profile.ts";
+
+test("real profile bundles round-trip and validate the packet-resolved register", async () => {
+  const adapterPath =
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json";
+  const manifest = await readAdapterManifest(adapterPath);
+  const profiles = (
+    await readProfileAuthority(manifest, manifest.authorityPackets)
+  ).get("tuvren.kernel.protocol");
+  if (profiles === undefined) {
+    throw new Error("missing kernel profiles");
+  }
+  for (const profile of profiles) {
+    const expected = await readProfileUndetectedClaims(
+      manifest.authorityPackets,
+      profile
+    );
+    const register = await readUndetectedRegister(
+      "spec/kernel/authority-packet.json",
+      profile.profileId
+    );
+    expect(
+      Object.fromEntries(
+        expected.map(({ claimId, reason }) => [claimId, reason])
+      )
+    ).toEqual(register);
+    expect(expected.length > 0).toBe(profile.profileId === "kernel.memory");
+    const fields = await finishCertificate(
+      {
+        adapter: adapterPath,
+        capabilities: [],
+        checks: [],
+        packets: [],
+        plans: [],
+      },
+      manifest,
+      profile,
+      [],
+      [],
+      "not_applicable",
+      undefined
+    );
+    expect(fields.undetectedClaims).toEqual(expected);
+    if (expected.length > 0) {
+      await expect(
+        finishCertificate(
+          {
+            adapter: adapterPath,
+            capabilities: [],
+            checks: [],
+            packets: [],
+            plans: [],
+          },
+          manifest,
+          profile,
+          [],
+          [],
+          "not_applicable",
+          undefined,
+          { undetectedClaims: [] }
+        )
+      ).rejects.toThrow("register");
+    }
+    const bundle: unknown = JSON.parse(
+      JSON.stringify({ ...PINNED_CERTIFICATION_EVIDENCE, ...fields })
+    );
+    assertConformanceEvidence(bundle, profile.profileId);
+    await expect(
+      assertCertificateUndetectedClaims(
+        bundle,
+        manifest.authorityPackets,
+        profile
+      )
+    ).resolves.toEqual(expected);
+    const original = { ...PINNED_CERTIFICATION_EVIDENCE, ...fields };
+    const omitted = { ...original };
+    Reflect.deleteProperty(omitted, "undetectedClaims");
+    expect(() => assertConformanceEvidence(omitted, profile.profileId)).toThrow(
+      "undetectedClaims"
+    );
+    const first = expected[0];
+    const invalid = [
+      [...expected, { claimId: "unrelated", reason: "gap" }],
+      ...(first === undefined
+        ? []
+        : [
+            expected.slice(1),
+            [{ ...first, reason: "changed" }, ...expected.slice(1)],
+            [...expected, first],
+          ]),
+    ];
+    for (const undetectedClaims of invalid) {
+      await expect(
+        assertCertificateUndetectedClaims(
+          { ...original, undetectedClaims },
+          manifest.authorityPackets,
+          profile
+        )
+      ).rejects.toThrow("register");
+    }
+  }
+});
 
 test("a complete profile run rejects a missing required capability", () => {
   const profiles = [

@@ -113,6 +113,11 @@ export interface ConformanceEvidenceSummary {
   unsupportedChecks?: number;
 }
 
+export interface UndetectedClaim {
+  claimId: string;
+  reason: string;
+}
+
 export interface ConformanceEvidence {
   adapterId?: string;
   runId?: string;
@@ -131,6 +136,7 @@ export interface ConformanceEvidence {
   suiteId: string;
   suiteVersion: string;
   summary: ConformanceEvidenceSummary;
+  undetectedClaims?: readonly UndetectedClaim[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -706,6 +712,17 @@ export const assertConformanceEvidence: (
   }
 
   assertCertificationEvidenceSchema(value, label);
+  if (Array.isArray(value.undetectedClaims)) {
+    assertUniqueIds(
+      value.undetectedClaims.map((entry: unknown) => {
+        if (!isRecord(entry) || typeof entry.claimId !== "string") {
+          throw new Error(`${label}.undetectedClaims has an invalid claim`);
+        }
+        return entry.claimId;
+      }),
+      `${label}.undetectedClaims`
+    );
+  }
 };
 
 const deriveAssertionStatus = (

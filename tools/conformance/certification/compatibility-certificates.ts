@@ -3,11 +3,17 @@ import path from "node:path";
 
 import { runCommand } from "../../scripts/lib/command-runner.js";
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.js";
+import type { UndetectedClaim } from "../../scripts/lib/conformance-contract.js";
 import type { AdapterManifest } from "../harness/adapter-client.js";
 import { readAdapterManifest } from "../harness/run-plans.js";
 import { readCertificationManifest } from "./certification-manifest.js";
 import type { CertificationInventoryEntry } from "./certification-manifest.js";
-import { readClaimedProfiles } from "./profile.js";
+import {
+  assertCertificateUndetectedClaims,
+  assertUndetectedClaimsMatch,
+  readClaimedProfiles,
+  readProfileUndetectedClaims,
+} from "./profile.js";
 import type { CertificationProfile } from "./profile.js";
 import type { SourceCertificateDigests } from "./provenance.js";
 import { computeSourceCertificateDigests } from "./provenance.js";
@@ -18,6 +24,7 @@ export interface CompatibilityCertificate {
   implementationId: string;
   profile: string;
   status: "certified";
+  undetectedClaims: readonly UndetectedClaim[];
 }
 
 interface CertifiedAdapter extends CertificationInventoryEntry {
@@ -154,7 +161,8 @@ export const assertCompatibilityCertificates = async (
   }
   for (const { manifest, adapter, profiles } of adapters) {
     const current = await computeSourceCertificateDigests(manifest, adapter);
-    for (const { profileId } of profiles) {
+    for (const profile of profiles) {
+      const { profileId } = profile;
       const row = rows.find(
         (entry) =>
           entry.implementationId === manifest.implementationId &&
@@ -164,6 +172,11 @@ export const assertCompatibilityCertificates = async (
       if (row === undefined) {
         throw new Error(`missing certificate row ${profileId}`);
       }
+      assertUndetectedClaimsMatch(
+        row.undetectedClaims,
+        await readProfileUndetectedClaims(manifest.authorityPackets, profile),
+        `${manifest.implementationId} ${profileId}`
+      );
       for (const field of digestFields) {
         if (row.digests[field] !== current[field]) {
           throw new Error(
@@ -266,6 +279,11 @@ export const collectCompatibilityCertificates = async (): Promise<
             `inconsistent certificate bundle for ${adapter.project} ${profile.profileId}`
           );
         }
+        const undetectedClaims = await assertCertificateUndetectedClaims(
+          bundle,
+          adapter.manifest.authorityPackets,
+          profile
+        );
         runId = currentRun;
         previousDigests = currentDigests;
         rows.push({
@@ -274,6 +292,7 @@ export const collectCompatibilityCertificates = async (): Promise<
           implementationId: adapter.manifest.implementationId,
           profile: profile.profileId,
           status: "certified",
+          undetectedClaims,
         });
       }
     }

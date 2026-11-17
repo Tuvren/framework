@@ -74,6 +74,13 @@ test("verifier-authority digests cover explicitly selected register content and 
     }
     await writeFile(packet, JSON.stringify(actualPacket));
     const actual = await computeSourceVerifierDigests([packet]);
+    const actualInputs = await collectSourceVerifierInputs([packet]);
+    for (const registerPath of Object.values(references)) {
+      if (typeof registerPath !== "string") {
+        throw new Error("invalid register path");
+      }
+      expect(actualInputs.registers).toContain(path.resolve(registerPath));
+    }
     const changed = {
       ...actualPacket,
       undetectedRegisters: {
