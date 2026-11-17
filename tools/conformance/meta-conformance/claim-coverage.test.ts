@@ -1,4 +1,6 @@
 import { expect, test } from "bun:test";
+
+import "../certification/control-link.test.ts";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -243,11 +245,14 @@ test("a nonexistent assertion with a matching check prefix is not a detector", (
 });
 
 test("the fleet gate requires a real kill and rejects invalid runs", () => {
+  const baseline = { status: "pass", postBaseline: { status: "pass" } };
   const passing = {
+    control: baseline,
     counted: true,
     mutants: [{ mutantId: "mutant.a", outcome: "killed" }],
   };
   const unsupported = {
+    control: baseline,
     counted: true,
     mutants: [
       {
@@ -271,6 +276,7 @@ test("the fleet gate requires a real kill and rejects invalid runs", () => {
       [
         passing,
         {
+          control: baseline,
           counted: true,
           mutants: [{ mutantId: "mutant.a", outcome: "unsupported" }],
         },
@@ -287,6 +293,7 @@ test("the fleet gate requires a real kill and rejects invalid runs", () => {
       [
         passing,
         {
+          control: baseline,
           counted: true,
           mutants: [{ mutantId: "mutant.a", outcome: "invalid" }],
         },
@@ -300,14 +307,30 @@ test("the fleet gate requires a real kill and rejects invalid runs", () => {
       [{ ...passing, counted: false }]
     )
   ).toThrow("baseline");
+  for (const postBaseline of [
+    undefined,
+    { status: "fail" },
+    { status: "error" },
+  ]) {
+    expect(() =>
+      assertNegativeControlGate(
+        "example.profile",
+        ["mutant.a"],
+        [{ ...passing, control: { status: "pass", postBaseline } }]
+      )
+    ).toThrow("baseline");
+  }
 });
 
 test("a SQLite non-activation cannot borrow PostgreSQL's kill", () => {
+  const baseline = { status: "pass", postBaseline: { status: "pass" } };
   const postgres = {
+    control: baseline,
     counted: true,
     mutants: [{ mutantId: "kernel.example", outcome: "killed" }],
   };
   const sqlite = {
+    control: baseline,
     counted: true,
     mutants: [
       {
@@ -406,6 +429,7 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
     control: {
       adapter: "test",
       status: "pass",
+      postBaseline: { status: "pass" },
       conditionalAssertions: profileConditionalAssertions(
         profile.claimIds,
         plans
@@ -554,6 +578,35 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
       );
       expect(failures, label).toEqual([expect.stringContaining(message)]);
     }
+    await writeFile(
+      copy,
+      JSON.stringify({
+        ...packet,
+        undetectedRegisters: {
+          ...original,
+          [config.profile]:
+            "tools/conformance/meta-conformance/fixtures/undetected-stale.json",
+        },
+      })
+    );
+    const detecting = reports.find(
+      (report) => report.profile === config.profile
+    );
+    if (detecting === undefined) throw new Error("missing profile report");
+    const other = {
+      ...detecting,
+      control: { ...detecting.control, adapter: "other" },
+      mutants: detecting.mutants.map((mutant) => ({
+        ...mutant,
+        designatedFailures: [],
+      })),
+    };
+    expect(
+      await checkFleetGate([{ ...config, packet: copy }], [other])
+    ).toEqual([]);
+    expect(
+      await checkFleetGate([{ ...config, packet: copy }], [other, detecting])
+    ).toEqual([expect.stringContaining("stale detected claims")]);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

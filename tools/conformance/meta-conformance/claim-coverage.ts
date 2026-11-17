@@ -61,6 +61,47 @@ export const profileConditionalAssertions = (
   );
 };
 
+export const profileConditionalGroups = (
+  claimIds: readonly string[],
+  plans: readonly CompiledConformancePlan[]
+): string[][] => {
+  const claims = new Set(claimIds);
+  const groups = new Map<string, string[]>();
+  for (const { checks } of plans) {
+    for (const { check } of checks) {
+      const sections = [
+        {
+          claims: check.claimIds ?? [],
+          assertions: check.assertions,
+          stepId: undefined,
+        },
+        ...(check.steps ?? []).map((step) => ({
+          claims: step.claimIds ?? [],
+          assertions: step.assertions ?? [],
+          stepId: step.stepId,
+        })),
+      ];
+      for (const section of sections) {
+        if (!section.claims.some((claim) => claims.has(claim))) continue;
+        for (const [index, assertion] of section.assertions.entries()) {
+          if (assertion.when === undefined) continue;
+          const key = JSON.stringify([
+            check.checkId,
+            section.stepId,
+            assertion.when.path,
+          ]);
+          const group = groups.get(key) ?? [];
+          group.push(
+            assertionId(check.checkId, index, assertion.kind, section.stepId)
+          );
+          groups.set(key, group);
+        }
+      }
+    }
+  }
+  return [...groups.values()];
+};
+
 export interface CoverageControl {
   claimIds: readonly string[];
   designatedAssertions?: readonly string[];
@@ -141,6 +182,7 @@ export const assertClaimCoverage = (
 };
 
 interface GateReport {
+  control: { status: string; postBaseline?: { status: string } };
   counted: boolean;
   mutants: readonly { mutantId: string; outcome: string; reason?: string }[];
 }
@@ -176,7 +218,15 @@ export const assertNegativeControlGate = (
   required: readonly string[],
   reports: readonly GateReport[]
 ): void => {
-  if (reports.length === 0 || reports.some((report) => !report.counted)) {
+  if (
+    reports.length === 0 ||
+    reports.some(
+      (report) =>
+        !report.counted ||
+        report.control.status !== "pass" ||
+        report.control.postBaseline?.status !== "pass"
+    )
+  ) {
     throw new Error(`${profile} negative-control baseline did not pass`);
   }
   for (const id of required) {

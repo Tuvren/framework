@@ -397,6 +397,9 @@
     "negativeControlRunId": {
       "$ref": "#/$defs/nonEmptyString"
     },
+    "controlRunExecution": {
+      "const": "in-process"
+    },
     "undetectedClaims": {
       "type": "array",
       "items": { "$ref": "#/$defs/undetectedClaim" },

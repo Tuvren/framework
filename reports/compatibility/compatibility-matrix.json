@@ -4,184 +4,6 @@
     {
       "backend": "memory",
       "digests": {
-        "adapterManifest": "b241fe9b6fef765e3631434a6954db6a1fbb3aef423e8d4f3bae32054160e4bd",
-        "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
-        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
-        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
-        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
-        "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "03fc36d688c258146dac3c0107c3d19e289a66d2cdccf200591f530db3eecdf5"
-      },
-      "implementationId": "rust-kernel",
-      "profile": "kernel.memory",
-      "status": "certified",
-      "undetectedClaims": [
-        {
-          "claimId": "kernel.syscall.backend_capability.shared_lease_clock",
-          "reason": "No designated control falsifies the backend capability descriptor or changes the transaction clock used for staged-result timestamps."
-        },
-        {
-          "claimId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
-          "reason": "No required control accepts a branch head from lateral lineage; the stale-head control designates concurrent-writer assertions instead."
-        },
-        {
-          "claimId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
-          "reason": "No required control permits a run to begin an out-of-order step."
-        },
-        {
-          "claimId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
-          "reason": "No required control permits run completion with a missing event object."
-        },
-        {
-          "claimId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
-          "reason": "No required control permits creation of a run on a busy branch."
-        },
-        {
-          "claimId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
-          "reason": "No required control permits schema registration with a duplicate path."
-        },
-        {
-          "claimId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
-          "reason": "No required control permits tree creation without a required schema path."
-        },
-        {
-          "claimId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
-          "reason": "No required control permits a tree diff across mismatched schemas."
-        },
-        {
-          "claimId": "kernel.syscall.lineage.cross_thread_rejection",
-          "reason": "The supplied controls contain no mutant that accepts a cross-thread node in branch lineage."
-        },
-        {
-          "claimId": "kernel.syscall.logical.branch_list",
-          "reason": "The supplied controls contain no branch-enumeration omission or pagination mutant."
-        },
-        {
-          "claimId": "kernel.syscall.logical.thread_list",
-          "reason": "The supplied controls contain no thread-enumeration omission or pagination mutant."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.modify_composition",
-          "reason": "The supplied controls contain no verdict-composition mutant."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
-          "reason": "The supplied controls contain no verdict-composition mutant for this fixture."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.node_identity_walk",
-          "reason": "The supplied controls contain no TurnNode identity or lineage-walk corruption mutant."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_canonical_cbor",
-          "reason": "The noncanonical-CBOR control targets decoder acceptance, not schema encoding; no schema-encoding mutant is designated."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip",
-          "reason": "The supplied controls contain no schema registration or roundtrip corruption mutant."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
-          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
-        },
-        {
-          "claimId": "kernel.syscall.protocol.tree_manifest_identity",
-          "reason": "The supplied controls contain no tree-manifest or TurnTree identity corruption mutant."
-        },
-        {
-          "claimId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
-          "reason": "The supplied controls contain no ciphertext-retention or unchanged-lineage mutant; host key destruction remains outside the kernel claim."
-        },
-        {
-          "claimId": "kernel.syscall.run-liveness.expired_listing",
-          "reason": "The premature-takeover control detects live-lease inclusion, not the complete expired-record membership claim; no dedicated membership mutant is designated."
-        },
-        {
-          "claimId": "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
-          "reason": "The supplied controls contain no mutant that includes paused runs in expiry listing."
-        },
-        {
-          "claimId": "kernel.syscall.run-liveness.stale_preemption",
-          "reason": "The supplied controls contain no designated mutant for the complete stale-preemption checkpoint and recovery claim; collateral failures do not count as detection."
-        },
-        {
-          "claimId": "kernel.syscall.scope-isolation.own_content",
-          "reason": "The cross-scope mutant is designated against legacy cross-scope reads; no supplied mutant targets these own-scope content observations."
-        },
-        {
-          "claimId": "kernel.syscall.scope-isolation.own_enumeration",
-          "reason": "The cross-scope mutant targets legacy store reads; no supplied mutant targets these own-scope enumeration observations."
-        }
-      ]
-    },
-    {
-      "backend": "memory",
-      "digests": {
         "adapterManifest": "4acfae5c3310713181146242d75c2cb2a15b5090aa5ea64f744f9745fefbfe0e",
         "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
         "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
@@ -189,7 +11,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
         "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "03fc36d688c258146dac3c0107c3d19e289a66d2cdccf200591f530db3eecdf5"
+        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
       },
       "implementationId": "typescript-kernel-memory",
       "profile": "kernel.memory",
@@ -367,7 +189,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
         "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "03fc36d688c258146dac3c0107c3d19e289a66d2cdccf200591f530db3eecdf5"
+        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
@@ -384,7 +206,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
         "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "03fc36d688c258146dac3c0107c3d19e289a66d2cdccf200591f530db3eecdf5"
+        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
@@ -401,7 +223,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
         "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "03fc36d688c258146dac3c0107c3d19e289a66d2cdccf200591f530db3eecdf5"
+        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
@@ -418,7 +240,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
         "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "03fc36d688c258146dac3c0107c3d19e289a66d2cdccf200591f530db3eecdf5"
+        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.persistent-reopen",
@@ -435,7 +257,7 @@
         "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
         "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
         "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "03fc36d688c258146dac3c0107c3d19e289a66d2cdccf200591f530db3eecdf5"
+        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.process-crash",
@@ -1810,7 +1632,7 @@
             "kernel.syscall"
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
-          "reportLabel": "Rust process-local kernel baseline",
+          "reportLabel": "Rust process-local kernel positive conformance",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
           "suiteId": "tuvren.kernel.protocol",

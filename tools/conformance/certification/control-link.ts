@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 
-import { NEGATIVE_CONTROL_PORTS } from "../meta-conformance/negative-control-config.js";
 import type { VerifierDigests } from "./provenance.js";
 
 export interface ControlAdapterDigest {
@@ -24,24 +23,43 @@ const object = (value: unknown): Record<string, unknown> | undefined =>
 
 export const profileControlReport = (
   value: unknown,
-  profile: string
+  profile: string,
+  adapter?: string
 ): { controlRun: unknown; reports: unknown[] } | undefined => {
   const document = object(value);
   if (!Array.isArray(document?.reports)) {
     return undefined;
   }
   if (Array.isArray(document.controlRuns)) {
-    const runs = document.controlRuns.filter(
-      (run: unknown) => object(run)?.profile === profile
-    );
+    const runs = document.controlRuns.filter((value: unknown) => {
+      const run = object(value);
+      return (
+        run?.profile === profile &&
+        (adapter === undefined ||
+          (Array.isArray(run.adapters) &&
+            run.adapters.some(
+              (entry: unknown) => object(entry)?.adapter === adapter
+            )))
+      );
+    });
     if (runs.length !== 1) {
       return undefined;
     }
+    const run = object(runs[0]);
+    const names = new Set(
+      Array.isArray(run?.adapters)
+        ? run.adapters.map((entry: unknown) => object(entry)?.adapter)
+        : []
+    );
     return {
       controlRun: runs[0],
-      reports: document.reports.filter(
-        (report: unknown) => object(report)?.profile === profile
-      ),
+      reports: document.reports.filter((value: unknown) => {
+        const report = object(value);
+        return (
+          report?.profile === profile &&
+          names.has(object(report.control)?.adapter)
+        );
+      }),
     };
   }
   return { controlRun: document.controlRun, reports: document.reports };
@@ -54,6 +72,8 @@ export const controlOutcomes = (reports: readonly unknown[]): unknown[] =>
     return {
       adapter: control?.adapter,
       baseline: control?.status,
+      postBaseline: control?.postBaseline,
+      execution: control?.execution,
       conditionalAssertions: control?.conditionalAssertions ?? [],
       ...(control?.branchControls === undefined
         ? {}
@@ -67,6 +87,9 @@ export const controlOutcomes = (reports: readonly unknown[]): unknown[] =>
             return {
               activated: mutant?.activated,
               designatedFailures: mutant?.designatedFailures,
+              designatedAssertionsEvaluated:
+                mutant?.designatedAssertionsEvaluated,
+              detectionChecks: mutant?.detectionChecks,
               expectedRejection: mutant?.expectedRejection,
               kind: mutant?.kind,
               mutantId: mutant?.mutantId,
@@ -93,6 +116,7 @@ interface ControlExpectation {
   scopedControls: readonly string[];
   profile: string;
   verifierDigests: VerifierDigests;
+  publishedTestkit?: boolean;
 }
 
 const parseAdapters = (
@@ -120,8 +144,7 @@ const parseAdapters = (
 const validMutants = (
   values: readonly unknown[],
   expected: ControlExpectation,
-  killed: Set<string>,
-  unsupportedReasons: Readonly<Record<string, string>>
+  killed: Set<string>
 ): boolean => {
   const seen = new Set<string>();
   for (const value of values) {
@@ -130,30 +153,27 @@ const validMutants = (
       return false;
     }
     seen.add(mutant.mutantId);
-    if (mutant.outcome === "unsupported") {
-      const reason = unsupportedReasons[mutant.mutantId];
-      if (
-        typeof reason !== "string" ||
-        !reason.trim() ||
-        mutant.reason !== reason
-      ) {
-        return false;
-      }
-      continue;
-    }
     const mutantId = mutant.mutantId;
+    const evaluated = mutant.designatedAssertionsEvaluated;
     const detected =
       mutant.kind === "implementation"
         ? Array.isArray(mutant.designatedFailures) &&
+          Array.isArray(evaluated) &&
           mutant.designatedFailures.some(
             (id: unknown) =>
               typeof id === "string" &&
+              evaluated.includes(id) &&
               (!expected.scopedControls.includes(mutantId) ||
                 expected.semanticAssertions.includes(id))
           )
         : (mutant.kind === "observation" ||
             mutant.kind === "instrumentation") &&
-          typeof mutant.expectedRejection === "string";
+          typeof mutant.expectedRejection === "string" &&
+          mutant.expectedRejection.trim().length > 0 &&
+          Array.isArray(mutant.detectionChecks) &&
+          mutant.detectionChecks.some(
+            (id: unknown) => typeof id === "string" && id.length > 0
+          );
     if (
       !(mutant.outcome === "killed" && mutant.activated === true && detected)
     ) {
@@ -180,41 +200,10 @@ const collectBranches = (
   }
 };
 
-const validBranchControls = (
-  value: unknown,
-  adapters: ReadonlySet<string>,
-  branches: Set<string>
-): boolean => {
-  if (value === undefined) {
-    return true;
-  }
-  if (!Array.isArray(value)) {
-    return false;
-  }
-  const seen = new Set<string>();
-  for (const entry of value) {
-    const branch = object(entry);
-    if (
-      typeof branch?.adapter !== "string" ||
-      !adapters.has(branch.adapter) ||
-      seen.has(branch.adapter) ||
-      branch.status !== "pass" ||
-      !Array.isArray(branch.conditionalAssertions)
-    ) {
-      return false;
-    }
-    seen.add(branch.adapter);
-    collectBranches(branch.conditionalAssertions, branches);
-  }
-  return true;
-};
-
 const validReport = (
   value: unknown,
   expected: ControlExpectation,
-  adapters: ReadonlySet<string>,
-  killed: Set<string>,
-  branches: Set<string>
+  killed: Set<string>
 ): boolean => {
   const report = object(value);
   const control = object(report?.control);
@@ -223,6 +212,9 @@ const validReport = (
     report.mode !== "enforcing" ||
     report.profile !== expected.profile ||
     control?.status !== "pass" ||
+    object(control.postBaseline)?.status !== "pass" ||
+    (expected.publishedTestkit === true &&
+      control.execution !== "in-process") ||
     !Array.isArray(report.findings) ||
     report.findings.length > 0 ||
     !Array.isArray(report.notRun) ||
@@ -231,44 +223,34 @@ const validReport = (
   ) {
     return false;
   }
+  const before = new Set<string>();
+  const after = new Set<string>();
   if (Array.isArray(control.conditionalAssertions)) {
-    collectBranches(control.conditionalAssertions, branches);
+    collectBranches(control.conditionalAssertions, before);
+  }
+  const postBaseline = object(control.postBaseline);
+  if (Array.isArray(postBaseline?.conditionalAssertions)) {
+    collectBranches(postBaseline.conditionalAssertions, after);
   }
   return (
-    validBranchControls(control.branchControls, adapters, branches) &&
-    validMutants(
-      report.mutants,
-      expected,
-      killed,
-      NEGATIVE_CONTROL_PORTS.find(
-        (config) =>
-          config.profile === expected.profile &&
-          config.controlAdapter === control.adapter
-      )?.unsupportedReasons ?? {}
-    )
+    expected.conditionalAssertions.every(
+      (id) => before.has(id) && after.has(id)
+    ) && validMutants(report.mutants, expected, killed)
   );
 };
 
-const validFleet = (
+const validOwnReport = (
   reports: readonly unknown[],
-  expected: ControlExpectation,
-  adapters: readonly ControlAdapterDigest[]
+  expected: ControlExpectation
 ): boolean => {
-  const own = reports
-    .map(object)
-    .find((report) => object(report?.control)?.adapter === expected.adapter);
-  if (own === undefined) {
-    return false;
-  }
+  const own = reports.filter(
+    (report) => object(object(report)?.control)?.adapter === expected.adapter
+  );
+  if (own.length !== 1) return false;
   const killed = new Set<string>();
-  const branches = new Set<string>();
-  const adapterNames = new Set(adapters.map(({ adapter }) => adapter));
   return (
-    reports.every((report) =>
-      validReport(report, expected, adapterNames, killed, branches)
-    ) &&
-    expected.negativeControls.every((id) => killed.has(id)) &&
-    expected.conditionalAssertions.every((id) => branches.has(id))
+    validReport(own[0], expected, killed) &&
+    expected.negativeControls.every((id) => killed.has(id))
   );
 };
 
@@ -276,7 +258,11 @@ export const matchesControlRun = (
   value: unknown,
   expected: ControlExpectation
 ): string | undefined => {
-  const document = profileControlReport(value, expected.profile);
+  const document = profileControlReport(
+    value,
+    expected.profile,
+    expected.adapter
+  );
   const run = object(document?.controlRun);
   const actualDigests = object(run?.verifierDigests);
   if (
@@ -296,6 +282,8 @@ export const matchesControlRun = (
   const adapters = parseAdapters(run.adapters);
   if (
     adapters === undefined ||
+    adapters.filter((adapter) => adapter.adapter === expected.adapter)
+      .length !== 1 ||
     !adapters.some(
       (adapter) =>
         adapter.adapter === expected.adapter &&
@@ -314,7 +302,7 @@ export const matchesControlRun = (
   };
   return JSON.stringify(run.outcomes) === JSON.stringify(identity.outcomes) &&
     controlRunId(identity) === run.id &&
-    validFleet(document.reports, expected, adapters)
+    validOwnReport(document.reports, expected)
     ? run.id
     : undefined;
 };

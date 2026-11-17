@@ -20,6 +20,7 @@ interface RunOptions {
   packets: readonly string[];
   plans: readonly string[];
   shard?: unknown;
+  publishedTestkit?: boolean;
 }
 
 export interface ProfileBundle {

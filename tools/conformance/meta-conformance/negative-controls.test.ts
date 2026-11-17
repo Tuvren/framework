@@ -25,6 +25,7 @@ import type {
 } from "../../scripts/lib/conformance-contract.ts";
 import type { NegativeControlPortConfig } from "./negative-control-config.ts";
 import {
+  baselinesCoverKills,
   classifyMutantRun,
   runBranchControl,
   runNegativeControls,
@@ -228,9 +229,20 @@ beforeAll(async () => {
     "adapter-mutant.json",
     adapterManifest("synthetic-mutant", ["--mutant-env", MUTANT_ENV])
   );
+  const brokenMutant = await writeJson(
+    "adapter-mutant-broken.json",
+    adapterManifest("synthetic-mutant", [
+      "--broken",
+      "--mutant-env",
+      MUTANT_ENV,
+    ])
+  );
   logDirectory = nodePath.join(directory, "verification-logs");
   report = await runNegativeControls(config(control), { logDirectory });
-  brokenReport = await runNegativeControls(config(broken), { logDirectory });
+  brokenReport = await runNegativeControls(
+    { ...config(broken), mutantAdapter: brokenMutant },
+    { logDirectory }
+  );
 }, 120_000);
 
 afterAll(async () => {
@@ -262,6 +274,27 @@ describe("negative-control runner", () => {
           "mutant is not supported and has no recorded per-port reason",
       });
     }
+  });
+
+  test("rejects a changed mutant configuration before running controls", async () => {
+    const mismatch = await writeJson(
+      "adapter-mutant-mismatch.json",
+      adapterManifest("synthetic-mutant", [
+        "--broken",
+        "--mutant-env",
+        MUTANT_ENV,
+      ])
+    );
+    const result = await runNegativeControls(
+      {
+        ...config(nodePath.join(directory, "adapter.json")),
+        mutantAdapter: mismatch,
+      },
+      { logDirectory }
+    );
+    expect(result.counted).toBe(false);
+    expect(result.findings.join(" ")).toContain("differ in configuration");
+    expect(result.mutants).toEqual([]);
   });
 
   test("rejects a profile that omits a tagged manifest control", async () => {
@@ -312,10 +345,70 @@ describe("negative-control runner", () => {
     );
   });
 
-  test("counts mutants only after the unmutated control passes", () => {
+  test("counts mutants only after both unmutated baselines pass", () => {
     expect(report.control.status).toBe("pass");
+    expect(report.control.postBaseline?.status).toBe("pass");
     expect(report.counted).toBe(true);
     expect(report.findings).toEqual([]);
+  });
+
+  test("both baselines must pass each actual detector and rejection check", () => {
+    const check = {
+      checkId: "synthetic.alpha_check",
+      status: "pass" as const,
+      assertionResults: [{ assertionId: ALPHA, status: "pass" as const }],
+    };
+    const evidence = {
+      boundary: "shared",
+      checkResults: [check],
+      implementationId: "synthetic",
+      language: "typescript",
+      status: "pass" as const,
+      suiteId: "tuvren.synthetic",
+      suiteVersion: "0.1.0",
+      summary: { failedChecks: 0, passedChecks: 1, totalChecks: 1 },
+    };
+    const kill = mutant("synthetic.wrong-alpha");
+    expect(baselinesCoverKills(evidence, evidence, [kill])).toBe(true);
+    expect(
+      baselinesCoverKills(evidence, evidence, [
+        { ...kill, designatedAssertionsEvaluated: [ALPHA, BETA] },
+      ])
+    ).toBe(false);
+    expect(
+      baselinesCoverKills(evidence, { ...evidence, checkResults: [] }, [kill])
+    ).toBe(false);
+    expect(
+      baselinesCoverKills({ ...evidence, checkResults: [] }, evidence, [kill])
+    ).toBe(false);
+    expect(
+      baselinesCoverKills(
+        evidence,
+        {
+          ...evidence,
+          checkResults: [
+            {
+              ...check,
+              assertionResults: [
+                { ...check.assertionResults[0], when: "not_applied" as const },
+              ],
+            },
+          ],
+        },
+        [kill]
+      )
+    ).toBe(false);
+    const rejection = {
+      ...kill,
+      designatedFailures: [],
+      detectionChecks: [check.checkId],
+    };
+    expect(baselinesCoverKills(evidence, evidence, [rejection])).toBe(true);
+    expect(
+      baselinesCoverKills(evidence, { ...evidence, checkResults: [] }, [
+        rejection,
+      ])
+    ).toBe(false);
   });
 
   test("classifies a mutant that crashes at startup as invalid", () => {

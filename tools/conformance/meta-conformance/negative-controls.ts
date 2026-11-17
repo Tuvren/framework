@@ -89,6 +89,8 @@ export interface MutantReport {
   artifacts?: string[];
   collateral: { assertions: CollateralFailure[]; count: number };
   designatedFailures: string[];
+  designatedAssertionsEvaluated?: string[];
+  detectionChecks?: string[];
   expectedRejection?: string;
   kind: string;
   mutantId: string;
@@ -104,7 +106,18 @@ export interface NegativeControlReport {
     artifacts?: string[];
     failedChecks?: string[];
     reason?: string;
+    execution?: "in-process";
     status: ConformanceRunStatus | "error";
+    postBaseline?: {
+      status: ConformanceRunStatus | "error";
+      failedChecks?: string[];
+      reason?: string;
+      conditionalAssertions?: readonly {
+        assertionId: string;
+        status: string;
+        when?: string;
+      }[];
+    };
     summary?: ConformanceEvidenceSummary;
     conditionalAssertions?: readonly {
       assertionId: string;
@@ -344,6 +357,32 @@ const readAdapterManifest = async (
 
 const sortedStrings = (value: unknown): string[] =>
   readStrings(value).toSorted();
+
+const configuration = (manifest: Record<string, unknown>) => {
+  const command = readStrings(manifest.command);
+  const normalized: string[] = [];
+  for (let index = 0; index < command.length; index += 1) {
+    const argument = command[index];
+    if (argument === "--adapter-id" || argument === "--mutant-env") {
+      if (argument === "--adapter-id") normalized.push(argument, "<adapter>");
+      index += 1;
+    } else if (argument !== "--mutant-from-env" && argument !== undefined) {
+      normalized.push(argument);
+    }
+  }
+  return {
+    authorityPackets: sortedStrings(manifest.authorityPackets),
+    boundary: manifest.boundary,
+    capabilities: sortedStrings(manifest.capabilities),
+    command: normalized,
+    executable: manifest.executable,
+    language: manifest.language,
+    protocol: manifest.protocol,
+    storage: manifest.storage ?? "none",
+    suiteId: manifest.suiteId,
+    suiteVersion: manifest.suiteVersion,
+  };
+};
 
 const readActivation = (
   probe: unknown
@@ -720,6 +759,7 @@ const describeControl = (control: ControlEntry) => ({
   activationCount: 0,
   collateral: { assertions: [] as CollateralFailure[], count: 0 },
   designatedFailures: [] as string[],
+  designatedAssertionsEvaluated: [] as string[],
   ...(control.expectedRejection === undefined
     ? {}
     : { expectedRejection: control.expectedRejection }),
@@ -772,6 +812,15 @@ export const classifyMutantRun = (
         !control.claimIds.some((claim) => profileClaims?.includes(claim)) ||
         profileAssertions.includes(id)
     )
+  );
+  base.designatedAssertionsEvaluated = evidence.checkResults.flatMap((check) =>
+    check.assertionResults
+      .filter(
+        (assertion) =>
+          designated.has(assertion.assertionId) &&
+          assertion.when !== "not_applied"
+      )
+      .map((assertion) => assertion.assertionId)
   );
   const failing = failingAssertions(evidence);
   base.designatedFailures = failing
@@ -828,7 +877,10 @@ export const classifyMutantRun = (
       );
     }
     if (rejections.length > 0) {
-      return result("killed");
+      return {
+        ...result("killed"),
+        detectionChecks: rejections.map((check) => check.checkId),
+      };
     }
     return result(
       "survived",
@@ -926,15 +978,14 @@ const runBranchControls = async (
   config: NegativeControlPortConfig,
   options: NegativeControlRunOptions,
   workDirectory: string,
-  selected: readonly { mutantId: string }[],
   checks: readonly string[]
-): Promise<boolean> => {
+): Promise<void> => {
   if (
     report.mode !== "enforcing" ||
     (config.branchAdapters?.length ?? 0) === 0 ||
     checks.length === 0
   ) {
-    return true;
+    return;
   }
   const branchControls = await inSequence(
     (config.branchAdapters ?? []).map((adapter, index) => ({ adapter, index })),
@@ -948,18 +999,6 @@ const runBranchControls = async (
       )
   );
   report.control.branchControls = branchControls;
-  const failed = branchControls.filter((control) => control.status !== "pass");
-  if (failed.length === 0) {
-    return true;
-  }
-  report.findings.push(
-    ...failed.map(
-      (control) =>
-        `branch control ${control.adapter} did not pass (${control.status}${control.reason === undefined ? "" : `: ${control.reason}`})`
-    )
-  );
-  report.notRun = selected.map(({ mutantId }) => mutantId);
-  return false;
 };
 
 const countMutantOutcomes = (report: NegativeControlReport): void => {
@@ -971,7 +1010,40 @@ const countMutantOutcomes = (report: NegativeControlReport): void => {
   }
 };
 
-/** Runs the unmutated control, then every selected mutant, unchanged plans. */
+export const baselinesCoverKills = (
+  before: ConformanceEvidence,
+  after: ConformanceEvidence,
+  mutants: readonly MutantReport[]
+): boolean => {
+  const passed = (
+    evidence: ConformanceEvidence,
+    mutant: MutantReport
+  ): boolean =>
+    [
+      ...mutant.designatedFailures,
+      ...(mutant.designatedAssertionsEvaluated ?? []),
+    ].every((id) =>
+      evidence.checkResults.some(
+        (check) =>
+          check.status === "pass" &&
+          check.assertionResults.some(
+            (assertion) =>
+              assertion.assertionId === id &&
+              assertion.status === "pass" &&
+              assertion.when !== "not_applied"
+          )
+      )
+    ) &&
+    (mutant.detectionChecks ?? []).every((id) =>
+      evidence.checkResults.some(
+        (check) => check.checkId === id && check.status === "pass"
+      )
+    );
+  return mutants
+    .filter((mutant) => mutant.outcome === "killed")
+    .every((mutant) => passed(before, mutant) && passed(after, mutant));
+};
+
 export const runNegativeControls = async (
   config: NegativeControlPortConfig,
   options: NegativeControlRunOptions = {}
@@ -1010,13 +1082,12 @@ export const runNegativeControls = async (
   if (!readStrings(controlManifest.profiles).includes(config.profile)) {
     report.mode = "report";
   }
-  const controlCapabilities = sortedStrings(controlManifest.capabilities);
   if (
-    controlCapabilities.join("\n") !==
-    sortedStrings(mutantManifest.capabilities).join("\n")
+    JSON.stringify(configuration(controlManifest)) !==
+    JSON.stringify(configuration(mutantManifest))
   ) {
     report.findings.push(
-      `${report.mutantAdapter} does not declare the capabilities of ${report.control.adapter}, so the control and mutant runs differ in configuration`
+      `${report.mutantAdapter} and ${report.control.adapter} differ in configuration`
     );
     report.notRun = selected.map(({ mutantId }) => mutantId);
     return report;
@@ -1090,18 +1161,13 @@ export const runNegativeControls = async (
       );
       return report;
     }
-    if (
-      !(await runBranchControls(
-        report,
-        config,
-        options,
-        workDirectory,
-        selected,
-        obligations?.branchChecks ?? []
-      ))
-    ) {
-      return report;
-    }
+    await runBranchControls(
+      report,
+      config,
+      options,
+      workDirectory,
+      obligations?.branchChecks ?? []
+    );
     report.counted = true;
 
     report.mutants = await inSequence(
@@ -1148,6 +1214,40 @@ export const runNegativeControls = async (
         };
       }
     );
+    const postRun = await runHarness(
+      config,
+      config.controlAdapter,
+      undefined,
+      nodePath.join(workDirectory, "post-baseline"),
+      options,
+      retain
+    );
+    const postEvidence = postRun.evidence;
+    report.control.postBaseline = {
+      status: postEvidence?.status ?? "error",
+      ...(postRun.failure === undefined ? {} : { reason: postRun.failure }),
+      ...(postEvidence === undefined
+        ? {}
+        : {
+            failedChecks: postEvidence.checkResults
+              .filter(({ status }) => status === "fail")
+              .map(({ checkId }) => checkId),
+            conditionalAssertions: postEvidence.checkResults.flatMap((check) =>
+              check.assertionResults.filter(
+                (assertion) => assertion.when !== undefined
+              )
+            ),
+          }),
+    };
+    if (
+      postEvidence?.status !== "pass" ||
+      !baselinesCoverKills(evidence, postEvidence, report.mutants)
+    ) {
+      report.counted = false;
+      report.findings.push(
+        "post-mutant baseline did not pass the designated checks; no mutant is counted"
+      );
+    }
   } finally {
     await rm(workDirectory, { force: true, recursive: true });
     await logs?.finish(false);
@@ -1304,7 +1404,46 @@ const snapshotControls = async (
       };
     }
   );
-  return { verifierDigests, adapters };
+  const mutantManifests = await inSequence(configs, async (config) => ({
+    adapter: display(config.controlAdapter),
+    digest: await digestAdapterManifest(config.mutantAdapter),
+  }));
+  return { verifierDigests, adapters, mutantManifests };
+};
+
+const assertRegisterGate = async (
+  config: NegativeControlPortConfig,
+  reports: readonly NegativeControlReport[]
+): Promise<void> => {
+  const manifest = await readControlManifest(config.packet);
+  const obligations = await readProfileObligations(config, manifest.controls);
+  if (obligations === undefined) return;
+  const killed = new Map<string, string[]>();
+  for (const report of reports.filter(
+    (entry) =>
+      entry.profile === config.profile &&
+      entry.mode === "enforcing" &&
+      entry.counted &&
+      entry.control.status === "pass" &&
+      entry.control.postBaseline?.status === "pass"
+  )) {
+    for (const mutant of report.mutants.filter(
+      (entry) => entry.outcome === "killed"
+    )) {
+      killed.set(mutant.mutantId, [
+        ...(killed.get(mutant.mutantId) ?? []),
+        ...mutant.designatedFailures,
+      ]);
+    }
+  }
+  assertClaimCoverage(
+    config.profile,
+    obligations.claimIds,
+    obligations.controls,
+    obligations.reasons,
+    obligations.checks,
+    killed
+  );
 };
 
 export const checkFleetGate = async (
@@ -1331,25 +1470,7 @@ export const checkFleetGate = async (
         obligations.negativeControls,
         fleet
       );
-      const killed = new Map<string, string[]>();
-      for (const report of fleet.filter((entry) => entry.counted)) {
-        for (const mutant of report.mutants.filter(
-          (entry) => entry.outcome === "killed"
-        )) {
-          killed.set(mutant.mutantId, [
-            ...(killed.get(mutant.mutantId) ?? []),
-            ...mutant.designatedFailures,
-          ]);
-        }
-      }
-      assertClaimCoverage(
-        config.profile,
-        obligations.claimIds,
-        obligations.controls,
-        obligations.reasons,
-        obligations.checks,
-        killed
-      );
+      await assertRegisterGate(config, reports);
       assertConditionalBranchCoverage(
         obligations.conditionalAssertions,
         fleet
@@ -1422,35 +1543,84 @@ const main = async (): Promise<void> => {
         ? await checkFleetGate(group.configs, groupReports)
         : [];
     const before = snapshots[groups.indexOf(group)];
-    if (
-      before !== undefined &&
-      JSON.stringify(before) !==
-        JSON.stringify(await snapshotControls(group.configs))
-    ) {
+    const after =
+      before === undefined ? undefined : await snapshotControls(group.configs);
+    const stable =
+      before !== undefined && JSON.stringify(before) === JSON.stringify(after);
+    if (before !== undefined && !stable) {
       failures.push(
         `${group.profile}: verifier or implementation inputs changed during the control run`
       );
     }
     gateFailures.push(...failures);
-    if (before === undefined) {
-      return undefined;
+    if (before === undefined) return [];
+    let registerValid = true;
+    try {
+      const first = group.configs[0];
+      if (first === undefined) throw new Error("missing control configuration");
+      await assertRegisterGate(first, groupReports);
+    } catch {
+      registerValid = false;
     }
-    const identity = {
-      profile: group.profile,
-      status:
-        failures.length === 0 &&
-        groupReports.every(
-          (report) => report.counted && report.mode === "enforcing"
-        )
-          ? ("pass" as const)
-          : ("fail" as const),
-      verifierDigests: before.verifierDigests,
-      adapters: before.adapters,
-      outcomes: controlOutcomes(groupReports),
-    };
-    return { ...identity, id: controlRunId(identity) };
+    return await inSequence(group.configs, async (config) => {
+      const report = groupReports.find(
+        (entry) => entry.control.adapter === display(config.controlAdapter)
+      );
+      const adapter = before.adapters.find(
+        (entry) => entry.adapter === display(config.controlAdapter)
+      );
+      if (report === undefined || adapter === undefined)
+        throw new Error("missing implementation control report");
+      let ownValid =
+        report.mode === "enforcing" &&
+        report.findings.length === 0 &&
+        report.notRun.length === 0;
+      try {
+        const manifest = await readControlManifest(config.packet);
+        const obligations = await readProfileObligations(
+          config,
+          manifest.controls
+        );
+        if (obligations === undefined)
+          throw new Error("missing profile obligations");
+        assertNegativeControlGate(group.profile, obligations.negativeControls, [
+          report,
+        ]);
+      } catch {
+        ownValid = false;
+      }
+      const ownStable =
+        after !== undefined &&
+        JSON.stringify(before.verifierDigests) ===
+          JSON.stringify(after.verifierDigests) &&
+        JSON.stringify(adapter) ===
+          JSON.stringify(
+            after.adapters.find((entry) => entry.adapter === adapter.adapter)
+          ) &&
+        JSON.stringify(
+          before.mutantManifests.find(
+            (entry) => entry.adapter === adapter.adapter
+          )
+        ) ===
+          JSON.stringify(
+            after.mutantManifests.find(
+              (entry) => entry.adapter === adapter.adapter
+            )
+          );
+      const identity = {
+        profile: group.profile,
+        status:
+          ownStable && registerValid && ownValid
+            ? ("pass" as const)
+            : ("fail" as const),
+        verifierDigests: before.verifierDigests,
+        adapters: [adapter],
+        outcomes: controlOutcomes([report]),
+      };
+      return { ...identity, id: controlRunId(identity) };
+    });
   });
-  const completedRuns = controlRuns.filter((run) => run !== undefined);
+  const completedRuns = controlRuns.flat();
   const text = `${JSON.stringify({ reports, ...(completedRuns.length === 1 ? { controlRun: completedRuns[0] } : {}), ...(completedRuns.length > 1 ? { controlRuns: completedRuns } : {}) }, null, 2)}\n`;
   const logs = await createVerificationLogs(
     fromRoot(process.env.VERIFY_LOG_DIR ?? ".cache/verification")
