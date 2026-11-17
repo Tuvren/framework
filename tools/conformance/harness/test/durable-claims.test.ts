@@ -68,10 +68,7 @@ test("a durable profile cannot claim an obligation without a loaded check", asyn
     throw new Error("missing durable profile");
   }
   const plans = await readPlans(adapter, { packets: [], plans: [] });
-  const authority = await readProfileAuthority(
-    adapter,
-    adapter.authorityPackets
-  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
   expect(() =>
     assertProfileClaimInventory(profile, plans, authority)
   ).not.toThrow();

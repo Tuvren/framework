@@ -21,8 +21,83 @@ import {
 } from "./claim-coverage.ts";
 import type { CoverageControl } from "./claim-coverage.ts";
 import { NEGATIVE_CONTROL_PORTS } from "./negative-control-config.ts";
-import { checkFleetGate } from "./negative-controls.ts";
+import {
+  checkFleetGate,
+  formatNegativeControlSummary,
+} from "./negative-controls.ts";
 import type { NegativeControlReport } from "./negative-controls.ts";
+
+const assertDiagnosticFleetIsolation = async (
+  config: (typeof NEGATIVE_CONTROL_PORTS)[number],
+  certified: NegativeControlReport
+): Promise<void> => {
+  for (const failure of ["uncounted", "baseline", "post-baseline"] as const) {
+    const diagnostic: NegativeControlReport = {
+      ...certified,
+      control: {
+        ...certified.control,
+        adapter: "rust/kernel-conformance-adapter/adapter.json",
+        status: failure === "baseline" ? "fail" : "pass",
+        postBaseline: {
+          status: failure === "post-baseline" ? "fail" : "pass",
+        },
+      },
+      counted: failure !== "uncounted",
+      findings: [failure],
+      mutants: certified.mutants.map((mutant) => ({
+        ...mutant,
+        outcome: "survived",
+        reason: failure,
+      })),
+    };
+    const reports = [certified, diagnostic];
+    const serialized = JSON.stringify(reports);
+    expect(await checkFleetGate([config], reports), failure).toEqual([]);
+    expect(JSON.stringify(reports)).toBe(serialized);
+    expect(formatNegativeControlSummary(diagnostic)).toContain(failure);
+    expect(formatNegativeControlSummary(diagnostic)).toContain("survived");
+    expect(JSON.parse(serialized)[1].control).toEqual(diagnostic.control);
+    expect(
+      await checkFleetGate(
+        [config],
+        [
+          { ...certified, mutants: [] },
+          { ...diagnostic, mutants: certified.mutants },
+        ]
+      )
+    ).toEqual([expect.stringContaining("was not killed across the fleet")]);
+  }
+  const missingBranches = {
+    ...certified,
+    control: { ...certified.control, conditionalAssertions: [] },
+  };
+  expect(
+    await checkFleetGate(
+      [config],
+      [
+        missingBranches,
+        {
+          ...certified,
+          control: {
+            ...certified.control,
+            adapter: "rust/kernel-conformance-adapter/adapter.json",
+          },
+        },
+      ]
+    )
+  ).toEqual([expect.stringContaining("conditional assertions not exercised")]);
+  expect(await checkFleetGate([config], [missingBranches, certified])).toEqual(
+    []
+  );
+  for (const control of [
+    { ...certified.control, status: "fail" as const },
+    { ...certified.control, postBaseline: { status: "fail" as const } },
+  ]) {
+    expect(await checkFleetGate([config], [{ ...certified, control }])).toEqual(
+      [expect.stringContaining("baseline did not pass")]
+    );
+  }
+};
 
 test("requires each profile claim to have a designated detector or a recorded reason", () => {
   const controls = [
@@ -415,7 +490,7 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
     throw new Error("invalid packet");
   }
   const references = await readUndetectedRegisterReferences(packetPath);
-  const authority = await readProfileAuthority(adapter, [packetPath]);
+  const authority = await readProfileAuthority([packetPath]);
   const profiles = authority.get("tuvren.kernel.protocol") ?? [];
   expect([...references.keys()].toSorted()).toEqual(
     profiles.map((profile) => profile.profileId).toSorted()
@@ -427,7 +502,10 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
   ) as { controls: CoverageControl[] };
   const reports: NegativeControlReport[] = profiles.map((profile) => ({
     control: {
-      adapter: "test",
+      adapter:
+        NEGATIVE_CONTROL_PORTS.find(
+          (entry) => entry.profile === profile.profileId
+        )?.controlAdapter ?? "test",
       status: "pass",
       postBaseline: { status: "pass" },
       conditionalAssertions: profileConditionalAssertions(
@@ -487,6 +565,15 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
         throw new Error(`missing ${profile.profileId} configuration`);
       }
       expect(await checkFleetGate([selected], reports)).toEqual([]);
+      if (profile.profileId === "kernel.memory") {
+        const certified = reports.find(
+          (report) => report.profile === profile.profileId
+        );
+        if (certified === undefined) {
+          throw new Error("missing certified memory report");
+        }
+        await assertDiagnosticFleetIsolation(selected, certified);
+      }
       const register = await readUndetectedRegister(
         packetPath,
         profile.profileId
@@ -597,7 +684,10 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
     }
     const other = {
       ...detecting,
-      control: { ...detecting.control, adapter: "other" },
+      control: {
+        ...detecting.control,
+        adapter: "typescript/kernel/conformance-adapter/adapter-postgres.json",
+      },
       mutants: detecting.mutants.map((mutant) => ({
         ...mutant,
         designatedFailures: [],
@@ -608,6 +698,21 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
     ).toEqual([]);
     expect(
       await checkFleetGate([{ ...config, packet: copy }], [other, detecting])
+    ).toEqual([expect.stringContaining("stale detected claims")]);
+    expect(
+      await checkFleetGate(
+        [{ ...config, packet: copy }],
+        [
+          other,
+          {
+            ...detecting,
+            control: {
+              ...detecting.control,
+              adapter: "rust/kernel-conformance-adapter/adapter.json",
+            },
+          },
+        ]
+      )
     ).toEqual([expect.stringContaining("stale detected claims")]);
   } finally {
     await rm(directory, { recursive: true, force: true });

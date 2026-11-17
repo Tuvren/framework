@@ -2824,8 +2824,7 @@ const collectProfileFindings = async (
     return findings;
   }
   const authority = await readProfileAuthority(
-    manifest,
-    manifest.authorityPackets
+    options.packets.length > 0 ? options.packets : manifest.authorityPackets
   );
   for (const profile of profiles) {
     assertProfileClaimInventory(profile, plans, authority);

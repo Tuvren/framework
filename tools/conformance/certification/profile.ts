@@ -104,7 +104,6 @@ export const readClaimedProfiles = async (
 };
 
 export const readProfileAuthority = async (
-  _manifest: AdapterManifest,
   packetPaths: readonly string[]
 ): Promise<ReadonlyMap<string, readonly CertificationProfile[]>> => {
   const byPacket = new Map<string, readonly CertificationProfile[]>();
