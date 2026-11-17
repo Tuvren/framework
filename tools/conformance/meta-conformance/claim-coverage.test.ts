@@ -592,7 +592,9 @@ test("packet registers are checked by the fleet gate against profiles, schemas a
     const detecting = reports.find(
       (report) => report.profile === config.profile
     );
-    if (detecting === undefined) throw new Error("missing profile report");
+    if (detecting === undefined) {
+      throw new Error("missing profile report");
+    }
     const other = {
       ...detecting,
       control: { ...detecting.control, adapter: "other" },

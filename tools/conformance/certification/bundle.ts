@@ -366,8 +366,9 @@ const controlRun = async (
       )
     );
     const groups = profileConditionalGroups(profile.claimIds, plans);
-    if (groups.some((group) => !group.some((id) => applied.has(id))))
+    if (groups.some((group) => !group.some((id) => applied.has(id)))) {
       return undefined;
+    }
     const { implementation, adapterManifest, ...verifierDigests } = digests;
     return matchesControlRun(value, {
       adapter: path.relative(ROOT, path.resolve(ROOT, options.adapter)),

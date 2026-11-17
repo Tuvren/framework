@@ -246,7 +246,9 @@ const validOwnReport = (
   const own = reports.filter(
     (report) => object(object(report)?.control)?.adapter === expected.adapter
   );
-  if (own.length !== 1) return false;
+  if (own.length !== 1) {
+    return false;
+  }
   const killed = new Set<string>();
   return (
     validReport(own[0], expected, killed) &&

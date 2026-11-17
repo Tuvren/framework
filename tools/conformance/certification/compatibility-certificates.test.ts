@@ -147,15 +147,18 @@ test("Rust retains its positive matrix lane but has no certificate row", async (
     matrix === null ||
     !("implementations" in matrix) ||
     !Array.isArray(matrix.implementations)
-  )
+  ) {
     throw new Error("missing implementations");
+  }
   expect(
     matrix.implementations.some(
       (entry) => entry.implementationId === "rust-kernel"
     )
   ).toBe(true);
   const example = rows[0];
-  if (example === undefined) throw new Error("missing certificate");
+  if (example === undefined) {
+    throw new Error("missing certificate");
+  }
   await expect(
     assertCompatibilityCertificates([
       ...rows,

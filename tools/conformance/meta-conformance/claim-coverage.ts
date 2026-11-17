@@ -61,6 +61,45 @@ export const profileConditionalAssertions = (
   );
 };
 
+const collectCheckConditionalGroups = (
+  check: ConformancePlanCheck,
+  claims: ReadonlySet<string>,
+  groups: Map<string, string[]>
+): void => {
+  const sections = [
+    {
+      claims: check.claimIds ?? [],
+      assertions: check.assertions,
+      stepId: undefined,
+    },
+    ...(check.steps ?? []).map((step) => ({
+      claims: step.claimIds ?? [],
+      assertions: step.assertions ?? [],
+      stepId: step.stepId,
+    })),
+  ];
+  for (const section of sections) {
+    if (!section.claims.some((claim) => claims.has(claim))) {
+      continue;
+    }
+    for (const [index, assertion] of section.assertions.entries()) {
+      if (assertion.when === undefined) {
+        continue;
+      }
+      const key = JSON.stringify([
+        check.checkId,
+        section.stepId,
+        assertion.when.path,
+      ]);
+      const group = groups.get(key) ?? [];
+      group.push(
+        assertionId(check.checkId, index, assertion.kind, section.stepId)
+      );
+      groups.set(key, group);
+    }
+  }
+};
+
 export const profileConditionalGroups = (
   claimIds: readonly string[],
   plans: readonly CompiledConformancePlan[]
@@ -69,34 +108,7 @@ export const profileConditionalGroups = (
   const groups = new Map<string, string[]>();
   for (const { checks } of plans) {
     for (const { check } of checks) {
-      const sections = [
-        {
-          claims: check.claimIds ?? [],
-          assertions: check.assertions,
-          stepId: undefined,
-        },
-        ...(check.steps ?? []).map((step) => ({
-          claims: step.claimIds ?? [],
-          assertions: step.assertions ?? [],
-          stepId: step.stepId,
-        })),
-      ];
-      for (const section of sections) {
-        if (!section.claims.some((claim) => claims.has(claim))) continue;
-        for (const [index, assertion] of section.assertions.entries()) {
-          if (assertion.when === undefined) continue;
-          const key = JSON.stringify([
-            check.checkId,
-            section.stepId,
-            assertion.when.path,
-          ]);
-          const group = groups.get(key) ?? [];
-          group.push(
-            assertionId(check.checkId, index, assertion.kind, section.stepId)
-          );
-          groups.set(key, group);
-        }
-      }
+      collectCheckConditionalGroups(check, claims, groups);
     }
   }
   return [...groups.values()];

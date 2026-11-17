@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+const SERVER_CLOCK_VALUE = /^\d+$/u;
+
 export type DurableStorageKind = "sqlite-directory" | "postgres-database";
 
 export class StorageResourceError extends Error {
@@ -203,7 +205,7 @@ export const postgresServerClockMs = async (
     if (
       connected !== database ||
       value === undefined ||
-      !/^\d+$/u.test(value) ||
+      !SERVER_CLOCK_VALUE.test(value) ||
       extra.length !== 0
     ) {
       throw new Error("PostgreSQL returned an invalid server clock reading");
