@@ -1,4 +1,21 @@
 entries:
+  - version: v0.52.3
+    date: 2026-11-17
+    changed:
+      - "EPIC-DP Bind durable control evidence to certificates archived: 5 tickets, 15 points, 6165 diff lines, 0 review rounds"
+    added:
+      - "EPIC-DP bound durable control evidence to certificates. The harness verifies a setClock source=server selection against the provisioned PostgreSQL clock, bracketing the plan's own thread creation. Profile claim inventories are checked in both directions with explicit ownership of shared checks. The four undetected registers have a pinned schema (tools/schemas/certification-undetected-register.schema.json), are referenced from the kernel packet's undetectedRegisters, and enter verifier-authority provenance. Every certificate and compatibility row lists undetectedClaims, [] for the durable rows. Control kills and report validity are evaluated per implementation with a post-mutant baseline and the observed conditional branch; Rust leaves the certified fleet until EPIC-DS while keeping its positive lane and 13/3/10 diagnostic."
+      - "Follow-up from EPIC-DP: ServerClockVerifier tracks verification per server-clock selection, not per process epoch: after a restart, a timed thread creation without a later thread.list is not re-required. The only promoted server-clock plan (kernel-clock-skew-syscall.json) and the new contract test both list after restart."
+      - "Follow-up from EPIC-DP: tools/conformance/certification/durable-bundle-contract.test.ts 'durable certificates share a run and link to matching profile control gates' timed out at its 600-second limit three times under host load (load average 30 to 50), including on 213b7b5 without the KRT-DP002 change; it passed in the final verify:kernel and verify runs."
+      - "Follow-up from EPIC-DP: The published-testkit in-process statement is enforced behind a publishedTestkit option of finishCertificate and exercised only with synthetic bundle evidence; EPIC-DN must call it from the published package."
+      - "Follow-up from EPIC-DP: bun run check runs affected-project lint but not the root workspace lint over tools/, so 19 Biome findings in this epic's harness and certification code passed every milestone check and failed only the full bun run verify gate; fixed in 01e8716."
+      - "Follow-up from EPIC-DP: tools/conformance/harness/test/durable-control-mutants.test.ts:497 and :503 fail tsc --project tools/tsconfig.json; the file is unchanged by this epic and the error predates it."
+    by: reconcile
+    fast_lane_through: 4be7ebb0c62b20f007616c2ca44abfe7ca77b05b
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.50.1
   - version: v0.52.2
     date: 2026-11-13
     by: stage

@@ -1,10 +1,11 @@
-artifact_path: "tools/schemas/certification-evidence.schema.json"
-surface: "json"
-flows:
-  - flow-multi-implementation-conformance-compatibility
-boundaries:
-  - BND-29
-companion: "conformance-certification.md"
-certainty: "assumed"
-assumption: "Certificates and failure artifacts follow this schema, extending the evidence contract in tools/scripts/lib/conformance-contract.ts (ADR-0081 and ADR-0084). Each certificate lists undetected claims and links an implementation-matched control run."
-settles_when: "A complete profile run emits a schema-valid bundle, including an exact undetected-claim list and matching control identity; compatibility reporting reads it in a cited closeout."
+artifact_path: tools/schemas/certification-evidence.schema.json
+surface: json
+flows: [flow-multi-implementation-conformance-compatibility]
+boundaries: [BND-29]
+companion: conformance-certification.md
+certainty: settled
+evidence:
+  kind: repository
+  ref: tools/conformance/certification/compatibility-certificates.test.ts
+  date: 2026-11-17
+  note: "Complete profile runs emit schema-valid bundles with the exact undetectedClaims list and a matching per-implementation control identity, and compatibility reporting reads and validates them (compatibility:check and compatibility-certificates.test.ts at 879655c)."

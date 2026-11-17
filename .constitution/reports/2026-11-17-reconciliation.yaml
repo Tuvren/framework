@@ -1,0 +1,33 @@
+date: 2026-11-17
+commit: 4be7ebb
+epics: [DP]
+routed:
+  - stage: tech-spec
+    item: "ADR-0084 decision 6 still says the registers are plain objects read through configuration rather than packet references, and its rationale bullet for decision 6 says the undetected-claims list is not yet met. Since d63b91b the kernel packet's undetectedRegisters references all four registers and since f09d4c4 every certificate and matrix row carries undetectedClaims; update both passages and the companion's 'The pinned register shape lands in DP003 after DO' sentence."
+    from: DP
+  - stage: tech-spec
+    item: "ADR-0084 decision 3 and guideline 5.10 rule 5 require the designated checks to pass unmutated after the mutant run. 879655c runs one unmutated baseline after the whole mutant batch, each mutant in a fresh harness process with isolated per-check storage; the M5 milestone review judged that a faithful reading. Record whether one post-batch baseline is the intended reading or a per-mutant rerun is required."
+    from: DP
+  - stage: tech-spec
+    item: "The server-clock verification observes the kernel-stamped createdAtMs of a plan-issued kernel.thread.create, read back through the plan's kernel.thread.list, against a psql clock_timestamp() bracket, because setClock returns no timestamp. On a same-host PostgreSQL an unshifted worker Date.now() is indistinguishable from the server clock. Record the observation source and its limit next to OD-22's setClock source server shape."
+    from: DP
+  - stage: tech-spec
+    item: "code decision (pattern): Server-clock verification brackets each plan-issued kernel.thread.create with harness psql reads of the provisioned database's clock_timestamp() and requires the createdAtMs from the plan's kernel.thread.list to fall inside; a server-clock selection with no such observation fails as unverified (verification failure), a value outside fails as an implementation failure. [tools/conformance/harness/run.ts, tools/conformance/harness/storage-resource.ts] at 213b7b5"
+    from: DP
+  - stage: tech-spec
+    item: "code decision (convention): Shared-check ownership for the two-way claim inventory: applicable core checks belong to kernel.memory; otherwise the single applicable profile minimal under requiredCapabilities subset order owns the check; ambiguity or a claim owned by two profiles fails closed. Requirements include clock.backend-server when a check selects the server clock. [tools/conformance/certification/profile.ts] at c2611b2"
+    from: DP
+  - stage: tech-spec
+    item: "code decision (convention): The undetected-register reader rejects whitespace-only reasons and duplicate JSON keys beyond the pinned schema; a register entry is stale when a counted implementation's detector killed one of that claim's designated assertions, aggregated per profile across implementations. [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/meta-conformance/claim-coverage.ts] at d63b91b"
+    from: DP
+  - stage: tech-spec
+    item: "code decision (convention): Verifier-authority provenance hashes every register referenced by the selected packet, not only the run's profile register. [tools/conformance/certification/provenance.ts] at d63b91b"
+    from: DP
+  - stage: tech-spec
+    item: "code decision (contract_shape): undetectedClaims entries are emitted in claim-ID order and validated order-independently; duplicate claim IDs are rejected even with differing reasons; the evidence schema requires the field via dependentRequired whenever certificate is present, and compatibility matrix rows carry the same list. [tools/schemas/certification-evidence.schema.json, reports/compatibility/compatibility-matrix.schema.json, tools/conformance/certification/profile.ts] at f09d4c4"
+    from: DP
+  - stage: tech-spec
+    item: "code decision (contract_shape): Control runs carry per-implementation control-run IDs; one unmutated post-mutant baseline brackets the mutant batch and is recorded as control.postBaseline; control and mutant configurations are compared normalized with mutant-manifest stability checks; conditional groups are keyed by check, step, and condition path; published-testkit certificates emit controlRunExecution: in-process. [tools/conformance/certification/control-link.ts, tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/certification/bundle.ts, tools/schemas/certification-evidence.schema.json] at 879655c"
+    from: DP
+proposed_decisions: []
+candidate_terms: []

@@ -1,41 +1,41 @@
 id: DP
-name: "Bind durable control evidence to certificates"
+name: Bind durable control evidence to certificates
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DO]
 priority: 2
 scope:
   paths:
-    - "tools/conformance/harness/storage-resource.ts"
-    - "tools/conformance/harness/run.ts"
-    - "tools/conformance/harness/test/server-clock-verification.test.ts"
-    - "tools/conformance/harness/test/durable-claims.test.ts"
-    - "tools/scripts/verify-kernel.ts"
-    - "tools/scripts/verify.ts"
-    - "tools/conformance/certification"
-    - "tools/conformance/meta-conformance"
-    - "tools/schemas"
-    - "tools/scripts/conformance"
-    - "tools/scripts/lib/conformance-contract.ts"
-    - "spec/kernel/authority-packet.json"
-    - "reports/compatibility"
-    - "tools/scripts/compatibility-report.ts"
+    - tools/conformance/harness/storage-resource.ts
+    - tools/conformance/harness/run.ts
+    - tools/conformance/harness/test/server-clock-verification.test.ts
+    - tools/conformance/harness/test/durable-claims.test.ts
+    - tools/scripts/verify-kernel.ts
+    - tools/scripts/verify.ts
+    - tools/conformance/certification
+    - tools/conformance/meta-conformance
+    - tools/schemas
+    - tools/scripts/conformance
+    - tools/scripts/lib/conformance-contract.ts
+    - spec/kernel/authority-packet.json
+    - reports/compatibility
+    - tools/scripts/compatibility-report.ts
   tech_spec_patchable: []
 estimated_diff_lines: 11000
 estimate_source: planned
 tickets:
   - id: KRT-DP001
-    title: "Verify the adapter server clock against the provisioned database"
+    title: Verify the adapter server clock against the provisioned database
     type: Feature
     effort: 3
     depends_on: []
     scope:
       in:
-        - "tools/conformance/harness/storage-resource.ts"
-        - "tools/conformance/harness/run.ts"
-        - "tools/conformance/harness/test/server-clock-verification.test.ts"
-        - "tools/scripts/verify-kernel.ts"
-        - "tools/scripts/verify.ts"
+        - tools/conformance/harness/storage-resource.ts
+        - tools/conformance/harness/run.ts
+        - tools/conformance/harness/test/server-clock-verification.test.ts
+        - tools/scripts/verify-kernel.ts
+        - tools/scripts/verify.ts
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0 with the operator-provided PostgreSQL service; real and deliberately wrong clock observations are distinguished."
@@ -45,24 +45,24 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "A real PostgreSQL server-clock observation falls within the harness-measured interval, while an adapter returning an injected or shifted worker clock fails; the harness provisions and releases the same resource."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
     deviations:
       - files: [tools/conformance/harness/test/fixtures/server-clock-proxy.ts]
         justification: "The contract test needs an adapter whose backend clock is injected or shifted so the harness bound can be shown to reject it. The proxy is a test-local fixture beside server-clock-verification.test.ts, inside the harness test directory but outside the ticket's listed files; the wave plan's M1 assignment authorized test-local helpers there."
   - id: KRT-DP002
-    title: "Enforce the durable profile claim inventory in both directions"
+    title: Enforce the durable profile claim inventory in both directions
     type: Feature
     effort: 3
     depends_on: [KRT-DP001]
     scope:
       in:
-        - "tools/conformance/certification"
-        - "tools/conformance/meta-conformance"
-        - "tools/conformance/harness/test/durable-claims.test.ts"
+        - tools/conformance/certification
+        - tools/conformance/meta-conformance
+        - tools/conformance/harness/test/durable-claims.test.ts
     verification:
-      command: "bun run verify"
+      command: bun run verify
       expected: "Exit 0; tools/conformance/certification/profile.test.ts and tools/conformance/harness/test/durable-claims.test.ts pass, and both run only in this lane."
     stop_conditions:
       - "STOP if profile ownership cannot be determined without guessing or dropping an applicable claim; route the contract question."
@@ -70,25 +70,25 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Tests fail when a required plan claim is removed from a profile or when a profile names a missing claim, and accept the exact inventory for each durable profile."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
   - id: KRT-DP003
-    title: "Schema and reference the undetected registers"
+    title: Schema and reference the undetected registers
     type: Feature
     effort: 3
     depends_on: [KRT-DP002]
     scope:
       in:
-        - "tools/schemas"
-        - "tools/scripts/conformance"
-        - "tools/conformance/meta-conformance"
-        - "tools/conformance/certification"
-        - "spec/kernel/authority-packet.json"
-        - "tools/conformance/harness/test/durable-claims.test.ts"
-        - "reports/compatibility"
+        - tools/schemas
+        - tools/scripts/conformance
+        - tools/conformance/meta-conformance
+        - tools/conformance/certification
+        - spec/kernel/authority-packet.json
+        - tools/conformance/harness/test/durable-claims.test.ts
+        - reports/compatibility
     verification:
-      command: "bun run verify"
+      command: bun run verify
       expected: "Exit 0; the register, claim-coverage, and durable-claims tests pass, and compatibility:check accepts the committed evidence at this ticket's commit."
     stop_conditions:
       - "STOP if the packet cannot represent the four profiles without inventing a second authority; route a contract change."
@@ -96,49 +96,49 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Valid empty and populated registers pass; malformed reasons, unknown claims, stale detected claims, missing profile references, and register digest drift fail. All four existing registers are resolved through the packet."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
   - id: KRT-DP004
-    title: "List undetected claims in every certificate"
+    title: List undetected claims in every certificate
     type: Feature
     effort: 3
     depends_on: [KRT-DP003]
     scope:
       in:
-        - "tools/schemas"
-        - "tools/scripts/conformance"
-        - "tools/scripts/lib/conformance-contract.ts"
-        - "tools/conformance/certification"
-        - "tools/conformance/meta-conformance"
-        - "reports/compatibility"
+        - tools/schemas
+        - tools/scripts/conformance
+        - tools/scripts/lib/conformance-contract.ts
+        - tools/conformance/certification
+        - tools/conformance/meta-conformance
+        - reports/compatibility
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0 with the operator-provided PostgreSQL service; the certificate contract tests pass and compatibility:check accepts the regenerated certificates."
     stop_conditions:
-      - "STOP if a certificate can silently omit a profile gap or the evidence schema cannot represent its reason."
+      - STOP if a certificate can silently omit a profile gap or the evidence schema cannot represent its reason.
     description: "Extend the evidence schema and bundle assembly to include each profile register as claimId and reason entries, including an explicit empty list (ADR-0081 decision 3, ADR-0084 decision 6). The current certificate schema and link are tools/schemas/certification-evidence.schema.json and tools/conformance/certification/control-link.ts. Since EPIC-DO the three durable registers are {}, so every TypeScript SQLite and PostgreSQL certificate for kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend must carry an explicit empty undetectedClaims list. The kernel.memory certificates list the remaining memory entries. KRT-DO007 recorded that the committed bundles do not yet serialize the list; regenerate them in this ticket."
     acceptance:
       mode: contract_test
       evidence: "Round-trip certificates with empty and nonempty registers; reject omitted, altered, or unrelated claims and verify the register is covered by verifier-authority provenance. A certificate whose register is empty serializes undetectedClaims as an explicit empty list, and a certificate without the field fails schema validation. The committed SQLite and PostgreSQL durable-profile certificates in reports/compatibility carry undetectedClaims: [], and the committed kernel.memory certificates list every kernel-memory-undetected.json entry with its reason."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
   - id: KRT-DP005
-    title: "Require implementation-matched control evidence and a post-mutant baseline"
+    title: Require implementation-matched control evidence and a post-mutant baseline
     type: Feature
     effort: 3
     depends_on: [KRT-DP004]
     scope:
       in:
-        - "tools/conformance/certification"
-        - "tools/conformance/meta-conformance"
-        - "tools/schemas"
-        - "tools/scripts/conformance"
-        - "reports/compatibility"
-        - "tools/scripts/compatibility-report.ts"
+        - tools/conformance/certification
+        - tools/conformance/meta-conformance
+        - tools/schemas
+        - tools/scripts/conformance
+        - reports/compatibility
+        - tools/scripts/compatibility-report.ts
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if the same configuration cannot be identified, a failure can be misclassified as a kill, or the fleet cannot honestly withhold Rust while its reproductions are pending; route the issue."
@@ -146,16 +146,11 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Mismatched identity, manifest, profile or authority, a substituted memory run, a missing rerun, and invalid or surviving required controls withhold certification. Test both directions: Rust cannot borrow TypeScript kills, and an invalid or unsupported Rust report cannot invalidate TypeScript's link. A host with either observed capability evaluates its selected conditional branch and certifies without evaluating the other; missing the selected branch fails. Rust has no certified entry or matrix certificate row, while its positive suite remains in implementations and its diagnostic retains the original subset of 13 controls, 3 kills, and 10 unsupported until DS; subsequent new mutants extend the inventory with explicit unsupported reasons. Matching published-testkit certificates disclose in-process control execution."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
 closeout:
-  tickets_completed:
-    - KRT-DP001
-    - KRT-DP002
-    - KRT-DP003
-    - KRT-DP004
-    - KRT-DP005
+  tickets_completed: [KRT-DP001, KRT-DP002, KRT-DP003, KRT-DP004, KRT-DP005]
   tickets_deferred: []
   points_completed: 15
   spec_patches: []
@@ -180,7 +175,9 @@ closeout:
   code_decisions:
     - summary: "Server-clock verification brackets each plan-issued kernel.thread.create with harness psql reads of the provisioned database's clock_timestamp() and requires the createdAtMs from the plan's kernel.thread.list to fall inside; a server-clock selection with no such observation fails as unverified (verification failure), a value outside fails as an implementation failure."
       kind: pattern
-      paths: [tools/conformance/harness/run.ts, tools/conformance/harness/storage-resource.ts]
+      paths:
+        - tools/conformance/harness/run.ts
+        - tools/conformance/harness/storage-resource.ts
       commit: 213b7b5
     - summary: "Shared-check ownership for the two-way claim inventory: applicable core checks belong to kernel.memory; otherwise the single applicable profile minimal under requiredCapabilities subset order owns the check; ambiguity or a claim owned by two profiles fails closed. Requirements include clock.backend-server when a check selects the server clock."
       kind: convention
@@ -188,7 +185,9 @@ closeout:
       commit: c2611b2
     - summary: "The undetected-register reader rejects whitespace-only reasons and duplicate JSON keys beyond the pinned schema; a register entry is stale when a counted implementation's detector killed one of that claim's designated assertions, aggregated per profile across implementations."
       kind: convention
-      paths: [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/meta-conformance/claim-coverage.ts]
+      paths:
+        - tools/conformance/meta-conformance/negative-controls.ts
+        - tools/conformance/meta-conformance/claim-coverage.ts
       commit: d63b91b
     - summary: "Verifier-authority provenance hashes every register referenced by the selected packet, not only the run's profile register."
       kind: convention
@@ -196,11 +195,18 @@ closeout:
       commit: d63b91b
     - summary: "undetectedClaims entries are emitted in claim-ID order and validated order-independently; duplicate claim IDs are rejected even with differing reasons; the evidence schema requires the field via dependentRequired whenever certificate is present, and compatibility matrix rows carry the same list."
       kind: contract_shape
-      paths: [tools/schemas/certification-evidence.schema.json, reports/compatibility/compatibility-matrix.schema.json, tools/conformance/certification/profile.ts]
+      paths:
+        - tools/schemas/certification-evidence.schema.json
+        - reports/compatibility/compatibility-matrix.schema.json
+        - tools/conformance/certification/profile.ts
       commit: f09d4c4
     - summary: "Control runs carry per-implementation control-run IDs; one unmutated post-mutant baseline brackets the mutant batch and is recorded as control.postBaseline; control and mutant configurations are compared normalized with mutant-manifest stability checks; conditional groups are keyed by check, step, and condition path; published-testkit certificates emit controlRunExecution: in-process."
       kind: contract_shape
-      paths: [tools/conformance/certification/control-link.ts, tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/certification/bundle.ts, tools/schemas/certification-evidence.schema.json]
+      paths:
+        - tools/conformance/certification/control-link.ts
+        - tools/conformance/meta-conformance/negative-controls.ts
+        - tools/conformance/certification/bundle.ts
+        - tools/schemas/certification-evidence.schema.json
       commit: 879655c
   settled:
     - record: tech-spec/contracts/certification-undetected-register.meta.yaml
@@ -216,3 +222,26 @@ closeout:
         date: 2026-11-17
         note: "Complete profile runs emit schema-valid bundles with the exact undetectedClaims list and a matching per-implementation control identity, and compatibility reporting reads and validates them (compatibility:check and compatibility-certificates.test.ts at 879655c)."
   obligation_resolutions: []
+  actuals:
+    diff_lines: 6165
+    files_touched: 56
+    milestones: 10
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-DP001
+        diff_lines: 787
+        review_rounds: 0
+      - id: KRT-DP002
+        diff_lines: 587
+        review_rounds: 0
+      - id: KRT-DP003
+        diff_lines: 1013
+        review_rounds: 0
+      - id: KRT-DP004
+        diff_lines: 1960
+        review_rounds: 0
+      - id: KRT-DP005
+        diff_lines: 1818
+        review_rounds: 0
+    merged_commit: 4be7ebb
+    measured_at: 2026-11-17
