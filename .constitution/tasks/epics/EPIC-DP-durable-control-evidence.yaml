@@ -149,3 +149,70 @@ tickets:
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: done
+closeout:
+  tickets_completed:
+    - KRT-DP001
+    - KRT-DP002
+    - KRT-DP003
+    - KRT-DP004
+    - KRT-DP005
+  tickets_deferred: []
+  points_completed: 15
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: added
+      text: "EPIC-DP bound durable control evidence to certificates. The harness verifies a setClock source=server selection against the provisioned PostgreSQL clock, bracketing the plan's own thread creation. Profile claim inventories are checked in both directions with explicit ownership of shared checks. The four undetected registers have a pinned schema (tools/schemas/certification-undetected-register.schema.json), are referenced from the kernel packet's undetectedRegisters, and enter verifier-authority provenance. Every certificate and compatibility row lists undetectedClaims, [] for the durable rows. Control kills and report validity are evaluated per implementation with a post-mutant baseline and the observed conditional branch; Rust leaves the certified fleet until EPIC-DS while keeping its positive lane and 13/3/10 diagnostic."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "ADR-0084 decision 6 still says the registers are plain objects read through configuration rather than packet references, and its rationale bullet for decision 6 says the undetected-claims list is not yet met. Since d63b91b the kernel packet's undetectedRegisters references all four registers and since f09d4c4 every certificate and matrix row carries undetectedClaims; update both passages and the companion's 'The pinned register shape lands in DP003 after DO' sentence."
+    - stage: tech-spec
+      item: "ADR-0084 decision 3 and guideline 5.10 rule 5 require the designated checks to pass unmutated after the mutant run. 879655c runs one unmutated baseline after the whole mutant batch, each mutant in a fresh harness process with isolated per-check storage; the M5 milestone review judged that a faithful reading. Record whether one post-batch baseline is the intended reading or a per-mutant rerun is required."
+    - stage: tech-spec
+      item: "The server-clock verification observes the kernel-stamped createdAtMs of a plan-issued kernel.thread.create, read back through the plan's kernel.thread.list, against a psql clock_timestamp() bracket, because setClock returns no timestamp. On a same-host PostgreSQL an unshifted worker Date.now() is indistinguishable from the server clock. Record the observation source and its limit next to OD-22's setClock source server shape."
+  follow_ups:
+    - "ServerClockVerifier tracks verification per server-clock selection, not per process epoch: after a restart, a timed thread creation without a later thread.list is not re-required. The only promoted server-clock plan (kernel-clock-skew-syscall.json) and the new contract test both list after restart."
+    - "tools/conformance/certification/durable-bundle-contract.test.ts 'durable certificates share a run and link to matching profile control gates' timed out at its 600-second limit three times under host load (load average 30 to 50), including on 213b7b5 without the KRT-DP002 change; it passed in the final verify:kernel and verify runs."
+    - "The published-testkit in-process statement is enforced behind a publishedTestkit option of finishCertificate and exercised only with synthetic bundle evidence; EPIC-DN must call it from the published package."
+    - "bun run check runs affected-project lint but not the root workspace lint over tools/, so 19 Biome findings in this epic's harness and certification code passed every milestone check and failed only the full bun run verify gate; fixed in 01e8716."
+    - "tools/conformance/harness/test/durable-control-mutants.test.ts:497 and :503 fail tsc --project tools/tsconfig.json; the file is unchanged by this epic and the error predates it."
+  code_decisions:
+    - summary: "Server-clock verification brackets each plan-issued kernel.thread.create with harness psql reads of the provisioned database's clock_timestamp() and requires the createdAtMs from the plan's kernel.thread.list to fall inside; a server-clock selection with no such observation fails as unverified (verification failure), a value outside fails as an implementation failure."
+      kind: pattern
+      paths: [tools/conformance/harness/run.ts, tools/conformance/harness/storage-resource.ts]
+      commit: 213b7b5
+    - summary: "Shared-check ownership for the two-way claim inventory: applicable core checks belong to kernel.memory; otherwise the single applicable profile minimal under requiredCapabilities subset order owns the check; ambiguity or a claim owned by two profiles fails closed. Requirements include clock.backend-server when a check selects the server clock."
+      kind: convention
+      paths: [tools/conformance/certification/profile.ts]
+      commit: c2611b2
+    - summary: "The undetected-register reader rejects whitespace-only reasons and duplicate JSON keys beyond the pinned schema; a register entry is stale when a counted implementation's detector killed one of that claim's designated assertions, aggregated per profile across implementations."
+      kind: convention
+      paths: [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/meta-conformance/claim-coverage.ts]
+      commit: d63b91b
+    - summary: "Verifier-authority provenance hashes every register referenced by the selected packet, not only the run's profile register."
+      kind: convention
+      paths: [tools/conformance/certification/provenance.ts]
+      commit: d63b91b
+    - summary: "undetectedClaims entries are emitted in claim-ID order and validated order-independently; duplicate claim IDs are rejected even with differing reasons; the evidence schema requires the field via dependentRequired whenever certificate is present, and compatibility matrix rows carry the same list."
+      kind: contract_shape
+      paths: [tools/schemas/certification-evidence.schema.json, reports/compatibility/compatibility-matrix.schema.json, tools/conformance/certification/profile.ts]
+      commit: f09d4c4
+    - summary: "Control runs carry per-implementation control-run IDs; one unmutated post-mutant baseline brackets the mutant batch and is recorded as control.postBaseline; control and mutant configurations are compared normalized with mutant-manifest stability checks; conditional groups are keyed by check, step, and condition path; published-testkit certificates emit controlRunExecution: in-process."
+      kind: contract_shape
+      paths: [tools/conformance/certification/control-link.ts, tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/certification/bundle.ts, tools/schemas/certification-evidence.schema.json]
+      commit: 879655c
+  settled:
+    - record: tech-spec/contracts/certification-undetected-register.meta.yaml
+      evidence:
+        kind: repository
+        ref: tools/scripts/conformance/certification-schemas.test.ts
+        date: 2026-11-17
+        note: "Schema, membership, stale-entry, packet-reference and register-digest tests (certification-schemas, negative-controls, claim-coverage and provenance tests) pass at d63b91b, as the sidecar's settles_when requires."
+    - record: tech-spec/contracts/certification-evidence.meta.yaml
+      evidence:
+        kind: repository
+        ref: tools/conformance/certification/compatibility-certificates.test.ts
+        date: 2026-11-17
+        note: "Complete profile runs emit schema-valid bundles with the exact undetectedClaims list and a matching per-implementation control identity, and compatibility reporting reads and validates them (compatibility:check and compatibility-certificates.test.ts at 879655c)."
+  obligation_resolutions: []
