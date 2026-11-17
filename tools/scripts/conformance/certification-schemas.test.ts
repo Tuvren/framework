@@ -32,6 +32,7 @@ import {
   PINNED_NEGATIVE_CONTROLS,
   PINNED_OBSERVATION_RECORD,
   PINNED_OPERATION_CATALOG,
+  PINNED_UNDETECTED_REGISTER,
 } from "./certification-schema-examples.ts";
 import {
   collectCertificationIntegrityFailures,
@@ -975,7 +976,41 @@ describe("authority packet schema", () => {
 
     expectInvalid("authorityPacket", { ...packet, identityRecipeSet: "x" });
     expectInvalid("authorityPacket", { ...packet, operationCatalog: "" });
+    const withoutRegisters = { ...packet };
+    remove(withoutRegisters, "undetectedRegisters");
+    expectInvalid("authorityPacket", withoutRegisters);
+    for (const path of [
+      "",
+      "/outside.json",
+      "../outside.json",
+      "spec/../outside.json",
+      "C:\\outside.json",
+    ]) {
+      expectInvalid("authorityPacket", {
+        ...packet,
+        undetectedRegisters: { "kernel.memory": path },
+      });
+    }
   });
+});
+
+describe("undetected register schema", () => {
+  test("accepts empty and populated registers", () => {
+    expectValid("undetectedRegister", {});
+    expectValid("undetectedRegister", PINNED_UNDETECTED_REGISTER);
+    expectValid("undetectedRegister", { claim: " " });
+  });
+
+  test.each([
+    [null],
+    [[]],
+    ["reason"],
+    [{ claim: "" }],
+    [{ claim: 1 }],
+    [{ "": "reason" }],
+  ])("rejects an invalid register %#", (value) =>
+    expectInvalid("undetectedRegister", value)
+  );
 });
 
 describe("certification profile schema", () => {

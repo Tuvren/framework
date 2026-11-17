@@ -1,0 +1,4 @@
+{
+  "kernel.syscall.reopen.pending_state": "First reason.",
+  "kernel.syscall.reopen.pending_state": "Second reason."
+}

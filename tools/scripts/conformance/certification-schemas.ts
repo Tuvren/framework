@@ -32,6 +32,8 @@ export const CERTIFICATION_SCHEMA_PATHS = {
   observationEncoding:
     "tools/schemas/conformance-observation-encoding.schema.json",
   operationCatalog: "tools/schemas/conformance-operation-catalog.schema.json",
+  undetectedRegister:
+    "tools/schemas/certification-undetected-register.schema.json",
 } as const;
 
 export type CertificationSchemaName = keyof typeof CERTIFICATION_SCHEMA_PATHS;

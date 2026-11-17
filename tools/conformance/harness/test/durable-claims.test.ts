@@ -5,6 +5,7 @@ import {
   assertProfileClaimInventory,
   readClaimedProfiles,
   readProfileAuthority,
+  readUndetectedRegister,
 } from "../../certification/profile.ts";
 import {
   assertClaimCoverage,
@@ -102,22 +103,10 @@ test("durable reopen claims have designated controls or explicit gaps and stay o
   const plan = await loadConformancePlan(
     "spec/conformance/kernel/plans/kernel-close-reopen-syscall.json"
   );
-  const value: unknown = JSON.parse(
-    await readFile(
-      "spec/conformance/kernel/kernel-persistent-reopen-undetected.json",
-      "utf8"
-    )
+  const reasons = await readUndetectedRegister(
+    "spec/kernel/authority-packet.json",
+    "kernel.persistent-reopen"
   );
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error("invalid undetected claim register");
-  }
-  const reasons: Record<string, string> = {};
-  for (const [claim, reason] of Object.entries(value)) {
-    if (typeof reason !== "string") {
-      throw new Error(`invalid reason for ${claim}`);
-    }
-    reasons[claim] = reason;
-  }
   const manifest = JSON.parse(
     await readFile("spec/conformance/kernel/negative-controls.json", "utf8")
   );
@@ -171,11 +160,9 @@ test("process-crash claims are covered by a designated detector or a documented 
   const controls = JSON.parse(
     await readFile("spec/conformance/kernel/negative-controls.json", "utf8")
   ).controls;
-  const reasons = JSON.parse(
-    await readFile(
-      "spec/conformance/kernel/kernel-process-crash-undetected.json",
-      "utf8"
-    )
+  const reasons = await readUndetectedRegister(
+    "spec/kernel/authority-packet.json",
+    "kernel.process-crash"
   );
   const claims = [
     ...new Set(plan.checks.flatMap(({ check }) => check.claimIds ?? [])),
@@ -214,11 +201,9 @@ test("shared-backend race and clock claims are designated or have explicit gaps"
   const controls = JSON.parse(
     await readFile("spec/conformance/kernel/negative-controls.json", "utf8")
   ).controls;
-  const reasons = JSON.parse(
-    await readFile(
-      "spec/conformance/kernel/kernel-shared-backend-undetected.json",
-      "utf8"
-    )
+  const reasons = await readUndetectedRegister(
+    "spec/kernel/authority-packet.json",
+    "kernel.shared-backend"
   );
   const checks = plans.flatMap((plan) =>
     plan.checks.map(({ check }) => ({ assertions: claimAssertions(check) }))

@@ -5,6 +5,7 @@ import {
   collectCertificationIntegrityFailures,
   validateCertificationDocument,
 } from "../../scripts/conformance/certification-schemas.js";
+import { parseObservationJson } from "../../scripts/conformance/observation-encoding.js";
 import type { AdapterManifest } from "../harness/adapter-client.js";
 import { needsServerClock } from "../harness/check-selection.js";
 import type {
@@ -22,6 +23,7 @@ export interface CertificationProfile {
 }
 
 const ROOT = nodePath.resolve(import.meta.dirname, "../../..");
+const DRIVE_LETTER = /^[A-Za-z]:/u;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -34,6 +36,41 @@ const strings = (value: unknown): string[] =>
 const readJson = async (path: string): Promise<unknown> =>
   JSON.parse(await readFile(nodePath.resolve(ROOT, path), "utf-8"));
 
+const readPacketProfiles = async (
+  packet: Record<string, unknown>
+): Promise<CertificationProfile[]> => {
+  if (typeof packet.certificationProfiles !== "string") {
+    return [];
+  }
+  const document = await readJson(packet.certificationProfiles);
+  const errors = [
+    ...validateCertificationDocument("certificationProfile", document),
+    ...collectCertificationIntegrityFailures("certificationProfile", document),
+  ];
+  if (
+    errors.length > 0 ||
+    !isRecord(document) ||
+    !Array.isArray(document.profiles)
+  ) {
+    throw new Error(
+      `${packet.certificationProfiles}: invalid profiles: ${errors.join("; ")}`
+    );
+  }
+  return document.profiles.map((value: unknown) => {
+    if (!isRecord(value) || typeof value.profileId !== "string") {
+      throw new Error(`${packet.certificationProfiles}: invalid profile`);
+    }
+    return {
+      claimIds: strings(value.claimIds),
+      faultPoints: strings(value.faultPoints),
+      negativeControls: strings(value.negativeControls),
+      profileId: value.profileId,
+      requiredCapabilities: strings(value.requiredCapabilities),
+      requiredEvidence: strings(value.requiredEvidence),
+    };
+  });
+};
+
 export const readClaimedProfiles = async (
   manifest: AdapterManifest,
   packetPaths: readonly string[]
@@ -44,41 +81,14 @@ export const readClaimedProfiles = async (
   const profiles = new Map<string, CertificationProfile>();
   for (const path of packetPaths) {
     const packet = await readJson(path);
-    if (!isRecord(packet) || typeof packet.certificationProfiles !== "string") {
+    if (!isRecord(packet)) {
       continue;
     }
-    const document = await readJson(packet.certificationProfiles);
-    const errors = [
-      ...validateCertificationDocument("certificationProfile", document),
-      ...collectCertificationIntegrityFailures(
-        "certificationProfile",
-        document
-      ),
-    ];
-    if (
-      errors.length > 0 ||
-      !isRecord(document) ||
-      !Array.isArray(document.profiles)
-    ) {
-      throw new Error(
-        `${packet.certificationProfiles}: invalid profiles: ${errors.join("; ")}`
-      );
-    }
-    for (const value of document.profiles) {
-      if (!isRecord(value) || typeof value.profileId !== "string") {
-        throw new Error(`${packet.certificationProfiles}: invalid profile`);
+    for (const profile of await readPacketProfiles(packet)) {
+      if (profiles.has(profile.profileId)) {
+        throw new Error(`duplicate claimed profile ${profile.profileId}`);
       }
-      if (profiles.has(value.profileId)) {
-        throw new Error(`duplicate claimed profile ${value.profileId}`);
-      }
-      profiles.set(value.profileId, {
-        claimIds: strings(value.claimIds),
-        faultPoints: strings(value.faultPoints),
-        negativeControls: strings(value.negativeControls),
-        profileId: value.profileId,
-        requiredCapabilities: strings(value.requiredCapabilities),
-        requiredEvidence: strings(value.requiredEvidence),
-      });
+      profiles.set(profile.profileId, profile);
     }
   }
   return (manifest.profiles ?? []).map((id) => {
@@ -93,7 +103,7 @@ export const readClaimedProfiles = async (
 };
 
 export const readProfileAuthority = async (
-  manifest: AdapterManifest,
+  _manifest: AdapterManifest,
   packetPaths: readonly string[]
 ): Promise<ReadonlyMap<string, readonly CertificationProfile[]>> => {
   const byPacket = new Map<string, readonly CertificationProfile[]>();
@@ -105,25 +115,84 @@ export const readProfileAuthority = async (
     if (typeof packet.packetId !== "string" || byPacket.has(packet.packetId)) {
       throw new Error(`${path}: missing or duplicate packetId`);
     }
-    const document = await readJson(packet.certificationProfiles);
-    if (
-      !(isRecord(document) && Array.isArray(document.profiles)) ||
-      document.profiles.length === 0
-    ) {
-      throw new Error(`${packet.certificationProfiles}: invalid profiles`);
-    }
-    const ids = document.profiles.map((profile: unknown) => {
-      if (!isRecord(profile) || typeof profile.profileId !== "string") {
-        throw new Error(`${packet.certificationProfiles}: invalid profile`);
-      }
-      return profile.profileId;
-    });
-    const profiles = await readClaimedProfiles({ ...manifest, profiles: ids }, [
-      path,
-    ]);
-    byPacket.set(packet.packetId, profiles);
+    byPacket.set(packet.packetId, await readPacketProfiles(packet));
   }
   return byPacket;
+};
+
+export const readUndetectedRegisterReferences = async (
+  packetPath: string
+): Promise<ReadonlyMap<string, string>> => {
+  const packet = await readJson(packetPath);
+  if (!isRecord(packet)) {
+    throw new Error(`${packetPath}: invalid packet`);
+  }
+  const profiles = await readPacketProfiles(packet);
+  if (profiles.length === 0 && packet.undetectedRegisters === undefined) {
+    return new Map();
+  }
+  const references = packet.undetectedRegisters;
+  if (!isRecord(references)) {
+    throw new Error(`${packetPath}: missing undetectedRegisters`);
+  }
+  const ids = new Set(profiles.map((profile) => profile.profileId));
+  const missing = [...ids].filter((id) => !Object.hasOwn(references, id));
+  const unknown = Object.keys(references).filter((id) => !ids.has(id));
+  if (missing.length > 0 || unknown.length > 0) {
+    throw new Error(
+      `${packetPath}: undetectedRegisters mismatch: missing ${missing.join(", ") || "none"}; unknown ${unknown.join(", ") || "none"}`
+    );
+  }
+  const result = new Map<string, string>();
+  for (const [id, value] of Object.entries(references)) {
+    if (
+      typeof value !== "string" ||
+      value.length === 0 ||
+      nodePath.isAbsolute(value) ||
+      value.includes("\\") ||
+      DRIVE_LETTER.test(value) ||
+      value.split("/").includes("..")
+    ) {
+      throw new Error(
+        `${packetPath}: ${id} register path must be repository-relative`
+      );
+    }
+    result.set(id, value);
+  }
+  return result;
+};
+
+export const readUndetectedRegister = async (
+  packetPath: string,
+  profileId: string
+): Promise<Record<string, string>> => {
+  const references = await readUndetectedRegisterReferences(packetPath);
+  const registerPath = references.get(profileId);
+  if (registerPath === undefined) {
+    throw new Error(`${packetPath}: no undetected register for ${profileId}`);
+  }
+  const value = parseObservationJson(
+    await readFile(nodePath.resolve(ROOT, registerPath), "utf-8")
+  );
+  const errors = validateCertificationDocument("undetectedRegister", value);
+  if (errors.length > 0 || !isRecord(value)) {
+    throw new Error(
+      `${registerPath}: invalid undetected register: ${errors.join("; ")}`
+    );
+  }
+  const reasons: Record<string, string> = {};
+  for (const [claim, reason] of Object.entries(value)) {
+    if (typeof reason !== "string" || reason.trim().length === 0) {
+      throw new Error(`${registerPath}: invalid reason for ${claim}`);
+    }
+    Object.defineProperty(reasons, claim, {
+      value: reason,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  }
+  return reasons;
 };
 
 export interface ProfileSelectionFailure {

@@ -1,15 +1,25 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import {
+  collectSourceVerifierInputs,
+  computeSourceVerifierDigests,
   createDependencyDigestCache,
+  digestVerifierAuthority,
   digestWorkspaceInputs,
 } from "./provenance.ts";
 
 test("dependency links cover resolved workspace contents", async () => {
-  await mkdir(path.resolve(".cache"), { recursive: true });
-  const directory = await mkdtemp(path.resolve(".cache/provenance-test-"));
+  const directory = await mkdtemp(path.join(tmpdir(), "provenance-test-"));
   try {
     const source = path.join(directory, "package");
     const modules = path.join(directory, "node_modules");
@@ -18,12 +28,99 @@ test("dependency links cover resolved workspace contents", async () => {
     await writeFile(path.join(source, "index.ts"), "first");
     const link = path.join(modules, "package");
     await symlink(source, link, "dir");
-    const before = await digestWorkspaceInputs([link]);
-    const cachedDigest = createDependencyDigestCache(modules);
+    const before = await digestWorkspaceInputs([link], directory);
+    const cachedDigest = createDependencyDigestCache(modules, directory);
     const beforeCached = await cachedDigest();
     await writeFile(path.join(source, "index.ts"), "second");
-    expect(await digestWorkspaceInputs([link])).not.toBe(before);
+    expect(await digestWorkspaceInputs([link], directory)).not.toBe(before);
     expect(await cachedDigest()).not.toBe(beforeCached);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("verifier-authority digests cover explicitly selected register content and references", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "register-provenance-"));
+  try {
+    const register = path.join(directory, "register.json");
+    const packet = path.join(directory, "packet.json");
+    await writeFile(register, "{}\n");
+    await writeFile(packet, "packet");
+    const before = await digestVerifierAuthority([packet], [register]);
+    await writeFile(register, '{"claim":"reason"}\n');
+    expect(await digestVerifierAuthority([packet], [register])).not.toBe(
+      before
+    );
+    expect(await digestVerifierAuthority([packet], [])).not.toBe(before);
+
+    const actualPacket: unknown = JSON.parse(
+      await readFile("spec/kernel/authority-packet.json", "utf8")
+    );
+    if (
+      typeof actualPacket !== "object" ||
+      actualPacket === null ||
+      Array.isArray(actualPacket) ||
+      !("undetectedRegisters" in actualPacket)
+    ) {
+      throw new Error("invalid packet");
+    }
+    const references = actualPacket.undetectedRegisters;
+    if (
+      typeof references !== "object" ||
+      references === null ||
+      Array.isArray(references)
+    ) {
+      throw new Error("missing registers");
+    }
+    await writeFile(packet, JSON.stringify(actualPacket));
+    const actual = await computeSourceVerifierDigests([packet]);
+    const changed = {
+      ...actualPacket,
+      undetectedRegisters: {
+        ...references,
+        "kernel.persistent-reopen":
+          "tools/conformance/meta-conformance/fixtures/undetected-stale.json",
+      },
+    };
+    await writeFile(packet, JSON.stringify(changed));
+    const drift = await computeSourceVerifierDigests([packet]);
+    const inputs = await collectSourceVerifierInputs([packet]);
+    const selectedRegister = path.resolve(
+      "tools/conformance/meta-conformance/fixtures/undetected-stale.json"
+    );
+    expect(inputs.registers).toContain(selectedRegister);
+    const authorityInputs = [
+      ...inputs.authority,
+      ...inputs.packets,
+      ...inputs.plans,
+      ...inputs.catalogs,
+      ...inputs.profiles,
+      ...inputs.controls,
+      ...inputs.fixtures,
+    ];
+    expect(
+      await digestVerifierAuthority(authorityInputs, inputs.registers)
+    ).toBe(drift.verifierAuthority);
+    expect(
+      await digestVerifierAuthority(
+        authorityInputs,
+        inputs.registers.filter((file) => file !== selectedRegister)
+      )
+    ).not.toBe(drift.verifierAuthority);
+    const scratchRegisters = inputs.registers.map((file) =>
+      file === selectedRegister ? register : file
+    );
+    const beforeContentDrift = await digestVerifierAuthority(
+      authorityInputs,
+      scratchRegisters
+    );
+    await writeFile(register, '{"claim":"changed"}\n');
+    expect(
+      await digestVerifierAuthority(authorityInputs, scratchRegisters)
+    ).not.toBe(beforeContentDrift);
+    expect(drift.verifierAuthority).not.toBe(actual.verifierAuthority);
+    expect(drift.profiles).toBe(actual.profiles);
+    expect(drift.controls).toBe(actual.controls);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

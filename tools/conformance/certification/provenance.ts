@@ -13,6 +13,7 @@ import process from "node:process";
 import { promisify } from "node:util";
 
 import type { AdapterManifest } from "../harness/adapter-client.js";
+import { readUndetectedRegisterReferences } from "./profile.js";
 
 export interface VerifierDigests {
   harness: string;
@@ -66,7 +67,8 @@ const filesUnder = async (
 };
 
 const expandWorkspaceInputs = async (
-  files: readonly string[]
+  files: readonly string[],
+  workspaceRoot: string
 ): Promise<Set<string>> => {
   const expanded = new Set(files);
   const targets = new Set<string>();
@@ -75,9 +77,9 @@ const expandWorkspaceInputs = async (
       continue;
     }
     const target = await realpath(file);
-    if (!target.startsWith(`${ROOT}${path.sep}`)) {
+    if (!target.startsWith(`${workspaceRoot}${path.sep}`)) {
       throw new Error(
-        `certificate input link leaves the worktree: ${path.relative(ROOT, file)}`
+        `certificate input link leaves the worktree: ${path.relative(workspaceRoot, file)}`
       );
     }
     if (!target.split(path.sep).includes("node_modules")) {
@@ -98,32 +100,42 @@ const expandWorkspaceInputs = async (
 };
 
 export const digestWorkspaceInputs = async (
-  files: readonly string[]
+  files: readonly string[],
+  workspaceRoot = ROOT
 ): Promise<string> => {
-  const expanded = await expandWorkspaceInputs(files);
+  const expanded = await expandWorkspaceInputs(files, workspaceRoot);
   const hash = createHash("sha256");
   for (const file of [...expanded].toSorted()) {
     const stat = await lstat(file);
     let bytes: Buffer;
     if (stat.isSymbolicLink()) {
       const target = await realpath(file);
-      if (!target.startsWith(`${ROOT}${path.sep}`)) {
+      if (!target.startsWith(`${workspaceRoot}${path.sep}`)) {
         throw new Error(
-          `certificate input link leaves the worktree: ${path.relative(ROOT, file)}`
+          `certificate input link leaves the worktree: ${path.relative(workspaceRoot, file)}`
         );
       }
       bytes = Buffer.from(`symlink:${await readlink(file)}`);
     } else {
       bytes = await readFile(file);
     }
-    const label = path.relative(ROOT, file).replaceAll(path.sep, "/");
+    const label = path.relative(workspaceRoot, file).replaceAll(path.sep, "/");
     hash.update(`${Buffer.byteLength(label)}:${label}:${bytes.length}:`);
     hash.update(bytes);
   }
   return hash.digest("hex");
 };
 
-export const createDependencyDigestCache = (directory: string) => {
+export const digestVerifierAuthority = async (
+  authorityInputs: readonly string[],
+  registerInputs: readonly string[]
+): Promise<string> =>
+  await digestWorkspaceInputs([...authorityInputs, ...registerInputs]);
+
+export const createDependencyDigestCache = (
+  directory: string,
+  workspaceRoot = ROOT
+) => {
   let cached: Promise<{ digest: string; links: string[] }> | undefined;
   const initialize = async () => {
     const files = await filesUnder(directory, true);
@@ -133,7 +145,7 @@ export const createDependencyDigestCache = (directory: string) => {
         links.push(file);
       }
     }
-    return { digest: await digestWorkspaceInputs(files), links };
+    return { digest: await digestWorkspaceInputs(files, workspaceRoot), links };
   };
   return async (): Promise<string> => {
     cached ??= initialize();
@@ -146,7 +158,7 @@ export const createDependencyDigestCache = (directory: string) => {
     }
     return createHash("sha256")
       .update(value.digest)
-      .update(await digestWorkspaceInputs(value.links))
+      .update(await digestWorkspaceInputs(value.links, workspaceRoot))
       .digest("hex");
   };
 };
@@ -172,16 +184,22 @@ const reference = (value: unknown, label: string): string => {
   return path.resolve(ROOT, value);
 };
 
-export const computeSourceVerifierDigests = async (
+export const collectSourceVerifierInputs = async (
   packetPaths: readonly string[]
-): Promise<Omit<VerifierDigests, "harness">> => {
+) => {
   const packets = packetPaths.map((packet) => path.resolve(ROOT, packet));
   const plans: string[] = [];
   const catalogs: string[] = [];
   const profiles: string[] = [];
   const controls: string[] = [];
+  const registers: string[] = [];
   for (const packetPath of packets) {
     const packet = await readJson(packetPath);
+    registers.push(
+      ...[...(await readUndetectedRegisterReferences(packetPath)).values()].map(
+        (file) => path.resolve(ROOT, file)
+      )
+    );
     if (!Array.isArray(packet.conformancePlans)) {
       throw new TypeError(`${packetPath} has no conformance plans`);
     }
@@ -231,21 +249,49 @@ export const computeSourceVerifierDigests = async (
     .filter(Boolean)
     .map((file) => path.join(ROOT, file));
   return {
+    authority,
+    packets,
+    plans,
+    catalogs,
+    profiles,
+    controls,
+    fixtures,
+    registers,
+  };
+};
+
+export const computeSourceVerifierDigests = async (
+  packetPaths: readonly string[]
+): Promise<Omit<VerifierDigests, "harness">> => {
+  const {
+    authority,
+    packets,
+    plans,
+    catalogs,
+    profiles,
+    controls,
+    fixtures,
+    registers,
+  } = await collectSourceVerifierInputs(packetPaths);
+  return {
     packet: await digestWorkspaceInputs(packets),
     plans: await digestWorkspaceInputs(plans),
     catalogs: await digestWorkspaceInputs(catalogs),
     fixtures: await digestWorkspaceInputs(fixtures),
     profiles: await digestWorkspaceInputs(profiles),
     controls: await digestWorkspaceInputs(controls),
-    verifierAuthority: await digestWorkspaceInputs([
-      ...authority,
-      ...packets,
-      ...plans,
-      ...catalogs,
-      ...profiles,
-      ...controls,
-      ...fixtures,
-    ]),
+    verifierAuthority: await digestVerifierAuthority(
+      [
+        ...authority,
+        ...packets,
+        ...plans,
+        ...catalogs,
+        ...profiles,
+        ...controls,
+        ...fixtures,
+      ],
+      registers
+    ),
   };
 };
 
