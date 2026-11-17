@@ -5,6 +5,7 @@ import path from "node:path";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
+import { CONFORMANCE_RUNNERS } from "../../scripts/compatibility-report.ts";
 import { readAdapterManifest } from "../harness/run-plans.ts";
 import { readCertificationManifest } from "./certification-manifest.ts";
 import { assertCompatibilityCertificates } from "./compatibility-certificates.ts";
@@ -85,7 +86,7 @@ test("committed certificate inventory and source digests match this checkout", a
 });
 
 test("rejects a stale source digest", async () => {
-  const rows = await committedRows();
+  const rows = await currentRows();
   const row = rows[0];
   if (row === undefined) {
     throw new Error("missing certified row");
@@ -100,41 +101,7 @@ test("rejects a stale source digest", async () => {
 });
 
 test("freshness rejects a changed verifier-authority digest", async () => {
-  const fleet = await readCertificationManifest(
-    "tools/conformance/certification/certified-projects.json"
-  );
-  const adapters = await Promise.all(
-    fleet.inventory.map(async ({ adapter }) => ({
-      adapter,
-      manifest: await readAdapterManifest(adapter),
-    }))
-  );
-  const storageByBackend: Record<string, string> = {
-    memory: "none",
-    sqlite: "sqlite-directory",
-    postgres: "postgres-database",
-  };
-  const rows = await Promise.all(
-    (await committedRows()).map(async (row) => {
-      const entry = adapters.find(
-        ({ manifest }) =>
-          manifest.implementationId === row.implementationId &&
-          manifest.storage === storageByBackend[row.backend]
-      );
-      if (entry === undefined) {
-        throw new Error(
-          `missing adapter for ${row.implementationId} ${row.backend}`
-        );
-      }
-      return {
-        ...row,
-        digests: await computeSourceCertificateDigests(
-          entry.manifest,
-          entry.adapter
-        ),
-      };
-    })
-  );
+  const rows = await currentRows();
   await assertCompatibilityCertificates(rows);
   const first = rows[0];
   if (first === undefined) {
@@ -157,6 +124,44 @@ test("rejects a machine-bound harness digest", async () => {
   await expect(assertCompatibilityCertificates(rows)).rejects.toThrow(
     "machine-bound field"
   );
+});
+
+test("Rust retains its positive matrix lane but has no certificate row", async () => {
+  const rows = await currentRows();
+  expect(rows.some((row) => row.implementationId === "rust-kernel")).toBe(
+    false
+  );
+  expect(
+    CONFORMANCE_RUNNERS.find(
+      (runner) => runner.project === "kernel-rust-certification"
+    )
+  ).toMatchObject({
+    adapterManifestPath: "rust/kernel-conformance-adapter/adapter.json",
+    implementationId: "rust-kernel",
+  });
+  const matrix: unknown = JSON.parse(
+    await readFile("reports/compatibility/compatibility-matrix.json", "utf8")
+  );
+  if (
+    typeof matrix !== "object" ||
+    matrix === null ||
+    !("implementations" in matrix) ||
+    !Array.isArray(matrix.implementations)
+  )
+    throw new Error("missing implementations");
+  expect(
+    matrix.implementations.some(
+      (entry) => entry.implementationId === "rust-kernel"
+    )
+  ).toBe(true);
+  const example = rows[0];
+  if (example === undefined) throw new Error("missing certificate");
+  await expect(
+    assertCompatibilityCertificates([
+      ...rows,
+      { ...example, implementationId: "rust-kernel" },
+    ])
+  ).rejects.toThrow("inventory");
 });
 
 test("matrix schema requires closed entries for every certificate row", async () => {

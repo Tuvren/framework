@@ -1331,6 +1331,17 @@ describe("certification evidence schema", () => {
     }
   );
 
+  test("accepts only the in-process control execution statement when present", () => {
+    expectValid("certificationEvidence", {
+      ...PINNED_CERTIFICATION_EVIDENCE,
+      controlRunExecution: "in-process",
+    });
+    expectInvalid("certificationEvidence", {
+      ...PINNED_CERTIFICATION_EVIDENCE,
+      controlRunExecution: "stdio",
+    });
+  });
+
   test("rejects a certified certificate from an incomplete run", () => {
     expectInvalid(
       "certificationEvidence",

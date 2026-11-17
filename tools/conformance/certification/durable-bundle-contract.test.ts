@@ -514,7 +514,7 @@ test("durable certificates share a run and link to matching profile control gate
           expect(bundle.undetectedClaims).toEqual([]);
           expect(typeof bundle.runId).toBe("string");
           const control = controlRuns.find(
-            (entry: unknown) => object(entry).profile === profile
+            (entry: unknown) => object(entry).id === bundle.negativeControlRunId
           );
           const controlRun = object(control);
           expect(controlRun.status).toBe("pass");

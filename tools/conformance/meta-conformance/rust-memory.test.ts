@@ -35,6 +35,22 @@ const exploratoryAdapter = async (directory: string): Promise<string> => {
   return path;
 };
 
+const ORIGINAL_CONTROLS = [
+  "kernel.accept-noncanonical-cbor",
+  "kernel.accept-stale-head-update",
+  "kernel.accept-stale-owner-after-takeover",
+  "kernel.delete-object-reachable-through-live-root",
+  "kernel.drop-uncommitted-staged-result-on-recovery",
+  "kernel.fault-seam-never-fires",
+  "kernel.lease-takeover-before-expiry",
+  "kernel.never-sweep-eligible-objects",
+  "kernel.noncanonical-changed-paths-order",
+  "kernel.promote-staged-before-checkpoint",
+  "kernel.resolve-object-across-scopes",
+  "kernel.sweep-inside-grace-window",
+  "kernel.wrong-opaque-object-hash",
+];
+
 test("Rust memory controls count supported mutations and report unsupported ones", async () => {
   const config = NEGATIVE_CONTROL_PORTS.find(
     ({ controlAdapter }) =>
@@ -47,9 +63,17 @@ test("Rust memory controls count supported mutations and report unsupported ones
   expect(claimed.counted).toBe(true);
   expect(claimed.control.status).toBe("pass");
   expect(claimed.control.failedChecks).toEqual([]);
-  expect(claimed.mutants).toHaveLength(13);
-  expect(claimed.totals.killed).toBe(3);
-  expect(claimed.totals.unsupported).toBe(10);
+  expect(claimed.control.postBaseline?.status).toBe("pass");
+  const original = claimed.mutants.filter((mutant) =>
+    ORIGINAL_CONTROLS.includes(mutant.mutantId)
+  );
+  expect(original).toHaveLength(13);
+  expect(original.filter((mutant) => mutant.outcome === "killed")).toHaveLength(
+    3
+  );
+  expect(
+    original.filter((mutant) => mutant.outcome === "unsupported")
+  ).toHaveLength(10);
   expect(claimed.findings).toEqual([]);
   const report = claimed;
   const manifest: unknown = JSON.parse(
@@ -72,11 +96,14 @@ test("Rust memory controls count supported mutations and report unsupported ones
   expect(report.totals.unsupported).toBe(memoryControls.length - 3);
   for (const mutant of report.mutants) {
     if (mutant.outcome === "unsupported") {
-      expect(mutant.reason).toContain(
-        mutant.mutantId === "kernel.resolve-object-across-scopes"
-          ? "no shared-substrate construction seam in the Rust kernel"
-          : "no Rust reproduction yet"
-      );
+      expect(mutant.reason?.trim()).toBeTruthy();
+      if (ORIGINAL_CONTROLS.includes(mutant.mutantId)) {
+        expect(mutant.reason).toContain(
+          mutant.mutantId === "kernel.resolve-object-across-scopes"
+            ? "no shared-substrate construction seam in the Rust kernel"
+            : "no Rust reproduction yet"
+        );
+      }
       expect(mutant.activated).toBe(false);
       continue;
     }

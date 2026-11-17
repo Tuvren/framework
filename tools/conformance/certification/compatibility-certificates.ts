@@ -258,7 +258,7 @@ export const collectCompatibilityCertificates = async (): Promise<
         const currentRun = text(bundle.runId);
         const controlId = text(bundle.negativeControlRunId);
         const control = object(
-          runs.find((run: unknown) => object(run).profile === profile.profileId)
+          runs.find((run: unknown) => object(run).id === controlId)
         );
         const controlDigests = object(control.verifierDigests);
         if (

@@ -37,7 +37,6 @@ const PREVIOUSLY_CERTIFIED = [
   ["kernel-dart-certification", "tuvren.kernel.protocol"],
   ["kernel-go-certification", "tuvren.kernel.protocol"],
   ["kernel-python-certification", "tuvren.kernel.protocol"],
-  ["kernel-rust-certification", "kernel.memory"],
   ["kernel-typescript-certification", "kernel.memory"],
   ["kernel-typescript-postgres-certification", "kernel.persistent-reopen"],
   ["kernel-typescript-postgres-certification", "kernel.process-crash"],
@@ -72,7 +71,24 @@ describe("checked-in certification manifest", () => {
     );
   });
 
-  test("every previously certified project keeps a pass state and stays certified", async () => {
+  test("keeps the Rust kernel positive lane in inventory without certifying it", async () => {
+    const manifest = await readCertificationManifest(
+      nodePath.join(ROOT, CERTIFICATION_MANIFEST_PATH)
+    );
+    expect(
+      manifest.inventory.find(
+        (entry) => entry.project === "kernel-rust-certification"
+      )
+    ).toMatchObject({
+      adapter: "rust/kernel-conformance-adapter/adapter.json",
+      state: "pass",
+    });
+    expect(manifest.certified.map((entry) => entry.project)).not.toContain(
+      "kernel-rust-certification"
+    );
+  });
+
+  test("every other previously certified project keeps a pass state and stays certified", async () => {
     const manifest = await readCertificationManifest(
       nodePath.join(ROOT, CERTIFICATION_MANIFEST_PATH)
     );

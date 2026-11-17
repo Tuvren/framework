@@ -278,7 +278,7 @@ const COMPATIBILITY_METADATA = {
 const ALLOW_FAILING_EVIDENCE_FLAG = "--allow-failing-evidence";
 const CHECK_FLAG = "--check";
 
-const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
+export const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
     adapterManifestPath: "typescript/conformance-adapter/adapter.json",
     command: [
@@ -456,7 +456,7 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
       ],
     ],
     project: "kernel-rust-certification",
-    reportLabel: "Rust process-local kernel baseline",
+    reportLabel: "Rust process-local kernel positive conformance",
   },
   {
     adapterManifestPath: "go/kernel-conformance-adapter/adapter.json",

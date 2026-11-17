@@ -15,22 +15,18 @@ import type {
 import type { AdapterManifest } from "../harness/adapter-client.js";
 import { readAdapterManifest } from "../harness/run-plans.js";
 import {
-  profileConditionalAssertions,
+  profileConditionalGroups,
   profileSemanticAssertions,
 } from "../meta-conformance/claim-coverage.js";
 import type { CompiledConformancePlan } from "../plan-compiler/index.js";
-import { matchesControlRun, profileControlReport } from "./control-link.js";
+import { matchesControlRun } from "./control-link.js";
 import {
   assertUndetectedClaimsMatch,
   readProfileScopedControls,
   readProfileUndetectedClaims,
 } from "./profile.js";
 import type { CertificationProfile } from "./profile.js";
-import {
-  computeCertificateDigests,
-  computeImplementationDigest,
-  digestAdapterManifest,
-} from "./provenance.js";
+import { computeCertificateDigests } from "./provenance.js";
 import type { CertificateDigests } from "./provenance.js";
 
 interface RunOptions {
@@ -41,6 +37,7 @@ interface RunOptions {
   packets: readonly string[];
   plans: readonly string[];
   shard?: unknown;
+  publishedTestkit?: boolean;
 }
 
 export interface BundleFields {
@@ -52,6 +49,7 @@ export interface BundleFields {
   digests?: CertificateDigests;
   environment?: Record<string, unknown>;
   negativeControlRunId?: string;
+  controlRunExecution?: "in-process";
   undetectedClaims?: readonly UndetectedClaim[];
 }
 
@@ -343,73 +341,12 @@ const completedProcesses = (result: ConformanceCheckResult): boolean => {
   );
 };
 
-const branchAdapterNames = (
-  reports: readonly unknown[]
-): Set<string> | undefined => {
-  const names = new Set<string>();
-  for (const report of reports) {
-    if (!(isRecord(report) && isRecord(report.control))) {
-      return undefined;
-    }
-    const controls = report.control.branchControls;
-    if (controls === undefined) {
-      continue;
-    }
-    if (!Array.isArray(controls)) {
-      return undefined;
-    }
-    for (const control of controls) {
-      if (!isRecord(control) || typeof control.adapter !== "string") {
-        return undefined;
-      }
-      names.add(control.adapter);
-    }
-  }
-  return names;
-};
-
-const branchProvenanceMatches = async (
-  value: unknown,
-  profile: string
-): Promise<boolean> => {
-  const document = profileControlReport(value, profile);
-  if (
-    !(
-      isRecord(document) &&
-      Array.isArray(document.reports) &&
-      isRecord(document.controlRun) &&
-      Array.isArray(document.controlRun.adapters)
-    )
-  ) {
-    return false;
-  }
-  const names = branchAdapterNames(document.reports);
-  if (names === undefined) {
-    return false;
-  }
-  for (const name of names) {
-    const digest = document.controlRun.adapters.find(
-      (entry: unknown) => isRecord(entry) && entry.adapter === name
-    );
-    if (!isRecord(digest)) {
-      return false;
-    }
-    const manifest = await readAdapterManifest(path.resolve(ROOT, name));
-    if (
-      digest.adapterManifest !== (await digestAdapterManifest(name)) ||
-      digest.implementation !== (await computeImplementationDigest(manifest))
-    ) {
-      return false;
-    }
-  }
-  return true;
-};
-
 const controlRun = async (
   options: RunOptions,
   profile: CertificationProfile,
   plans: readonly CompiledConformancePlan[],
-  digests: CertificateDigests
+  digests: CertificateDigests,
+  results: readonly ConformanceCheckResult[]
 ): Promise<string | undefined> => {
   if (options.controlReport === undefined) {
     return undefined;
@@ -418,9 +355,19 @@ const controlRun = async (
     const value: unknown = JSON.parse(
       await readFile(path.resolve(ROOT, options.controlReport), "utf8")
     );
-    if (!(await branchProvenanceMatches(value, profile.profileId))) {
+    const applied = new Set(
+      results.flatMap((result) =>
+        result.assertionResults
+          .filter(
+            (assertion) =>
+              assertion.when === "applied" && assertion.status === "pass"
+          )
+          .map((assertion) => assertion.assertionId)
+      )
+    );
+    const groups = profileConditionalGroups(profile.claimIds, plans);
+    if (groups.some((group) => !group.some((id) => applied.has(id))))
       return undefined;
-    }
     const { implementation, adapterManifest, ...verifierDigests } = digests;
     return matchesControlRun(value, {
       adapter: path.relative(ROOT, path.resolve(ROOT, options.adapter)),
@@ -431,10 +378,8 @@ const controlRun = async (
         await readAdapterManifest(options.adapter),
         profile
       ),
-      conditionalAssertions: profileConditionalAssertions(
-        profile.claimIds,
-        plans
-      ),
+      conditionalAssertions: groups.flat().filter((id) => applied.has(id)),
+      publishedTestkit: options.publishedTestkit === true,
       semanticAssertions: profileSemanticAssertions(profile.claimIds, plans),
       profile: profile.profileId,
       verifierDigests,
@@ -486,7 +431,13 @@ export const finishCertificate = async (
   if (JSON.stringify(before) !== JSON.stringify(after)) {
     return { ...incomplete, environment };
   }
-  const negativeControlRunId = await controlRun(options, profile, plans, after);
+  const negativeControlRunId = await controlRun(
+    options,
+    profile,
+    plans,
+    after,
+    results
+  );
   const complete =
     environment !== undefined &&
     negativeControlRunId !== undefined &&
@@ -507,6 +458,13 @@ export const finishCertificate = async (
     },
     digests: after,
     environment,
-    ...(negativeControlRunId === undefined ? {} : { negativeControlRunId }),
+    ...(negativeControlRunId === undefined
+      ? {}
+      : {
+          negativeControlRunId,
+          ...(options.publishedTestkit === true
+            ? { controlRunExecution: "in-process" as const }
+            : {}),
+        }),
   };
 };

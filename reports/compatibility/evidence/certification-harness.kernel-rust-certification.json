@@ -6765,7 +6765,7 @@
     "kernel.syscall.shared_writer.race"
   ],
   "project": "kernel-rust-certification",
-  "reportLabel": "Rust process-local kernel baseline",
+  "reportLabel": "Rust process-local kernel positive conformance",
   "reportStatus": "capability_subset_pass",
   "status": "pass",
   "summary": {

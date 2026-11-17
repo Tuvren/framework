@@ -35,8 +35,8 @@ import type { VerifierDigests } from "./provenance.ts";
 const root = path.resolve(import.meta.dirname, "../../..");
 const adapters = [
   "typescript/kernel/conformance-adapter/adapter.json",
-  "rust/kernel-conformance-adapter/adapter.json",
 ] as const;
+const rustAdapter = "rust/kernel-conformance-adapter/adapter.json";
 const verifierFields = [
   "harness",
   "packet",
@@ -76,7 +76,7 @@ const run = async (
   return { code, stdout, stderr };
 };
 
-test("certificate links require passing, provenance-bound fleet branch observations", () => {
+test("certificate links require the selected implementation branch", () => {
   const verifierDigests: VerifierDigests = {
     harness: "harness",
     packet: "packet",
@@ -99,7 +99,7 @@ test("certificate links require passing, provenance-bound fleet branch observati
   };
   const expected = {
     ...primary,
-    conditionalAssertions: ["worker", "shared"],
+    conditionalAssertions: ["worker"],
     scopedControls: ["mutant"],
     semanticAssertions: ["detector"],
     negativeControls: ["mutant"],
@@ -112,6 +112,12 @@ test("certificate links require passing, provenance-bound fleet branch observati
         control: {
           adapter: primary.adapter,
           status: "pass",
+          postBaseline: {
+            status: "pass",
+            conditionalAssertions: [
+              { assertionId: "worker", status: "pass", when: "applied" },
+            ],
+          },
           conditionalAssertions: [
             { assertionId: "worker", status: "pass", when: "applied" },
           ],
@@ -137,6 +143,7 @@ test("certificate links require passing, provenance-bound fleet branch observati
             outcome: "killed",
             activated: true,
             designatedFailures: ["detector"],
+            designatedAssertionsEvaluated: ["detector"],
           },
         ],
       },
@@ -167,12 +174,18 @@ test("certificate links require passing, provenance-bound fleet branch observati
   ).toBe(passing.controlRun.id);
   expect(
     matchesControlRun(makeRun("fail", true, "applied"), expected)
-  ).toBeUndefined();
+  ).toBeDefined();
   expect(
     matchesControlRun(makeRun("pass", false, "applied"), expected)
-  ).toBeUndefined();
+  ).toBeDefined();
   expect(
     matchesControlRun(makeRun("pass", true, "not_applied"), expected)
+  ).toBeDefined();
+  expect(
+    matchesControlRun(passing, {
+      ...expected,
+      conditionalAssertions: ["shared"],
+    })
   ).toBeUndefined();
 });
 
@@ -203,6 +216,7 @@ test("a PostgreSQL kill cannot certify SQLite's unreasoned non-activation", () =
       control: {
         adapter: entry.adapter,
         status: "pass",
+        postBaseline: { status: "pass", conditionalAssertions: [] },
         conditionalAssertions: [],
       },
       counted: true,
@@ -217,6 +231,7 @@ test("a PostgreSQL kill cannot certify SQLite's unreasoned non-activation", () =
           outcome: entry === sqlite ? "unsupported" : "killed",
           activated: entry !== sqlite,
           designatedFailures: entry === sqlite ? [] : ["detector"],
+          designatedAssertionsEvaluated: ["detector"],
           ...(entry === sqlite && reason !== undefined ? { reason } : {}),
         },
       ],
@@ -427,7 +442,12 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
     const makeReport = (requiredOutcome: string, taggedOutcome: string) => {
       const reports = [
         {
-          control: { adapter, status: "pass", conditionalAssertions: [] },
+          control: {
+            adapter,
+            status: "pass",
+            postBaseline: { status: "pass", conditionalAssertions: [] },
+            conditionalAssertions: [],
+          },
           counted: true,
           findings: [],
           mode: "enforcing",
@@ -439,6 +459,7 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
               kind: "implementation",
               outcome: requiredOutcome,
               activated: true,
+              designatedAssertionsEvaluated: ["synthetic.check.1.resultField"],
               designatedFailures:
                 requiredOutcome === "killed"
                   ? ["synthetic.check.1.resultField"]
@@ -449,6 +470,7 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
               kind: "implementation",
               outcome: taggedOutcome,
               activated: true,
+              designatedAssertionsEvaluated: ["synthetic.check.1.resultField"],
               designatedFailures:
                 taggedOutcome === "killed"
                   ? ["synthetic.check.1.resultField"]
@@ -643,7 +665,7 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
       "pass",
       digests
     );
-    expect(staleBranch.certificate).toMatchObject({ status: "uncertified" });
+    expect(staleBranch.certificate).toMatchObject({ status: "certified" });
     expect(
       matchesControlRun(makeReport("survived", "killed"), expected)
     ).toBeUndefined();
@@ -664,6 +686,128 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
       status: "uncertified",
     });
     expect(matchesControlRun(survived, expected)).toBeUndefined();
+
+    const conditionalCheck = {
+      ...check,
+      assertions: [
+        ...check.assertions,
+        {
+          kind: "resultField" as const,
+          field: "$.value",
+          equals: 1,
+          when: { path: "$.capture.capability", equals: false },
+        },
+        {
+          kind: "resultField" as const,
+          field: "$.value",
+          equals: 1,
+          when: { path: "$.capture.capability", equals: true },
+        },
+      ],
+    };
+    const conditionalPlans = [
+      {
+        ...plans[0],
+        checks: [{ check: conditionalCheck, requiredEvidence: [] }],
+        plan: { ...plan, checks: [conditionalCheck] },
+      },
+    ];
+    for (const assertionId of [
+      "synthetic.check.2.resultField",
+      "synthetic.check.3.resultField",
+    ]) {
+      const branch = {
+        assertionId,
+        status: "pass" as const,
+        when: "applied" as const,
+      };
+      const observed = [{ ...results[0], assertionResults: [branch] }];
+      const original = makeReport("killed", "killed");
+      const reports = original.reports.map((entry) => ({
+        ...entry,
+        control: {
+          ...entry.control,
+          conditionalAssertions: [branch],
+          postBaseline: { status: "pass", conditionalAssertions: [branch] },
+        },
+      }));
+      const identity = {
+        profile: profile.profileId,
+        status: "pass" as const,
+        verifierDigests,
+        adapters: [adapterIdentity],
+        outcomes: controlOutcomes(reports),
+      };
+      const withBranch = {
+        reports,
+        controlRun: { ...identity, id: controlRunId(identity) },
+      };
+      await writeFile(reportPath, JSON.stringify(withBranch));
+      const fields = await finishCertificate(
+        options,
+        manifest,
+        profile,
+        conditionalPlans,
+        observed,
+        "pass",
+        digests
+      );
+      expect(fields.certificate?.status).toBe("certified");
+      expect(fields.controlRunExecution).toBeUndefined();
+      const missingSelected = await finishCertificate(
+        options,
+        manifest,
+        profile,
+        conditionalPlans,
+        results,
+        "pass",
+        digests
+      );
+      expect(missingSelected.certificate?.status).toBe("uncertified");
+      const published = { ...options, publishedTestkit: true };
+      expect(
+        (
+          await finishCertificate(
+            published,
+            manifest,
+            profile,
+            conditionalPlans,
+            observed,
+            "pass",
+            digests
+          )
+        ).certificate?.status
+      ).toBe("uncertified");
+      const inProcessReports = reports.map((entry) => ({
+        ...entry,
+        control: { ...entry.control, execution: "in-process" },
+      }));
+      const inProcessIdentity = {
+        ...identity,
+        outcomes: controlOutcomes(inProcessReports),
+      };
+      await writeFile(
+        reportPath,
+        JSON.stringify({
+          reports: inProcessReports,
+          controlRun: {
+            ...inProcessIdentity,
+            id: controlRunId(inProcessIdentity),
+          },
+        })
+      );
+      const disclosed = await finishCertificate(
+        published,
+        manifest,
+        profile,
+        conditionalPlans,
+        observed,
+        "pass",
+        digests
+      );
+      expect(disclosed.certificate?.status).toBe("certified");
+      expect(disclosed.controlRunExecution).toBe("in-process");
+    }
   } finally {
     await rm(directory, { force: true, recursive: true });
   }
@@ -723,7 +867,7 @@ const checkDesignatedFailures = (
   }
 };
 
-test("real fleet controls certify both complete bundles and reject changed verifier inputs", async () => {
+test("real fleet controls certify TypeScript and reject Rust and changed verifier inputs", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "de006-bundle-"));
   try {
     const reportPath = path.join(directory, "controls.json");
@@ -767,7 +911,18 @@ test("real fleet controls certify both complete bundles and reject changed verif
         })
       )
     );
-    const controlRun = record(record(report).controlRun);
+    const runs = record(report).controlRuns;
+    if (!Array.isArray(runs))
+      throw new TypeError("missing implementation control runs");
+    const controlRun = record(
+      runs.find((run) => {
+        const entries = record(run).adapters;
+        return (
+          Array.isArray(entries) &&
+          entries.some((entry) => record(entry).adapter === adapters[0])
+        );
+      })
+    );
     expect(controlRun.status).toBe("pass");
     const controlRunIdentifier = string(controlRun.id);
     const controlDigests = record(controlRun.verifierDigests);
@@ -978,13 +1133,18 @@ test("real fleet controls certify both complete bundles and reject changed verif
             plans: [],
           })
         ),
-        conditionalAssertions: profileConditionalAssertions(
-          claims,
-          await readPlans(await readAdapterManifest(adapter), {
-            packets: [],
-            plans: [],
-          })
-        ),
+        conditionalAssertions: evidence.checkResults
+          .flatMap((check) =>
+            check.assertionResults
+              .filter(
+                (assertion) =>
+                  assertion.when === "applied" && assertion.status === "pass"
+              )
+              .map((assertion) => assertion.assertionId)
+          )
+          .filter((id) =>
+            profileConditionalAssertions(claims, plans).includes(id)
+          ),
       };
       expect(matchesControlRun(report, expected)).toBe(controlRunIdentifier);
       expect(
@@ -1001,14 +1161,18 @@ test("real fleet controls certify both complete bundles and reject changed verif
       ).toBeUndefined();
       for (const field of verifierFields) {
         const changed = structuredClone(report);
-        const changedDigests = record(
-          record(record(changed).controlRun).verifierDigests
-        );
-        changedDigests[field] = "0".repeat(64);
-        const changedRun = record(record(changed).controlRun);
-        changedRun.verifierDigests = changedDigests;
         const changedDocument = record(changed);
-        changedDocument.controlRun = changedRun;
+        const changedRuns = changedDocument.controlRuns;
+        if (!Array.isArray(changedRuns)) throw new Error("missing runs");
+        const changedRun = record(
+          changedRuns.find((run) => record(run).id === controlRunIdentifier)
+        );
+        const changedDigests = record(changedRun.verifierDigests);
+        changedDigests[field] = "0".repeat(64);
+        changedRun.verifierDigests = changedDigests;
+        changedDocument.controlRuns = changedRuns.map((run) =>
+          record(run).id === controlRunIdentifier ? changedRun : run
+        );
         expect(matchesControlRun(changedDocument, expected)).toBeUndefined();
       }
       const altered = record(structuredClone(report));
@@ -1031,8 +1195,8 @@ test("real fleet controls certify both complete bundles and reject changed verif
       mutant.outcome = "survived";
       first.mutants[index] = mutant;
       altered.reports[0] = first;
-      const alteredRun = record(altered.controlRun);
-      alteredRun.outcomes = controlOutcomes(altered.reports);
+      const alteredRun = { ...controlRun };
+      alteredRun.outcomes = controlOutcomes([first]);
       alteredRun.id = controlRunId({
         profile: "kernel.memory",
         status: "pass",
@@ -1045,11 +1209,32 @@ test("real fleet controls certify both complete bundles and reject changed verif
             implementation: string(entry.implementation),
           };
         }),
-        outcomes: controlOutcomes(altered.reports),
+        outcomes: controlOutcomes([first]),
       });
-      altered.controlRun = alteredRun;
+      altered.controlRuns = runs.map((run) =>
+        record(run).id === controlRunIdentifier ? alteredRun : run
+      );
       expect(matchesControlRun(altered, expected)).toBeUndefined();
     }
+    const rustRequired = await run([
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      rustAdapter,
+      "--control-report",
+      reportPath,
+      "--require-certified",
+      "--concurrency",
+      "4",
+      "--evidence-out",
+      path.join(directory, "rust.json"),
+      "--summary-only",
+    ]);
+    expect(rustRequired.code).toBe(1);
+    const rustEvidence = record(
+      JSON.parse(await readFile(path.join(directory, "rust.json"), "utf8"))
+    );
+    expect(rustEvidence.status).toBe("pass");
+    expect(rustEvidence.certificate).toBeUndefined();
     const filtered = await run([
       "tools/conformance/harness/run.ts",
       "--adapter",
@@ -1087,7 +1272,7 @@ test("real fleet controls certify both complete bundles and reject changed verif
       "--adapter",
       adapters[0],
       "--adapter",
-      adapters[1],
+      rustAdapter,
       "--capability",
       "kernel.syscall",
       "--output",
