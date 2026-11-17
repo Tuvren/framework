@@ -72,7 +72,7 @@ tickets:
       evidence: "Tests fail when a required plan claim is removed from a profile or when a profile names a missing claim, and accept the exact inventory for each durable profile."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DP003
     title: "Schema and reference the undetected registers"
     type: Feature

@@ -43,10 +43,10 @@ import {
 } from "../certification/certification-manifest.js";
 import { finalizeProfileBundles } from "../certification/profile-bundles.js";
 import {
-  assertKernelMemoryClaimInventory,
   assertProfileClaimInventory,
   findProfileSelectionFailures,
   readClaimedProfiles,
+  readProfileAuthority,
 } from "../certification/profile.js";
 import type { CertificationProfile } from "../certification/profile.js";
 import {
@@ -2781,14 +2781,14 @@ const profileReplay = (
     .join(" ");
 };
 
-const collectProfileFindings = (
+const collectProfileFindings = async (
   profiles: readonly CertificationProfile[],
   plans: readonly CompiledConformancePlan[],
   selection: NonNullable<ConformanceEvidence["selection"]>,
   manifest: AdapterManifest,
   options: CliOptions,
   project: string | undefined
-): ProfileFinding[] => {
+): Promise<ProfileFinding[]> => {
   const complete =
     options.checks.length === 0 &&
     options.capabilities.length === 0 &&
@@ -2809,14 +2809,15 @@ const collectProfileFindings = (
     message: `claimed profile ${failure.profileId} requires check ${failure.requiredCheckId}, which is not applicable: ${failure.reason}`,
     replay: profileReplay(options, project, failure.requiredCheckId),
   }));
-  if (!complete) {
+  if (!complete || profiles.length === 0) {
     return findings;
   }
+  const authority = await readProfileAuthority(
+    manifest,
+    manifest.authorityPackets
+  );
   for (const profile of profiles) {
-    assertProfileClaimInventory(profile, plans);
-    if (profile.profileId === "kernel.memory") {
-      assertKernelMemoryClaimInventory(profile, plans);
-    }
+    assertProfileClaimInventory(profile, plans, authority);
     for (const capability of profile.requiredCapabilities) {
       if (!manifest.capabilities.includes(capability)) {
         findings.push({
@@ -2870,7 +2871,7 @@ const main = async (): Promise<void> => {
       entry.profile !== adapterManifest.suiteId &&
       !certifiedProfiles.some((profile) => profile.profileId === entry.profile)
   );
-  const profileFindings = collectProfileFindings(
+  const profileFindings = await collectProfileFindings(
     profiles,
     plans,
     selected.selection,

@@ -6,7 +6,11 @@ import {
   validateCertificationDocument,
 } from "../../scripts/conformance/certification-schemas.js";
 import type { AdapterManifest } from "../harness/adapter-client.js";
-import type { CompiledConformancePlan } from "../plan-compiler/index.js";
+import { needsServerClock } from "../harness/check-selection.js";
+import type {
+  CompiledConformancePlan,
+  ConformancePlanCheck,
+} from "../plan-compiler/index.js";
 
 export interface CertificationProfile {
   claimIds: string[];
@@ -88,6 +92,40 @@ export const readClaimedProfiles = async (
   });
 };
 
+export const readProfileAuthority = async (
+  manifest: AdapterManifest,
+  packetPaths: readonly string[]
+): Promise<ReadonlyMap<string, readonly CertificationProfile[]>> => {
+  const byPacket = new Map<string, readonly CertificationProfile[]>();
+  for (const path of packetPaths) {
+    const packet = await readJson(path);
+    if (!isRecord(packet) || typeof packet.certificationProfiles !== "string") {
+      continue;
+    }
+    if (typeof packet.packetId !== "string" || byPacket.has(packet.packetId)) {
+      throw new Error(`${path}: missing or duplicate packetId`);
+    }
+    const document = await readJson(packet.certificationProfiles);
+    if (
+      !(isRecord(document) && Array.isArray(document.profiles)) ||
+      document.profiles.length === 0
+    ) {
+      throw new Error(`${packet.certificationProfiles}: invalid profiles`);
+    }
+    const ids = document.profiles.map((profile: unknown) => {
+      if (!isRecord(profile) || typeof profile.profileId !== "string") {
+        throw new Error(`${packet.certificationProfiles}: invalid profile`);
+      }
+      return profile.profileId;
+    });
+    const profiles = await readClaimedProfiles({ ...manifest, profiles: ids }, [
+      path,
+    ]);
+    byPacket.set(packet.packetId, profiles);
+  }
+  return byPacket;
+};
+
 export interface ProfileSelectionFailure {
   profileId: string;
   requiredCheckId: string;
@@ -150,52 +188,135 @@ export const assertProfileCapabilities = (
   }
 };
 
-export const assertKernelMemoryClaimInventory = (
+const profilePacket = (
   profile: CertificationProfile,
-  plans: readonly CompiledConformancePlan[]
-): void => {
-  const expected = new Set(
-    plans
-      .filter(
-        (plan) =>
-          plan.plan.applicability.capabilities.includes("kernel.syscall") &&
-          plan.plan.applicability.capabilities.every((capability) =>
-            profile.requiredCapabilities.includes(capability)
+  authority: ReadonlyMap<string, readonly CertificationProfile[]>
+): readonly [string, readonly CertificationProfile[]] => {
+  const packets = [...authority].filter(([, profiles]) =>
+    profiles.some((entry) => entry.profileId === profile.profileId)
+  );
+  const packet = packets[0];
+  if (packets.length !== 1 || packet === undefined) {
+    throw new Error(`${profile.profileId} has no unique profile authority`);
+  }
+  return [
+    packet[0],
+    packet[1].map((entry) =>
+      entry.profileId === profile.profileId ? profile : entry
+    ),
+  ];
+};
+
+const checkOwner = (
+  check: ConformancePlanCheck,
+  planCapabilities: readonly string[],
+  profiles: readonly CertificationProfile[]
+): CertificationProfile | undefined => {
+  const required = [
+    ...planCapabilities,
+    ...(check.capabilities ?? []),
+    ...(needsServerClock(check.steps) ? ["clock.backend-server"] : []),
+  ];
+  const applicable = profiles.filter((entry) =>
+    required.every((capability) =>
+      entry.requiredCapabilities.includes(capability)
+    )
+  );
+  if (applicable.length === 0) {
+    return undefined;
+  }
+  const core = applicable.find((entry) => entry.profileId === "kernel.memory");
+  if (core !== undefined) {
+    return core;
+  }
+  const minimal = applicable.filter(
+    (entry) =>
+      !applicable.some(
+        (other) =>
+          other !== entry &&
+          other.requiredCapabilities.length <
+            entry.requiredCapabilities.length &&
+          other.requiredCapabilities.every((capability) =>
+            entry.requiredCapabilities.includes(capability)
           )
       )
-      .flatMap((plan) =>
-        plan.checks.flatMap(({ check }) => [
-          ...(check.claimIds ?? []),
-          ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
-        ])
-      )
   );
+  const owner = minimal[0];
+  if (minimal.length !== 1 || owner === undefined) {
+    throw new Error(
+      `${check.checkId} has ambiguous profile ownership: ${minimal.map((entry) => entry.profileId).join(", ")}`
+    );
+  }
+  return owner;
+};
+
+const addOwnedClaims = (
+  claims: readonly string[],
+  owner: CertificationProfile,
+  profileId: string,
+  claimOwners: Map<string, string>,
+  expected: Set<string>
+): void => {
+  for (const claim of claims) {
+    const previous = claimOwners.get(claim);
+    if (previous !== undefined && previous !== owner.profileId) {
+      throw new Error(
+        `${claim} has conflicting profile ownership: ${previous}, ${owner.profileId}`
+      );
+    }
+    claimOwners.set(claim, owner.profileId);
+    if (owner.profileId === profileId) {
+      expected.add(claim);
+    }
+  }
+};
+
+const expectedProfileClaims = (
+  profile: CertificationProfile,
+  plans: readonly CompiledConformancePlan[],
+  authority: ReadonlyMap<string, readonly CertificationProfile[]>
+): Set<string> => {
+  const [packetId, profiles] = profilePacket(profile, authority);
+  const expected = new Set<string>();
+  const claimOwners = new Map<string, string>();
+  for (const plan of plans) {
+    if (plan.plan.packetId !== packetId) {
+      continue;
+    }
+    for (const { check } of plan.checks) {
+      const claims = [
+        ...(check.claimIds ?? []),
+        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
+      ];
+      if (claims.length === 0) {
+        continue;
+      }
+      const owner = checkOwner(
+        check,
+        plan.plan.applicability.capabilities,
+        profiles
+      );
+      if (owner === undefined) {
+        continue;
+      }
+      addOwnedClaims(claims, owner, profile.profileId, claimOwners, expected);
+    }
+  }
+  return expected;
+};
+
+export const assertProfileClaimInventory = (
+  profile: CertificationProfile,
+  plans: readonly CompiledConformancePlan[],
+  authority: ReadonlyMap<string, readonly CertificationProfile[]>
+): void => {
+  const expected = expectedProfileClaims(profile, plans, authority);
   const declared = new Set(profile.claimIds);
   const missing = [...expected].filter((claim) => !declared.has(claim));
   const unknown = [...declared].filter((claim) => !expected.has(claim));
   if (missing.length > 0 || unknown.length > 0) {
     throw new Error(
       `${profile.profileId} claim inventory mismatch: missing ${missing.join(", ") || "none"}; unknown ${unknown.join(", ") || "none"}`
-    );
-  }
-};
-
-export const assertProfileClaimInventory = (
-  profile: CertificationProfile,
-  plans: readonly CompiledConformancePlan[]
-): void => {
-  const loaded = new Set(
-    plans.flatMap(({ checks }) =>
-      checks.flatMap(({ check }) => [
-        ...(check.claimIds ?? []),
-        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
-      ])
-    )
-  );
-  const orphaned = profile.claimIds.filter((claim) => !loaded.has(claim));
-  if (orphaned.length > 0) {
-    throw new Error(
-      `${profile.profileId} claim inventory has no loaded check for: ${orphaned.join(", ")}`
     );
   }
 };

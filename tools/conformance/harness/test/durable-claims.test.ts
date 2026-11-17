@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import {
   assertProfileClaimInventory,
   readClaimedProfiles,
+  readProfileAuthority,
 } from "../../certification/profile.ts";
 import {
   assertClaimCoverage,
@@ -66,16 +67,35 @@ test("a durable profile cannot claim an obligation without a loaded check", asyn
     throw new Error("missing durable profile");
   }
   const plans = await readPlans(adapter, { packets: [], plans: [] });
-  expect(() => assertProfileClaimInventory(profile, plans)).not.toThrow();
+  const authority = await readProfileAuthority(
+    adapter,
+    adapter.authorityPackets
+  );
+  expect(() =>
+    assertProfileClaimInventory(profile, plans, authority)
+  ).not.toThrow();
   expect(() =>
     assertProfileClaimInventory(
       {
         ...profile,
         claimIds: [...profile.claimIds, "kernel.syscall.reopen.orphan"],
       },
-      plans
+      plans,
+      authority
     )
   ).toThrow("kernel.syscall.reopen.orphan");
+  expect(() =>
+    assertProfileClaimInventory(
+      {
+        ...profile,
+        claimIds: profile.claimIds.filter(
+          (claim) => claim !== "kernel.syscall.reopen.pending_state"
+        ),
+      },
+      plans,
+      authority
+    )
+  ).toThrow("kernel.syscall.reopen.pending_state");
 });
 
 test("durable reopen claims have designated controls or explicit gaps and stay outside memory", async () => {
