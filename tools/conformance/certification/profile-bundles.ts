@@ -7,6 +7,7 @@ import type { AdapterManifest } from "../harness/adapter-client.js";
 import type { CompiledConformancePlan } from "../plan-compiler/index.js";
 import { finishCertificate } from "./bundle.js";
 import type { BundleFields } from "./bundle.js";
+import { readProfileUndetectedClaims } from "./profile.js";
 import type { CertificationProfile } from "./profile.js";
 import { computeCertificateDigests } from "./provenance.js";
 import type { CertificateDigests } from "./provenance.js";
@@ -94,12 +95,22 @@ export const finalizeProfileBundles = async (
   evidence: ConformanceEvidence,
   before: CertificateDigests | undefined
 ): Promise<ProfileBundle[]> => {
+  const packetPaths =
+    options.packets.length > 0 ? options.packets : manifest.authorityPackets;
+  const claimsByProfile = await Promise.all(
+    profiles.map((profile) => readProfileUndetectedClaims(packetPaths, profile))
+  );
+  // All registers are read before the shared final provenance snapshot.
   const after =
     before === undefined
       ? undefined
       : await computeCertificateDigests(manifest, options.adapter);
   const bundles: ProfileBundle[] = [];
-  for (const profile of profiles) {
+  for (const [index, profile] of profiles.entries()) {
+    const undetectedClaims = claimsByProfile[index];
+    if (undetectedClaims === undefined) {
+      throw new Error(`missing register for ${profile.profileId}`);
+    }
     const scoped = scopedEvidence(profile, plans, evidence);
     const fields = await finishCertificate(
       options,
@@ -109,7 +120,7 @@ export const finalizeProfileBundles = async (
       scoped.checkResults,
       scoped.status,
       before,
-      after
+      { digests: after, undetectedClaims }
     );
     bundles.push({ fields, evidence: scoped, profileId: profile.profileId });
   }

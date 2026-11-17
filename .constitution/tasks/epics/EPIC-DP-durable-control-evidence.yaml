@@ -123,7 +123,7 @@ tickets:
       evidence: "Round-trip certificates with empty and nonempty registers; reject omitted, altered, or unrelated claims and verify the register is covered by verifier-authority provenance. A certificate whose register is empty serializes undetectedClaims as an explicit empty list, and a certificate without the field fails schema validation. The committed SQLite and PostgreSQL durable-profile certificates in reports/compatibility carry undetectedClaims: [], and the committed kernel.memory certificates list every kernel-memory-undetected.json entry with its reason."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DP005
     title: "Require implementation-matched control evidence and a post-mutant baseline"
     type: Feature

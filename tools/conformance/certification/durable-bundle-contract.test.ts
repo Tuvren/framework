@@ -3,9 +3,19 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import Ajv2020 from "ajv/dist/2020.js";
 import { spawn } from "bun";
 
+import { PINNED_CERTIFICATION_EVIDENCE } from "../../scripts/conformance/certification-schema-examples.ts";
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
+import { readAdapterManifest } from "../harness/run-plans.ts";
+import { finishCertificate } from "./bundle.ts";
+import {
+  assertCertificateUndetectedClaims,
+  assertUndetectedClaimsMatch,
+  readProfileAuthority,
+  readProfileUndetectedClaims,
+} from "./profile.ts";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const sqlite = "typescript/kernel/conformance-adapter/adapter-sqlite.json";
@@ -31,6 +41,208 @@ const run = async (args: string[]) => {
   ]);
   return { code, stdout, stderr };
 };
+
+test("empty and populated registers round-trip in every certificate, including incomplete ones", async () => {
+  const manifest = await readAdapterManifest(sqlite);
+  const authority = await readProfileAuthority(
+    manifest,
+    manifest.authorityPackets
+  );
+  const profiles = authority.get("tuvren.kernel.protocol");
+  if (profiles === undefined) {
+    throw new Error("missing profile authority");
+  }
+  for (const profile of profiles) {
+    const expected = await readProfileUndetectedClaims(
+      manifest.authorityPackets,
+      profile
+    );
+    const registerPath =
+      profile.profileId === "kernel.memory"
+        ? "spec/conformance/kernel/kernel-memory-undetected.json"
+        : `spec/conformance/kernel/${profile.profileId.replace("kernel.", "kernel-")}-undetected.json`;
+    const register = object(JSON.parse(await readFile(registerPath, "utf8")));
+    expect<unknown>(
+      Object.fromEntries(
+        expected.map(({ claimId, reason }) => [claimId, reason])
+      )
+    ).toEqual(register);
+    expect(expected.length > 0).toBe(profile.profileId === "kernel.memory");
+    const fields = await finishCertificate(
+      { adapter: sqlite, capabilities: [], checks: [], packets: [], plans: [] },
+      manifest,
+      profile,
+      [],
+      [],
+      "not_applicable",
+      undefined
+    );
+    expect(fields.certificate?.status).toBe("uncertified");
+    expect(fields.undetectedClaims).toEqual(expected);
+    const certificate = object(
+      JSON.parse(
+        JSON.stringify({
+          ...PINNED_CERTIFICATION_EVIDENCE,
+          ...fields,
+        })
+      )
+    );
+    assertConformanceEvidence(certificate, profile.profileId);
+    await expect(
+      assertCertificateUndetectedClaims(
+        certificate,
+        manifest.authorityPackets,
+        profile
+      )
+    ).resolves.toEqual(expected);
+    expect(() =>
+      assertUndetectedClaimsMatch(
+        certificate.undetectedClaims,
+        expected,
+        profile.profileId
+      )
+    ).not.toThrow();
+    expect(() =>
+      assertUndetectedClaimsMatch(
+        [...expected].reverse(),
+        expected,
+        profile.profileId
+      )
+    ).not.toThrow();
+    const { undetectedClaims: _omitted, ...omitted } = certificate;
+    expect(() => assertConformanceEvidence(omitted, profile.profileId)).toThrow(
+      "undetectedClaims"
+    );
+    await expect(
+      assertCertificateUndetectedClaims(
+        omitted,
+        manifest.authorityPackets,
+        profile
+      )
+    ).rejects.toThrow("undetectedClaims");
+    expect(() =>
+      assertUndetectedClaimsMatch(undefined, expected, profile.profileId)
+    ).toThrow("undetectedClaims");
+    expect(() =>
+      assertUndetectedClaimsMatch(
+        [...expected, { claimId: "unrelated", reason: "gap" }],
+        expected,
+        profile.profileId
+      )
+    ).toThrow("register");
+    if (expected.length > 0) {
+      const first = expected[0];
+      if (first === undefined) {
+        throw new Error("missing claim");
+      }
+      for (const invalid of [
+        expected.slice(1),
+        [{ ...first, reason: "altered" }, ...expected.slice(1)],
+        [...expected, first],
+        [...expected, { ...first, reason: "different" }],
+      ]) {
+        expect(() =>
+          assertUndetectedClaimsMatch(invalid, expected, profile.profileId)
+        ).toThrow("register");
+        await expect(
+          assertCertificateUndetectedClaims(
+            { ...certificate, undetectedClaims: invalid },
+            manifest.authorityPackets,
+            profile
+          )
+        ).rejects.toThrow("register");
+      }
+      expect(() =>
+        assertConformanceEvidence(
+          {
+            ...certificate,
+            undetectedClaims: [...expected, { ...first, reason: "different" }],
+          },
+          profile.profileId
+        )
+      ).toThrow("duplicate");
+      expect(() =>
+        assertConformanceEvidence(
+          { ...certificate, undetectedClaims: [{ ...first, reason: "   " }] },
+          profile.profileId
+        )
+      ).toThrow("schema");
+    }
+  }
+  const memory = profiles.find(
+    ({ profileId }) => profileId === "kernel.memory"
+  );
+  if (memory === undefined) {
+    throw new Error("missing memory profile");
+  }
+  await expect(
+    readProfileUndetectedClaims(manifest.authorityPackets, {
+      ...memory,
+      claimIds: [],
+    })
+  ).rejects.toThrow("unknown claims");
+  await expect(readProfileUndetectedClaims([], memory)).rejects.toThrow(
+    "no unique"
+  );
+  await expect(
+    readProfileUndetectedClaims(
+      [...manifest.authorityPackets, ...manifest.authorityPackets],
+      memory
+    )
+  ).rejects.toThrow("no unique");
+});
+
+test("matrix certificate rows require closed, reasoned claim entries", async () => {
+  const schema = JSON.parse(
+    await readFile(
+      "reports/compatibility/compatibility-matrix.schema.json",
+      "utf8"
+    )
+  );
+  const validate = new Ajv2020({ strict: false }).compile(schema);
+  const hash = "a".repeat(64);
+  const row = {
+    implementationId: "example",
+    backend: "memory",
+    profile: "example.profile",
+    status: "certified",
+    digests: Object.fromEntries(
+      [
+        "adapterManifest",
+        "packet",
+        "plans",
+        "catalogs",
+        "fixtures",
+        "profiles",
+        "controls",
+        "verifierAuthority",
+      ].map((key) => [key, hash])
+    ),
+    undetectedClaims: [{ claimId: "example.claim", reason: "gap" }],
+  };
+  const matrix = (certificate: unknown) => ({
+    generatedAtMs: 0,
+    sourceRevision: "example",
+    suites: [],
+    implementations: [],
+    interop: [],
+    certificates: [certificate],
+  });
+  expect(validate(matrix(row))).toBe(true);
+  expect(validate(matrix({ ...row, undetectedClaims: [] }))).toBe(true);
+  const { undetectedClaims: _omitted, ...omitted } = row;
+  for (const invalid of [
+    omitted,
+    { ...row, extra: true },
+    { ...row, undetectedClaims: [{ claimId: "a", reason: " " }] },
+    {
+      ...row,
+      undetectedClaims: [{ claimId: "a", reason: "gap", extra: true }],
+    },
+  ]) {
+    expect(validate(matrix(invalid))).toBe(false);
+  }
+});
 
 test("a control report requires an explicit bundle destination", async () => {
   const result = await run([
@@ -122,6 +334,29 @@ test("compatibility records each certified backend and profile separately", asyn
   );
   if (!Array.isArray(matrix.certificates)) {
     throw new TypeError("missing compatibility certificate rows");
+  }
+  for (const row of matrix.certificates.map(object)) {
+    if (row.profile === "kernel.memory") {
+      const register = object(
+        JSON.parse(
+          await readFile(
+            "spec/conformance/kernel/kernel-memory-undetected.json",
+            "utf8"
+          )
+        )
+      );
+      expect(row.undetectedClaims).toHaveLength(Object.keys(register).length);
+      expect(row.undetectedClaims).toEqual(
+        expect.arrayContaining(
+          Object.entries(register).map(([claimId, reason]) => ({
+            claimId,
+            reason,
+          }))
+        )
+      );
+    } else {
+      expect(row.undetectedClaims).toEqual([]);
+    }
   }
   expect(matrix.certificates.map(object)).not.toContainEqual(
     expect.objectContaining({
@@ -276,6 +511,7 @@ test("durable certificates share a run and link to matching profile control gate
             status: "certified",
             complete: true,
           });
+          expect(bundle.undetectedClaims).toEqual([]);
           expect(typeof bundle.runId).toBe("string");
           const control = controlRuns.find(
             (entry: unknown) => object(entry).profile === profile

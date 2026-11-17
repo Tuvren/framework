@@ -6,6 +6,7 @@ import {
   validateCertificationDocument,
 } from "../../scripts/conformance/certification-schemas.js";
 import { parseObservationJson } from "../../scripts/conformance/observation-encoding.js";
+import type { UndetectedClaim } from "../../scripts/lib/conformance-contract.js";
 import type { AdapterManifest } from "../harness/adapter-client.js";
 import { needsServerClock } from "../harness/check-selection.js";
 import type {
@@ -193,6 +194,108 @@ export const readUndetectedRegister = async (
     });
   }
   return reasons;
+};
+
+/** Resolve a profile's one packet-owned register and preserve each reason verbatim. */
+export const readProfileUndetectedClaims = async (
+  packetPaths: readonly string[],
+  profile: Pick<CertificationProfile, "profileId" | "claimIds">
+): Promise<UndetectedClaim[]> => {
+  const owners: string[] = [];
+  for (const packetPath of packetPaths) {
+    if (
+      (await readUndetectedRegisterReferences(packetPath)).has(
+        profile.profileId
+      )
+    ) {
+      owners.push(packetPath);
+    }
+  }
+  const owner = owners[0];
+  if (owners.length !== 1 || owner === undefined) {
+    throw new Error(
+      `${profile.profileId} has no unique undetected register authority`
+    );
+  }
+  const register = await readUndetectedRegister(owner, profile.profileId);
+  const known = new Set(profile.claimIds);
+  const unknown = Object.keys(register).filter((claim) => !known.has(claim));
+  if (unknown.length > 0) {
+    throw new Error(
+      `${profile.profileId} undetected register has unknown claims: ${unknown.join(", ")}`
+    );
+  }
+  return Object.entries(register)
+    .toSorted(([left], [right]) => {
+      if (left < right) {
+        return -1;
+      }
+      if (left > right) {
+        return 1;
+      }
+      return 0;
+    })
+    .map(([claimId, reason]) => ({ claimId, reason }));
+};
+
+/** Compare as a claim-to-reason mapping, rejecting duplicates and extra fields. */
+export const assertUndetectedClaimsMatch = (
+  value: unknown,
+  expected: readonly UndetectedClaim[],
+  label: string
+): void => {
+  if (!Array.isArray(value)) {
+    throw new Error(
+      `${label} undetectedClaims must be an array matching the register`
+    );
+  }
+  const expectedByClaim = new Map(
+    expected.map(({ claimId, reason }) => [claimId, reason])
+  );
+  const seen = new Set<string>();
+  for (const entry of value) {
+    if (
+      !isRecord(entry) ||
+      Object.keys(entry).length !== 2 ||
+      typeof entry.claimId !== "string" ||
+      typeof entry.reason !== "string" ||
+      seen.has(entry.claimId) ||
+      expectedByClaim.get(entry.claimId) !== entry.reason
+    ) {
+      throw new Error(
+        `${label} undetectedClaims do not match the profile register`
+      );
+    }
+    seen.add(entry.claimId);
+  }
+  if (seen.size !== expectedByClaim.size) {
+    throw new Error(
+      `${label} undetectedClaims do not match the profile register`
+    );
+  }
+};
+
+/** Validate a certificate against the unique register selected by its packets. */
+export const assertCertificateUndetectedClaims = async (
+  value: unknown,
+  packetPaths: readonly string[],
+  profile: Pick<CertificationProfile, "profileId" | "claimIds">
+): Promise<UndetectedClaim[]> => {
+  if (
+    !(isRecord(value) && isRecord(value.certificate)) ||
+    value.certificate.profile !== profile.profileId
+  ) {
+    throw new Error(
+      `certificate does not identify profile ${profile.profileId}`
+    );
+  }
+  const expected = await readProfileUndetectedClaims(packetPaths, profile);
+  assertUndetectedClaimsMatch(
+    value.undetectedClaims,
+    expected,
+    profile.profileId
+  );
+  return expected;
 };
 
 export interface ProfileSelectionFailure {

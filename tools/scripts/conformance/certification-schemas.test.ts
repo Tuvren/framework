@@ -1151,6 +1151,42 @@ describe("certification evidence schema", () => {
     expectValid("certificationEvidence", PINNED_CERTIFICATION_EVIDENCE);
   });
 
+  test("requires a closed undetected-claim list for certified and uncertified certificates", () => {
+    for (const status of ["certified", "uncertified"]) {
+      const certificate = {
+        ...PINNED_CERTIFICATION_EVIDENCE,
+        certificate: { ...PINNED_CERTIFICATION_EVIDENCE.certificate, status },
+      };
+      expectValid("certificationEvidence", {
+        ...certificate,
+        undetectedClaims: [],
+      });
+      expectValid("certificationEvidence", certificate);
+      const { undetectedClaims: _omitted, ...omitted } = certificate;
+      expectInvalid("certificationEvidence", omitted);
+      for (const invalid of [
+        [{ claimId: "claim", reason: " " }],
+        [{ claimId: "claim" }],
+        [{ claimId: "claim", reason: "gap", extra: true }],
+        [
+          { claimId: "claim", reason: "gap" },
+          { claimId: "claim", reason: "gap" },
+        ],
+      ]) {
+        expectInvalid("certificationEvidence", {
+          ...certificate,
+          undetectedClaims: invalid,
+        });
+      }
+    }
+    const {
+      certificate: _certificate,
+      undetectedClaims: _claims,
+      ...ordinary
+    } = PINNED_CERTIFICATION_EVIDENCE;
+    expectValid("certificationEvidence", ordinary);
+  });
+
   test("keeps every checked-in harness evidence file valid", async () => {
     const directory = "reports/compatibility/evidence";
     const files = (await readdir(nodePath.join(REPO_ROOT, directory))).filter(

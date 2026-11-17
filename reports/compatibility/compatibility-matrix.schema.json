@@ -242,7 +242,8 @@
           "backend",
           "profile",
           "status",
-          "digests"
+          "digests",
+          "undetectedClaims"
         ],
         "properties": {
           "implementationId": {
@@ -258,6 +259,19 @@
           },
           "status": {
             "const": "certified"
+          },
+          "undetectedClaims": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "required": ["claimId", "reason"],
+              "properties": {
+                "claimId": { "type": "string", "minLength": 1 },
+                "reason": { "type": "string", "pattern": "\\S" }
+              },
+              "additionalProperties": false
+            }
           },
           "digests": {
             "type": "object",

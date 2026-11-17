@@ -24,7 +24,11 @@ import {
   controlRunId,
   matchesControlRun,
 } from "./control-link.ts";
-import { readClaimedProfiles, readProfileScopedControls } from "./profile.ts";
+import {
+  readClaimedProfiles,
+  readProfileScopedControls,
+  readProfileUndetectedClaims,
+} from "./profile.ts";
 import { computeCertificateDigests } from "./provenance.ts";
 import type { VerifierDigests } from "./provenance.ts";
 
@@ -320,6 +324,13 @@ test("missing PostgreSQL version leaves an incomplete bundle and conflicting ver
     assertionResults: [],
     details: { error: "PostgreSQL unavailable" },
   };
+  const snapshot = {
+    digests,
+    undetectedClaims: await readProfileUndetectedClaims(
+      manifest.authorityPackets,
+      profile
+    ),
+  };
   const bundle = await finishCertificate(
     options,
     manifest,
@@ -328,7 +339,7 @@ test("missing PostgreSQL version leaves an incomplete bundle and conflicting ver
     [failed],
     "fail",
     digests,
-    digests
+    snapshot
   );
   expect(bundle.certificate).toEqual({
     complete: false,
@@ -349,7 +360,7 @@ test("missing PostgreSQL version leaves an incomplete bundle and conflicting ver
       })),
       "fail",
       digests,
-      digests
+      snapshot
     )
   ).rejects.toThrow("single PostgreSQL server version");
 }, 120_000);
@@ -362,9 +373,16 @@ test("a survived tagged control leaves the certificate uncertified", async () =>
     const digests = await computeCertificateDigests(manifest, adapter);
     const { adapterManifest, implementation, ...verifierDigests } = digests;
     const adapterIdentity = { adapter, adapterManifest, implementation };
+    const [memoryProfile] = await readClaimedProfiles(
+      manifest,
+      manifest.authorityPackets
+    );
+    if (memoryProfile === undefined) {
+      throw new Error("missing memory profile");
+    }
     const profile = {
-      profileId: "synthetic.profile",
-      claimIds: ["synthetic.claim"],
+      profileId: memoryProfile.profileId,
+      claimIds: [...memoryProfile.claimIds, "synthetic.claim"],
       faultPoints: [],
       negativeControls: ["required"],
       requiredCapabilities: [],
@@ -823,6 +841,12 @@ test("real fleet controls certify both complete bundles and reject changed verif
         profile: "kernel.memory",
         status: "certified",
       });
+      expect(bundle.undetectedClaims).toEqual(
+        await readProfileUndetectedClaims(memoryAdapter.authorityPackets, {
+          profileId: "kernel.memory",
+          claimIds: claims,
+        })
+      );
       expect(bundle.negativeControlRunId).toBe(controlRunIdentifier);
       if (adapter === adapters[0]) {
         const manifest = await readAdapterManifest(adapter);
