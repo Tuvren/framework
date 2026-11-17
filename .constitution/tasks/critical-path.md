@@ -124,7 +124,7 @@ An arrow points from a prerequisite to the epic that depends on it, so it reads 
 
 A dependency-respecting listing, not a chain: `needs` names a ticket's own `depends_on` inside its epic, and a ticket without one has no in-epic dependency. Readiness is epic-level: a ticket finished on an unmerged branch satisfies no other epic's dependency until the containing PR merges.
 
-- **EPIC-DQ:** KRT-DQ005, KRT-DQ001, KRT-DQ002 (needs KRT-DQ001), KRT-DQ003 (needs KRT-DQ002), KRT-DQ004 (needs KRT-DQ003)
+- **EPIC-DQ:** KRT-DQ005, KRT-DQ001 (needs KRT-DQ005), KRT-DQ002 (needs KRT-DQ001), KRT-DQ003 (needs KRT-DQ002), KRT-DQ004 (needs KRT-DQ003)
 - **EPIC-DT:** KRT-DT001
 - **EPIC-DR:** KRT-DR006, KRT-DR001 (needs KRT-DR006), KRT-DR002 (needs KRT-DR001), KRT-DR003 (needs KRT-DR002), KRT-DR004 (needs KRT-DR003), KRT-DR005 (needs KRT-DR004)
 - **EPIC-DK:** KRT-DK001, KRT-DK002 (needs KRT-DK001), KRT-DK003 (needs KRT-DK002), KRT-DK004 (needs KRT-DK002)
