@@ -1,13 +1,18 @@
 import { expect, test } from "bun:test";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { spawn } from "bun";
 
 import { selectCheck } from "../harness/check-selection.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import {
-  assertKernelMemoryClaimInventory,
   assertProfileCapabilities,
+  assertProfileClaimInventory,
   findProfileSelectionFailures,
   readClaimedProfiles,
+  readProfileAuthority,
 } from "./profile.ts";
 
 test("a complete profile run rejects a missing required capability", () => {
@@ -121,32 +126,336 @@ test("the composite capability retains legacy coverage without selecting it for 
   }
 });
 
-test("the memory profile cannot omit or invent a syscall claim", async () => {
+test("each kernel profile has an exact two-way claim inventory", async () => {
   const adapter = await readAdapterManifest(
-    "typescript/kernel/conformance-adapter/adapter.json"
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json"
   );
-  const [profile] = await readClaimedProfiles(
+  const authority = await readProfileAuthority(
     adapter,
     adapter.authorityPackets
   );
-  if (profile === undefined) {
-    throw new Error("missing memory profile");
+  const profiles = authority.get("tuvren.kernel.protocol");
+  if (profiles === undefined) {
+    throw new Error("missing kernel profiles");
+  }
+  expect(
+    profiles.map(({ profileId, claimIds }) => [profileId, claimIds.length])
+  ).toEqual([
+    ["kernel.memory", 75],
+    ["kernel.persistent-reopen", 6],
+    ["kernel.process-crash", 4],
+    ["kernel.shared-backend", 3],
+  ]);
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  for (const profile of profiles) {
+    expect(() =>
+      assertProfileClaimInventory(profile, plans, authority)
+    ).not.toThrow();
+    for (const claim of profile.claimIds) {
+      expect(() =>
+        assertProfileClaimInventory(
+          {
+            ...profile,
+            claimIds: profile.claimIds.filter((id) => id !== claim),
+          },
+          plans,
+          authority
+        )
+      ).toThrow(claim);
+    }
+    expect(() =>
+      assertProfileClaimInventory(
+        {
+          ...profile,
+          claimIds: [...profile.claimIds, "kernel.syscall.invented"],
+        },
+        plans,
+        authority
+      )
+    ).toThrow("kernel.syscall.invented");
+  }
+});
+
+test("a complete harness run rejects a changed durable inventory before launching the adapter", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json"
+  );
+  const authority = await readProfileAuthority(
+    adapter,
+    adapter.authorityPackets
+  );
+  const profiles = authority.get("tuvren.kernel.protocol");
+  if (profiles === undefined) {
+    throw new Error("missing kernel profiles");
+  }
+  const packet: unknown = JSON.parse(
+    await readFile("spec/kernel/authority-packet.json", "utf8")
+  );
+  if (typeof packet !== "object" || packet === null || Array.isArray(packet)) {
+    throw new Error("invalid kernel packet");
+  }
+  const directory = await mkdtemp(path.join(tmpdir(), "profile-inventory-"));
+  try {
+    const packetPath = path.join(directory, "packet.json");
+    const profilesPath = path.join(directory, "profiles.json");
+    const adapterPath = path.join(directory, "adapter.json");
+    await writeFile(
+      packetPath,
+      JSON.stringify({ ...packet, certificationProfiles: profilesPath })
+    );
+    await writeFile(
+      adapterPath,
+      JSON.stringify({
+        ...adapter,
+        authorityPackets: [packetPath],
+        executable: path.join(directory, "must-not-launch"),
+        profiles: ["kernel.persistent-reopen"],
+      })
+    );
+    const missingClaim = "kernel.syscall.reopen.pending_state";
+    const orphan = "kernel.syscall.reopen.orphan";
+    for (const kind of ["missing", "orphan"] as const) {
+      await writeFile(
+        profilesPath,
+        JSON.stringify({
+          profiles: profiles.map((profile) =>
+            profile.profileId === "kernel.persistent-reopen"
+              ? {
+                  ...profile,
+                  claimIds:
+                    kind === "missing"
+                      ? profile.claimIds.filter(
+                          (claim) => claim !== missingClaim
+                        )
+                      : [...profile.claimIds, orphan],
+                }
+              : profile
+          ),
+        })
+      );
+      const child = spawn(
+        [
+          process.execPath,
+          "tools/conformance/harness/run.ts",
+          "--adapter",
+          adapterPath,
+        ],
+        { cwd: process.cwd(), stdout: "pipe", stderr: "pipe" }
+      );
+      const [code, stderr] = await Promise.all([
+        child.exited,
+        new Response(child.stderr).text(),
+        new Response(child.stdout).text(),
+      ]);
+      expect(code).toBe(1);
+      expect(stderr).toContain("claim inventory mismatch");
+      expect(stderr).toContain(kind === "missing" ? missingClaim : orphan);
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 30_000);
+
+test("shared checks have one owner even when another profile has their capabilities", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-postgres.json"
+  );
+  const authority = await readProfileAuthority(
+    adapter,
+    adapter.authorityPackets
+  );
+  const profiles = authority.get("tuvren.kernel.protocol") ?? [];
+  const memory = profiles.find((entry) => entry.profileId === "kernel.memory");
+  const reopen = profiles.find(
+    (entry) => entry.profileId === "kernel.persistent-reopen"
+  );
+  const crash = profiles.find(
+    (entry) => entry.profileId === "kernel.process-crash"
+  );
+  const shared = profiles.find(
+    (entry) => entry.profileId === "kernel.shared-backend"
+  );
+  if (
+    memory === undefined ||
+    reopen === undefined ||
+    crash === undefined ||
+    shared === undefined
+  ) {
+    throw new Error("missing kernel profile");
   }
   const plans = await readPlans(adapter, { packets: [], plans: [] });
-  expect(() => assertKernelMemoryClaimInventory(profile, plans)).not.toThrow();
+  const coreClaim = "kernel.syscall.scope-isolation.own_content";
+  const reopenClaim = "kernel.syscall.reopen.pending_state";
+  const sharedClaim = "kernel.syscall.shared_writer.race";
+  for (const [profile, claim] of [
+    [reopen, coreClaim],
+    [crash, reopenClaim],
+    [shared, reopenClaim],
+    [reopen, sharedClaim],
+  ] as const) {
+    expect(() =>
+      assertProfileClaimInventory(
+        { ...profile, claimIds: [...profile.claimIds, claim] },
+        plans,
+        authority
+      )
+    ).toThrow(claim);
+  }
+  expect(memory.claimIds).toContain(coreClaim);
+  expect(reopen.claimIds).toContain(reopenClaim);
+  expect(shared.claimIds).toContain(sharedClaim);
+});
+
+test("inventory includes step claims and rejects claims whose checks are missing", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json"
+  );
+  const authority = await readProfileAuthority(
+    adapter,
+    adapter.authorityPackets
+  );
+  const profile = authority
+    .get("tuvren.kernel.protocol")
+    ?.find((entry) => entry.profileId === "kernel.persistent-reopen");
+  if (profile === undefined) {
+    throw new Error("missing reopen profile");
+  }
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  const claim = "kernel.syscall.reopen.pending_state";
+  const withoutCheck = plans.map((plan) => ({
+    ...plan,
+    checks: plan.checks.filter(({ check }) => !check.claimIds?.includes(claim)),
+  }));
   expect(() =>
-    assertKernelMemoryClaimInventory(
-      { ...profile, claimIds: profile.claimIds.slice(1) },
-      plans
-    )
-  ).toThrow("missing");
+    assertProfileClaimInventory(profile, withoutCheck, authority)
+  ).toThrow(claim);
+
+  const stepClaim = "kernel.syscall.reopen.new_step_claim";
+  const withStepClaim = plans.map((plan) => ({
+    ...plan,
+    checks: plan.checks.map((compiled) => {
+      const { check } = compiled;
+      if (!check.claimIds?.includes(claim)) {
+        return compiled;
+      }
+      return {
+        ...compiled,
+        check: {
+          ...check,
+          steps: (check.steps ?? []).map((step, index) =>
+            index === 0
+              ? { ...step, claimIds: [...(step.claimIds ?? []), stepClaim] }
+              : step
+          ),
+        },
+      };
+    }),
+  }));
   expect(() =>
-    assertKernelMemoryClaimInventory(
-      {
-        ...profile,
-        claimIds: [...profile.claimIds, "kernel.syscall.invented"],
-      },
-      plans
+    assertProfileClaimInventory(profile, withStepClaim, authority)
+  ).toThrow(stepClaim);
+  expect(() =>
+    assertProfileClaimInventory(
+      { ...profile, claimIds: [...profile.claimIds, stepClaim] },
+      withStepClaim,
+      authority
     )
-  ).toThrow("unknown");
+  ).not.toThrow();
+});
+
+test("inventory does not accept checks from another packet or duplicate ownership", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-postgres.json"
+  );
+  const authority = await readProfileAuthority(
+    adapter,
+    adapter.authorityPackets
+  );
+  const profiles = authority.get("tuvren.kernel.protocol") ?? [];
+  const reopen = profiles.find(
+    (entry) => entry.profileId === "kernel.persistent-reopen"
+  );
+  if (reopen === undefined) {
+    throw new Error("missing reopen profile");
+  }
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  const reopenPlan = plans.find((plan) =>
+    plan.checks.some(({ check }) =>
+      check.claimIds?.includes("kernel.syscall.reopen.pending_state")
+    )
+  );
+  if (reopenPlan === undefined) {
+    throw new Error("missing reopen plan");
+  }
+  const foreignClaim = "kernel.syscall.foreign";
+  const foreignPlan = {
+    ...reopenPlan,
+    plan: { ...reopenPlan.plan, packetId: "other.packet" },
+    checks: reopenPlan.checks.map((compiled) => ({
+      ...compiled,
+      check: { ...compiled.check, claimIds: [foreignClaim], steps: [] },
+    })),
+  };
+  expect(() =>
+    assertProfileClaimInventory(
+      { ...reopen, claimIds: [...reopen.claimIds, foreignClaim] },
+      [...plans, foreignPlan],
+      authority
+    )
+  ).toThrow(foreignClaim);
+
+  const sharedClaim = "kernel.syscall.shared_writer.race";
+  const duplicateClaim = "kernel.syscall.reopen.pending_state";
+  const conflicting = plans.map((plan) => ({
+    ...plan,
+    checks: plan.checks.map((compiled) => ({
+      ...compiled,
+      check: compiled.check.claimIds?.includes(sharedClaim)
+        ? {
+            ...compiled.check,
+            claimIds: [...compiled.check.claimIds, duplicateClaim],
+          }
+        : compiled.check,
+    })),
+  }));
+  expect(() =>
+    assertProfileClaimInventory(reopen, conflicting, authority)
+  ).toThrow("conflicting profile ownership");
+});
+
+test("inventory fails closed when capability-based ownership is ambiguous", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-postgres.json"
+  );
+  const authority = await readProfileAuthority(
+    adapter,
+    adapter.authorityPackets
+  );
+  const profiles = authority.get("tuvren.kernel.protocol") ?? [];
+  const shared = profiles.find(
+    (entry) => entry.profileId === "kernel.shared-backend"
+  );
+  if (shared === undefined) {
+    throw new Error("missing shared-backend profile");
+  }
+  const ambiguousAuthority = new Map(authority);
+  ambiguousAuthority.set("tuvren.kernel.protocol", [
+    ...profiles,
+    {
+      ...shared,
+      profileId: "kernel.other",
+      requiredCapabilities: [
+        "kernel.syscall",
+        "kernel.protocol",
+        "kernel.persistence.durable",
+        "kernel.barrier",
+        "kernel.shared-lease-clock",
+        "kernel.fault-injection",
+      ],
+    },
+  ]);
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  expect(() =>
+    assertProfileClaimInventory(shared, plans, ambiguousAuthority)
+  ).toThrow("ambiguous profile ownership");
 });
