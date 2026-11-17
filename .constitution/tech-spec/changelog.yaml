@@ -1,4 +1,16 @@
 entries:
+  - version: v0.50.2
+    date: 2026-11-17
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "Alignment pass for the tech-spec items routed by reports/2026-11-17-reconciliation.yaml (EPIC-DP). ADR-0084 decision 6 no longer says the registers are read through configuration: since 599c6e5 the kernel packet's undetectedRegisters references all four registers. A new Observed (EPIC-DP) section records the met undetected-claims list (599c6e5, a0502c4), replacing the 'not yet met' bullet. The certification companion drops 'The pinned register shape lands in DP003 after DO' and states that the generated authority modules KRT-DK004 introduces must include the registers."
+      - "Adopted one unmutated baseline after the whole mutant batch (control.postBaseline, d07625c) as the reading of ADR-0084 decision 3 and guidelines 5.10 rule 5, under the owner's delegation for this pass. The decision text is unchanged; the reading and its limit (a check that flakes between two mutants is not bracketed per mutant) are recorded in ADR-0084, rule 5, and the companion. The owner may reverse it, which would make per-mutant reruns a new control-run requirement."
+      - "Recorded the server-clock observation source next to setClock and under ADR-0084 decision 14: a plan-issued kernel.thread.create's createdAtMs, read back through kernel.thread.list, must fall inside a harness clock_timestamp() bracket, because setClock returns no timestamp. On a same-host PostgreSQL an unshifted worker clock is indistinguishable from the server clock. OD-22 stays proposed with its interim."
+      - "Adopted EPIC-DP's six code decisions as guidelines 5.10 rule 11 under the owner's delegation, without an individual ruling, so the owner may reverse them. Added the PR-review fix (4be7ebb: uncertified control reports cannot fail the fleet gate, supply kills, or count toward branch coverage) and a rule that new tools/ tests must be registered in a verify lane. Commits cite master SHAs (c639c35, 57b8cb6, 599c6e5, a0502c4, d07625c) in place of the closeout's pre-rebase SHAs (213b7b5, c2611b2, d63b91b, f09d4c4, 879655c)."
+      - "Companion staleness and provenance wording now matches the code: a register entry is stale only when a counted implementation killed its detector, the reader rejects whitespace-only reasons and duplicate keys, and every register the selected packet references is digested. Reconcile already settled certification-undetected-register.meta.yaml and certification-evidence.meta.yaml. Still carried: the tech-spec items routed by the 2026-10-28, 2026-10-30, and 2026-11-01 reconciliation reports."
   - version: v0.50.1
     date: 2026-11-13
     by: stage
