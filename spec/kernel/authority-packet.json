@@ -176,6 +176,12 @@
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
   "certificationProfiles": "spec/conformance/kernel/profiles.json",
+  "undetectedRegisters": {
+    "kernel.memory": "spec/conformance/kernel/kernel-memory-undetected.json",
+    "kernel.persistent-reopen": "spec/conformance/kernel/kernel-persistent-reopen-undetected.json",
+    "kernel.process-crash": "spec/conformance/kernel/kernel-process-crash-undetected.json",
+    "kernel.shared-backend": "spec/conformance/kernel/kernel-shared-backend-undetected.json"
+  },
   "bindingProjections": {
     "typescript": "typescript/kernel/protocol",
     "rust": "rust/kernel",

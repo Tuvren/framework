@@ -98,7 +98,7 @@ tickets:
       evidence: "Valid empty and populated registers pass; malformed reasons, unknown claims, stale detected claims, missing profile references, and register digest drift fail. All four existing registers are resolved through the packet."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DP004
     title: "List undetected claims in every certificate"
     type: Feature

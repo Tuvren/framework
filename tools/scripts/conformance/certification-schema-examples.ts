@@ -311,6 +311,13 @@ export const PINNED_AUTHORITY_PACKET_REFERENCES = {
   certificationProfiles: "spec/conformance/kernel/profiles.json",
   negativeControlManifest: "spec/conformance/kernel/negative-controls.json",
   operationCatalog: "spec/conformance/kernel/operations.json",
+  undetectedRegisters: {
+    "kernel.memory": "spec/conformance/kernel/kernel-memory-undetected.json",
+  },
+};
+
+export const PINNED_UNDETECTED_REGISTER = {
+  "kernel.example.claim": "No designated control detects this claim.",
 };
 
 export const PINNED_CERTIFICATION_PROFILES = {
@@ -479,6 +486,7 @@ export const PINNED_CERTIFICATION_EXAMPLES: readonly {
   { name: "certificationProfile", value: PINNED_CERTIFICATION_PROFILES },
   { name: "negativeControlManifest", value: PINNED_NEGATIVE_CONTROLS },
   { name: "certificationEvidence", value: PINNED_CERTIFICATION_EVIDENCE },
+  { name: "undetectedRegister", value: PINNED_UNDETECTED_REGISTER },
 ];
 
 const withUnknownField = (value: unknown): unknown => ({
@@ -500,6 +508,7 @@ export const assertCertificationSchemaContracts = (): void => {
 
     if (
       name !== "observationEncoding" &&
+      name !== "undetectedRegister" &&
       validateCertificationDocument(name, withUnknownField(value)).length === 0
     ) {
       failures.push(`${name} accepted an undeclared root field`);

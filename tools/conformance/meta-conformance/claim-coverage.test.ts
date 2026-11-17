@@ -1,15 +1,26 @@
 import { expect, test } from "bun:test";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
-import { readClaimedProfiles } from "../certification/profile.ts";
+import {
+  readClaimedProfiles,
+  readProfileAuthority,
+  readUndetectedRegister,
+  readUndetectedRegisterReferences,
+} from "../certification/profile.ts";
 import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
 import {
   assertClaimCoverage,
   assertConditionalBranchCoverage,
   assertNegativeControlGate,
   claimAssertions,
+  profileConditionalAssertions,
 } from "./claim-coverage.ts";
 import type { CoverageControl } from "./claim-coverage.ts";
+import { NEGATIVE_CONTROL_PORTS } from "./negative-control-config.ts";
+import { checkFleetGate } from "./negative-controls.ts";
+import type { NegativeControlReport } from "./negative-controls.ts";
 
 test("requires each profile claim to have a designated detector or a recorded reason", () => {
   const controls = [
@@ -79,6 +90,75 @@ test("requires each profile claim to have a designated detector or a recorded re
       checks
     )
   ).toThrow("claim.detected");
+});
+
+test("only a killed designated detector makes a profile register entry stale", () => {
+  const controls = [
+    {
+      claimIds: ["claim.a"],
+      designatedAssertions: ["check.1.resultField"],
+      kind: "implementation",
+      mutantId: "mutant.a",
+      profiles: ["example.profile"],
+    },
+  ];
+  const checks = [
+    {
+      assertions: [
+        { assertionId: "check.1.resultField", claimIds: ["claim.a"] },
+      ],
+    },
+  ];
+  const reasons = { "claim.a": "Not detected yet." };
+  expect(() =>
+    assertClaimCoverage(
+      "example.profile",
+      ["claim.a"],
+      controls,
+      reasons,
+      checks,
+      new Map()
+    )
+  ).not.toThrow();
+  expect(() =>
+    assertClaimCoverage(
+      "example.profile",
+      ["claim.a"],
+      controls,
+      reasons,
+      checks,
+      new Map([["mutant.a", []]])
+    )
+  ).not.toThrow();
+  expect(() =>
+    assertClaimCoverage(
+      "example.profile",
+      ["claim.a"],
+      controls,
+      reasons,
+      checks,
+      new Map([["mutant.a", ["check.1.resultField"]]])
+    )
+  ).toThrow("stale detected claims: claim.a");
+  expect(() =>
+    assertClaimCoverage(
+      "example.profile",
+      ["claim.a"],
+      controls,
+      { "claim.unknown": "Unknown." },
+      checks
+    )
+  ).toThrow("unknown claims: claim.unknown");
+  expect(() =>
+    assertClaimCoverage(
+      "example.profile",
+      ["claim.a"],
+      controls,
+      reasons,
+      [{ assertions: [] }],
+      new Map([["mutant.a", ["check.1.resultField"]]])
+    )
+  ).not.toThrow();
 });
 
 test("a supervisor processExit assertion cannot detect an implementation mutant", async () => {
@@ -261,12 +341,11 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
   const manifest = JSON.parse(
     await readFile("spec/conformance/kernel/negative-controls.json", "utf-8")
   ) as { controls: CoverageControl[] };
-  const reasons = JSON.parse(
-    await readFile(
-      "spec/conformance/kernel/kernel-memory-undetected.json",
-      "utf-8"
-    )
-  ) as Record<string, string>;
+  const packet = adapter.authorityPackets[0];
+  if (packet === undefined) {
+    throw new Error("missing kernel packet");
+  }
+  const reasons = await readUndetectedRegister(packet, profile.profileId);
   const plans = await readPlans(adapter, { packets: [], plans: [] });
   const checks = plans.flatMap((plan) =>
     plan.checks.map(({ check }) => ({
@@ -302,6 +381,183 @@ test("the kernel profile accounts for its actual controls and recorded gaps", as
     )
   ).toThrow(firstGap);
 });
+
+test("packet registers are checked by the fleet gate against profiles, schemas and killed detectors", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json"
+  );
+  const packetPath = "spec/kernel/authority-packet.json";
+  const packet: unknown = JSON.parse(await readFile(packetPath, "utf8"));
+  if (typeof packet !== "object" || packet === null || Array.isArray(packet)) {
+    throw new Error("invalid packet");
+  }
+  const references = await readUndetectedRegisterReferences(packetPath);
+  const authority = await readProfileAuthority(adapter, [packetPath]);
+  const profiles = authority.get("tuvren.kernel.protocol") ?? [];
+  expect([...references.keys()].toSorted()).toEqual(
+    profiles.map((profile) => profile.profileId).toSorted()
+  );
+  expect(profiles).toHaveLength(4);
+  const plans = await readPlans(adapter, { packets: [packetPath], plans: [] });
+  const manifest = JSON.parse(
+    await readFile("spec/conformance/kernel/negative-controls.json", "utf8")
+  ) as { controls: CoverageControl[] };
+  const reports: NegativeControlReport[] = profiles.map((profile) => ({
+    control: {
+      adapter: "test",
+      status: "pass",
+      conditionalAssertions: profileConditionalAssertions(
+        profile.claimIds,
+        plans
+      ).map((assertionId) => ({
+        assertionId,
+        status: "pass",
+        when: "applied",
+      })),
+    },
+    counted: true,
+    findings: [],
+    manifest: "test",
+    mode: "enforcing",
+    mutantAdapter: "test",
+    mutants: profile.negativeControls.map((mutantId) => ({
+      activated: true,
+      activationCount: 1,
+      collateral: { assertions: [], count: 0 },
+      designatedFailures: [
+        ...(manifest.controls.find((control) => control.mutantId === mutantId)
+          ?.designatedAssertions ?? []),
+      ],
+      kind: "implementation",
+      mutantId,
+      outcome: "killed",
+    })),
+    notRun: [],
+    packet: packetPath,
+    port: "kernel",
+    profile: profile.profileId,
+    totals: {
+      activated: 0,
+      equivalent: 0,
+      invalid: 0,
+      killed: 0,
+      survived: 0,
+      unsupported: 0,
+    },
+  }));
+  const directory = await mkdtemp(path.join(tmpdir(), "register-gate-"));
+  try {
+    const copy = path.join(directory, "packet.json");
+    const original = Object.fromEntries(references);
+    const config = NEGATIVE_CONTROL_PORTS.find(
+      (entry) => entry.profile === "kernel.persistent-reopen"
+    );
+    if (config === undefined) {
+      throw new Error("missing durable control config");
+    }
+    for (const profile of profiles) {
+      const selected = NEGATIVE_CONTROL_PORTS.find(
+        (entry) => entry.profile === profile.profileId
+      );
+      if (selected === undefined) {
+        throw new Error(`missing ${profile.profileId} configuration`);
+      }
+      expect(await checkFleetGate([selected], reports)).toEqual([]);
+      const register = await readUndetectedRegister(
+        packetPath,
+        profile.profileId
+      );
+      expect(Object.keys(register).length > 0).toBe(
+        profile.profileId === "kernel.memory"
+      );
+    }
+    const cases: [string, Record<string, string>, string][] = [
+      [
+        "empty reason",
+        {
+          ...original,
+          [config.profile]:
+            "tools/conformance/meta-conformance/fixtures/undetected-empty-reason.json",
+        },
+        "invalid undetected register",
+      ],
+      [
+        "blank reason",
+        {
+          ...original,
+          [config.profile]:
+            "tools/conformance/meta-conformance/fixtures/undetected-blank-reason.json",
+        },
+        "invalid reason",
+      ],
+      [
+        "non-string reason",
+        {
+          ...original,
+          [config.profile]:
+            "tools/conformance/meta-conformance/fixtures/undetected-non-string.json",
+        },
+        "invalid undetected register",
+      ],
+      [
+        "duplicate claim",
+        {
+          ...original,
+          [config.profile]:
+            "tools/conformance/meta-conformance/fixtures/undetected-duplicate.txt",
+        },
+        "duplicate object key",
+      ],
+      [
+        "unknown claim",
+        {
+          ...original,
+          [config.profile]:
+            "tools/conformance/meta-conformance/fixtures/undetected-unknown.json",
+        },
+        "unknown claims",
+      ],
+      [
+        "stale killed claim",
+        {
+          ...original,
+          [config.profile]:
+            "tools/conformance/meta-conformance/fixtures/undetected-stale.json",
+        },
+        "stale detected claims",
+      ],
+      [
+        "missing profile",
+        Object.fromEntries(
+          Object.entries(original).filter(([id]) => id !== "kernel.memory")
+        ),
+        "missing kernel.memory",
+      ],
+      [
+        "unknown profile",
+        {
+          ...original,
+          "kernel.unknown":
+            "spec/conformance/kernel/kernel-process-crash-undetected.json",
+        },
+        "unknown kernel.unknown",
+      ],
+    ];
+    for (const [label, registers, message] of cases) {
+      await writeFile(
+        copy,
+        JSON.stringify({ ...packet, undetectedRegisters: registers })
+      );
+      const failures = await checkFleetGate(
+        [{ ...config, packet: copy }],
+        reports
+      );
+      expect(failures, label).toEqual([expect.stringContaining(message)]);
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 30_000);
 
 test("a designated legacy kill earns no profile claim credit", () => {
   expect(() =>

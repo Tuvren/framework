@@ -297,6 +297,10 @@ describe("negative-control runner", () => {
     const packet = await writeJson("packet-omitting-control.json", {
       ...originalPacket,
       certificationProfiles: profiles,
+      undetectedRegisters: {
+        "synthetic.profile":
+          "spec/conformance/kernel/kernel-persistent-reopen-undetected.json",
+      },
     });
     await expect(
       runNegativeControls(

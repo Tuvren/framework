@@ -81,29 +81,56 @@ export const assertClaimCoverage = (
       claimIds: readonly string[];
       detecting?: boolean;
     }[];
-  }[]
+  }[],
+  killed?: ReadonlyMap<string, readonly string[]>
 ): void => {
+  const known = new Set(claims);
+  const unknown = Object.keys(undetected).filter((claim) => !known.has(claim));
+  if (unknown.length > 0) {
+    throw new Error(
+      `${profile} undetected register has unknown claims: ${unknown.join(", ")}`
+    );
+  }
+  const detects = (
+    control: CoverageControl,
+    claim: string,
+    failures?: readonly string[]
+  ): boolean =>
+    control.profiles.includes(profile) &&
+    control.claimIds.includes(claim) &&
+    (control.kind === "implementation"
+      ? (control.designatedAssertions ?? []).some(
+          (assertion) =>
+            (failures === undefined || failures.includes(assertion)) &&
+            checks.some((check) =>
+              check.assertions.some(
+                (candidate) =>
+                  candidate.assertionId === assertion &&
+                  candidate.detecting !== false &&
+                  candidate.claimIds.includes(claim)
+              )
+            )
+        )
+      : (control.expectedRejection?.length ?? 0) > 0);
+  const stale =
+    killed === undefined
+      ? []
+      : Object.keys(undetected).filter((claim) =>
+          controls.some((control) => {
+            const failures = killed.get(control.mutantId);
+            return failures !== undefined && detects(control, claim, failures);
+          })
+        );
+  if (stale.length > 0) {
+    throw new Error(
+      `${profile} undetected register has stale detected claims: ${stale.join(", ")}`
+    );
+  }
   const missing = claims.filter(
     (claim) =>
       !(
-        undetected[claim]?.trim() ||
-        controls.some(
-          (control) =>
-            control.profiles.includes(profile) &&
-            control.claimIds.includes(claim) &&
-            (control.kind === "implementation"
-              ? (control.designatedAssertions ?? []).some((assertion) =>
-                  checks.some((check) =>
-                    check.assertions.some(
-                      (candidate) =>
-                        candidate.assertionId === assertion &&
-                        candidate.detecting !== false &&
-                        candidate.claimIds.includes(claim)
-                    )
-                  )
-                )
-              : (control.expectedRejection?.length ?? 0) > 0)
-        )
+        (Object.hasOwn(undetected, claim) && undetected[claim]?.trim()) ||
+        controls.some((control) => detects(control, claim))
       )
   );
   if (missing.length > 0) {

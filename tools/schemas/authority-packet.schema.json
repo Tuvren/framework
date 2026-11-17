@@ -12,6 +12,10 @@
     "verificationPaths"
   ],
   "additionalProperties": false,
+  "dependentRequired": {
+    "certificationProfiles": ["undetectedRegisters"],
+    "undetectedRegisters": ["certificationProfiles"]
+  },
   "properties": {
     "packetId": {
       "type": "string",
@@ -96,6 +100,15 @@
     "operationCatalog": { "type": "string", "minLength": 1 },
     "identityRecipes": { "type": "string", "minLength": 1 },
     "certificationProfiles": { "type": "string", "minLength": 1 },
+    "undetectedRegisters": {
+      "type": "object",
+      "propertyNames": { "type": "string", "minLength": 1 },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+      }
+    },
     "negativeControlManifest": { "type": "string", "minLength": 1 },
     "bindingSections": {
       "type": "object",

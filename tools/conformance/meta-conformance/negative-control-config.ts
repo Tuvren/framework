@@ -4,7 +4,6 @@ export interface NegativeControlPortConfig {
   capabilities?: readonly string[];
   mutants?: readonly string[];
   unsupportedReasons?: Readonly<Record<string, string>>;
-  undetectedReasons?: string;
   controlAdapter: string;
   mutantAdapter: string;
   mutantEnv: string;
@@ -29,7 +28,6 @@ const durable = (
   mutantAdapter: `typescript/kernel/conformance-adapter/adapter-${backend}-mutant.json`,
   unsupportedReasons: {},
   profile,
-  undetectedReasons: `spec/conformance/kernel/${profile.replace(".", "-")}-undetected.json`,
 });
 
 export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
@@ -41,7 +39,6 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
     controlAdapter: "typescript/kernel/conformance-adapter/adapter.json",
     mutantAdapter: "typescript/kernel/conformance-adapter/adapter-mutant.json",
     profile: "kernel.memory",
-    undetectedReasons: "spec/conformance/kernel/kernel-memory-undetected.json",
   },
   {
     ...kernel,
@@ -71,7 +68,6 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.sweep-inside-grace-window": "no Rust reproduction yet; not run",
     },
     profile: "kernel.memory",
-    undetectedReasons: "spec/conformance/kernel/kernel-memory-undetected.json",
   },
   durable("sqlite", "kernel.persistent-reopen"),
   durable("postgres", "kernel.persistent-reopen"),

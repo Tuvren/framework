@@ -45,6 +45,11 @@ import {
   controlRunId,
 } from "../certification/control-link.ts";
 import {
+  assertProfileClaimInventory,
+  readProfileAuthority,
+  readUndetectedRegister,
+} from "../certification/profile.ts";
+import {
   computeImplementationDigest,
   computeVerifierDigests,
   digestAdapterManifest,
@@ -250,6 +255,9 @@ const readProfileObligations = async (
       branchChecks: string[];
       semanticAssertions: string[];
       claimIds: string[];
+      reasons: Record<string, string>;
+      controls: ControlEntry[];
+      checks: { assertions: ReturnType<typeof claimAssertions> }[];
     }
   | undefined
 > => {
@@ -257,42 +265,16 @@ const readProfileObligations = async (
   if (!isRecord(packet) || typeof packet.certificationProfiles !== "string") {
     return undefined;
   }
-  const document = await readJson(packet.certificationProfiles);
-  const failures = [
-    ...validateCertificationDocument("certificationProfile", document),
-    ...collectCertificationIntegrityFailures("certificationProfile", document),
-  ];
-  if (
-    failures.length > 0 ||
-    !isRecord(document) ||
-    !Array.isArray(document.profiles)
-  ) {
-    throw new Error(`invalid certification profiles: ${failures.join("; ")}`);
-  }
-  const profile = document.profiles.find(
-    (entry: unknown) => isRecord(entry) && entry.profileId === config.profile
-  );
-  if (!isRecord(profile)) {
+  const adapter = await readValidatedAdapterManifest(config.controlAdapter);
+  const authority = await readProfileAuthority(adapter, [config.packet]);
+  const profile = [...authority.values()]
+    .flat()
+    .find((entry) => entry.profileId === config.profile);
+  if (profile === undefined) {
     throw new Error(`${config.profile} is not declared by ${config.packet}`);
   }
-  const reasonsValue =
-    config.undetectedReasons === undefined
-      ? {}
-      : await readJson(config.undetectedReasons);
-  if (
-    !isRecord(reasonsValue) ||
-    Object.values(reasonsValue).some(
-      (reason) => typeof reason !== "string" || reason.trim().length === 0
-    )
-  ) {
-    throw new Error(`${config.profile} has invalid undetected claim reasons`);
-  }
-  const reasons = Object.fromEntries(
-    Object.entries(reasonsValue).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string"
-    )
-  );
-  const negativeControls = readStrings(profile.negativeControls);
+  const reasons = await readUndetectedRegister(config.packet, config.profile);
+  const negativeControls = profile.negativeControls;
   const declared = controls.filter((control) =>
     control.profiles.includes(config.profile)
   );
@@ -307,11 +289,11 @@ const readProfileObligations = async (
       `${config.profile} negative-control inventory mismatch: ${[...missing, ...unknown].join(", ")}`
     );
   }
-  const adapter = await readValidatedAdapterManifest(config.controlAdapter);
   const plans = await readPlans(adapter, {
     packets: [config.packet],
     plans: [],
   });
+  assertProfileClaimInventory(profile, plans, authority);
   const checks = plans.flatMap((plan) =>
     plan.checks.map(({ check }) => ({
       assertions: claimAssertions(check),
@@ -319,13 +301,13 @@ const readProfileObligations = async (
   );
   assertClaimCoverage(
     config.profile,
-    readStrings(profile.claimIds),
+    profile.claimIds,
     declared,
     reasons,
     checks
   );
   const conditionalAssertions = profileConditionalAssertions(
-    readStrings(profile.claimIds),
+    profile.claimIds,
     plans
   );
   const required = new Set(conditionalAssertions);
@@ -340,13 +322,13 @@ const readProfileObligations = async (
   );
   return {
     negativeControls,
-    claimIds: readStrings(profile.claimIds),
+    claimIds: profile.claimIds,
+    reasons,
+    controls: declared,
+    checks,
     conditionalAssertions,
     branchChecks,
-    semanticAssertions: profileSemanticAssertions(
-      readStrings(profile.claimIds),
-      plans
-    ),
+    semanticAssertions: profileSemanticAssertions(profile.claimIds, plans),
   };
 };
 
@@ -1325,7 +1307,7 @@ const snapshotControls = async (
   return { verifierDigests, adapters };
 };
 
-const checkFleetGate = async (
+export const checkFleetGate = async (
   configs: readonly NegativeControlPortConfig[],
   reports: readonly NegativeControlReport[]
 ): Promise<string[]> => {
@@ -1348,6 +1330,25 @@ const checkFleetGate = async (
         config.profile,
         obligations.negativeControls,
         fleet
+      );
+      const killed = new Map<string, string[]>();
+      for (const report of fleet.filter((entry) => entry.counted)) {
+        for (const mutant of report.mutants.filter(
+          (entry) => entry.outcome === "killed"
+        )) {
+          killed.set(mutant.mutantId, [
+            ...(killed.get(mutant.mutantId) ?? []),
+            ...mutant.designatedFailures,
+          ]);
+        }
+      }
+      assertClaimCoverage(
+        config.profile,
+        obligations.claimIds,
+        obligations.controls,
+        obligations.reasons,
+        obligations.checks,
+        killed
       );
       assertConditionalBranchCoverage(
         obligations.conditionalAssertions,
