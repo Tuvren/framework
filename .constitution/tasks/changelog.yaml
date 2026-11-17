@@ -1,4 +1,17 @@
 entries:
+  - version: v0.52.4
+    date: 2026-11-17
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.50.2
+    changed:
+      - "Patch-lane pass after EPIC-DP, which the 2026-11-17 reconciliation routed nothing to tasks for. Re-checked EPIC-DQ, the next wave, against what EPIC-DP landed. Tests under tools/ run only from the hand-written lists in tools/scripts/verify-kernel.ts and verify.ts; no Nx project or coverage gate picks them up. DQ's codec, named-instance, and legacy-packet tests would therefore run in no lane, so EPIC-DQ now owns both verify scripts, and KRT-DQ001, KRT-DQ002, and KRT-DQ003 register their new tests (guidelines 5.10 rule 11). CQ and CO, the other owners of these scripts and of check.ts, both depend on DQ, so the rendered waves and the longest chain's order are unchanged."
+      - "Added KRT-DQ005 (1 point): bun run check runs the root workspace lint, so Biome findings under tools/ fail the inner loop instead of only bun run verify. It replaces the EPIC-DP lint-lane follow-up, and DQ owns tools/scripts/check.ts and tools/scripts/generated-prerequisites.test.ts for it. It lands first so DQ's own milestone checks include the lint."
+      - "KRT-DQ001 now states that a new codec claim with no detector needs a reason in the packet-referenced, schema-validated memory register. The register change alters verifier-authority digests, so the ticket may refresh reports/compatibility. KRT-DQ003 records that the legacy packet declares neither certificationProfiles nor undetectedRegisters, which the packet schema requires together. It also records that the removed Go, Python, and Dart certified entries stay visible as diagnostic control reports."
+      - "Routed EPIC-DP follow-ups through replaces. KRT-DQ002 keys server-clock verification by process epoch and fixes the pre-existing tsc errors in durable-control-mutants.test.ts; it gains a stop condition if that changes a promoted verdict. KRT-DN003 makes the published package's certify path set the publishedTestkit in-process statement. KRT-DK002 was not used because it stops on any verdict change. The load-timeout follow-up stays outstanding with EPIC-DO's timing follow-ups."
+      - "EPIC-DQ effort rises from 21 to 22 points and the longest chain from 333 to 334; the 15,000-line diff estimate is unchanged. INFO-CAL is 1.25 over 31 completed epics. The archived EPIC-DP actuals record 0 review rounds because its closeout predates the PR review; that review had one round, which produced 4be7ebb."
   - version: v0.52.3
     date: 2026-11-17
     changed:
