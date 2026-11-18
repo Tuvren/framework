@@ -54,7 +54,7 @@ const WORKSPACE_LINT_STEP: VerificationStep = {
 // Its freshness proof runs each packet's declared regenerate commands, which
 // rewrite derived artifacts, so `verify` gives it a singleton phase instead of
 // running it beside readers; the inner-loop gate is one concurrent phase. It
-// stays enforced by `verify` / `verify:kernel`.
+// stays enforced by `verify` and `codegen`.
 const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "docs-to-authority freeze gate",
   "Epic AL portability gate",
