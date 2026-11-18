@@ -9,7 +9,7 @@
     {
       "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
       "legacyAssertion": "kernel.scope-isolation.store_has_is_scope_confined.1.resultField",
-      "claimId": "kernel.scope-isolation.store_has_is_scope_confined",
+      "claimId": "kernel.syscall.scope-isolation.own_content",
       "assertionId": "kernel.syscall.scope-isolation.own_content.has.1.resultField",
       "status": "mapped"
     },
@@ -23,7 +23,7 @@
     {
       "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
       "legacyAssertion": "kernel.scope-isolation.store_get_is_scope_confined.1.resultField",
-      "claimId": "kernel.scope-isolation.store_get_is_scope_confined",
+      "claimId": "kernel.syscall.scope-isolation.own_content",
       "assertionId": "kernel.syscall.scope-isolation.own_content.1.resultField",
       "status": "mapped"
     },
@@ -37,7 +37,7 @@
     {
       "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
       "legacyAssertion": "kernel.scope-isolation.enumeration_is_scope_confined.1.resultField",
-      "claimId": "kernel.scope-isolation.enumeration_is_scope_confined",
+      "claimId": "kernel.syscall.scope-isolation.own_enumeration",
       "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.2.resultField",
       "status": "mapped"
     },

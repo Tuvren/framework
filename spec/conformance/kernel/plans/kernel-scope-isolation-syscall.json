@@ -111,6 +111,76 @@
           "instance": "scopeA"
         },
         {
+          "stepId": "scopeA2",
+          "operation": "kernel.instance.create",
+          "action": "createInstance",
+          "instance": "scopeA2",
+          "arguments": {
+            "scope": "tuvren.scope.a"
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"]
+        },
+        {
+          "stepId": "backendA2",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeA2",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"]
+        },
+        {
+          "stepId": "workerA2",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeA2",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"]
+        },
+        {
+          "stepId": "sameScopeHas",
+          "operation": "kernel.store.has",
+          "instance": "scopeA2",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": true
+            }
+          ],
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"]
+        },
+        {
+          "stepId": "sameScopeGet",
+          "operation": "kernel.store.get",
+          "instance": "scopeA2",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": {
+                "$bytes": "00ff8073636f7065"
+              }
+            }
+          ],
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"]
+        },
+        {
           "stepId": "scopeB",
           "operation": "kernel.instance.create",
           "action": "createInstance",
@@ -205,6 +275,8 @@
       "evidence": [
         "trace.has.result",
         "trace.get.result",
+        "trace.sameScopeHas.result",
+        "trace.sameScopeGet.result",
         "trace.otherHas.result",
         "trace.otherGet.result"
       ],
@@ -325,6 +397,57 @@
           "instance": "scopeA"
         },
         {
+          "stepId": "scopeA2",
+          "operation": "kernel.instance.create",
+          "action": "createInstance",
+          "instance": "scopeA2",
+          "arguments": {
+            "scope": "tuvren.scope.a"
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"]
+        },
+        {
+          "stepId": "backendA2",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeA2",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"]
+        },
+        {
+          "stepId": "workerA2",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeA2",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"]
+        },
+        {
+          "stepId": "sameScopeList",
+          "operation": "kernel.thread.list",
+          "instance": "scopeA2",
+          "arguments": {},
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threads",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.threads.0.threadId",
+              "equals": "thread"
+            }
+          ],
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"]
+        },
+        {
           "stepId": "scopeB",
           "operation": "kernel.instance.create",
           "action": "createInstance",
@@ -378,7 +501,11 @@
           "equalsPath": "$.result.trace.thread.result.rootTurnNodeHash"
         }
       ],
-      "evidence": ["trace.list.result", "trace.otherList.result"],
+      "evidence": [
+        "trace.list.result",
+        "trace.sameScopeList.result",
+        "trace.otherList.result"
+      ],
       "capabilities": [
         "kernel-protocol.thread.enumeration",
         "kernel.protocol",

@@ -4,10 +4,7 @@
       "mutantId": "kernel.accept-noncanonical-cbor",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#23-hash",
-      "claimIds": [
-        "kernel.protocol.canonical_rejection",
-        "kernel.codec.decode.non-minimal-uint-head"
-      ],
+      "claimIds": ["kernel.codec.decode.non-minimal-uint-head"],
       "activation": {
         "precondition": "the deterministic decoder rejects a top-level unsigned integer whose one-byte argument head carries a value below 24",
         "signal": "mutant.accept-noncanonical-cbor.entered"
@@ -22,7 +19,6 @@
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#branch-head-movement",
       "claimIds": [
-        "kernel.crash-recovery.concurrent_writer",
         "kernel.syscall.concurrent_writer.a_first",
         "kernel.syscall.concurrent_writer.b_first"
       ],
@@ -149,7 +145,6 @@
       "rule": "ADR-0076",
       "claimIds": [
         "kernel.crash-recovery.in_process_fault_points",
-        "kernel.crash-recovery.concurrent_writer",
         "kernel.syscall.controls.before_commit",
         "kernel.syscall.controls.after_commit_before_ack",
         "kernel.syscall.crash-recovery.before_commit",
