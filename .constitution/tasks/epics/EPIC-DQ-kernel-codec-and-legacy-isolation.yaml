@@ -59,7 +59,7 @@ tickets:
       evidence: "The check phases include the root workspace lint step, asserted where tools/scripts/generated-prerequisites.test.ts already asserts the check phase shape. A Biome finding seeded in a tools/ file makes bun run check exit nonzero, and removing it restores exit 0. No lint rule, ignore comment, or configuration changes."
     flows: ["flow-authority-packet-driven-conformance"]
     certainty: settled
-    status: planned
+    status: done
     replaces:
       - "EPIC-DP#follow-up:14104e81e6e5"
   - id: KRT-DQ001

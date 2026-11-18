@@ -30,11 +30,15 @@ import {
   runVerificationMain,
   selectAuthorityGateSteps,
 } from "./verify.js";
-import type { VerificationPhase } from "./verify.js";
+import type { VerificationPhase, VerificationStep } from "./verify.js";
 
 const BASE_FLAG = "--base=";
 const DEFAULT_BASE = "master";
 const CARGO_MANIFEST_PATTERN = /(?:^|\/)Cargo\.(?:toml|lock)$/u;
+const WORKSPACE_LINT_STEP: VerificationStep = {
+  command: ["bun", "run", "lint"],
+  id: "workspace lint",
+};
 
 // The constitutional gate for the inner loop: the cheap, read-only authority
 // and conformance validators, always run regardless of which files changed —
@@ -85,6 +89,7 @@ export const createCheckPhases = (
       {
         id: "inner-loop authority gate",
         steps: [
+          WORKSPACE_LINT_STEP,
           ...selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
           // ADR-0070: the inner loop must not accept a tree the Oxfmt writer would
           // change, now that Biome's formatter is disabled. Read-only native check.

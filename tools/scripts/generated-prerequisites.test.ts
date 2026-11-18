@@ -207,8 +207,20 @@ describe("generated prerequisite phase", () => {
       "generated prerequisites",
       "inner-loop authority gate",
     ]);
+    const workspaceLintSteps = phases[1]?.steps.filter(
+      (step) => step.id === "workspace lint"
+    );
+    expect(workspaceLintSteps).toEqual([
+      { command: ["bun", "run", "lint"], id: "workspace lint" },
+    ]);
+    expect(workspaceLintSteps).toEqual(
+      createVerificationPhases()
+        .flatMap((phase) => phase.steps)
+        .filter((step) => step.id === "workspace lint")
+    );
     expect(results.every((result) => result.code === 0)).toBe(true);
     expect(executed[0]).toBe("kernel interop generated prerequisite");
+    expect(executed).toContain("workspace lint");
     expect(existsSync(generatedDirectory)).toBe(true);
   });
 
