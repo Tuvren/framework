@@ -1,6 +1,6 @@
 {
   "catalogId": "tuvren.kernel.operations",
-  "catalogVersion": "0.4.0",
+  "catalogVersion": "1.0.0",
   "packetId": "tuvren.kernel.protocol",
   "operations": [
     {

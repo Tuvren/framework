@@ -1046,7 +1046,7 @@ const loadAllManifests = async (): Promise<
   return manifests;
 };
 
-const checkPlanApplicabilityHasAdapter = async (
+export const checkPlanApplicabilityHasAdapter = async (
   onDisk: ReadonlyMap<string, AuthorityPacketManifest>,
   adapterManifests: ReadonlyMap<string, AdapterManifest>
 ): Promise<PortabilityGateFailure[]> => {

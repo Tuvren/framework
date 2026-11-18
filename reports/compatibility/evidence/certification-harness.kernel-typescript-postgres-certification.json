@@ -7,7 +7,6 @@
     "kernel.barrier",
     "kernel.codec",
     "kernel.edge-validation",
-    "kernel.edge-validation.composite",
     "kernel.fault-injection",
     "kernel.logical",
     "kernel.persistence.durable",
@@ -3444,7 +3443,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3453,7 +3452,7 @@
                 }
               },
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3471,7 +3470,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3480,7 +3479,7 @@
               }
             },
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -3788,7 +3787,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3797,7 +3796,7 @@
                 }
               },
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3815,7 +3814,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3824,7 +3823,7 @@
               }
             },
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -4132,7 +4131,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -4141,7 +4140,7 @@
                 }
               },
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -4159,7 +4158,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -4168,7 +4167,7 @@
               }
             },
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -4476,7 +4475,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -4485,7 +4484,7 @@
                 }
               },
               {
-                "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -4503,7 +4502,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -4512,7 +4511,7 @@
               }
             },
             {
-              "executableDigest": "84448870ed586b76c4e3c31dcc9cc2c3c30f0a11c2449244022280be7a7a2f7c",
+              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
               "epoch": 2,
               "signal": null,
               "exit": {

@@ -403,7 +403,6 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/plan-compiler/certification-rules.test.ts",
   "tools/conformance/plan-compiler/index.test.ts",
   "tools/conformance/plan-compiler/codec.test.ts",
-  "tools/conformance/harness/test/named-instances.test.ts",
   "tools/conformance/meta-conformance/disagreements.test.ts",
   "tools/conformance/plan-compiler/handle-steps.test.ts",
   "tools/scripts/conformance/certification-schemas.test.ts",

@@ -85,6 +85,11 @@ export const readClaimedProfiles = async (
     if (!isRecord(packet)) {
       continue;
     }
+    if (packet.transitionalAdapters !== undefined) {
+      throw new Error(
+        `claimed profile ${(manifest.profiles ?? []).toSorted().join(", ")} cannot select transitional packet ${path}`
+      );
+    }
     for (const profile of await readPacketProfiles(packet)) {
       if (profiles.has(profile.profileId)) {
         throw new Error(`duplicate claimed profile ${profile.profileId}`);

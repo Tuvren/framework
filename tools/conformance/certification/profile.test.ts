@@ -272,6 +272,26 @@ test("packet overrides resolve claimed profiles and their authority together", a
   }
 });
 
+test("a claimed profile cannot rely on a transitional packet", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const legacyPacket = "spec/kernel/legacy/authority-packet.json";
+  await expect(readClaimedProfiles(adapter, [legacyPacket])).rejects.toThrow(
+    `cannot select transitional packet ${legacyPacket}`
+  );
+  await expect(
+    readClaimedProfiles(adapter, [...adapter.authorityPackets, legacyPacket])
+  ).rejects.toThrow(`cannot select transitional packet ${legacyPacket}`);
+  const go = await readAdapterManifest(
+    "go/kernel-conformance-adapter/adapter.json"
+  );
+  expect(go.profiles ?? []).toEqual([]);
+  await expect(readClaimedProfiles(go, go.authorityPackets)).resolves.toEqual(
+    []
+  );
+});
+
 test("each kernel profile has an exact two-way claim inventory", async () => {
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-sqlite.json"
