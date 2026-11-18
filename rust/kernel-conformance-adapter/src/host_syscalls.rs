@@ -1007,15 +1007,19 @@ mod tests {
         let context = instance.barrier.operation("codec-operation".to_owned());
         context.cancel("before entry");
         let input = json!({"bytes":{"$bytes":"01"}});
+        let operation = CODEC_BINDINGS
+            .iter()
+            .find_map(|(name, binding)| binding(&input).is_ok().then_some(*name))
+            .unwrap();
         let error = syscalls
-            .dispatch_instance(&instance, "kernel.codec.hashOpaque", &input, Some(context))
+            .dispatch_instance(&instance, operation, &input, Some(context))
             .err()
             .unwrap();
         assert_eq!(error.code, "operation_cancelled_before_entry");
         assert_eq!(error.message, "before entry");
         assert!(
             syscalls
-                .dispatch_instance(&instance, "kernel.codec.hashOpaque", &input, None)
+                .dispatch_instance(&instance, operation, &input, None)
                 .is_ok()
         );
     }

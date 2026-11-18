@@ -45,12 +45,40 @@ const legacyPacketDocument = async (): Promise<Record<string, unknown>> => {
 
 const legacyOwnedFiles = async (): Promise<string[]> => {
   const packet = await legacyPacketDocument();
-  const owned = [path.join(ROOT, LEGACY_PACKET)];
+  const owned = new Set<string>([path.join(ROOT, LEGACY_PACKET)]);
   const catalog = packet.operationCatalog;
   if (typeof catalog !== "string") {
     throw new Error("legacy packet has no operation catalog");
   }
-  owned.push(path.join(ROOT, catalog));
+  owned.add(path.join(ROOT, catalog));
+  for (const key of [
+    "negativeControlManifest",
+    "certificationProfiles",
+    "identityRecipes",
+  ] as const) {
+    const file = packet[key];
+    if (typeof file === "string") {
+      owned.add(path.join(ROOT, file));
+    }
+  }
+  const registers = packet.undetectedRegisters;
+  if (isPlainObject(registers)) {
+    for (const file of Object.values(registers)) {
+      if (typeof file === "string") {
+        owned.add(path.join(ROOT, file));
+      }
+    }
+  }
+  const sources = packet.authoritativeSources;
+  if (!Array.isArray(sources)) {
+    throw new Error("legacy packet has no authoritative sources");
+  }
+  for (const entry of sources) {
+    if (!isPlainObject(entry) || typeof entry.path !== "string") {
+      throw new Error("invalid legacy authoritative source entry");
+    }
+    owned.add(path.join(ROOT, entry.path));
+  }
   const plans = packet.conformancePlans;
   if (!Array.isArray(plans)) {
     throw new Error("legacy packet has no conformance plans");
@@ -60,7 +88,7 @@ const legacyOwnedFiles = async (): Promise<string[]> => {
       throw new Error("invalid legacy plan entry");
     }
     const planPath = path.join(ROOT, entry.path);
-    owned.push(planPath);
+    owned.add(planPath);
     const plan: unknown = JSON.parse(await readFile(planPath, "utf8"));
     if (!isPlainObject(plan)) {
       throw new Error(`invalid legacy plan ${entry.path}`);
@@ -77,11 +105,11 @@ const legacyOwnedFiles = async (): Promise<string[]> => {
         if (typeof fixture !== "string") {
           throw new Error(`invalid fixture path in ${entry.path}`);
         }
-        owned.push(path.resolve(path.dirname(planPath), fixture));
+        owned.add(path.resolve(path.dirname(planPath), fixture));
       }
     }
   }
-  return owned;
+  return [...owned];
 };
 
 const laneInputs = (inputs: {
@@ -221,6 +249,7 @@ test("verifier-authority digests cover explicitly selected register content and 
 
 test("verifier authority includes legacy packet paths only for adapters that select the legacy packet", async () => {
   const legacyOwned = await legacyOwnedFiles();
+  expect(legacyOwned.length).toBeGreaterThan(0);
   let selecting:
     | Awaited<ReturnType<typeof computeSourceVerifierDigests>>
     | undefined;
