@@ -11,7 +11,7 @@
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
+        "verifierAuthority": "54cae75105afdac6694fcf01d2830095fe81bb30aac0aec29b08b4ceee69d19c"
       },
       "implementationId": "typescript-kernel-memory",
       "profile": "kernel.memory",
@@ -219,7 +219,7 @@
         },
         {
           "claimId": "kernel.scope-isolation.enumeration_is_scope_confined",
-          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets the independently observed cross-scope enumeration result; the detector reproductions are owned by EPIC-DS."
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets the independently observed cross-scope enumeration result; no epic currently plans its detector."
         },
         {
           "claimId": "kernel.syscall.backend_capability.shared_lease_clock",
@@ -375,11 +375,11 @@
         },
         {
           "claimId": "kernel.syscall.scope-isolation.own_content",
-          "reason": "OD-16: The scope-resolution mutant leaves own-scope reads unchanged; no supplied mutant targets these independently observed content results; the detector reproductions are owned by EPIC-DS."
+          "reason": "OD-16: The scope-resolution mutant leaves own-scope reads unchanged; no supplied mutant targets these independently observed content results; the detectors for them are owned by KRT-DR004."
         },
         {
           "claimId": "kernel.syscall.scope-isolation.own_enumeration",
-          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets these independently observed own-scope enumeration results; the detector reproductions are owned by EPIC-DS."
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets these independently observed own-scope enumeration results; the detectors for them are owned by KRT-DR004."
         }
       ]
     },
@@ -393,7 +393,7 @@
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
+        "verifierAuthority": "54cae75105afdac6694fcf01d2830095fe81bb30aac0aec29b08b4ceee69d19c"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
@@ -410,7 +410,7 @@
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
+        "verifierAuthority": "54cae75105afdac6694fcf01d2830095fe81bb30aac0aec29b08b4ceee69d19c"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
@@ -427,7 +427,7 @@
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
+        "verifierAuthority": "54cae75105afdac6694fcf01d2830095fe81bb30aac0aec29b08b4ceee69d19c"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
@@ -444,7 +444,7 @@
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
+        "verifierAuthority": "54cae75105afdac6694fcf01d2830095fe81bb30aac0aec29b08b4ceee69d19c"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.persistent-reopen",
@@ -461,7 +461,7 @@
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
+        "verifierAuthority": "54cae75105afdac6694fcf01d2830095fe81bb30aac0aec29b08b4ceee69d19c"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.process-crash",
