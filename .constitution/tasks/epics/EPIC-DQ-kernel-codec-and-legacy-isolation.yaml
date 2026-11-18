@@ -202,7 +202,7 @@ tickets:
       evidence: "TypeScript and Rust report no legacy packet, plan, designation, or input digest, while the three unmigrated adapters still select the legacy packet. Missing canonical assertions and accidental filtered certification fail. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest. Assert that mutating a legacy-only input changes only selecting adapters' aggregate digest. Rust provides a positive run, without requiring a Rust control kill before DS."
     flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
 decisions:
   - id: OD-27
     question: "Moving the six legacy plans and two fixture-set sources out of the canonical kernel authority packet removes referenced conformance plans and declared authoritative sources, which guidelines §2.1 classes as a major packet change. While the packet is still 0.x, does a major change bump it to 1.0.0 or bump the minor version?"

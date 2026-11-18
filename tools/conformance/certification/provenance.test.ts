@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import {
+  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -10,6 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { readAdapterManifest } from "../harness/run-plans.ts";
 import {
   collectSourceVerifierInputs,
   computeSourceVerifierDigests,
@@ -17,6 +19,90 @@ import {
   digestVerifierAuthority,
   digestWorkspaceInputs,
 } from "./provenance.ts";
+
+const ROOT = path.resolve(import.meta.dirname, "../../..");
+const LEGACY_PACKET = "spec/kernel/legacy/authority-packet.json";
+const KERNEL_LANES: readonly (readonly [string, boolean])[] = [
+  ["go/kernel-conformance-adapter/adapter.json", true],
+  ["python/kernel-conformance-adapter/adapter.json", true],
+  ["dart/kernel-conformance-adapter/adapter.json", true],
+  ["typescript/kernel/conformance-adapter/adapter.json", false],
+  ["rust/kernel-conformance-adapter/adapter.json", false],
+];
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const legacyPacketDocument = async (): Promise<Record<string, unknown>> => {
+  const value: unknown = JSON.parse(
+    await readFile(path.join(ROOT, LEGACY_PACKET), "utf8")
+  );
+  if (!isPlainObject(value)) {
+    throw new Error("invalid legacy packet");
+  }
+  return value;
+};
+
+const legacyOwnedFiles = async (): Promise<string[]> => {
+  const packet = await legacyPacketDocument();
+  const owned = [path.join(ROOT, LEGACY_PACKET)];
+  const catalog = packet.operationCatalog;
+  if (typeof catalog !== "string") {
+    throw new Error("legacy packet has no operation catalog");
+  }
+  owned.push(path.join(ROOT, catalog));
+  const plans = packet.conformancePlans;
+  if (!Array.isArray(plans)) {
+    throw new Error("legacy packet has no conformance plans");
+  }
+  for (const entry of plans) {
+    if (!isPlainObject(entry) || typeof entry.path !== "string") {
+      throw new Error("invalid legacy plan entry");
+    }
+    const planPath = path.join(ROOT, entry.path);
+    owned.push(planPath);
+    const plan: unknown = JSON.parse(await readFile(planPath, "utf8"));
+    if (!isPlainObject(plan)) {
+      throw new Error(`invalid legacy plan ${entry.path}`);
+    }
+    for (const key of ["fixtures", "scenarios"] as const) {
+      const fixtures = plan[key];
+      if (fixtures === undefined) {
+        continue;
+      }
+      if (!isPlainObject(fixtures)) {
+        throw new Error(`invalid fixture section in ${entry.path}`);
+      }
+      for (const fixture of Object.values(fixtures)) {
+        if (typeof fixture !== "string") {
+          throw new Error(`invalid fixture path in ${entry.path}`);
+        }
+        owned.push(path.resolve(path.dirname(planPath), fixture));
+      }
+    }
+  }
+  return owned;
+};
+
+const laneInputs = (inputs: {
+  authority: readonly string[];
+  catalogs: readonly string[];
+  controls: readonly string[];
+  fixtures: readonly string[];
+  packets: readonly string[];
+  plans: readonly string[];
+  profiles: readonly string[];
+  registers: readonly string[];
+}): string[] => [
+  ...inputs.authority,
+  ...inputs.packets,
+  ...inputs.plans,
+  ...inputs.catalogs,
+  ...inputs.profiles,
+  ...inputs.controls,
+  ...inputs.fixtures,
+  ...inputs.registers,
+];
 
 test("dependency links cover resolved workspace contents", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "provenance-test-"));
@@ -134,60 +220,121 @@ test("verifier-authority digests cover explicitly selected register content and 
 });
 
 test("verifier authority includes legacy packet paths only for adapters that select the legacy packet", async () => {
-  const legacyOwned = [
-    "spec/kernel/legacy/authority-packet.json",
-    "spec/conformance/kernel/legacy-operations.json",
-    "spec/conformance/kernel/plans/kernel-protocol-core.json",
-    "spec/conformance/kernel/plans/kernel-protocol-extended.json",
-    "spec/conformance/kernel/plans/kernel-run-liveness.json",
-    "spec/conformance/kernel/plans/kernel-restart-recovery.json",
-    "spec/conformance/kernel/plans/kernel-scope-isolation.json",
-    "spec/conformance/kernel/plans/kernel-reclamation.json",
-    "spec/conformance/kernel/fixtures/canonical-turn-tree-schema.json",
-    "spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
-    "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
-  ];
-  const canonicalInputs = await collectSourceVerifierInputs([
-    "spec/kernel/authority-packet.json",
-  ]);
-  const canonicalFiles = [
-    ...canonicalInputs.authority,
-    ...canonicalInputs.packets,
-    ...canonicalInputs.plans,
-    ...canonicalInputs.catalogs,
-    ...canonicalInputs.profiles,
-    ...canonicalInputs.controls,
-    ...canonicalInputs.fixtures,
-    ...canonicalInputs.registers,
-  ].map((file) => path.relative(process.cwd(), file));
-  for (const legacyPath of legacyOwned) {
-    expect(canonicalFiles).not.toContain(path.resolve(legacyPath));
-    expect(canonicalFiles.some((file) => file.endsWith(legacyPath))).toBe(
-      false
+  const legacyOwned = await legacyOwnedFiles();
+  let selecting:
+    | Awaited<ReturnType<typeof computeSourceVerifierDigests>>
+    | undefined;
+  let canonical:
+    | Awaited<ReturnType<typeof computeSourceVerifierDigests>>
+    | undefined;
+  for (const [manifestPath, selectsLegacy] of KERNEL_LANES) {
+    const manifest = await readAdapterManifest(manifestPath);
+    expect(manifest.authorityPackets.includes(LEGACY_PACKET)).toBe(
+      selectsLegacy
     );
+    const inputs = await collectSourceVerifierInputs(manifest.authorityPackets);
+    const selected = new Set(
+      laneInputs(inputs).map((file) => path.relative(ROOT, file))
+    );
+    for (const legacyPath of legacyOwned) {
+      expect(selected.has(path.relative(ROOT, legacyPath))).toBe(selectsLegacy);
+    }
+    const digests = await computeSourceVerifierDigests(
+      manifest.authorityPackets
+    );
+    if (selectsLegacy) {
+      selecting = digests;
+    } else {
+      canonical = digests;
+    }
   }
-
-  const selectingInputs = await collectSourceVerifierInputs([
-    "spec/kernel/authority-packet.json",
-    "spec/kernel/legacy/authority-packet.json",
-  ]);
-  const selectingFiles = selectingInputs.authority.map((file) =>
-    path.relative(process.cwd(), file)
-  );
-  for (const legacyPath of legacyOwned) {
-    expect(selectingFiles.some((file) => file.endsWith(legacyPath))).toBe(true);
+  if (selecting === undefined || canonical === undefined) {
+    throw new Error("missing kernel lanes");
   }
+  expect(canonical.verifierAuthority).not.toBe(selecting.verifierAuthority);
+  expect(canonical.packet).not.toBe(selecting.packet);
+  expect(canonical.plans).not.toBe(selecting.plans);
+  expect(canonical.catalogs).not.toBe(selecting.catalogs);
+  expect(canonical.fixtures).not.toBe(selecting.fixtures);
+});
 
-  const canonicalDigests = await computeSourceVerifierDigests([
-    "spec/kernel/authority-packet.json",
-  ]);
-  const selectingDigests = await computeSourceVerifierDigests([
-    "spec/kernel/authority-packet.json",
-    "spec/kernel/legacy/authority-packet.json",
-  ]);
-  expect(selectingDigests.verifierAuthority).not.toBe(
-    canonicalDigests.verifierAuthority
+test("mutating a legacy-only input changes only selecting adapters' aggregate digest", async () => {
+  const directory = await mkdtemp(
+    path.join(tmpdir(), "provenance-legacy-mutation-")
   );
-  expect(selectingDigests.plans).not.toBe(canonicalDigests.plans);
-  expect(selectingDigests.catalogs).not.toBe(canonicalDigests.catalogs);
+  try {
+    const packet = await legacyPacketDocument();
+    const plans = packet.conformancePlans;
+    const first = Array.isArray(plans) ? plans[0] : undefined;
+    if (!isPlainObject(first) || typeof first.path !== "string") {
+      throw new Error("missing legacy plan for the mutation");
+    }
+    const target = path.join(ROOT, first.path);
+    const lanes: {
+      inputFiles: string[];
+      manifest: { authorityPackets: readonly string[] };
+      selectsLegacy: boolean;
+    }[] = [];
+    for (const [manifestPath, selectsLegacy] of KERNEL_LANES) {
+      const manifest = await readAdapterManifest(manifestPath);
+      lanes.push({
+        inputFiles: laneInputs(
+          await collectSourceVerifierInputs(manifest.authorityPackets)
+        ),
+        manifest,
+        selectsLegacy,
+      });
+    }
+    const files = new Set<string>();
+    for (const lane of lanes) {
+      for (const file of lane.inputFiles) {
+        files.add(file);
+      }
+    }
+    const mapped = (file: string): string =>
+      path.join(directory, path.relative(ROOT, file));
+    for (const file of files) {
+      await mkdir(path.dirname(mapped(file)), { recursive: true });
+      await copyFile(file, mapped(file));
+    }
+    const snapshots: { before: string; lane: (typeof lanes)[number] }[] = [];
+    for (const lane of lanes) {
+      const digests = await computeSourceVerifierDigests(
+        lane.manifest.authorityPackets
+      );
+      const before = await digestWorkspaceInputs(
+        lane.inputFiles.map(mapped),
+        directory
+      );
+      expect(before).toBe(digests.verifierAuthority);
+      snapshots.push({ before, lane });
+    }
+    expect(
+      lanes.some(
+        (lane) => lane.selectsLegacy && lane.inputFiles.includes(target)
+      )
+    ).toBe(true);
+    expect(
+      lanes.some(
+        (lane) => !lane.selectsLegacy && lane.inputFiles.includes(target)
+      )
+    ).toBe(false);
+    await writeFile(
+      mapped(target),
+      `${await readFile(mapped(target), "utf8")}\n`
+    );
+    for (const { before, lane } of snapshots) {
+      const after = await digestWorkspaceInputs(
+        lane.inputFiles.map(mapped),
+        directory
+      );
+      if (lane.selectsLegacy) {
+        expect(after).not.toBe(before);
+      } else {
+        expect(after).toBe(before);
+      }
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
