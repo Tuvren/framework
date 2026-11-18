@@ -178,6 +178,22 @@ const groupBarrierParticipants = (
   return [...grouped.values()];
 };
 
+const destroyProcessInstances = async (
+  process: TraceProcess,
+  failures: unknown[]
+): Promise<void> => {
+  if (!process.running) {
+    return;
+  }
+  for (const handle of [...process.instances.values()].reverse()) {
+    try {
+      await process.client.destroyInstance(handle);
+    } catch (error: unknown) {
+      failures.push(error);
+    }
+  }
+};
+
 export const runMultiTraceCheck = async (
   dependencies: MultiTraceDependencies,
   initialClient: JsonRpcAdapterClient,
@@ -794,15 +810,7 @@ export const runMultiTraceCheck = async (
     async () => {
       const failures: unknown[] = [];
       for (const [name, process] of [...processes].reverse()) {
-        try {
-          if (process.running) {
-            for (const handle of [...process.instances.values()].reverse()) {
-              await process.client.destroyInstance(handle);
-            }
-          }
-        } catch (error: unknown) {
-          failures.push(error);
-        }
+        await destroyProcessInstances(process, failures);
         try {
           if (name !== "primary") {
             await process.supervisor?.close();
@@ -811,7 +819,10 @@ export const runMultiTraceCheck = async (
           failures.push(error);
         }
       }
-      if (failures.length > 0) {
+      if (failures.length === 1) {
+        throw failures[0];
+      }
+      if (failures.length > 1) {
         throw new AggregateError(failures, "process cleanup failed");
       }
     },

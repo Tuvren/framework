@@ -419,6 +419,7 @@ export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/harness/test/durable-crash.test.ts",
   "tools/conformance/harness/test/durable-faults.test.ts",
   "tools/conformance/harness/test/run.test.ts",
+  "tools/conformance/harness/test/named-instances.test.ts",
   "tools/conformance/harness/test/operation-handles.test.ts",
   "tools/conformance/harness/test/durable-instance.test.ts",
   "tools/conformance/harness/test/server-clock-verification.test.ts",

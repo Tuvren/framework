@@ -15,11 +15,13 @@
  */
 
 // Fast inner-loop lane. Sits between `verify:kernel` (focused kernel boundary)
-// and `verify` (full release gate): it always runs the cheap authority gate so
-// the inner loop can never drift from the constitution, then uses Nx `affected`
-// to typecheck/test/lint only the projects touched by the working tree. Rust is
-// graph-coarse under Nx (the cargo wrappers carry no source-level edges), so a
-// workspace-wide cargo gate runs only when Rust sources actually changed.
+// and `verify` (full release gate): it always runs the workspace lint, the
+// read-only formatting check, and the cheap authority gate so the inner loop
+// can never drift from the constitution, the formatter, or the lint rules, then
+// uses Nx `affected` to typecheck/test/lint only the projects touched by the
+// working tree. Rust is graph-coarse under Nx (the cargo wrappers carry no
+// source-level edges), so a workspace-wide cargo gate runs only when Rust
+// sources actually changed.
 
 import process from "node:process";
 
@@ -48,18 +50,19 @@ const WORKSPACE_LINT_STEP: VerificationStep = {
 // one of these IDs stops matching a verify step, selectAuthorityGateSteps
 // throws instead of quietly dropping that check.
 //
-// `machine authority guardrails` is intentionally omitted: it runs ~4s (vs
-// <500ms for every other gate step) which is too slow for the inner loop, and
-// it is still enforced by `verify` / `verify:kernel`. Every other authority
-// validator is cheap enough to keep here.
+// `machine authority guardrails` is intentionally omitted: it is not read-only.
+// Its freshness proof runs each packet's declared regenerate commands, which
+// rewrite derived artifacts, so `verify` gives it a singleton phase instead of
+// running it beside readers; the inner-loop gate is one concurrent phase. It
+// stays enforced by `verify` / `verify:kernel`.
 const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "docs-to-authority freeze gate",
   "Epic AL portability gate",
   "ADR-0057 host import boundary gate",
   // ~1.4s (one in-memory tsc program over the core+sdk source barrels) —
-  // above the <500ms of the other gates but well under the ~4s guardrails
-  // exclusion threshold, and a stable-surface break is exactly the drift the
-  // inner loop must surface before a contributor builds on it (KRT-BL002).
+  // slower than the <500ms of the other gates but still cheap enough for the
+  // inner loop, and a stable-surface break is exactly the drift the inner loop
+  // must surface before a contributor builds on it (KRT-BL002).
   "ADR-0054/0056 API-surface freeze gate",
   "Epic AF conformance gap plan freshness",
   "authority packet validation",
