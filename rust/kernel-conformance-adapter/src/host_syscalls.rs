@@ -807,6 +807,13 @@ impl Syscalls {
         let result = if let Some((_, binding)) =
             CODEC_BINDINGS.iter().find(|(name, _)| *name == operation)
         {
+            if let Some(reason) = context.as_ref().and_then(OperationContext::cancellation) {
+                return Err(adapter_error(
+                    "operation_cancelled_before_entry",
+                    &reason,
+                    None,
+                ));
+            }
             binding(input)
         } else if let Some((_, binding)) = BINDINGS.iter().find(|(name, _)| *name == operation) {
             let mut kernel_guard = instance
@@ -990,5 +997,26 @@ mod tests {
             assert_eq!(error.code, "operation_cancelled_before_entry");
             assert_eq!(error.message, "before entry");
         }
+    }
+
+    #[test]
+    fn cancellation_before_codec_entry_is_a_protocol_error() {
+        let syscalls = Arc::new(Syscalls::default());
+        let handle = json!(syscalls.create(&json!({})).unwrap());
+        let instance = syscalls.instance(&handle).unwrap();
+        let context = instance.barrier.operation("codec-operation".to_owned());
+        context.cancel("before entry");
+        let input = json!({"bytes":{"$bytes":"01"}});
+        let error = syscalls
+            .dispatch_instance(&instance, "kernel.codec.hashOpaque", &input, Some(context))
+            .err()
+            .unwrap();
+        assert_eq!(error.code, "operation_cancelled_before_entry");
+        assert_eq!(error.message, "before entry");
+        assert!(
+            syscalls
+                .dispatch_instance(&instance, "kernel.codec.hashOpaque", &input, None)
+                .is_ok()
+        );
     }
 }
