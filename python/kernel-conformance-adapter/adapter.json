@@ -29,7 +29,10 @@
     "kernel.scope-isolation",
     "kernel.reclamation"
   ],
-  "authorityPackets": ["spec/kernel/authority-packet.json"],
+  "authorityPackets": [
+    "spec/kernel/authority-packet.json",
+    "spec/kernel/legacy/authority-packet.json"
+  ],
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
 }

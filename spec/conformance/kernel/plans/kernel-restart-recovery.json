@@ -1,7 +1,7 @@
 {
   "planId": "tuvren.kernel.restart-recovery",
   "planVersion": "0.2.0",
-  "packetId": "tuvren.kernel.protocol",
+  "packetId": "tuvren.kernel.legacy",
   "applicability": {
     "capabilities": ["kernel.restart-recovery"]
   },

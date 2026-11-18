@@ -1115,7 +1115,7 @@
     "f-adversarial-cbor": "../fixtures/kernel-protocol-adversarial-cbor.json",
     "f-verdict-composition": "../fixtures/kernel-protocol-verdict-composition.json"
   },
-  "packetId": "tuvren.kernel.protocol",
+  "packetId": "tuvren.kernel.legacy",
   "planId": "tuvren.kernel.protocol.extended",
   "planVersion": "0.3.0"
 }

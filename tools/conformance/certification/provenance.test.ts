@@ -132,3 +132,62 @@ test("verifier-authority digests cover explicitly selected register content and 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("verifier authority includes legacy packet paths only for adapters that select the legacy packet", async () => {
+  const legacyOwned = [
+    "spec/kernel/legacy/authority-packet.json",
+    "spec/conformance/kernel/legacy-operations.json",
+    "spec/conformance/kernel/plans/kernel-protocol-core.json",
+    "spec/conformance/kernel/plans/kernel-protocol-extended.json",
+    "spec/conformance/kernel/plans/kernel-run-liveness.json",
+    "spec/conformance/kernel/plans/kernel-restart-recovery.json",
+    "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+    "spec/conformance/kernel/plans/kernel-reclamation.json",
+    "spec/conformance/kernel/fixtures/canonical-turn-tree-schema.json",
+    "spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
+    "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+  ];
+  const canonicalInputs = await collectSourceVerifierInputs([
+    "spec/kernel/authority-packet.json",
+  ]);
+  const canonicalFiles = [
+    ...canonicalInputs.authority,
+    ...canonicalInputs.packets,
+    ...canonicalInputs.plans,
+    ...canonicalInputs.catalogs,
+    ...canonicalInputs.profiles,
+    ...canonicalInputs.controls,
+    ...canonicalInputs.fixtures,
+    ...canonicalInputs.registers,
+  ].map((file) => path.relative(process.cwd(), file));
+  for (const legacyPath of legacyOwned) {
+    expect(canonicalFiles).not.toContain(path.resolve(legacyPath));
+    expect(canonicalFiles.some((file) => file.endsWith(legacyPath))).toBe(
+      false
+    );
+  }
+
+  const selectingInputs = await collectSourceVerifierInputs([
+    "spec/kernel/authority-packet.json",
+    "spec/kernel/legacy/authority-packet.json",
+  ]);
+  const selectingFiles = selectingInputs.authority.map((file) =>
+    path.relative(process.cwd(), file)
+  );
+  for (const legacyPath of legacyOwned) {
+    expect(selectingFiles.some((file) => file.endsWith(legacyPath))).toBe(true);
+  }
+
+  const canonicalDigests = await computeSourceVerifierDigests([
+    "spec/kernel/authority-packet.json",
+  ]);
+  const selectingDigests = await computeSourceVerifierDigests([
+    "spec/kernel/authority-packet.json",
+    "spec/kernel/legacy/authority-packet.json",
+  ]);
+  expect(selectingDigests.verifierAuthority).not.toBe(
+    canonicalDigests.verifierAuthority
+  );
+  expect(selectingDigests.plans).not.toBe(canonicalDigests.plans);
+  expect(selectingDigests.catalogs).not.toBe(canonicalDigests.catalogs);
+});

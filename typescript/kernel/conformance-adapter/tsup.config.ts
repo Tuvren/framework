@@ -20,7 +20,7 @@ export default defineConfig({
   banner: { js: "#!/usr/bin/env node" },
   clean: true,
   dts: false,
-  entry: ["src/host.ts", "src/sqlite-restart-recovery-scenario.ts"],
+  entry: ["src/host.ts"],
   format: ["esm"],
   noExternal: [/^@tuvren\//u],
   onSuccess: "chmod +x dist/host.mjs",

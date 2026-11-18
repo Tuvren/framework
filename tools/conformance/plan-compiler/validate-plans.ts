@@ -36,17 +36,6 @@ const ENFORCEMENT_FIXTURE_VIOLATING = `${ENFORCEMENT_FIXTURE_DIR}/migrated-viola
 const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [
-    "tuvren.kernel.protocol",
-    [
-      "spec/conformance/kernel/plans/kernel-protocol-core.json",
-      "spec/conformance/kernel/plans/kernel-protocol-extended.json",
-      "spec/conformance/kernel/plans/kernel-run-liveness.json",
-      "spec/conformance/kernel/plans/kernel-restart-recovery.json",
-      "spec/conformance/kernel/plans/kernel-scope-isolation.json",
-      "spec/conformance/kernel/plans/kernel-reclamation.json",
-    ],
-  ],
-  [
     "tuvren.providers.provider-api",
     [
       "spec/conformance/providers/plans/provider-api-bridge.json",

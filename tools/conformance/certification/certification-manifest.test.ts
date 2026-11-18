@@ -34,9 +34,6 @@ const PREVIOUSLY_CERTIFIED = [
     "tuvren.framework.runtime-api.batteries-included",
   ],
   ["framework-typescript-certification", "tuvren.framework.promoted-authority"],
-  ["kernel-dart-certification", "tuvren.kernel.protocol"],
-  ["kernel-go-certification", "tuvren.kernel.protocol"],
-  ["kernel-python-certification", "tuvren.kernel.protocol"],
   ["kernel-typescript-certification", "kernel.memory"],
   ["kernel-typescript-postgres-certification", "kernel.persistent-reopen"],
   ["kernel-typescript-postgres-certification", "kernel.process-crash"],
@@ -97,6 +94,24 @@ describe("checked-in certification manifest", () => {
         manifest.inventory.find((entry) => entry.project === project)?.state
       ).toBe("pass");
       expect(manifest.certified).toContainEqual({ project, profile });
+    }
+  });
+
+  test("the Go, Python, and Dart kernel lanes stay measured but are not certified while the legacy packet is unprofiled", async () => {
+    const manifest = await readCertificationManifest(
+      nodePath.join(ROOT, CERTIFICATION_MANIFEST_PATH)
+    );
+    for (const project of [
+      "kernel-dart-certification",
+      "kernel-go-certification",
+      "kernel-python-certification",
+    ]) {
+      expect(
+        manifest.inventory.find((entry) => entry.project === project)?.state
+      ).toBe("pass");
+      expect(
+        manifest.certified.filter((entry) => entry.project === project)
+      ).toEqual([]);
     }
   });
 

@@ -144,7 +144,7 @@ for (const backend of ["sqlite", "postgres"]) {
         "--check",
         "kernel.syscall.controls.before_commit",
         "--check",
-        "kernel.reclamation.unreachable_past_grace_is_released",
+        "kernel.syscall.reclamation.reachability",
         "--concurrency",
         "1",
       ],
@@ -165,7 +165,7 @@ for (const backend of ["sqlite", "postgres"]) {
     ).toEqual([
       { checkId: "kernel.syscall.controls.before_commit", status: "pass" },
       {
-        checkId: "kernel.reclamation.unreachable_past_grace_is_released",
+        checkId: "kernel.syscall.reclamation.reachability",
         status: "pass",
       },
     ]);

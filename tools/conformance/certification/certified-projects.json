@@ -1,5 +1,5 @@
 {
-  "description": "The certification fleet (ADR-0031, ADR-0081). `projects` and `inventory` are the discovery inventory: every Nx project tagged layer:certification that runs the shared semantic conformance engine (tools/conformance/harness/run.ts), each with the adapter manifest its conformance target drives and its truthful raw status, which must equal the status in its checked-in compatibility evidence. `certified` lists the project and profile pairs that must certify; only inventory projects in state pass may appear, and the harness fails a certified run that selects zero applicable checks. Until certification profiles exist, a certified entry's profile is its adapter manifest's suiteId. tools/conformance/certification/validate-certification-discovery.ts machine-diffs the inventory both directions against tag-based discovery and hard-fails on any divergence. The `conformance` lane runs every inventory project.",
+  "description": "The certification fleet (ADR-0031, ADR-0081). `projects` and `inventory` are the discovery inventory: every Nx project tagged layer:certification that runs the shared semantic conformance engine (tools/conformance/harness/run.ts), each with the adapter manifest its conformance target drives and its truthful raw status, which must equal the status in its checked-in compatibility evidence. `certified` lists the project and profile pairs that must certify; only inventory projects in state pass may appear, and the harness fails a certified run that selects zero applicable checks. Until certification profiles exist, a certified entry's profile is its adapter manifest's suiteId. tools/conformance/certification/validate-certification-discovery.ts machine-diffs the inventory both directions against tag-based discovery and hard-fails on any divergence. The `conformance` lane runs every inventory project. The kernel-go-certification, kernel-python-certification, and kernel-dart-certification `tuvren.kernel.protocol` certified entries are removed because the six legacy plans now live in the temporary packet tuvren.kernel.legacy (KRT-DQ003), which is unprofiled: a claimed-profile certificate cannot rely on it. Their positive inventory and matrix implementations results are kept until their canonical certification tickets restore kernel.memory.",
   "projects": [
     "framework-batteries-included-certification",
     "framework-rust-certification",
@@ -78,18 +78,6 @@
     {
       "project": "framework-typescript-certification",
       "profile": "tuvren.framework.promoted-authority"
-    },
-    {
-      "project": "kernel-dart-certification",
-      "profile": "tuvren.kernel.protocol"
-    },
-    {
-      "project": "kernel-go-certification",
-      "profile": "tuvren.kernel.protocol"
-    },
-    {
-      "project": "kernel-python-certification",
-      "profile": "tuvren.kernel.protocol"
     },
     {
       "project": "kernel-typescript-certification",

@@ -25,10 +25,6 @@ import type {
 import { createAdapterErrorEnvelope } from "../../../../tools/conformance/adapter-protocol/index.js";
 import type { StdioConformanceAdapter } from "../../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { serveStdioAdapter } from "../../../../tools/conformance/adapter-protocol/stdio-host.js";
-import { createProtocolLogicalScenarios } from "./host-protocol-logical-scenarios.js";
-import { createReclamationScenarios } from "./host-reclamation-scenarios.js";
-import { createRestartRecoveryScenarios } from "./host-restart-recovery-scenarios.js";
-import { createRunLivenessScenarios } from "./host-run-liveness-scenarios.js";
 import type {
   KernelAdapterConfig,
   KernelOperation,
@@ -215,67 +211,19 @@ const syscallBindings = createSyscallBindings(
   }
 );
 
-const createKernelOperations = (
+const createControlOperations = (
   config: KernelAdapterConfig
-): Map<string, KernelOperation> => {
-  const protocolLogicalScenarios = createProtocolLogicalScenarios(config);
-  const reclamationScenarios = createReclamationScenarios(config);
-  const restartRecoveryScenarios = createRestartRecoveryScenarios(config);
-  const runLivenessScenarios = createRunLivenessScenarios(config);
-
-  return new Map<string, KernelOperation>(
-    Object.entries({
-      "kernel.lineage.cross-thread-rejection":
-        protocolLogicalScenarios.runCrossThreadLineage,
-      "kernel.logical.branch-list": protocolLogicalScenarios.runBranchList,
-      "kernel.logical.diff-paths": protocolLogicalScenarios.runLogicalDiff,
-      "kernel.logical.recovery-state":
-        protocolLogicalScenarios.runRecoveryState,
-      "kernel.logical.thread-list": protocolLogicalScenarios.runThreadList,
-      "kernel.protocol.canonical-rejection": (input) =>
-        protocolLogicalScenarios.runCanonicalRejection(
-          protocolLogicalScenarios.readProtocolFixture(input)
-        ),
-      "kernel.protocol.deterministic-hashing":
-        protocolLogicalScenarios.deterministicHashing,
-      "kernel.protocol.edge-validation":
-        protocolLogicalScenarios.runProtocolEdgeValidation,
-      "kernel.protocol.modify-composition":
-        protocolLogicalScenarios.runModifyComposition,
-      "kernel.protocol.schema-roundtrip": (input) =>
-        protocolLogicalScenarios.schemaRoundtrip(
-          protocolLogicalScenarios.readProtocolFixture(input)
-        ),
-      "kernel.reclamation.erasure-probe": reclamationScenarios.runErasureProbe,
-      "kernel.reclamation.reclaim-probe":
-        reclamationScenarios.runReclamationProbe,
-      "kernel.restart-recovery.close-reopen-checkpoint":
-        restartRecoveryScenarios.runRestartRecovery,
-      "kernel.restart-recovery.concurrent-writer":
-        restartRecoveryScenarios.runConcurrentWriterConflict,
-      "kernel.restart-recovery.crash-recovery-durable":
-        restartRecoveryScenarios.runDurableCrashRecovery,
-      "kernel.restart-recovery.crash-recovery-in-process":
-        restartRecoveryScenarios.runInProcessCrashRecovery,
-      "kernel.run-liveness.clock-skew-preemption":
-        runLivenessScenarios.runClockSkewPreemption,
-      "kernel.run-liveness.expired-listing":
-        runLivenessScenarios.runExpiredListing,
-      "kernel.run-liveness.lease-renewal": runLivenessScenarios.runLeaseRenewal,
-      "kernel.run-liveness.stale-preemption":
-        runLivenessScenarios.runStalePreemption,
-      "kernel.scope-isolation.cross-scope-probe":
-        reclamationScenarios.runCrossScopeProbe,
-      ...(config.mutant === undefined
-        ? {}
-        : {
-            [MUTANT_ACTIVATION_OPERATION]: createMutantActivationOperation(
-              config.mutant
-            ),
-          }),
-    } satisfies Record<string, KernelOperation>)
+): Map<string, KernelOperation> =>
+  new Map<string, KernelOperation>(
+    config.mutant === undefined
+      ? []
+      : ([
+          [
+            MUTANT_ACTIVATION_OPERATION,
+            createMutantActivationOperation(config.mutant),
+          ],
+        ] as const)
   );
-};
 
 const initialize = (
   packetId: string,
@@ -302,7 +250,7 @@ const dispatch = async (
   if (syscallBindings.has(operation)) {
     return await syscallBindings.dispatch(operation, input, instance);
   }
-  const operationHandler = createKernelOperations(
+  const operationHandler = createControlOperations(
     syscallBindings.instanceConfig(instance)
   ).get(operation);
   if (operationHandler === undefined) {

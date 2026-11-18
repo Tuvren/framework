@@ -408,6 +408,7 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/plan-compiler/handle-steps.test.ts",
   "tools/scripts/conformance/certification-schemas.test.ts",
   "tools/scripts/lib/conformance-contract.test.ts",
+  "tools/scripts/portability-gate.test.ts",
 ];
 
 export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [

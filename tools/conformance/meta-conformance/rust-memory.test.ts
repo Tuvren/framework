@@ -151,23 +151,44 @@ test("exploratory Rust syscall evidence covers every check in all four memory fa
         expect(entry.reason).toBeTruthy();
       }
     }
-    for (const checkId of [
-      "kernel.scope-isolation.store_has_is_scope_confined",
-      "kernel.scope-isolation.store_get_is_scope_confined",
-      "kernel.scope-isolation.enumeration_is_scope_confined",
-      "kernel.crash-recovery.in_process_fault_points",
-      "kernel.crash-recovery.concurrent_writer",
-    ]) {
-      expect(
-        evidence.selection?.find((entry) => entry.checkId === checkId)
-      ).toMatchObject({
-        selected: false,
-        reason: expect.stringContaining(
-          checkId.startsWith("kernel.scope-isolation.")
-            ? "outside requested capabilities:"
-            : "missing capabilities:"
-        ),
-      });
+    const legacyCheckIds = new Set(
+      await Promise.all(
+        [
+          "kernel-protocol-core",
+          "kernel-protocol-extended",
+          "kernel-run-liveness",
+          "kernel-restart-recovery",
+          "kernel-scope-isolation",
+          "kernel-reclamation",
+        ].map(async (name) => {
+          const plan: unknown = JSON.parse(
+            await readFile(
+              `spec/conformance/kernel/plans/${name}.json`,
+              "utf-8"
+            )
+          );
+          const checks =
+            typeof plan === "object" &&
+            plan !== null &&
+            "checks" in plan &&
+            Array.isArray(plan.checks)
+              ? plan.checks
+              : [];
+          return checks.flatMap((check) => {
+            const checkId =
+              typeof check === "object" &&
+              check !== null &&
+              "checkId" in check &&
+              typeof check.checkId === "string"
+                ? check.checkId
+                : undefined;
+            return checkId === undefined ? [] : [checkId];
+          });
+        })
+      ).then((lists) => lists.flat())
+    );
+    for (const entry of evidence.selection ?? []) {
+      expect(legacyCheckIds.has(entry.checkId)).toBe(false);
     }
     for (const family of [
       "scope-isolation",

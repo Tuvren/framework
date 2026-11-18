@@ -1,7 +1,7 @@
 {
   "planId": "tuvren.kernel.protocol.core",
   "planVersion": "0.1.0",
-  "packetId": "tuvren.kernel.protocol",
+  "packetId": "tuvren.kernel.legacy",
   "applicability": {
     "capabilities": ["kernel.protocol"]
   },
