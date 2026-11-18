@@ -32,7 +32,6 @@ const CERTIFYING_MANIFESTS = [
   `${ADAPTER_DIRECTORY}/adapter-postgres.json`,
   `${ADAPTER_DIRECTORY}/adapter-sqlite.json`,
 ];
-const PLANS_DIRECTORY = "spec/conformance/kernel/plans";
 const MUTANT_ENV = "TUVREN_KERNEL_MUTANT";
 const ACTIVATION_OPERATION = "kernel.mutant.activation";
 
@@ -40,20 +39,6 @@ interface AdapterManifest {
   adapterId: string;
   capabilities: string[];
   command: string[];
-}
-
-interface PlanCheck {
-  assertions: { field?: string }[];
-  capabilities: string[];
-  checkId: string;
-  fixture?: string;
-  operation: string;
-}
-
-interface ResolvedCheck {
-  capabilities: string[];
-  check: PlanCheck;
-  fixture?: unknown;
 }
 
 interface ManifestControl {
@@ -82,16 +67,6 @@ const readStrings = (value: unknown): string[] =>
     ? value.filter((entry): entry is string => typeof entry === "string")
     : [];
 
-const readPlanCheck = (check: Record<string, unknown>): PlanCheck => ({
-  assertions: readRecords(check.assertions).map((assertion) =>
-    typeof assertion.field === "string" ? { field: assertion.field } : {}
-  ),
-  capabilities: readStrings(check.requiredCapabilities ?? check.capabilities),
-  checkId: String(check.checkId),
-  ...(typeof check.fixture === "string" ? { fixture: check.fixture } : {}),
-  operation: String(check.operation),
-});
-
 const readManifest = (relativePath: string): AdapterManifest => {
   const value = readJson(relativePath);
   if (!(isRecord(value) && Array.isArray(value.command))) {
@@ -107,36 +82,6 @@ const readManifest = (relativePath: string): AdapterManifest => {
   return manifest;
 };
 
-const readCompositePlanChecks = (): Map<string, ResolvedCheck> => {
-  const checks = new Map<string, ResolvedCheck>();
-  for (const file of readdirSync(path.join(REPO_ROOT, PLANS_DIRECTORY))) {
-    const planPath = path.join(PLANS_DIRECTORY, file);
-    const plan = readJson(planPath);
-    const planRecord = isRecord(plan) ? plan : {};
-    const fixtures = isRecord(planRecord.fixtures) ? planRecord.fixtures : {};
-    const applicability = isRecord(planRecord.applicability)
-      ? planRecord.applicability
-      : {};
-    const planCapabilities = readStrings(applicability.capabilities);
-    for (const check of readRecords(planRecord.checks)
-      .filter((candidate) => !Array.isArray(candidate.steps))
-      .map(readPlanCheck)) {
-      const fixturePath =
-        check.fixture === undefined ? undefined : fixtures[check.fixture];
-      checks.set(check.checkId, {
-        capabilities: [...planCapabilities, ...check.capabilities],
-        check,
-        ...(typeof fixturePath === "string"
-          ? {
-              fixture: readJson(path.join(path.dirname(planPath), fixturePath)),
-            }
-          : {}),
-      });
-    }
-  }
-  return checks;
-};
-
 const readControls = (): ManifestControl[] => {
   const manifest = readJson("spec/conformance/kernel/negative-controls.json");
   if (!(isRecord(manifest) && Array.isArray(manifest.controls))) {
@@ -150,43 +95,6 @@ const readControls = (): ManifestControl[] => {
     kind: String(control.kind),
     mutantId: String(control.mutantId),
   }));
-};
-
-const detectionCheckIds = (control: ManifestControl): string[] =>
-  control.kind === "implementation"
-    ? [
-        ...new Set(
-          (control.designatedAssertions ?? []).map((assertionId) =>
-            assertionId.replace(/\.\d+\.[A-Za-z]+$/u, "")
-          )
-        ),
-      ]
-    : control.claimIds;
-
-const designatedFields = (
-  control: ManifestControl,
-  checks: ReadonlyMap<string, ResolvedCheck>
-): { checkId: string; field: string }[] =>
-  (control.designatedAssertions ?? []).flatMap((assertionId) => {
-    const match = /^(?<checkId>.+)\.(?<index>\d+)\.[A-Za-z]+$/u.exec(
-      assertionId
-    )?.groups;
-    const checkId = match?.checkId ?? "";
-    const index = Number(match?.index ?? "0");
-    const field = checks.get(checkId)?.check.assertions[index - 1]?.field;
-    return field === undefined ? [] : [{ checkId, field }];
-  });
-
-const readField = (value: unknown, field: string): unknown => {
-  let current = value;
-  for (const segment of field.replace(/^\$\./u, "").split(".")) {
-    if (Array.isArray(current)) {
-      current = current[Number(segment)];
-    } else {
-      current = isRecord(current) ? current[segment] : undefined;
-    }
-  }
-  return current;
 };
 
 const runAdapter = async (
@@ -233,12 +141,6 @@ const dispatchRequest = (operation: string, input: unknown) => ({
   params: { controls: {}, input, operation },
 });
 
-const checkRequest = (resolved: ResolvedCheck) =>
-  dispatchRequest(
-    resolved.check.operation,
-    resolved.fixture === undefined ? {} : { fixture: resolved.fixture }
-  );
-
 const readResult = (response: RpcResponse | undefined): unknown => {
   const outcome = response?.result;
   if (!(isRecord(outcome) && outcome.kind === "result")) {
@@ -251,7 +153,6 @@ const readResult = (response: RpcResponse | undefined): unknown => {
 
 const mutantManifest = readManifest(MUTANT_MANIFEST);
 const memoryManifest = readManifest(`${ADAPTER_DIRECTORY}/adapter.json`);
-const planChecks = readCompositePlanChecks();
 
 describe("mutant adapter manifest", () => {
   test("is a non-certifying memory adapter that selects its mutant by id", () => {
@@ -356,68 +257,34 @@ describe("mutant activation control", () => {
     (entry) =>
       !entry.claimIds.some((claim) => claim.startsWith("kernel.syscall."))
   )) {
-    const checks = detectionCheckIds(control).flatMap((checkId) => {
-      const resolved = planChecks.get(checkId);
-      return resolved === undefined ? [] : [resolved];
-    });
-    const reachable = checks.filter((resolved) =>
-      resolved.capabilities.every((capability) =>
-        mutantManifest.capabilities.includes(capability)
-      )
-    );
-
-    test(`${control.mutantId} activates through its detecting checks on memory`, async () => {
-      expect(reachable.length).toBeGreaterThan(0);
-      const requests = [
-        ...reachable.map(checkRequest),
-        dispatchRequest(ACTIVATION_OPERATION, {}),
-      ];
-      const { responses } = await runAdapter(mutantManifest, requests, {
-        [MUTANT_ENV]: control.mutantId,
-      });
-      const activation = readField(
-        readResult(responses.at(-1)),
-        "activation.activated"
+    test(`${control.mutantId} activates and fails its canonical detecting assertions on memory`, async () => {
+      const { runNegativeControls } =
+        await import("../../../../tools/conformance/meta-conformance/negative-controls.ts");
+      const { NEGATIVE_CONTROL_PORTS } =
+        await import("../../../../tools/conformance/meta-conformance/negative-control-config.ts");
+      const config = NEGATIVE_CONTROL_PORTS.find(
+        (entry) => entry.controlAdapter === `${ADAPTER_DIRECTORY}/adapter.json`
       );
-
-      expect(activation).toBe(true);
-    });
-
-    if (control.kind === "implementation") {
-      test(`${control.mutantId} alters a designated observation before the adapter reports it`, async () => {
-        const fields = designatedFields(control, planChecks).filter(
-          ({ checkId }) =>
-            reachable.some((entry) => entry.check.checkId === checkId)
-        );
-        const requests = fields.map(({ checkId }) => {
-          const resolved = planChecks.get(checkId);
-          if (resolved === undefined) {
-            throw new Error(`unknown designated check ${checkId}`);
-          }
-          return checkRequest(resolved);
-        });
-        const [mutated, reference] = await Promise.all([
-          runAdapter(mutantManifest, requests, {
-            [MUTANT_ENV]: control.mutantId,
-          }),
-          runAdapter(memoryManifest, requests),
-        ]);
-        const changed = fields.filter(
-          ({ field }, index) =>
-            !Bun.deepEquals(
-              readField(
-                readResult(mutated.responses[index]),
-                field.replace(/^\$\./u, "")
-              ),
-              readField(
-                readResult(reference.responses[index]),
-                field.replace(/^\$\./u, "")
-              )
-            )
-        );
-
-        expect(changed.length > 0).toBe(true);
-      });
-    }
+      if (config === undefined) {
+        throw new Error("missing memory control configuration");
+      }
+      const report = await runNegativeControls(
+        { ...config, branchAdapters: [] },
+        { mutants: [control.mutantId] }
+      );
+      expect(report.control.status).toBe("pass");
+      expect(report.control.postBaseline?.status).toBe("pass");
+      expect(report.findings).toEqual([]);
+      const mutant = report.mutants.find(
+        (entry) => entry.mutantId === control.mutantId
+      );
+      expect(mutant?.activated).toBe(true);
+      expect(mutant?.activationCount).toBeGreaterThan(0);
+      expect(mutant?.outcome).toBe("killed");
+      expect(mutant?.designatedFailures.length).toBeGreaterThan(0);
+      for (const assertion of mutant?.designatedFailures ?? []) {
+        expect(control.designatedAssertions).toContain(assertion);
+      }
+    }, 60_000);
   }
 });

@@ -3048,7 +3048,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3057,7 +3057,7 @@
                 }
               },
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3075,7 +3075,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3084,7 +3084,7 @@
               }
             },
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -3392,7 +3392,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3401,7 +3401,7 @@
                 }
               },
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3419,7 +3419,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3428,7 +3428,7 @@
               }
             },
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -3736,7 +3736,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3745,7 +3745,7 @@
                 }
               },
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3763,7 +3763,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3772,7 +3772,7 @@
               }
             },
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -4080,7 +4080,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -4089,7 +4089,7 @@
                 }
               },
               {
-                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+                "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -4107,7 +4107,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -4116,7 +4116,7 @@
               }
             },
             {
-              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
+              "executableDigest": "459e7fda21d1a0cff44e10570af019bd30b47bc8edf4e125de63bf76f9b9c348",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -11294,6 +11294,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.1.resultField",
           "status": "pass"
         },
@@ -11310,11 +11318,27 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.otherGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.otherHas.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.get.result",
           "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.has.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.otherGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.otherHas.result",
           "status": "pass"
         }
       ],
@@ -11322,7 +11346,19 @@
       "details": {
         "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.scope-isolation.syscall",
-        "traceStepIds": ["backend0", "worker0", "put", "has", "get"]
+        "traceStepIds": [
+          "scopeA",
+          "backend0",
+          "worker0",
+          "put",
+          "has",
+          "get",
+          "scopeB",
+          "backendB",
+          "workerB",
+          "otherHas",
+          "otherGet"
+        ]
       },
       "status": "pass"
     },
@@ -11334,6 +11370,10 @@
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.otherList.1.resultField",
           "status": "pass"
         },
         {
@@ -11353,7 +11393,15 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.otherList.result.threads",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.list.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.otherList.result",
           "status": "pass"
         }
       ],
@@ -11361,7 +11409,18 @@
       "details": {
         "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.scope-isolation.syscall",
-        "traceStepIds": ["backend0", "worker0", "schema", "thread", "list"]
+        "traceStepIds": [
+          "scopeA",
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "list",
+          "scopeB",
+          "backendB",
+          "workerB",
+          "otherList"
+        ]
       },
       "status": "pass"
     }

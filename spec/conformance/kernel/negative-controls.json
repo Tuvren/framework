@@ -14,7 +14,6 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.protocol.canonical_rejection.1.resultField",
         "kernel.codec.decode.non-minimal-uint-head.1.resultField"
       ]
     },
@@ -33,9 +32,6 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.crash-recovery.concurrent_writer.1.resultField",
-        "kernel.crash-recovery.concurrent_writer.3.resultField",
-        "kernel.crash-recovery.concurrent_writer.4.resultField",
         "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
         "kernel.syscall.concurrent_writer.a_first.7.resultField",
         "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
@@ -106,7 +102,6 @@
       "profiles": ["kernel.memory", "kernel.persistent-reopen"],
       "designatedAssertions": [
         "kernel.syscall.logical.recovery_state.3.resultField",
-        "kernel.crash-recovery.in_process_fault_points.5.resultField",
         "kernel.syscall.crash-recovery.before_commit.6.resultField",
         "kernel.syscall.crash-recovery.before_commit.12.resultField",
         "kernel.syscall.reopen.close_reopen_checkpoint.10.resultField",
@@ -234,11 +229,6 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.crash-recovery.in_process_fault_points.2.resultField",
-        "kernel.crash-recovery.in_process_fault_points.3.resultField",
-        "kernel.crash-recovery.in_process_fault_points.4.resultField",
-        "kernel.crash-recovery.in_process_fault_points.5.resultField",
-        "kernel.crash-recovery.in_process_fault_points.6.resultField",
         "kernel.syscall.crash-recovery.before_commit.8.resultField",
         "kernel.syscall.crash-recovery.before_commit.9.resultField"
       ]
@@ -257,8 +247,8 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.scope-isolation.store_has_is_scope_confined.2.resultField",
-        "kernel.scope-isolation.store_get_is_scope_confined.2.resultField"
+        "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+        "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField"
       ]
     },
     {

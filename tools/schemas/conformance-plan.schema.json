@@ -94,6 +94,11 @@
         },
         "claimIds": { "$ref": "#/$defs/claimIds" },
         "process": { "type": "string", "minLength": 1, "default": "primary" },
+        "instance": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Logical instance name within the selected process; omitted selects primary."
+        },
         "input": {},
         "arguments": { "type": "object", "$ref": "#/$defs/argumentValue" },
         "handleCapture": {

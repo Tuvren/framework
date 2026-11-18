@@ -28,6 +28,7 @@ import { createOperationHandles } from "./host-operation-handles.js";
 import type { KernelAdapterConfig } from "./host-scenario-support.js";
 import {
   createConfiguredBackend,
+  createMemorySubstrate,
   createConformanceRuntimeKernel,
   readErrorCode,
   readRecord,
@@ -463,7 +464,13 @@ interface AdapterClock {
   workerNow: () => number;
 }
 
+interface Substrate {
+  store?: Awaited<ReturnType<typeof createMemorySubstrate>>;
+  users: number;
+}
+
 interface InstanceState {
+  substrate?: Substrate;
   codec: {
     decodeDeterministicKernelRecord: typeof decodeDeterministicKernelRecord;
     encodeDeterministicKernelRecord: typeof encodeDeterministicKernelRecord;
@@ -493,6 +500,8 @@ export const createSyscallBindings = (
   }
 ) => {
   const instances = new Map<string, InstanceState>();
+  const substrates = new Map<string, Substrate>();
+  const released = new Set<string>();
   const createInstance = async (
     _input?: unknown,
     options: {
@@ -509,6 +518,23 @@ export const createSyscallBindings = (
     }
     if (config.backend !== "memory" && options.storageRef === undefined) {
       throw new Error("durable storageRef is required");
+    }
+    let substrate: Substrate | undefined;
+    if (options.storageRef !== undefined) {
+      if (released.has(options.storageRef)) {
+        throw new Error("cannot reuse a released substrate");
+      }
+      substrate = substrates.get(options.storageRef);
+      if (substrate === undefined) {
+        substrate = {
+          ...(config.backend === "memory"
+            ? { store: await createMemorySubstrate() }
+            : {}),
+          users: 0,
+        };
+        substrates.set(options.storageRef, substrate);
+      }
+      substrate.users += 1;
     }
     const handle = randomUUID();
     const injectedClock = createKernelTestClock();
@@ -562,6 +588,7 @@ export const createSyscallBindings = (
       },
       config: { ...config, ...options },
       inFlight: new Set(),
+      substrate,
     };
     if (config.backend !== "memory") {
       let attached: RuntimeBackend | undefined;
@@ -642,6 +669,16 @@ export const createSyscallBindings = (
       }
     }
     instances.delete(handle);
+    if (
+      state.substrate !== undefined &&
+      state.config.storageRef !== undefined
+    ) {
+      state.substrate.users -= 1;
+      if (state.substrate.users === 0 && config.backend === "memory") {
+        substrates.delete(state.config.storageRef);
+        released.add(state.config.storageRef);
+      }
+    }
   };
   const dispatch = async (
     operation: string,
@@ -675,10 +712,11 @@ export const createSyscallBindings = (
     if (pending === undefined) {
       pending = (async () => {
         const { clock } = state;
-        const backend = await createConfiguredBackend(
-          state.config,
-          clock.backendServer() ? {} : { now: clock.backendNow }
-        );
+        const backend = await createConfiguredBackend(state.config, {
+          ...(clock.backendServer() ? {} : { now: clock.backendNow }),
+          store: state.substrate?.store,
+          substrate: state.substrate,
+        });
         state.attachBackend?.(backend.backend);
         const fault =
           state.fault ??

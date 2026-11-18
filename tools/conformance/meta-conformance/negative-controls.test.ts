@@ -23,6 +23,7 @@ import type {
   ConformanceCheckResult,
   ConformanceFailureClassification,
 } from "../../scripts/lib/conformance-contract.ts";
+import { runControlBatches } from "./control-batches.ts";
 import type { NegativeControlPortConfig } from "./negative-control-config.ts";
 import {
   baselinesCoverKills,
@@ -691,4 +692,79 @@ describe("mutant run classification", () => {
       ).outcome
     ).toBe("invalid");
   });
+});
+
+test("control batches overlap independent adapter profiles while preserving each profile queue and report order", async () => {
+  const gate = Promise.withResolvers<void>();
+  const started = Promise.withResolvers<void>();
+  const starts: string[] = [];
+  const finishes: string[] = [];
+  let active = 0;
+  let peak = 0;
+  const configs = [
+    { controlAdapter: "a", id: "a0", profile: "p1" },
+    { controlAdapter: "./a", id: "a1", profile: "p1" },
+    { controlAdapter: "a", id: "a2", profile: "p2" },
+    { controlAdapter: "b", id: "b0", profile: "p1" },
+  ];
+  const result = runControlBatches(configs, async ({ id }) => {
+    starts.push(id);
+    active += 1;
+    peak = Math.max(peak, active);
+    if (starts.length === 3) {
+      started.resolve();
+    }
+    if (id !== "a1") {
+      await gate.promise;
+    }
+    finishes.push(id);
+    active -= 1;
+    return id;
+  });
+  await started.promise;
+  expect(starts).toEqual(["a0", "a2", "b0"]);
+  gate.resolve();
+  expect(await result).toEqual(["a0", "a1", "a2", "b0"]);
+  expect(finishes.indexOf("a1")).toBeGreaterThan(finishes.indexOf("a0"));
+  expect(peak).toBe(3);
+});
+
+test("a failed control queue drains the other active adapter before rejecting", async () => {
+  const gate = Promise.withResolvers<void>();
+  const started = Promise.withResolvers<void>();
+  const failure = new Error("batch failed");
+  let settled = false;
+  const result = runControlBatches(
+    [
+      { controlAdapter: "a", profile: "p1" },
+      { controlAdapter: "b", profile: "p1" },
+    ],
+    async ({ controlAdapter }) => {
+      if (controlAdapter === "a") {
+        throw failure;
+      }
+      started.resolve();
+      await gate.promise;
+      return "finished";
+    }
+  ).then(
+    () => {
+      settled = true;
+      return undefined;
+    },
+    (error: unknown) => {
+      settled = true;
+      return error;
+    }
+  );
+  await started.promise;
+  await Promise.resolve();
+  expect(settled).toBe(false);
+  gate.resolve();
+  const error = await result;
+  expect(error).toBeInstanceOf(AggregateError);
+  if (!(error instanceof AggregateError)) {
+    throw new Error("missing batch error");
+  }
+  expect(error.errors).toEqual([failure]);
 });

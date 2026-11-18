@@ -48,7 +48,7 @@ for (const adapter of [
   }, 60_000);
 }
 
-test("the noncanonical decoder mutant activates and dies through its canonical codec designation", async () => {
+test("legacy-only controls activate and die through canonical designations with passing baselines", async () => {
   const config = NEGATIVE_CONTROL_PORTS.find(
     ({ controlAdapter }) =>
       controlAdapter === "typescript/kernel/conformance-adapter/adapter.json"
@@ -58,7 +58,12 @@ test("the noncanonical decoder mutant activates and dies through its canonical c
   }
   const report = await runNegativeControls(
     { ...config, branchAdapters: [] },
-    { mutants: ["kernel.accept-noncanonical-cbor"] }
+    {
+      mutants: [
+        "kernel.accept-noncanonical-cbor",
+        "kernel.resolve-object-across-scopes",
+      ],
+    }
   );
   expect(report.control.status).toBe("pass");
   expect(report.control.postBaseline?.status).toBe("pass");
@@ -71,5 +76,17 @@ test("the noncanonical decoder mutant activates and dies through its canonical c
   expect(mutant?.outcome).toBe("killed");
   expect(mutant?.designatedFailures).toContain(
     "kernel.codec.decode.non-minimal-uint-head.1.resultField"
+  );
+  const scope = report.mutants.find(
+    ({ mutantId }) => mutantId === "kernel.resolve-object-across-scopes"
+  );
+  expect(scope?.activated).toBe(true);
+  expect(scope?.activationCount).toBeGreaterThan(0);
+  expect(scope?.outcome).toBe("killed");
+  expect(scope?.designatedFailures).toEqual(
+    expect.arrayContaining([
+      "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+      "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField",
+    ])
   );
 }, 60_000);

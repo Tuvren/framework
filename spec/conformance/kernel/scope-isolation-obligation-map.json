@@ -1,0 +1,64 @@
+{
+  "ticket": "KRT-DQ002",
+  "plan": "spec/conformance/kernel/plans/kernel-scope-isolation-syscall.json",
+  "summary": {
+    "mapped": 6,
+    "retired": 0
+  },
+  "obligations": [
+    {
+      "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "legacyAssertion": "kernel.scope-isolation.store_has_is_scope_confined.1.resultField",
+      "claimId": "kernel.scope-isolation.store_has_is_scope_confined",
+      "assertionId": "kernel.syscall.scope-isolation.own_content.has.1.resultField",
+      "status": "mapped"
+    },
+    {
+      "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "legacyAssertion": "kernel.scope-isolation.store_has_is_scope_confined.2.resultField",
+      "claimId": "kernel.scope-isolation.store_has_is_scope_confined",
+      "assertionId": "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+      "status": "mapped"
+    },
+    {
+      "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "legacyAssertion": "kernel.scope-isolation.store_get_is_scope_confined.1.resultField",
+      "claimId": "kernel.scope-isolation.store_get_is_scope_confined",
+      "assertionId": "kernel.syscall.scope-isolation.own_content.1.resultField",
+      "status": "mapped"
+    },
+    {
+      "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "legacyAssertion": "kernel.scope-isolation.store_get_is_scope_confined.2.resultField",
+      "claimId": "kernel.scope-isolation.store_get_is_scope_confined",
+      "assertionId": "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField",
+      "status": "mapped"
+    },
+    {
+      "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "legacyAssertion": "kernel.scope-isolation.enumeration_is_scope_confined.1.resultField",
+      "claimId": "kernel.scope-isolation.enumeration_is_scope_confined",
+      "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.2.resultField",
+      "status": "mapped"
+    },
+    {
+      "legacyPlan": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "legacyAssertion": "kernel.scope-isolation.enumeration_is_scope_confined.2.resultField",
+      "claimId": "kernel.scope-isolation.enumeration_is_scope_confined",
+      "assertionId": "kernel.syscall.scope-isolation.own_enumeration.otherList.1.resultField",
+      "status": "mapped"
+    }
+  ],
+  "replacedTests": [
+    {
+      "path": "typescript/kernel/conformance-adapter/test/mutant-adapter.test.ts",
+      "tests": [
+        "kernel.accept-noncanonical-cbor activates through its detecting checks on memory",
+        "kernel.accept-noncanonical-cbor alters a designated observation before the adapter reports it",
+        "kernel.resolve-object-across-scopes activates through its detecting checks on memory",
+        "kernel.resolve-object-across-scopes alters a designated observation before the adapter reports it"
+      ],
+      "reason": "The composite-only dispatch helper cannot exercise projected canonical traces. Shared-harness control tests now require native activation, canonical designated failures, and passing pre/post baselines; named-instances.test.ts separately proves shared substrate routing and observable scope reads."
+    }
+  ]
+}

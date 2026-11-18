@@ -114,6 +114,8 @@ let canonicalSchemaPromise: Promise<TurnTreeSchema> | undefined;
  */
 export interface BackendClockOptions {
   now?: () => number;
+  store?: ReturnType<typeof CreateMemoryScopeStore>;
+  substrate?: object;
 }
 
 // Two distinct, non-default Scopes bound to one shared substrate so the
@@ -295,6 +297,18 @@ export const readLogicalFixture = (
   };
 };
 
+export const createMemorySubstrate = async (): Promise<
+  ReturnType<typeof CreateMemoryScopeStore>
+> => {
+  const module: unknown = await import(
+    new URL("../../backends/memory/dist/index.js", import.meta.url).href
+  );
+  if (!hasMemoryBackendFactories(module)) {
+    throw new Error("memory backend module is missing its factories");
+  }
+  return module.createMemoryScopeStore();
+};
+
 export const createConfiguredBackend = async (
   config: ConformanceConfig,
   options?: BackendClockOptions
@@ -324,7 +338,9 @@ export const createConfiguredBackend = async (
     });
 
     return {
-      backend: conformanceBackend(config, backend),
+      backend: conformanceBackend(config, backend, {
+        substrate: options?.substrate,
+      }),
       cleanup: async () => {
         await backend.close();
       },
@@ -353,7 +369,9 @@ export const createConfiguredBackend = async (
       ...clock,
     });
     return {
-      backend: conformanceBackend(config, backend),
+      backend: conformanceBackend(config, backend, {
+        substrate: options?.substrate,
+      }),
       cleanup: async () => {
         await backend.close();
       },
@@ -372,7 +390,15 @@ export const createConfiguredBackend = async (
   }
   const { createMemoryBackend } = memoryBackendModule;
   return {
-    backend: conformanceBackend(config, createMemoryBackend({ ...clock })),
+    backend: conformanceBackend(
+      config,
+      createMemoryBackend({
+        ...clock,
+        scope: config.scope,
+        store: options?.store,
+      }),
+      { substrate: options?.substrate }
+    ),
     cleanup: async () => {
       // Memory backends have no external resources to release.
     },

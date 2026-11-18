@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { createCheckResult } from "../../scripts/lib/conformance-contract.js";
 import type { ConformanceCheckResult } from "../../scripts/lib/conformance-contract.js";
 import type { OperationOutcome } from "../adapter-protocol/index.js";
@@ -46,7 +48,7 @@ type RunnerContext = AssertionContext & {
 
 interface TraceProcess {
   client: JsonRpcAdapterClient;
-  instance: unknown;
+  instances: Map<string, unknown>;
   running: boolean;
   supervisor?: ProcessSupervisor;
   clocks: Map<string, { domain: string; source?: string; nowMs?: number }>;
@@ -58,6 +60,7 @@ interface StartedTraceOperation {
   arguments: unknown;
   process: string;
   stepId: string;
+  instance: string;
 }
 
 const handleCaptureReference = (
@@ -89,6 +92,9 @@ const routeHandleOwner = (
   }
   if (owner === undefined) {
     throw new ArgumentResolutionError("handle has no owning process");
+  }
+  if (step.instance !== undefined && step.instance !== owner.instance) {
+    throw new ArgumentResolutionError("handle belongs to another instance");
   }
   if (step.process !== undefined && step.process !== owner.process) {
     throw new ArgumentResolutionError("handle belongs to another process");
@@ -124,6 +130,52 @@ const barrierProcessName = (
     return start.process;
   }
   return undefined;
+};
+
+const instanceScope = (
+  step: ConformancePlanStep,
+  input: unknown
+): string | undefined => {
+  const scope = isRecord(input) ? input.scope : undefined;
+  if (
+    step.instance !== undefined &&
+    (typeof scope !== "string" || scope.length === 0)
+  ) {
+    throw new ArgumentResolutionError(
+      "named instance requires an explicit scope"
+    );
+  }
+  return typeof scope === "string" ? scope : undefined;
+};
+
+const groupBarrierParticipants = (
+  step: ConformancePlanStep,
+  steps: readonly ConformancePlanStep[]
+): { process: string; instance: string; participants: string[] }[] => {
+  const participants = step.participants ?? [];
+  const grouped = new Map<
+    string,
+    { process: string; instance: string; participants: string[] }
+  >();
+  for (const id of participants) {
+    const target = steps.find(
+      (candidate) => candidate.stepId === id && candidate.action === "start"
+    );
+    if (target === undefined) {
+      throw new ArgumentResolutionError("barrier names an unknown start");
+    }
+    const name = target.process ?? "primary";
+    const instance = target.instance ?? "primary";
+    const key = JSON.stringify([name, instance]);
+    const group = grouped.get(key) ?? {
+      process: name,
+      instance,
+      participants: [],
+    };
+    group.participants.push(id);
+    grouped.set(key, group);
+  }
+  return [...grouped.values()];
 };
 
 export const runMultiTraceCheck = async (
@@ -163,16 +215,17 @@ export const runMultiTraceCheck = async (
     rejectLegacySelectors(check.input);
   }
   const baseInput = createAdapterInput(plan, compiledCheck);
+  const substrateRef = storageRef ?? `memory-${randomUUID()}`;
   const initialInstance = await initialClient.createInstance(
     { checkInput: check.input },
-    storageRef === undefined ? {} : { storageRef }
+    { storageRef: substrateRef }
   );
   const processes = new Map<string, TraceProcess>([
     [
       "primary",
       {
         client: initialClient,
-        instance: initialInstance,
+        instances: new Map([["primary", initialInstance]]),
         running: true,
         supervisor,
         clocks: new Map(),
@@ -285,7 +338,7 @@ export const runMultiTraceCheck = async (
         recorder.processes?.set(step.process, spawned);
         processes.set(step.process, {
           client: spawned.client,
-          instance: undefined,
+          instances: new Map(),
           running: true,
           supervisor: spawned,
           clocks: new Map(),
@@ -333,55 +386,66 @@ export const runMultiTraceCheck = async (
       return { owner, processName, process };
     };
     const { owner, processName, process } = route();
+    const instanceName = step.instance ?? owner?.instance ?? "primary";
+    if (
+      step.action !== "createInstance" &&
+      step.instance !== undefined &&
+      !process.instances.has(instanceName)
+    ) {
+      throw new ArgumentResolutionError(`unknown instance ${instanceName}`);
+    }
+    const instance = process.instances.get(instanceName);
     const rawInput = barriers.input(step, projectedInput);
-    const input = bindControlInstance(
-      catalogOperation,
-      rawInput,
-      process.instance
-    );
+    const input = bindControlInstance(catalogOperation, rawInput, instance);
     recorder.arguments.push({
       input,
       ...(inspectQuery === undefined ? {} : { inspectQuery }),
       operation: step.operation,
       stepId: step.stepId,
     });
-    const runControl = async (): Promise<boolean> => {
-      if (step.action === "createInstance") {
-        if (
-          step.operation !== "kernel.instance.create" ||
-          process.instance !== undefined
-        ) {
-          throw new ArgumentResolutionError(
-            "createInstance requires a process without an instance"
-          );
-        }
-        const problem = controlInputProblem(catalogOperation, input);
-        if (problem !== undefined) {
-          throw new ArgumentResolutionError(problem);
-        }
-        process.instance = await process.client.createInstance(
-          input,
-          storageRef === undefined ? {} : { storageRef }
-        );
-        const outcome: OperationOutcome = {
-          kind: "result",
-          value: { result: {} },
-        };
-        validateObservation(catalogOperation, { result: {} }, true);
-        recorder.observation.push({
-          operation: step.operation,
-          stepId: step.stepId,
-          outcome,
-        });
-        record(
-          step,
-          { result: {}, processExitsByProcess: exits() },
-          outcome,
-          processName,
-          input
-        );
-        return true;
+    const runCreateInstance = async (): Promise<boolean> => {
+      if (step.action !== "createInstance") {
+        return false;
       }
+      if (
+        step.operation !== "kernel.instance.create" ||
+        process.instances.has(instanceName)
+      ) {
+        throw new ArgumentResolutionError("duplicate instance name");
+      }
+      const problem = controlInputProblem(catalogOperation, input);
+      if (problem !== undefined) {
+        throw new ArgumentResolutionError(problem);
+      }
+      const scope = instanceScope(step, input);
+      const created = await process.client.createInstance(
+        {},
+        {
+          storageRef: substrateRef,
+          ...(typeof scope === "string" ? { scope } : {}),
+        }
+      );
+      process.instances.set(instanceName, created);
+      const outcome: OperationOutcome = {
+        kind: "result",
+        value: { result: {} },
+      };
+      validateObservation(catalogOperation, { result: {} }, true);
+      recorder.observation.push({
+        operation: step.operation,
+        stepId: step.stepId,
+        outcome,
+      });
+      record(
+        step,
+        { result: {}, processExitsByProcess: exits() },
+        outcome,
+        processName,
+        input
+      );
+      return true;
+    };
+    const runLifecycleControl = async (): Promise<boolean> => {
       if (isLifecycleAction(step.action)) {
         const state = await runLifecycleStep({
           action: step.action,
@@ -389,12 +453,13 @@ export const runMultiTraceCheck = async (
           clocks: process.clocks,
           faultAttempts: process.faultAttempts,
           processName,
+          instanceName,
           input,
           recorder,
           timeoutMs: Math.min(controls.deadlineMs ?? 10_000, 10_000),
           state: {
             client: process.client,
-            instance: process.instance,
+            instance,
             processRunning: process.running,
           },
           step,
@@ -402,7 +467,16 @@ export const runMultiTraceCheck = async (
           supervisor: process.supervisor,
         });
         process.client = state.client;
-        process.instance = state.instance;
+        if (
+          step.action === "restart" ||
+          step.action === "kill" ||
+          step.action === "respawn"
+        ) {
+          process.instances.clear();
+        }
+        if (state.instance !== undefined) {
+          process.instances.set(instanceName, state.instance);
+        }
         process.running = state.processRunning;
         clearEpochHandles(step.action, process.started, process.faultAttempts);
         const outcome: OperationOutcome = {
@@ -426,7 +500,7 @@ export const runMultiTraceCheck = async (
       }
       return false;
     };
-    if (await runControl()) {
+    if ((await runCreateInstance()) || (await runLifecycleControl())) {
       return;
     }
     const runCollect = (): boolean => {
@@ -479,7 +553,7 @@ export const runMultiTraceCheck = async (
           process.client,
           step,
           input,
-          process.instance,
+          instance,
           process.started,
           controls.deadlineMs
         );
@@ -503,6 +577,7 @@ export const runMultiTraceCheck = async (
               arguments: projectedInput,
               process: processName,
               stepId: step.stepId,
+              instance: instanceName,
             };
             starts.set(step.handleCapture, started);
             startsByStep.set(step.stepId, started);
@@ -520,17 +595,23 @@ export const runMultiTraceCheck = async (
       stepId: step.stepId,
     };
     recorder.observation.push(observed);
-    const observe = async (name: string, value: unknown) => {
+    const observe = async (
+      name: string,
+      value: unknown,
+      selectedName = instanceName
+    ) => {
       const target = getProcess(name);
+      const selectedInstance = target.instances.get(selectedName);
       return await observeTraceStep({
         catalogOperation,
         check,
         client: target.client,
         contextInput,
         controls,
-        input: bindControlInstance(catalogOperation, value, target.instance),
+        input: bindControlInstance(catalogOperation, value, selectedInstance),
         inspectQuery,
-        instance: target.instance,
+        instance: selectedInstance,
+        instanceName: selectedName,
         observed,
         processName: name,
         processEpoch: target.supervisor?.current.epoch ?? 1,
@@ -542,28 +623,15 @@ export const runMultiTraceCheck = async (
     const armBarrier = async (): Promise<
       Awaited<ReturnType<typeof observe>>
     > => {
-      const participants = step.participants ?? [];
-      const grouped = new Map<string, string[]>();
-      for (const id of participants) {
-        const target = steps.find(
-          (candidate) => candidate.stepId === id && candidate.action === "start"
-        );
-        if (target === undefined) {
-          throw new ArgumentResolutionError("barrier names an unknown start");
-        }
-        const name = target.process ?? "primary";
-        const group = grouped.get(name) ?? [];
-        group.push(id);
-        grouped.set(name, group);
-      }
       let first: Awaited<ReturnType<typeof observe>> | undefined;
-      for (const [name, group] of grouped) {
+      for (const group of groupBarrierParticipants(step, steps)) {
+        const name = group.process;
         const value = {
           barrierId: step.barrierId,
           seam: step.seam,
-          participants: group,
+          participants: group.participants,
         };
-        const current = await observe(name, value);
+        const current = await observe(name, value, group.instance);
         if (current.outcome.kind !== "result") {
           throw new ArgumentResolutionError("barrier arming failed");
         }
@@ -614,7 +682,7 @@ export const runMultiTraceCheck = async (
         if (start === undefined || typeof handle !== "string") {
           throw new ArgumentResolutionError("release has no owning process");
         }
-        return { process: start.process, handle };
+        return { process: start.process, instance: start.instance, handle };
       });
       if (releases.length === 0) {
         throw new ArgumentResolutionError(
@@ -622,12 +690,16 @@ export const runMultiTraceCheck = async (
         );
       }
       const responses = await Promise.all(
-        releases.map(async ({ process, handle }) => ({
+        releases.map(async ({ process, instance, handle }) => ({
           process,
-          current: await observe(process, {
-            barrierId: step.barrierId,
-            operationHandles: [handle],
-          }),
+          current: await observe(
+            process,
+            {
+              barrierId: step.barrierId,
+              operationHandles: [handle],
+            },
+            instance
+          ),
         }))
       );
       let first: Awaited<ReturnType<typeof observe>> | undefined;
@@ -723,8 +795,10 @@ export const runMultiTraceCheck = async (
       const failures: unknown[] = [];
       for (const [name, process] of [...processes].reverse()) {
         try {
-          if (process.running && process.instance !== undefined) {
-            await process.client.destroyInstance(process.instance);
+          if (process.running) {
+            for (const handle of [...process.instances.values()].reverse()) {
+              await process.client.destroyInstance(handle);
+            }
           }
         } catch (error: unknown) {
           failures.push(error);

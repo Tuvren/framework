@@ -493,21 +493,31 @@ test("postgres stale shared writer commits both siblings and activates only the 
         mutant,
         processName === "primary" ? "aCheckpoint" : "bCheckpoint"
       );
-      expect(head).toBe(
-        field(checkpoint, "outcome", "value", "result", "turnNodeHash")
-      );
-    }
-    expect(counts.toSorted()).toEqual([0, 1]);
-    expect(heads[0]).not.toBe(heads[1]);
-    expect(heads).toContain(
-      field(
-        raceTrace(mutant, "head"),
+      const committedHead = field(
+        checkpoint,
         "outcome",
         "value",
         "result",
-        "headTurnNodeHash"
-      )
+        "turnNodeHash"
+      );
+      if (typeof committedHead !== "string") {
+        throw new Error("missing checkpoint head");
+      }
+      expect(head).toBe(committedHead);
+    }
+    expect(counts.toSorted()).toEqual([0, 1]);
+    expect(heads[0]).not.toBe(heads[1]);
+    const observedHead = field(
+      raceTrace(mutant, "head"),
+      "outcome",
+      "value",
+      "result",
+      "headTurnNodeHash"
     );
+    if (typeof observedHead !== "string") {
+      throw new Error("missing observed branch head");
+    }
+    expect(heads).toContain(observedHead);
   } finally {
     await rm(directory, { force: true, recursive: true });
   }

@@ -11,6 +11,7 @@
     "kernel.protocol",
     "kernel.reclamation",
     "kernel.run-liveness",
+    "kernel.scope-isolation",
     "kernel.syscall"
   ],
   "checkResults": [
@@ -9119,7 +9120,117 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.enumeration.crossScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.enumeration.sameScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.result.enumeration.crossScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.result.enumeration.sameScopeThreadVisible",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.enumeration_is_scope_confined",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.result.storeGet.crossScopeReturnsNull",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.result.storeGet.sameScopeReturnsObject",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.storeGet.crossScopeReturnsNull",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.storeGet.sameScopeReturnsObject",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.store_get_is_scope_confined",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.result.storeHas.crossScopeObservesOtherContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.result.storeHas.sameScopeObservesOwnContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.storeHas.crossScopeObservesOtherContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.storeHas.sameScopeObservesOwnContent",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.store_has_is_scope_confined",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.has.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField",
           "status": "pass"
         },
         {
@@ -9139,11 +9250,27 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.otherGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.otherHas.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.get.result",
           "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.has.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.otherGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.otherHas.result",
           "status": "pass"
         }
       ],
@@ -9151,7 +9278,19 @@
       "details": {
         "adapterId": "rust-kernel",
         "planId": "tuvren.kernel.scope-isolation.syscall",
-        "traceStepIds": ["backend0", "worker0", "put", "has", "get"]
+        "traceStepIds": [
+          "scopeA",
+          "backend0",
+          "worker0",
+          "put",
+          "has",
+          "get",
+          "scopeB",
+          "backendB",
+          "workerB",
+          "otherHas",
+          "otherGet"
+        ]
       },
       "status": "pass"
     },
@@ -9163,6 +9302,10 @@
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.otherList.1.resultField",
           "status": "pass"
         },
         {
@@ -9182,7 +9325,15 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.otherList.result.threads",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.list.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.otherList.result",
           "status": "pass"
         }
       ],
@@ -9190,7 +9341,18 @@
       "details": {
         "adapterId": "rust-kernel",
         "planId": "tuvren.kernel.scope-isolation.syscall",
-        "traceStepIds": ["backend0", "worker0", "schema", "thread", "list"]
+        "traceStepIds": [
+          "scopeA",
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "list",
+          "scopeB",
+          "backendB",
+          "workerB",
+          "otherList"
+        ]
       },
       "status": "pass"
     }
@@ -9223,9 +9385,6 @@
     "kernel.crash-recovery.in_process_fault_points",
     "kernel.restart-recovery.close_reopen_checkpoint",
     "kernel.run-liveness.clock_skew_preemption",
-    "kernel.scope-isolation.enumeration_is_scope_confined",
-    "kernel.scope-isolation.store_get_is_scope_confined",
-    "kernel.scope-isolation.store_has_is_scope_confined",
     "kernel.syscall.shared_writer.race"
   ],
   "project": "kernel-rust-certification",
@@ -9234,10 +9393,10 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 192,
+    "passedChecks": 195,
     "totalChecks": 215,
-    "applicableChecks": 192,
-    "nonApplicableChecks": 23
+    "applicableChecks": 195,
+    "nonApplicableChecks": 20
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

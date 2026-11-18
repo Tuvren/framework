@@ -33,6 +33,7 @@ use tuvren_kernel_rust::{
 
 mod host_stdio;
 mod host_syscalls;
+mod legacy_scope;
 mod observation_encoding;
 mod syscall_values;
 
@@ -146,6 +147,7 @@ fn dispatch_request(
             capabilities: vec![
                 "kernel.syscall",
                 "kernel.codec",
+                "kernel.scope-isolation",
                 "kernel.barrier",
                 "kernel.fault-injection",
                 "kernel.protocol",
@@ -186,7 +188,7 @@ fn dispatch_request(
             Ok(json!(dispatch_operation(&operation, &input)?))
         }
         "events" => Ok(json!([])),
-        "createInstance" => Ok(json!(syscalls.create()?)),
+        "createInstance" => Ok(json!(syscalls.create(&request.params)?)),
         "startOperation" => {
             let operation = read_param_string(&request.params, "operation")?;
             let input = request.params.get("arguments").cloned().ok_or_else(|| {
@@ -249,6 +251,7 @@ fn dispatch_operation(
         "kernel.run-liveness.lease-renewal" => run_lease_renewal(),
         "kernel.run-liveness.expired-listing" => run_expired_listing(),
         "kernel.run-liveness.stale-preemption" => run_stale_preemption(),
+        "kernel.scope-isolation.cross-scope-probe" => legacy_scope::run_cross_scope_probe(),
         "kernel.reclamation.reclaim-probe" => run_reclamation_probe(),
         "kernel.reclamation.erasure-probe" => run_erasure_probe(),
         _ => {

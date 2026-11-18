@@ -81,12 +81,75 @@ const validateProcessSelection = (
   }
 };
 
+const instanceProcess = (
+  step: ConformancePlanStep,
+  prior: readonly ConformancePlanStep[]
+): string => {
+  const routed =
+    step.action === "await" ||
+    step.action === "cancel" ||
+    step.operation === "kernel.barrier.wait";
+  const reference = handleReference(step);
+  const owner = routed
+    ? prior.find(
+        (candidate) =>
+          candidate.action === "start" &&
+          candidate.handleCapture !== undefined &&
+          `capture.${candidate.handleCapture}` === reference
+      )
+    : undefined;
+  return step.process ?? owner?.process ?? "primary";
+};
+
+const validateInstanceSelection = (
+  check: ConformancePlanCheck,
+  step: ConformancePlanStep,
+  instances: Map<string, Set<string>>,
+  prior: readonly ConformancePlanStep[]
+): void => {
+  const process = instanceProcess(step, prior);
+  const names = instances.get(process) ?? new Set<string>();
+  instances.set(process, names);
+  const name = step.instance ?? "primary";
+  if (step.action === "createInstance" || step.action === "openInstance") {
+    if (names.has(name)) {
+      throw new Error(
+        `check ${check.checkId} duplicate instance ${name} in ${process}`
+      );
+    }
+    if (
+      step.instance !== undefined &&
+      (step.action !== "createInstance" || step.arguments?.scope === undefined)
+    ) {
+      throw new Error(
+        `check ${check.checkId} named instance requires an explicit scope`
+      );
+    }
+    names.add(name);
+  } else if (step.instance !== undefined && !names.has(name)) {
+    throw new Error(
+      `check ${check.checkId} unknown instance ${name} in ${process}`
+    );
+  }
+  if (
+    step.action === "restart" ||
+    step.action === "kill" ||
+    step.action === "respawn"
+  ) {
+    names.clear();
+  }
+};
+
 export const validateHandleSchedule = (check: ConformancePlanCheck): void => {
   const steps = check.steps ?? [];
   const captures = new Set<string>();
   const processes = new Set(["primary"]);
+  const instances = new Map<string, Set<string>>([
+    ["primary", new Set(["primary"])],
+  ]);
   for (const [index, step] of steps.entries()) {
     validateProcessSelection(check, step, processes);
+    validateInstanceSelection(check, step, instances, steps.slice(0, index));
     if (step.action === "collect") {
       const problem = collectProblem(step, steps.slice(0, index));
       if (problem !== undefined) {

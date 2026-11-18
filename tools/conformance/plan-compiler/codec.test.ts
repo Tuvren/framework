@@ -14,7 +14,7 @@ const object = (value: unknown): Record<string, unknown> => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError("expected an object");
   }
-  return value;
+  return Object.fromEntries(Object.entries(value));
 };
 const list = (value: unknown): unknown[] => {
   if (!Array.isArray(value)) {
@@ -153,5 +153,67 @@ test("the obligation map covers all 68 legacy assertions with committed expectat
       });
       expect(entry.reason).toBe(sourceCase.description);
     }
+  }
+});
+
+test("profile control designations exclude every assertion from the six legacy plans", async () => {
+  const legacy = new Set<string>();
+  for (const family of [
+    "protocol-core",
+    "protocol-extended",
+    "reclamation",
+    "restart-recovery",
+    "run-liveness",
+    "scope-isolation",
+  ]) {
+    const plan = await loadConformancePlan(
+      `spec/conformance/kernel/plans/kernel-${family}.json`
+    );
+    for (const { check } of plan.checks) {
+      for (const { assertionId } of claimAssertions(check)) {
+        legacy.add(assertionId);
+      }
+    }
+  }
+  expect(legacy.size).toBeGreaterThan(0);
+  const manifest = object(
+    await json("spec/conformance/kernel/negative-controls.json")
+  );
+  const controls = list(manifest.controls).map(object);
+  for (const control of controls) {
+    for (const designation of control.designatedAssertions === undefined
+      ? []
+      : list(control.designatedAssertions)) {
+      expect(
+        legacy.has(text(designation)),
+        `${text(control.mutantId)}: ${text(designation)}`
+      ).toBe(false);
+    }
+  }
+});
+
+test("the scope map preserves all six obligations as independently observable assertions", async () => {
+  const map = object(
+    await json("spec/conformance/kernel/scope-isolation-obligation-map.json")
+  );
+  expect(map.summary).toEqual({ mapped: 6, retired: 0 });
+  const canonical = await loadConformancePlan(text(map.plan));
+  const assertions = new Set(
+    canonical.checks.flatMap(({ check }) =>
+      claimAssertions(check).map(({ assertionId }) => assertionId)
+    )
+  );
+  const legacy = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-scope-isolation.json"
+  );
+  const oldIds = legacy.checks.flatMap(({ check }) =>
+    claimAssertions(check).map(({ assertionId }) => assertionId)
+  );
+  const obligations = list(map.obligations).map(object);
+  expect(
+    obligations.map((entry) => text(entry.legacyAssertion)).toSorted()
+  ).toEqual(oldIds.toSorted());
+  for (const entry of obligations) {
+    expect(assertions.has(text(entry.assertionId))).toBe(true);
   }
 });

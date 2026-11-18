@@ -469,6 +469,9 @@ const expectedProfileClaims = (
       continue;
     }
     for (const { check } of plan.checks) {
+      const scopePlan = plan.plan.applicability.capabilities.includes(
+        "kernel.scope-isolation"
+      );
       const codecPlan =
         plan.plan.applicability.capabilities.includes("kernel.codec");
       const claims = checkClaims(check, codecPlan);
@@ -480,9 +483,9 @@ const expectedProfileClaims = (
         plan.plan.applicability.capabilities,
         profiles
       );
-      if (owner === undefined && codecPlan) {
+      if (owner === undefined && (codecPlan || scopePlan)) {
         throw new Error(
-          `${check.checkId} has no profile owner; kernel.memory requires kernel.codec`
+          `${check.checkId} has no profile owner; kernel.memory requires ${scopePlan ? "kernel.scope-isolation" : "kernel.codec"}`
         );
       }
       if (owner === undefined) {

@@ -37,6 +37,8 @@ const LEASELESS_RUN_EXPIRY_MS: EpochMs = 86_400_000;
 
 #[cfg(feature = "conformance")]
 mod conformance;
+#[cfg(feature = "conformance")]
+pub use conformance::SharedSubstrate;
 mod journal;
 mod transaction;
 

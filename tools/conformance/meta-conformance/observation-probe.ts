@@ -30,7 +30,11 @@ if (destination === undefined || separator < 0 || command.length === 0) {
 const child = spawn(command[0] ?? "", command.slice(1), {
   stdio: ["pipe", "pipe", "inherit"],
 });
-const requests = new Map<unknown, { method: string; operation?: string }>();
+const requests = new Map<
+  unknown,
+  { method: string; operation?: string; instance?: unknown }
+>();
+const instances = new Set<unknown>();
 const operations = new Map<string, string>();
 let observations: unknown[] = [];
 const frame = (line: string): Record<string, unknown> => {
@@ -55,13 +59,27 @@ createInterface({ input: child.stdout }).on("line", (line) => {
     operations.set(response.result.operationHandle, request.operation);
   }
   if (request?.method === "createInstance") {
-    observations = [];
+    if (instances.size === 0) {
+      observations = [];
+    } else {
+      observations.push({
+        method: request.method,
+        outcome: response.result,
+        ...(response.error === undefined ? {} : { error: response.error }),
+      });
+    }
+    if (response.error === undefined) {
+      instances.add(response.result);
+    }
   } else if (request?.method === "destroyInstance") {
-    appendFileSync(
-      `${destination}/${process.pid}.jsonl`,
-      `${JSON.stringify(observations)}\n`
-    );
-    observations = [];
+    instances.delete(request.instance);
+    if (instances.size === 0) {
+      appendFileSync(
+        `${destination}/${process.pid}.jsonl`,
+        `${JSON.stringify(observations)}\n`
+      );
+      observations = [];
+    }
   } else if (
     request !== undefined &&
     request.method !== "initialize" &&
@@ -104,7 +122,16 @@ const requestOperation = (params: unknown): string | undefined => {
 for await (const line of createInterface({ input: process.stdin })) {
   const request = frame(line);
   const operation = requestOperation(request.params);
-  requests.set(request.id, { method: String(request.method), operation });
+  const params = request.params;
+  const instance =
+    typeof params === "object" && params !== null && "instance" in params
+      ? params.instance
+      : undefined;
+  requests.set(request.id, {
+    method: String(request.method),
+    operation,
+    instance,
+  });
   child.stdin.write(`${line}\n`);
 }
 child.stdin.end();

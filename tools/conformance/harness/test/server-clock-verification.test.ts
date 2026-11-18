@@ -361,6 +361,31 @@ test("server-clock verification follows a spawned process and refuses an unobser
     await expectReleased(database);
   }
 
+  const unverifiedEpoch = structuredClone(restarted);
+  unverifiedEpoch.steps = unverifiedEpoch.steps?.filter(
+    (step) => step.stepId !== "reopenedThreads"
+  );
+  const [epochMissing] = await runScheduledChecks(
+    manifest,
+    [
+      {
+        plan,
+        compiledCheck: { ...original, check: unverifiedEpoch },
+        index: 0,
+      },
+    ],
+    1,
+    () => "replay",
+    false
+  );
+  expect(epochMissing?.checkResult).toMatchObject({
+    status: "fail",
+    failure: { classification: "verification" },
+    details: {
+      verificationError: expect.stringContaining("no timed thread creation"),
+    },
+  });
+
   const unobserved = structuredClone(original.check);
   if (unobserved.steps === undefined) {
     throw new Error("missing cloned steps");

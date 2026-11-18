@@ -37,8 +37,7 @@
   "kernel.syscall.run-liveness.expired_listing": "The premature-takeover control detects live-lease inclusion, not the complete expired-record membership claim; no dedicated membership mutant is designated.",
   "kernel.syscall.run-liveness.paused_run_excluded_from_expiry": "The supplied controls contain no mutant that includes paused runs in expiry listing.",
   "kernel.syscall.run-liveness.stale_preemption": "The supplied controls contain no designated mutant for the complete stale-preemption checkpoint and recovery claim; collateral failures do not count as detection.",
-  "kernel.syscall.scope-isolation.own_content": "The cross-scope mutant is designated against legacy cross-scope reads; no supplied mutant targets these own-scope content observations.",
-  "kernel.syscall.scope-isolation.own_enumeration": "The cross-scope mutant targets legacy store reads; no supplied mutant targets these own-scope enumeration observations.",
+  "kernel.syscall.scope-isolation.own_enumeration": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets these independently observed own-scope enumeration results.",
   "kernel.codec.deterministic.schema": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim.",
   "kernel.codec.deterministic.turn-node": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim.",
   "kernel.codec.empty-bytes.schema": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim.",
@@ -88,5 +87,7 @@
   "kernel.codec.decode.uint-beyond-safe-integer-range": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim.",
   "kernel.codec.decode.negative-int-beyond-safe-integer-range": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim.",
   "kernel.codec.decode.control-canonical-map": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim.",
-  "kernel.codec.turn-tree.identity": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+  "kernel.codec.turn-tree.identity": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim.",
+  "kernel.scope-isolation.enumeration_is_scope_confined": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets the independently observed cross-scope enumeration result.",
+  "kernel.syscall.scope-isolation.own_content": "OD-16: The scope-resolution mutant leaves own-scope reads unchanged; no supplied mutant targets these independently observed content results."
 }

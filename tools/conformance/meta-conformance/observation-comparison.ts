@@ -75,7 +75,18 @@ const visit = (
 export const stabilizeObservations = (value: unknown): unknown => {
   const tokens = new Map<string, string>();
   const handles = new Map<string, string>();
+  const instances = new Map<string, string>();
   visit(value, (record) => {
+    if (
+      record.method === "createInstance" &&
+      typeof record.outcome === "string" &&
+      !instances.has(record.outcome)
+    ) {
+      instances.set(
+        record.outcome,
+        `opaque:instanceHandle:${instances.size + 1}`
+      );
+    }
     if (
       typeof record.fencingToken === "string" &&
       !tokens.has(record.fencingToken)
@@ -103,6 +114,13 @@ export const stabilizeObservations = (value: unknown): unknown => {
     }
     if (isRecord(child)) {
       const replaceField = (key: string, entry: unknown): unknown => {
+        if (
+          child.method === "createInstance" &&
+          key === "outcome" &&
+          typeof entry === "string"
+        ) {
+          return instances.get(entry) ?? entry;
+        }
         if (key === "operationHandle" && typeof entry === "string") {
           return handles.get(entry) ?? entry;
         }
@@ -572,6 +590,9 @@ interface ObservationStep {
 const methodsForStep = (step: ObservationStep): string[] => {
   let methods: string[];
   switch (step.action) {
+    case "createInstance":
+      methods = ["createInstance"];
+      break;
     case "start":
       methods = ["startOperation"];
       break;

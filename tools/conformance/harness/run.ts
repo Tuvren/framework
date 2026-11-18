@@ -833,6 +833,7 @@ interface TraceStepExecution {
   input: unknown;
   inspectQuery: unknown;
   instance: unknown;
+  instanceName?: string;
   observed: StepObservationRecord;
   processName?: string;
   processEpoch?: number;
@@ -843,9 +844,10 @@ interface TraceStepExecution {
 }
 
 interface ServerClockState {
+  epoch: number;
   active: boolean;
   verified: boolean;
-  threads: Map<string, { beforeMs: number; afterMs: number }>;
+  threads: Map<string, { beforeMs: number; afterMs: number; epoch: number }>;
 }
 
 interface ClockedThreadRequest {
@@ -904,6 +906,7 @@ class ServerClockVerifier {
         );
       }
       clocked.state.threads.set(clocked.threadId, {
+        epoch: request.processEpoch ?? 1,
         beforeMs: clocked.beforeMs,
         afterMs,
       });
@@ -920,6 +923,7 @@ class ServerClockVerifier {
         throw new ServerClockMismatchError("adapter rejected the server clock");
       }
       const state: ServerClockState = {
+        epoch: request.processEpoch ?? 1,
         active: true,
         verified: false,
         threads: new Map(),
@@ -927,7 +931,13 @@ class ServerClockVerifier {
       const instances = this.states.get(request.client) ?? new Map();
       instances.set(request.instance, state);
       this.states.set(request.client, instances);
-      this.processes.set(request.processName ?? "primary", state);
+      this.processes.set(
+        JSON.stringify([
+          request.processName ?? "primary",
+          request.instanceName ?? "primary",
+        ]),
+        state
+      );
       this.selections.push(state);
     } else {
       const state = this.states.get(request.client)?.get(request.instance);
@@ -939,13 +949,27 @@ class ServerClockVerifier {
 
   restore(
     processName: string,
+    epoch: number,
+    instanceName: string,
     client: JsonRpcAdapterClient,
     instance: unknown
   ): void {
-    const state = this.processes.get(processName);
+    const key = JSON.stringify([processName, instanceName]);
+    const previous = this.processes.get(key);
+    const state =
+      previous === undefined
+        ? undefined
+        : {
+            ...previous,
+            epoch,
+            verified: false,
+            threads: new Map(previous.threads),
+          };
     if (state === undefined || !state.active) {
       return;
     }
+    this.processes.set(key, state);
+    this.selections.push(state);
     const instances = this.states.get(client) ?? new Map();
     instances.set(instance, state);
     this.states.set(client, instances);
@@ -986,7 +1010,9 @@ class ServerClockVerifier {
           `adapter server clock ${observedMs} is outside PostgreSQL interval [${interval.beforeMs}, ${interval.afterMs}]`
         );
       }
-      state.verified = true;
+      if (interval.epoch === state.epoch) {
+        state.verified = true;
+      }
     }
   }
 
@@ -1260,6 +1286,7 @@ interface LifecycleStepRequest {
   >;
   faultAttempts: ReadonlyMap<string, FaultAttempt>;
   processName?: string;
+  instanceName?: string;
   input: unknown;
   recorder: CheckRecorder;
   serverClock?: ServerClockVerifier;
@@ -1369,6 +1396,7 @@ const runLifecycleStep = async ({
   clocks,
   faultAttempts,
   processName,
+  instanceName,
   input,
   recorder,
   serverClock,
@@ -1435,7 +1463,13 @@ const runLifecycleStep = async ({
           throw new Error(`failed to restore ${domain} clock`);
         }
         if (domain === "backend" && clock.source === "server") {
-          serverClock?.restore(processName ?? "primary", client, instance);
+          serverClock?.restore(
+            processName ?? "primary",
+            supervisor.current.epoch,
+            instanceName ?? "primary",
+            client,
+            instance
+          );
         }
       }
       break;
@@ -1518,7 +1552,12 @@ const runTraceCheck = async (
       ? new ServerClockVerifier(storageRef, recorder)
       : undefined;
   if (
-    steps.some((step) => step.action === "spawn" || step.action === "collect")
+    steps.some(
+      (step) =>
+        step.action === "spawn" ||
+        step.action === "collect" ||
+        step.instance !== undefined
+    )
   ) {
     const result = await runMultiTraceCheck(
       {
