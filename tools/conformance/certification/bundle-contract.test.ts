@@ -29,7 +29,10 @@ import {
   readProfileScopedControls,
   readProfileUndetectedClaims,
 } from "./profile.ts";
-import { computeCertificateDigests } from "./provenance.ts";
+import {
+  computeCertificateDigests,
+  computeSourceVerifierDigests,
+} from "./provenance.ts";
 import type { VerifierDigests } from "./provenance.ts";
 
 const root = path.resolve(import.meta.dirname, "../../..");
@@ -37,6 +40,7 @@ const adapters = [
   "typescript/kernel/conformance-adapter/adapter.json",
 ] as const;
 const rustAdapter = "rust/kernel-conformance-adapter/adapter.json";
+const LEGACY_PACKET = "spec/kernel/legacy/authority-packet.json";
 const verifierFields = [
   "harness",
   "packet",
@@ -74,6 +78,32 @@ const run = async (
     new Response(child.stderr).text(),
   ]);
   return { code, stdout, stderr };
+};
+
+const legacyPlanCheckIds = async (): Promise<Set<string>> => {
+  const packet = record(
+    JSON.parse(await readFile(path.join(root, LEGACY_PACKET), "utf8"))
+  );
+  const plans = packet.conformancePlans;
+  if (!Array.isArray(plans)) {
+    throw new TypeError("missing legacy conformance plans");
+  }
+  const ids = new Set<string>();
+  for (const value of plans) {
+    const plan = record(
+      JSON.parse(
+        await readFile(path.join(root, string(record(value).path)), "utf8")
+      )
+    );
+    const checks = plan.checks;
+    if (!Array.isArray(checks)) {
+      throw new TypeError("missing legacy plan checks");
+    }
+    for (const check of checks) {
+      ids.add(string(record(check).checkId));
+    }
+  }
+  return ids;
 };
 
 test("certificate links require the selected implementation branch", () => {
@@ -967,6 +997,27 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
       new Set(claims),
       new Set(profileSemanticAssertions(claims, plans))
     );
+    const legacyIds = await legacyPlanCheckIds();
+    const assertionIds = new Set(
+      plans.flatMap((plan) =>
+        plan.checks.flatMap(({ check }) =>
+          claimAssertions(check).map((entry) => entry.assertionId)
+        )
+      )
+    );
+    const manifestControls = record(controlManifest).controls;
+    if (!Array.isArray(manifestControls)) {
+      throw new TypeError("missing control manifest entries");
+    }
+    for (const value of manifestControls) {
+      const designated = record(value).designatedAssertions;
+      if (!Array.isArray(designated)) {
+        continue;
+      }
+      for (const assertion of designated) {
+        expect(assertionIds.has(string(assertion))).toBe(true);
+      }
+    }
     for (const adapter of adapters) {
       const evidencePath = path.join(
         directory,
@@ -1004,6 +1055,29 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
         })
       );
       expect(bundle.negativeControlRunId).toBe(controlRunIdentifier);
+      for (const check of evidence.checkResults) {
+        expect(legacyIds.has(check.checkId)).toBe(false);
+      }
+      for (const entry of evidence.selection ?? []) {
+        expect(legacyIds.has(entry.checkId)).toBe(false);
+      }
+      const canonicalOnly = await computeSourceVerifierDigests(
+        memoryAdapter.authorityPackets
+      );
+      const legacySelecting = await computeSourceVerifierDigests([
+        ...memoryAdapter.authorityPackets,
+        LEGACY_PACKET,
+      ]);
+      for (const field of [
+        "packet",
+        "plans",
+        "catalogs",
+        "fixtures",
+        "verifierAuthority",
+      ] as const) {
+        expect(string(digests[field])).toBe(canonicalOnly[field]);
+        expect(canonicalOnly[field]).not.toBe(legacySelecting[field]);
+      }
       if (adapter === adapters[0]) {
         const manifest = await readAdapterManifest(adapter);
         const [claimed] = await readClaimedProfiles(
@@ -1238,6 +1312,21 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
     );
     expect(rustEvidence.status).toBe("pass");
     expect(rustEvidence.certificate).toBeUndefined();
+    expect(rustEvidence.digests).toBeUndefined();
+    const rustChecks = rustEvidence.checkResults;
+    if (!Array.isArray(rustChecks)) {
+      throw new TypeError("missing Rust check results");
+    }
+    for (const check of rustChecks) {
+      expect(legacyIds.has(string(record(check).checkId))).toBe(false);
+    }
+    const rustSelection = rustEvidence.selection;
+    if (!Array.isArray(rustSelection)) {
+      throw new TypeError("missing Rust selection");
+    }
+    for (const value of rustSelection) {
+      expect(legacyIds.has(string(record(value).checkId))).toBe(false);
+    }
     const filtered = await run([
       "tools/conformance/harness/run.ts",
       "--adapter",
@@ -1269,6 +1358,29 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
       "--summary-only",
     ]);
     expect(requiredFiltered.code).toBe(1);
+    const capabilityFiltered = await run([
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapters[0],
+      "--control-report",
+      reportPath,
+      "--evidence-out",
+      path.join(directory, "capability-filtered.json"),
+      "--capability",
+      "kernel.codec",
+      "--require-certified",
+      "--summary-only",
+    ]);
+    expect(
+      capabilityFiltered.code,
+      capabilityFiltered.stderr + capabilityFiltered.stdout
+    ).toBe(1);
+    expect(
+      record(JSON.parse(capabilityFiltered.stdout)).certificate
+    ).toMatchObject({
+      status: "uncertified",
+      complete: false,
+    });
     const output = path.join(directory, "comparison");
     const comparison = await run([
       "tools/conformance/meta-conformance/disagreements.ts",

@@ -416,6 +416,86 @@ test("a complete harness run rejects a changed durable inventory before launchin
   }
 }, 30_000);
 
+test("a complete harness run rejects a missing canonical codec claim before launching the adapter", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  const codecPlan = plans.find(({ plan }) =>
+    plan.applicability.capabilities.includes("kernel.codec")
+  );
+  const codecClaim = codecPlan?.checks.find(
+    ({ check }) => (check.claimIds ?? []).length > 0
+  )?.check.claimIds?.[0];
+  if (codecPlan === undefined || codecClaim === undefined) {
+    throw new Error("missing codec plan claim");
+  }
+  const authority = await readProfileAuthority(adapter.authorityPackets);
+  const profiles = authority.get("tuvren.kernel.protocol");
+  if (profiles === undefined) {
+    throw new Error("missing kernel profiles");
+  }
+  const packet: unknown = JSON.parse(
+    await readFile("spec/kernel/authority-packet.json", "utf8")
+  );
+  if (typeof packet !== "object" || packet === null || Array.isArray(packet)) {
+    throw new Error("invalid kernel packet");
+  }
+  const directory = await mkdtemp(path.join(tmpdir(), "memory-inventory-"));
+  try {
+    const packetPath = path.join(directory, "packet.json");
+    const profilesPath = path.join(directory, "profiles.json");
+    const adapterPath = path.join(directory, "adapter.json");
+    await writeFile(
+      packetPath,
+      JSON.stringify({ ...packet, certificationProfiles: profilesPath })
+    );
+    await writeFile(
+      adapterPath,
+      JSON.stringify({
+        ...adapter,
+        authorityPackets: [packetPath],
+        executable: path.join(directory, "must-not-launch"),
+        profiles: ["kernel.memory"],
+      })
+    );
+    await writeFile(
+      profilesPath,
+      JSON.stringify({
+        profiles: profiles.map((profile) =>
+          profile.profileId === "kernel.memory"
+            ? {
+                ...profile,
+                claimIds: profile.claimIds.filter(
+                  (claim) => claim !== codecClaim
+                ),
+              }
+            : profile
+        ),
+      })
+    );
+    const child = spawn(
+      [
+        process.execPath,
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapterPath,
+      ],
+      { cwd: process.cwd(), stdout: "pipe", stderr: "pipe" }
+    );
+    const [code, stderr] = await Promise.all([
+      child.exited,
+      new Response(child.stderr).text(),
+      new Response(child.stdout).text(),
+    ]);
+    expect(code).toBe(1);
+    expect(stderr).toContain("claim inventory mismatch");
+    expect(stderr).toContain(codecClaim);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 30_000);
+
 test("shared checks have one owner even when another profile has their capabilities", async () => {
   const adapter = await readAdapterManifest(
     "typescript/kernel/conformance-adapter/adapter-postgres.json"
