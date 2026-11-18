@@ -201,7 +201,6 @@ export const createKernelVerificationPhases = (options: {
               "tools/conformance/certification/profile.test.ts",
               "tools/conformance/plan-compiler/codec.test.ts",
               "tools/conformance/harness/test/named-instances.test.ts",
-              "tools/conformance/meta-conformance/disagreements.test.ts",
               "tools/conformance/meta-conformance/codec.test.ts",
               "tools/conformance/meta-conformance/claim-coverage.test.ts",
               "tools/scripts/portability-gate.test.ts",

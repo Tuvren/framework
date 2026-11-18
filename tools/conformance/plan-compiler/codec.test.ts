@@ -156,7 +156,7 @@ test("the obligation map covers all 68 legacy assertions with committed expectat
   }
 });
 
-test("profile control designations exclude every assertion from the six legacy plans", async () => {
+test("profile controls name canonical claims and exclude every assertion from the six legacy plans", async () => {
   const legacy = new Set<string>();
   for (const family of [
     "protocol-core",
@@ -176,11 +176,33 @@ test("profile control designations exclude every assertion from the six legacy p
     }
   }
   expect(legacy.size).toBeGreaterThan(0);
+  const canonical = new Set<string>();
+  const packet = object(await json("spec/kernel/authority-packet.json"));
+  for (const plan of list(packet.conformancePlans).map(object)) {
+    const compiled = await loadConformancePlan(text(plan.path));
+    for (const { check } of compiled.checks) {
+      for (const claim of [
+        ...(check.claimIds ?? []),
+        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
+      ]) {
+        canonical.add(claim);
+      }
+    }
+  }
+  expect(canonical.size).toBeGreaterThan(0);
   const manifest = object(
     await json("spec/conformance/kernel/negative-controls.json")
   );
   const controls = list(manifest.controls).map(object);
   for (const control of controls) {
+    for (const claim of control.claimIds === undefined
+      ? []
+      : list(control.claimIds)) {
+      expect(
+        canonical.has(text(claim)),
+        `${text(control.mutantId)}: ${text(claim)}`
+      ).toBe(true);
+    }
     for (const designation of control.designatedAssertions === undefined
       ? []
       : list(control.designatedAssertions)) {
@@ -198,11 +220,15 @@ test("the scope map preserves all six obligations as independently observable as
   );
   expect(map.summary).toEqual({ mapped: 6, retired: 0 });
   const canonical = await loadConformancePlan(text(map.plan));
-  const assertions = new Set(
+  const claims = new Map(
     canonical.checks.flatMap(({ check }) =>
-      claimAssertions(check).map(({ assertionId }) => assertionId)
+      claimAssertions(check).map(({ assertionId, claimIds }) => [
+        assertionId,
+        claimIds,
+      ])
     )
   );
+  const assertions = new Set(claims.keys());
   const legacy = await loadConformancePlan(
     "spec/conformance/kernel/plans/kernel-scope-isolation.json"
   );
@@ -215,5 +241,6 @@ test("the scope map preserves all six obligations as independently observable as
   ).toEqual(oldIds.toSorted());
   for (const entry of obligations) {
     expect(assertions.has(text(entry.assertionId))).toBe(true);
+    expect(claims.get(text(entry.assertionId))).toContain(text(entry.claimId));
   }
 });

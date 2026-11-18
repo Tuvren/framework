@@ -6744,6 +6744,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.sameScopeHas.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.sameScopeGet.1.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
           "status": "pass"
         },
@@ -6776,6 +6784,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.sameScopeGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.sameScopeHas.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.get.result",
           "status": "pass"
         },
@@ -6790,6 +6806,14 @@
         {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.otherHas.result",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.sameScopeGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.sameScopeHas.result",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.syscall.scope-isolation.own_content",
@@ -6803,6 +6827,11 @@
           "put",
           "has",
           "get",
+          "scopeA2",
+          "backendA2",
+          "workerA2",
+          "sameScopeHas",
+          "sameScopeGet",
           "scopeB",
           "backendB",
           "workerB",
@@ -6820,6 +6849,14 @@
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.sameScopeList.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.sameScopeList.2.resultField",
           "status": "pass"
         },
         {
@@ -6847,11 +6884,23 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.sameScopeList.result.threads",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.sameScopeList.result.threads.0.threadId",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.list.result",
           "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.otherList.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.sameScopeList.result",
           "status": "pass"
         }
       ],
@@ -6866,6 +6915,10 @@
           "schema",
           "thread",
           "list",
+          "scopeA2",
+          "backendA2",
+          "workerA2",
+          "sameScopeList",
           "scopeB",
           "backendB",
           "workerB",

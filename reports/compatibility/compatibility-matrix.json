@@ -5,13 +5,13 @@
       "backend": "memory",
       "digests": {
         "adapterManifest": "5bbc491738262cd750589620774bf31940306ec96cb2fb99cdd48b729c517f35",
-        "packet": "45c7cae29e4db7ba72b7c6c05aee0cd4c8bf2940eab14e4b884368d9378a7634",
-        "plans": "d4ac7b2667a2fa751e236f5ca9bd8e1e42081b8d52171b20da45058d719e7902",
+        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
-        "controls": "38683200ccda9c7a8b95f041f5f80e0544a56162d8cc5b48ea154f021b521be4",
-        "verifierAuthority": "1639f06a4bbb496b8690e89e1f21986ca845ab93cc57631d342609c3914f49c9"
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
       },
       "implementationId": "typescript-kernel-memory",
       "profile": "kernel.memory",
@@ -219,7 +219,7 @@
         },
         {
           "claimId": "kernel.scope-isolation.enumeration_is_scope_confined",
-          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets the independently observed cross-scope enumeration result."
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets the independently observed cross-scope enumeration result; the detector reproductions are owned by EPIC-DS."
         },
         {
           "claimId": "kernel.syscall.backend_capability.shared_lease_clock",
@@ -375,11 +375,11 @@
         },
         {
           "claimId": "kernel.syscall.scope-isolation.own_content",
-          "reason": "OD-16: The scope-resolution mutant leaves own-scope reads unchanged; no supplied mutant targets these independently observed content results."
+          "reason": "OD-16: The scope-resolution mutant leaves own-scope reads unchanged; no supplied mutant targets these independently observed content results; the detector reproductions are owned by EPIC-DS."
         },
         {
           "claimId": "kernel.syscall.scope-isolation.own_enumeration",
-          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets these independently observed own-scope enumeration results."
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets these independently observed own-scope enumeration results; the detector reproductions are owned by EPIC-DS."
         }
       ]
     },
@@ -387,13 +387,13 @@
       "backend": "postgres",
       "digests": {
         "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
-        "packet": "45c7cae29e4db7ba72b7c6c05aee0cd4c8bf2940eab14e4b884368d9378a7634",
-        "plans": "d4ac7b2667a2fa751e236f5ca9bd8e1e42081b8d52171b20da45058d719e7902",
+        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
-        "controls": "38683200ccda9c7a8b95f041f5f80e0544a56162d8cc5b48ea154f021b521be4",
-        "verifierAuthority": "1639f06a4bbb496b8690e89e1f21986ca845ab93cc57631d342609c3914f49c9"
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
@@ -404,13 +404,13 @@
       "backend": "postgres",
       "digests": {
         "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
-        "packet": "45c7cae29e4db7ba72b7c6c05aee0cd4c8bf2940eab14e4b884368d9378a7634",
-        "plans": "d4ac7b2667a2fa751e236f5ca9bd8e1e42081b8d52171b20da45058d719e7902",
+        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
-        "controls": "38683200ccda9c7a8b95f041f5f80e0544a56162d8cc5b48ea154f021b521be4",
-        "verifierAuthority": "1639f06a4bbb496b8690e89e1f21986ca845ab93cc57631d342609c3914f49c9"
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
@@ -421,13 +421,13 @@
       "backend": "postgres",
       "digests": {
         "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
-        "packet": "45c7cae29e4db7ba72b7c6c05aee0cd4c8bf2940eab14e4b884368d9378a7634",
-        "plans": "d4ac7b2667a2fa751e236f5ca9bd8e1e42081b8d52171b20da45058d719e7902",
+        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
-        "controls": "38683200ccda9c7a8b95f041f5f80e0544a56162d8cc5b48ea154f021b521be4",
-        "verifierAuthority": "1639f06a4bbb496b8690e89e1f21986ca845ab93cc57631d342609c3914f49c9"
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
@@ -438,13 +438,13 @@
       "backend": "sqlite",
       "digests": {
         "adapterManifest": "c936dc68aaa14e00c3030c3a56d84a90eb8b07420b72973df0cf3dc08378df94",
-        "packet": "45c7cae29e4db7ba72b7c6c05aee0cd4c8bf2940eab14e4b884368d9378a7634",
-        "plans": "d4ac7b2667a2fa751e236f5ca9bd8e1e42081b8d52171b20da45058d719e7902",
+        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
-        "controls": "38683200ccda9c7a8b95f041f5f80e0544a56162d8cc5b48ea154f021b521be4",
-        "verifierAuthority": "1639f06a4bbb496b8690e89e1f21986ca845ab93cc57631d342609c3914f49c9"
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.persistent-reopen",
@@ -455,13 +455,13 @@
       "backend": "sqlite",
       "digests": {
         "adapterManifest": "c936dc68aaa14e00c3030c3a56d84a90eb8b07420b72973df0cf3dc08378df94",
-        "packet": "45c7cae29e4db7ba72b7c6c05aee0cd4c8bf2940eab14e4b884368d9378a7634",
-        "plans": "d4ac7b2667a2fa751e236f5ca9bd8e1e42081b8d52171b20da45058d719e7902",
+        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
-        "controls": "38683200ccda9c7a8b95f041f5f80e0544a56162d8cc5b48ea154f021b521be4",
-        "verifierAuthority": "1639f06a4bbb496b8690e89e1f21986ca845ab93cc57631d342609c3914f49c9"
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.process-crash",
