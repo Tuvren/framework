@@ -51,7 +51,6 @@ const defaultCapabilities = (
       "kernel.codec",
       "kernel.protocol",
       "kernel.edge-validation",
-      "kernel.edge-validation.composite",
       "kernel.logical",
       "kernel.run-liveness",
       // Shared multi-owner rendezvous: PostgreSQL is the only backend that
@@ -77,7 +76,6 @@ const defaultCapabilities = (
       "kernel.codec",
       "kernel.protocol",
       "kernel.edge-validation",
-      "kernel.edge-validation.composite",
       "kernel.logical",
       "kernel.run-liveness",
       "kernel.persistence.durable",
@@ -94,7 +92,6 @@ const defaultCapabilities = (
     "kernel.codec",
     "kernel.protocol",
     "kernel.edge-validation",
-    "kernel.edge-validation.composite",
     "kernel.logical",
     "kernel.run-liveness",
     "kernel.restart-recovery",

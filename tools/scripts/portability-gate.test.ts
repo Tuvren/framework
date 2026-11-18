@@ -20,6 +20,7 @@ import {
   checkAdapterCoverage,
   checkExpectedPacketsPresent,
   checkNoUnexpectedPackets,
+  checkPlanApplicabilityHasAdapter,
 } from "./portability-gate.ts";
 
 const LEGACY_PACKET_PATH = "spec/kernel/legacy/authority-packet.json";
@@ -66,13 +67,14 @@ const legacyPacket = (transitionalAdapters?: readonly string[]) => ({
 
 const adapter = (
   adapterId: string,
-  authorityPackets: readonly string[],
-  boundary = "kernel"
+  authorityPackets: string[],
+  boundary = "kernel",
+  capabilities: string[] = []
 ) => ({
   adapterId,
   authorityPackets,
   boundary,
-  capabilities: [] as string[],
+  capabilities,
 });
 
 const TRANSITIONAL_ADAPTERS = [
@@ -196,16 +198,117 @@ describe("transitional adapter coverage", () => {
   });
 });
 
+describe("transitional plan-level applicability reachability", () => {
+  const legacyPacketWithPlan = (planPath: string, planId: string) => ({
+    ...legacyPacket([...TRANSITIONAL_ADAPTERS]),
+    conformancePlans: [{ path: planPath, planId }],
+    verificationPaths: [{ kind: "conformance-plan", target: planPath }],
+  });
+
+  const transitionalManifests = (capabilities: string[]) => {
+    const manifests = allAdapterManifests();
+    for (const manifestPath of TRANSITIONAL_ADAPTERS) {
+      manifests.set(
+        manifestPath,
+        adapter(
+          manifestPath,
+          [CANONICAL_PACKET_PATH, LEGACY_PACKET_PATH],
+          "kernel",
+          capabilities
+        )
+      );
+    }
+    return manifests;
+  };
+
+  test("fails when no declared transitional adapter advertises the plan-level capabilities", async () => {
+    const failures = await checkPlanApplicabilityHasAdapter(
+      new Map([
+        [
+          LEGACY_PACKET_PATH,
+          legacyPacketWithPlan(
+            "spec/conformance/kernel/plans/kernel-codec.json",
+            "codec"
+          ),
+        ],
+      ]),
+      transitionalManifests(["kernel.protocol"])
+    );
+
+    expect(failures).toHaveLength(1);
+    expect(failures[0]?.rule).toBe("plan-applicability-has-adapter");
+    expect(failures[0]?.message).toContain("kernel.codec");
+  });
+
+  test("passes when a declared transitional adapter advertises the plan-level capabilities", async () => {
+    const failures = await checkPlanApplicabilityHasAdapter(
+      new Map([
+        [
+          LEGACY_PACKET_PATH,
+          legacyPacketWithPlan(
+            "spec/conformance/kernel/plans/kernel-protocol-core.json",
+            "core"
+          ),
+        ],
+      ]),
+      transitionalManifests(["kernel.protocol"])
+    );
+
+    expect(failures).toEqual([]);
+  });
+
+  test("ignores a non-transitional adapter that advertises the plan-level capabilities", async () => {
+    const packet = new Map([
+      [
+        LEGACY_PACKET_PATH,
+        legacyPacketWithPlan(
+          "spec/conformance/kernel/plans/kernel-protocol-core-syscall.json",
+          "core-syscall"
+        ),
+      ],
+    ]);
+    const manifests = transitionalManifests(["kernel.protocol"]);
+    const canonical = manifests.get(
+      "typescript/kernel/conformance-adapter/adapter.json"
+    );
+    if (canonical === undefined) {
+      throw new Error("fixture adapter missing");
+    }
+    manifests.set("typescript/kernel/conformance-adapter/adapter.json", {
+      ...canonical,
+      capabilities: ["kernel.syscall"],
+    });
+
+    const failures = await checkPlanApplicabilityHasAdapter(packet, manifests);
+
+    expect(failures).toHaveLength(1);
+    expect(failures[0]?.message).toContain("kernel.syscall");
+    await expect(
+      checkPlanApplicabilityHasAdapter(
+        packet,
+        transitionalManifests(["kernel.protocol", "kernel.syscall"])
+      )
+    ).resolves.toEqual([]);
+  });
+});
+
 describe("expected packet topology", () => {
   const inventoryEntry = {
     classification: "portable" as const,
     packetId: "tuvren.kernel.legacy",
     packetPath: LEGACY_PACKET_PATH,
   };
+  const inventory = {
+    expectedPackets: [inventoryEntry],
+    manifestId: "epic-al.portability-inventory",
+    manifestVersion: "0.11.0",
+    requiredAuthoritativeSources: [],
+    standingExceptions: [],
+  };
 
   test("fails when the inventory names a packet that is missing on disk", () => {
     const failures = checkExpectedPacketsPresent(
-      { expectedPackets: [inventoryEntry] },
+      inventory,
       new Set(["tuvren.kernel.legacy"]),
       new Map([[CANONICAL_PACKET_PATH, canonicalPacket()]])
     );
@@ -238,7 +341,7 @@ describe("expected packet topology", () => {
 
   test("fails when an expected path declares a different packetId", () => {
     const failures = checkExpectedPacketsPresent(
-      { expectedPackets: [inventoryEntry] },
+      inventory,
       new Set(["tuvren.kernel.legacy"]),
       new Map([[LEGACY_PACKET_PATH, canonicalPacket()]])
     );

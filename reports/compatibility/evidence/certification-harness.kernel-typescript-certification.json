@@ -6,7 +6,6 @@
     "kernel.barrier",
     "kernel.codec",
     "kernel.edge-validation",
-    "kernel.edge-validation.composite",
     "kernel.fault-injection",
     "kernel.logical",
     "kernel.protocol",

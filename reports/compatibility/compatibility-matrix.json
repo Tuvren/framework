@@ -4,14 +4,14 @@
     {
       "backend": "memory",
       "digests": {
-        "adapterManifest": "5bbc491738262cd750589620774bf31940306ec96cb2fb99cdd48b729c517f35",
-        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "adapterManifest": "a3bf37ea84ab8a803b6bdf72e5a0d45439cf8a47bfe995f25b83531c040b059b",
+        "packet": "5d610485feefb91083dad9e0a8c3df610246ac59048d4d2ec23dda73b4468105",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
-        "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
+        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
       },
       "implementationId": "typescript-kernel-memory",
       "profile": "kernel.memory",
@@ -386,14 +386,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
-        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "adapterManifest": "cb2273ba43b933d8fc58433372bac1f341a2923708d08437afded687e5dd928b",
+        "packet": "5d610485feefb91083dad9e0a8c3df610246ac59048d4d2ec23dda73b4468105",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
-        "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
+        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
@@ -403,14 +403,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
-        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "adapterManifest": "cb2273ba43b933d8fc58433372bac1f341a2923708d08437afded687e5dd928b",
+        "packet": "5d610485feefb91083dad9e0a8c3df610246ac59048d4d2ec23dda73b4468105",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
-        "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
+        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
@@ -420,14 +420,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
-        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "adapterManifest": "cb2273ba43b933d8fc58433372bac1f341a2923708d08437afded687e5dd928b",
+        "packet": "5d610485feefb91083dad9e0a8c3df610246ac59048d4d2ec23dda73b4468105",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
-        "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
+        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
@@ -437,14 +437,14 @@
     {
       "backend": "sqlite",
       "digests": {
-        "adapterManifest": "c936dc68aaa14e00c3030c3a56d84a90eb8b07420b72973df0cf3dc08378df94",
-        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "adapterManifest": "22df69fa2bdca85b6b49e99dc2c874addf0e7c8ae6abee52603874dcb7359fac",
+        "packet": "5d610485feefb91083dad9e0a8c3df610246ac59048d4d2ec23dda73b4468105",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
-        "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
+        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.persistent-reopen",
@@ -454,14 +454,14 @@
     {
       "backend": "sqlite",
       "digests": {
-        "adapterManifest": "c936dc68aaa14e00c3030c3a56d84a90eb8b07420b72973df0cf3dc08378df94",
-        "packet": "8f11883f2f9f636b8390f00c1d3d55933d8236a080c5c2236a0bef3edd2c8fc9",
+        "adapterManifest": "22df69fa2bdca85b6b49e99dc2c874addf0e7c8ae6abee52603874dcb7359fac",
+        "packet": "5d610485feefb91083dad9e0a8c3df610246ac59048d4d2ec23dda73b4468105",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
-        "catalogs": "60bbb0c266e77aa20ba111951e9c6dbcc9fd1aa087572039cf14fa7ed497e2da",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "e29fd87a588488be1a4bb3754338c675a7cb1f30baf79fb78cbc4bd49f7887cd"
+        "verifierAuthority": "ad4800d1420774fc85d89947b1d1fd76b2026c2eb7b3a274875f4060c93ff253"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.process-crash",
@@ -1208,7 +1208,6 @@
             "kernel.barrier",
             "kernel.codec",
             "kernel.edge-validation",
-            "kernel.edge-validation.composite",
             "kernel.fault-injection",
             "kernel.logical",
             "kernel.protocol",
@@ -1385,7 +1384,6 @@
             "kernel-protocol.thread.enumeration",
             "kernel.codec",
             "kernel.edge-validation",
-            "kernel.edge-validation.composite",
             "kernel.fault-injection",
             "kernel.logical",
             "kernel.persistence.durable",
@@ -1569,7 +1567,6 @@
             "kernel.barrier",
             "kernel.codec",
             "kernel.edge-validation",
-            "kernel.edge-validation.composite",
             "kernel.fault-injection",
             "kernel.logical",
             "kernel.persistence.durable",

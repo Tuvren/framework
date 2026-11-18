@@ -22,16 +22,9 @@ import type {
 } from "@tuvren/backend-memory";
 import type { createPostgresBackend as CreatePostgresBackend } from "@tuvren/backend-postgres";
 import type { createSqliteBackend as CreateSqliteBackend } from "@tuvren/backend-sqlite";
-import {
-  decodeDeterministicKernelRecord,
-  hashOpaqueObjectBytes,
-} from "@tuvren/kernel-protocol";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import type {
-  KernelMutantBackendContext,
-  KernelMutantCodec,
-} from "@tuvren/kernel-testkit";
+import type { KernelMutantBackendContext } from "@tuvren/kernel-testkit";
 
 import type { OperationOutcome } from "../../../../tools/conformance/adapter-protocol/index.js";
 import type { KernelAdapterConfig } from "./host-scenario-support.js";
@@ -40,16 +33,6 @@ type ConformanceConfig = Pick<
   KernelAdapterConfig,
   "adapterId" | "backend" | "mutant" | "storageRef" | "scope"
 >;
-
-const REFERENCE_CODEC: KernelMutantCodec = {
-  decodeDeterministicKernelRecord,
-  hashOpaqueObjectBytes,
-};
-
-export const conformanceCodec = (
-  config: Pick<KernelAdapterConfig, "mutant">
-): KernelMutantCodec =>
-  config.mutant?.wrapCodec(REFERENCE_CODEC) ?? REFERENCE_CODEC;
 
 export const conformanceBackend = (
   config: Pick<KernelAdapterConfig, "mutant">,

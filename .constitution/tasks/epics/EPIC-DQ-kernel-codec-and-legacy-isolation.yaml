@@ -229,7 +229,8 @@ decisions:
       in: EPIC-DQ
     proposed_by: "EPIC-DQ @ bfb3c18"
     interim:
-      assumption: "The canonical kernel packet tuvren.kernel.protocol goes from 0.16.0 to 1.0.0 in KRT-DQ003; the temporary legacy packet keeps its own version."
+      assumption: "The canonical kernel packet tuvren.kernel.protocol goes from 0.16.0 to 1.0.0 in KRT-DQ003, and the canonical kernel operation catalog, which lost the 21 composites, goes from 0.4.0 to 1.0.0 by the same reading; the temporary legacy packet and its catalog keep their own versions."
       applied_by:
         - spec/kernel/authority-packet.json
+        - spec/conformance/kernel/operations.json
         - KRT-DQ003
