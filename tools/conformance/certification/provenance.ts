@@ -184,6 +184,167 @@ const reference = (value: unknown, label: string): string => {
   return path.resolve(ROOT, value);
 };
 
+const collectPlanFixtureFiles = async (planPath: string): Promise<string[]> => {
+  const planDocument = await readJson(planPath);
+  const files: string[] = [];
+
+  for (const value of [planDocument.fixtures, planDocument.scenarios]) {
+    if (value === undefined) {
+      continue;
+    }
+    for (const fixture of Object.values(object(value, planPath))) {
+      if (typeof fixture !== "string") {
+        throw new TypeError(`${planPath} contains an invalid fixture path`);
+      }
+      files.push(path.resolve(path.dirname(planPath), fixture));
+    }
+  }
+
+  return files;
+};
+
+const collectPacketOwnedFiles = async (
+  packetPath: string
+): Promise<Set<string>> => {
+  const packet = await readJson(packetPath);
+  const owned = new Set<string>([path.resolve(ROOT, packetPath)]);
+
+  for (const key of [
+    "operationCatalog",
+    "negativeControlManifest",
+    "certificationProfiles",
+    "identityRecipes",
+  ] as const) {
+    if (typeof packet[key] === "string") {
+      owned.add(reference(packet[key], `${key} path`));
+    }
+  }
+
+  const registers = packet.undetectedRegisters;
+  if (
+    typeof registers === "object" &&
+    registers !== null &&
+    !Array.isArray(registers)
+  ) {
+    for (const file of Object.values(registers)) {
+      if (typeof file === "string") {
+        owned.add(reference(file, "undetected register path"));
+      }
+    }
+  }
+
+  for (const item of Array.isArray(packet.conformancePlans)
+    ? packet.conformancePlans
+    : []) {
+    const plan = object(item, packetPath);
+    const planPath = reference(plan.path, "plan path");
+    owned.add(planPath);
+    for (const fixture of await collectPlanFixtureFiles(planPath)) {
+      owned.add(fixture);
+    }
+  }
+
+  for (const item of Array.isArray(packet.authoritativeSources)
+    ? packet.authoritativeSources
+    : []) {
+    const source = object(item, packetPath);
+    owned.add(reference(source.path, "authoritative source path"));
+  }
+
+  return owned;
+};
+
+const AUTHORITY_PACKET_FILE_PATTERN = /(?:^|\/)authority-packet\.json$/u;
+
+const unselectedTransitionalAuthorityFiles = async (
+  authorityFiles: readonly string[],
+  selectedPackets: readonly string[]
+): Promise<Set<string>> => {
+  // Legacy paths are included only when the adapter selects the packet that
+  // owns them (contracts/conformance-certification.md, digests). A packet
+  // that declares `transitionalAdapters` is a temporary packet (today the
+  // legacy kernel packet); when an adapter does not select it, global file
+  // validation must not add the packet's own files - its packet manifest,
+  // catalog, plans, and legacy-only fixtures - to that run's digests.
+  // Files shared with a selected packet stay in.
+  const selected = new Set(
+    selectedPackets.map((file) => path.resolve(ROOT, file))
+  );
+  const selectedOwned = new Set<string>();
+  for (const packetPath of selected) {
+    for (const file of await collectPacketOwnedFiles(
+      path.relative(ROOT, packetPath)
+    )) {
+      selectedOwned.add(file);
+    }
+  }
+
+  const excluded = new Set<string>();
+  for (const file of authorityFiles) {
+    const relative = path.relative(ROOT, file);
+    if (!AUTHORITY_PACKET_FILE_PATTERN.test(relative)) {
+      continue;
+    }
+    if (selected.has(file)) {
+      continue;
+    }
+    const packet = await readJson(relative);
+    if (!Array.isArray(packet.transitionalAdapters)) {
+      continue;
+    }
+    for (const owned of await collectPacketOwnedFiles(relative)) {
+      if (!selectedOwned.has(owned)) {
+        excluded.add(owned);
+      }
+    }
+  }
+  return excluded;
+};
+
+interface PacketInputFiles {
+  catalogs: string[];
+  controls: string[];
+  plans: string[];
+  profiles: string[];
+}
+
+const collectPacketInputFiles = async (
+  packetPath: string
+): Promise<PacketInputFiles> => {
+  const packet = await readJson(packetPath);
+
+  if (!Array.isArray(packet.conformancePlans)) {
+    throw new TypeError(`${packetPath} has no conformance plans`);
+  }
+
+  const files: PacketInputFiles = {
+    catalogs: [reference(packet.operationCatalog, "operation catalog")],
+    controls: [],
+    plans: [],
+    profiles: [],
+  };
+
+  for (const item of packet.conformancePlans) {
+    const plan = object(item, packetPath);
+    files.plans.push(reference(plan.path, "plan path"));
+  }
+
+  // A temporary report-only packet declares neither certification profiles
+  // nor a negative-control manifest; only a selected packet that declares
+  // them contributes its files.
+  if (typeof packet.certificationProfiles === "string") {
+    files.profiles.push(reference(packet.certificationProfiles, "profiles"));
+  }
+
+  if (typeof packet.negativeControlManifest === "string") {
+    files.controls.push(
+      reference(packet.negativeControlManifest, "negative controls")
+    );
+  }
+
+  return files;
+};
+
 export const collectSourceVerifierInputs = async (
   packetPaths: readonly string[]
 ) => {
@@ -194,24 +355,16 @@ export const collectSourceVerifierInputs = async (
   const controls: string[] = [];
   const registers: string[] = [];
   for (const packetPath of packets) {
-    const packet = await readJson(packetPath);
     registers.push(
       ...[...(await readUndetectedRegisterReferences(packetPath)).values()].map(
         (file) => path.resolve(ROOT, file)
       )
     );
-    if (!Array.isArray(packet.conformancePlans)) {
-      throw new TypeError(`${packetPath} has no conformance plans`);
-    }
-    for (const item of packet.conformancePlans) {
-      const plan = object(item, packetPath);
-      plans.push(reference(plan.path, "plan path"));
-    }
-    catalogs.push(reference(packet.operationCatalog, "operation catalog"));
-    profiles.push(reference(packet.certificationProfiles, "profiles"));
-    controls.push(
-      reference(packet.negativeControlManifest, "negative controls")
-    );
+    const packetFiles = await collectPacketInputFiles(packetPath);
+    plans.push(...packetFiles.plans);
+    catalogs.push(...packetFiles.catalogs);
+    profiles.push(...packetFiles.profiles);
+    controls.push(...packetFiles.controls);
   }
   const fixtures: string[] = [];
   for (const planPath of new Set(plans)) {
@@ -244,10 +397,15 @@ export const collectSourceVerifierInputs = async (
     ],
     { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 }
   );
-  const authority = stdout
+  const trackedAuthorityFiles = stdout
     .split("\0")
     .filter(Boolean)
     .map((file) => path.join(ROOT, file));
+  const excluded = await unselectedTransitionalAuthorityFiles(
+    trackedAuthorityFiles,
+    packets
+  );
+  const authority = trackedAuthorityFiles.filter((file) => !excluded.has(file));
   return {
     authority,
     packets,

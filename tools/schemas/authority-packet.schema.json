@@ -97,6 +97,13 @@
       },
       "default": []
     },
+    "transitionalAdapters": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Optional. Declares a temporary, report-only packet. Each entry is a repository-relative adapter-manifest path, and together they are the exact set that must reference this packet through authorityPackets: a manifest missing from the set or a referencing manifest outside the set fails the portability gate, while packets without this field keep boundary-wide adapter coverage."
+    },
     "operationCatalog": { "type": "string", "minLength": 1 },
     "identityRecipes": { "type": "string", "minLength": 1 },
     "certificationProfiles": { "type": "string", "minLength": 1 },

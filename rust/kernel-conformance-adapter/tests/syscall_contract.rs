@@ -516,32 +516,6 @@ fn production_grpc_dependency_graph_excludes_test_controls() {
 }
 
 #[test]
-fn syscall_instances_reject_legacy_composites() {
-    let mut adapter = Adapter::new();
-    let initialized = adapter.request(
-        "initialize",
-        json!({"packetId":"test","planVersion":"0.1.0"}),
-    );
-    let capabilities = initialized["result"]["capabilities"].as_array().unwrap();
-    assert!(capabilities.contains(&json!("kernel.scope-isolation")));
-    assert!(!capabilities.contains(&json!("kernel.restart-recovery")));
-    let instance = adapter.instance();
-    for operation in [
-        "kernel.logical.recovery-state",
-        "kernel.reclamation.erasure-probe",
-        "kernel.reclamation.reclaim-probe",
-        "kernel.scope-isolation.cross-scope-probe",
-        "kernel.run-liveness.lease-renewal",
-    ] {
-        let response = adapter.call(&instance, operation, json!({}));
-        assert_eq!(
-            response["error"]["code"], "adapter_operation_not_implemented",
-            "{response}"
-        );
-    }
-}
-
-#[test]
 fn wrong_hash_mutant_requires_explicit_selection_and_proves_native_activation() {
     let mut adapter = Adapter::new();
     let activation = adapter.request(
@@ -679,27 +653,4 @@ fn scoped_instance_options_reject_invalid_partition_and_substrate_values() {
             assert!(response.get("result").is_none(), "{key}: {response}");
         }
     }
-}
-
-#[test]
-fn transitional_scope_probe_reports_native_scope_observations() {
-    let mut adapter = Adapter::new();
-    let response = adapter.request(
-        "dispatch",
-        json!({
-            "operation":"kernel.scope-isolation.cross-scope-probe",
-            "input":{},
-        }),
-    );
-    assert_eq!(
-        response["result"],
-        json!({
-            "kind":"result",
-            "value":{"result":{
-                "enumeration":{"crossScopeThreadVisible":false,"sameScopeThreadVisible":true},
-                "storeGet":{"crossScopeReturnsNull":true,"sameScopeReturnsObject":true},
-                "storeHas":{"crossScopeObservesOtherContent":false,"sameScopeObservesOwnContent":true},
-            }},
-        })
-    );
 }

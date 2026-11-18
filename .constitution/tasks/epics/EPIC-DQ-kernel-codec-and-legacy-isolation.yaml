@@ -171,7 +171,12 @@ tickets:
       evidence: "Go, Python, and Dart resolve the same legacy checks and observations, with refreshed packet-bound provenance, without kernel implementation migration. TypeScript and Rust load none of the legacy packet or its six plans in normal, certificate, control, compatibility, or generated-authority inputs. A claimed-profile certificate cannot rely on the legacy packet, and no language or adapter ID selects a plan. The 21 composites exist only in the legacy-owned catalog. Missing or extra transitional adapter references and stale topology inventories fail. All three legacy lanes retain lossless observation and schema rejection tests. TypeScript and Rust handlers are deleted. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest."
     flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
+    deviations:
+      - files:
+          - tools/scripts/portability-gate.test.ts
+          - tools/biome-coverage/bv.json
+        justification: "The transitionalAdapters exact-set rule needed its own test beside tools/scripts/portability-gate.ts, and the workspace Biome gate requires every linted file to be listed in a tools/biome-coverage list. Neither path is in the epic's scope.paths; the wave lead ruled both in-envelope on 2026-11-18 because the wave has one lane, no other active epic owns them, and both only accompany the owned portability gate."
   - id: KRT-DQ004
     title: "Verify canonical-only TypeScript and Rust selection"
     type: Chore
@@ -198,3 +203,33 @@ tickets:
     flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: planned
+decisions:
+  - id: OD-27
+    question: "Moving the six legacy plans and two fixture-set sources out of the canonical kernel authority packet removes referenced conformance plans and declared authoritative sources, which guidelines §2.1 classes as a major packet change. While the packet is still 0.x, does a major change bump it to 1.0.0 or bump the minor version?"
+    blocks: [KRT-DQ003]
+    options:
+      - name: Bump to 1.0.0 as guidelines §2.1 states
+        pros:
+          - "Follows the binding Stage 3 record literally; no silent deviation."
+          - "Consumers that select by packet see an unambiguous breaking signal."
+        cons:
+          - "Declares the first stable version of a packet that EPIC-DJ and the remaining certification epics will keep changing."
+      - name: Bump the minor version while the packet is 0.x
+        pros:
+          - "Matches semver's 0.x convention and the packet's history (0.10.0 to 0.16.0 were all minor bumps)."
+          - "Leaves 1.0.0 for when the kernel catalog stabilises."
+        cons:
+          - "Contradicts guidelines §2.1 as written until Stage 3 adds a 0.x clause."
+    recommendation: Bump to 1.0.0 as guidelines §2.1 states
+    closure: ruling
+    ruler: Owner
+    status: proposed
+    asked:
+      date: 2026-11-18
+      in: EPIC-DQ
+    proposed_by: "EPIC-DQ @ bfb3c18"
+    interim:
+      assumption: "The canonical kernel packet tuvren.kernel.protocol goes from 0.16.0 to 1.0.0 in KRT-DQ003; the temporary legacy packet keeps its own version."
+      applied_by:
+        - spec/kernel/authority-packet.json
+        - KRT-DQ003

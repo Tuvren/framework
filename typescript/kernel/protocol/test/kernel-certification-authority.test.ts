@@ -66,8 +66,12 @@ const nodePayload = (fixture: Record<string, unknown>): unknown =>
     .interruptPayload;
 const catalog = (): Record<string, unknown> =>
   object(readJson("spec/conformance/kernel/operations.json"));
+const legacyCatalog = (): Record<string, unknown> =>
+  object(readJson("spec/conformance/kernel/legacy-operations.json"));
 const operations = (): Record<string, unknown>[] =>
-  array(catalog().operations).map(object);
+  [...array(catalog().operations), ...array(legacyCatalog().operations)].map(
+    object
+  );
 const packet = object(readJson("spec/kernel/authority-packet.json"));
 const planDirectory = "spec/conformance/kernel/plans";
 const plans = readdirSync(path.join(ROOT, planDirectory))
@@ -239,6 +243,12 @@ describe("kernel certification catalog", () => {
       "spec/conformance/kernel/identity-recipes.json"
     );
     expect(catalog().packetId).toBe(packet.packetId);
+    expect(
+      array(legacyCatalog().operations).every(
+        (operation) => object(operation).deprecated === true
+      )
+    ).toBe(true);
+    expect(legacyCatalog().packetId).toBe("tuvren.kernel.legacy");
   });
 
   test("covers the specification and resolves every current binding through packet projections", () => {

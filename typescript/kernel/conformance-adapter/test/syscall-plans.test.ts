@@ -321,18 +321,6 @@ test("invalid syscall arguments become JSON-RPC adapter_host_error", async () =>
   });
   try {
     await client.initialize("tuvren.kernel.protocol", "0.1.0");
-    const legacy = await client.dispatch(
-      "kernel.lineage.cross-thread-rejection",
-      {},
-      {}
-    );
-    expect(legacy).toMatchObject({
-      kind: "result",
-      value: { result: { errorCode: "turn_node_thread_mismatch" } },
-    });
-    if (legacy.kind === "result") {
-      expect(legacy.value).not.toHaveProperty("evidence");
-    }
     const handle = await client.createInstance({});
     try {
       let failure: unknown;

@@ -1,7 +1,7 @@
 {
   "planId": "tuvren.kernel.reclamation",
   "planVersion": "0.3.0",
-  "packetId": "tuvren.kernel.protocol",
+  "packetId": "tuvren.kernel.legacy",
   "applicability": {
     "capabilities": ["kernel.reclamation"]
   },

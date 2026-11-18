@@ -55,6 +55,7 @@ interface AuthorityPacketManifest {
   conformancePlans?: { path: string; planId: string }[];
   packetId: string;
   surface: string;
+  transitionalAdapters?: readonly string[];
   verificationPaths: { kind: string; target: string }[];
   version: string;
 }
@@ -199,9 +200,44 @@ const isAuthorityPacketManifest = (
     (Array.isArray(value.conformancePlans) &&
       value.conformancePlans.every((entry) =>
         hasStringFields(entry, ["path", "planId"])
-      )));
+      ))) &&
+  (value.transitionalAdapters === undefined ||
+    isStringArray(value.transitionalAdapters));
 
-const checkAdapterCoverage = (
+const checkTransitionalAdapterSet = (
+  packetPath: string,
+  manifest: AuthorityPacketManifest,
+  adapterManifests: ReadonlyMap<string, AdapterManifest>
+): PortabilityGateFailure | undefined => {
+  // A transitional (temporary, report-only) packet pins its measured lanes
+  // with `transitionalAdapters`, the exact adapter-manifest path set that
+  // must reference it (contracts/conformance-certification.md, KRT-DQ003).
+  // Both directions fail: a declared lane that dropped the packet would
+  // silently lose its legacy checks, and a referencing lane outside the
+  // declared set would load a report-only packet the packet owner has not
+  // authorized (for example a canonical certification lane).
+  const declared = new Set(manifest.transitionalAdapters ?? []);
+  const referencingPaths = new Set(
+    [...adapterManifests.entries()]
+      .filter(([, adapter]) => adapter.authorityPackets.includes(packetPath))
+      .map(([manifestPath]) => manifestPath)
+  );
+  const missing = [...declared].filter((path) => !referencingPaths.has(path));
+  const unexpected = [...referencingPaths].filter(
+    (path) => !declared.has(path)
+  );
+
+  if (missing.length === 0 && unexpected.length === 0) {
+    return undefined;
+  }
+
+  return {
+    message: `transitional packet ${manifest.packetId} at ${packetPath} must be referenced by exactly its declared transitionalAdapters set; missing references: ${missing.join(", ") || "none"}; unexpected references: ${unexpected.join(", ") || "none"}`,
+    rule: "adapter-coverage",
+  };
+};
+
+export const checkAdapterCoverage = (
   onDisk: ReadonlyMap<string, AuthorityPacketManifest>,
   adapterManifests: ReadonlyMap<string, AdapterManifest>
 ): PortabilityGateFailure[] => {
@@ -244,6 +280,22 @@ const checkAdapterCoverage = (
       continue;
     }
 
+    if (manifest.transitionalAdapters !== undefined) {
+      const transitionalFailure = checkTransitionalAdapterSet(
+        packetPath,
+        manifest,
+        adapterManifests
+      );
+
+      if (transitionalFailure !== undefined) {
+        failures.push(transitionalFailure);
+      }
+
+      continue;
+    }
+
+    // Ordinary packets keep boundary-wide coverage: every adapter manifest
+    // of the packet's boundary must reference the packet.
     const missingAdapters = adapters.filter(
       (adapter) => !adapter.authorityPackets.includes(packetPath)
     );
@@ -428,7 +480,7 @@ const isAdapterCapability = (
   capability: string
 ): boolean => adapter.capabilities?.includes(capability) ?? false;
 
-const checkExpectedPacketsPresent = (
+export const checkExpectedPacketsPresent = (
   inventory: PortabilityInventoryManifest,
   expectedPacketIds: ReadonlySet<string>,
   onDisk: ReadonlyMap<string, AuthorityPacketManifest>
@@ -469,7 +521,7 @@ const checkExpectedPacketsPresent = (
   return failures;
 };
 
-const checkNoUnexpectedPackets = (
+export const checkNoUnexpectedPackets = (
   expectedPaths: ReadonlySet<string>,
   expectedPacketIds: ReadonlySet<string>,
   onDisk: ReadonlyMap<string, AuthorityPacketManifest>
@@ -898,6 +950,23 @@ const readPlanApplicabilityCapabilities = async (
   return [...collected];
 };
 
+const readPlanLevelCapabilities = async (
+  planPath: string
+): Promise<readonly string[]> => {
+  const absolutePath = path.resolve(REPO_ROOT, planPath);
+
+  if (!existsSync(absolutePath)) {
+    return [];
+  }
+
+  const parsed: unknown = JSON.parse(await readFile(absolutePath, "utf-8"));
+  if (!(isRecord(parsed) && isRecord(parsed.applicability))) {
+    return [];
+  }
+
+  return toStringArray(parsed.applicability.capabilities);
+};
+
 const validateInventoryManifestShape = (
   raw: unknown
 ): InventoryShapeValidation => {
@@ -1012,6 +1081,24 @@ const checkPlanApplicabilityHasAdapter = async (
 
     const adapters = adaptersByBoundary.get(manifest.boundary) ?? [];
 
+    // A transitional packet's plans are measured only by its declared
+    // transitional adapters, and the permanent non-applicability of
+    // check-level capabilities on those lanes is expected (the legacy plans
+    // exist to preserve check results for unmigrated adapters, not to promote
+    // a new portable surface). So for transitional packets the reachability
+    // bar is the plan-level applicability capabilities; a transitional
+    // adapter must still advertise those for the plan to be selected at all.
+    // Ordinary packets keep the full plan-plus-check capability union rule.
+    const transitional = manifest.transitionalAdapters;
+    const candidates =
+      transitional === undefined
+        ? adapters
+        : transitional
+            .map((path) => adapterManifests.get(path))
+            .filter(
+              (adapter): adapter is AdapterManifest => adapter !== undefined
+            );
+
     await forEachSequential(plans, async (plan) => {
       const planCapabilities = await readPlanApplicabilityCapabilities(
         plan.path
@@ -1021,17 +1108,24 @@ const checkPlanApplicabilityHasAdapter = async (
         return;
       }
 
-      const advertisingAdapter = adapters.find(
+      const requiredCapabilities =
+        transitional === undefined
+          ? planCapabilities
+          : await readPlanLevelCapabilities(plan.path);
+
+      const advertisingAdapter = candidates.find(
         (adapter) =>
-          adapter.authorityPackets.includes(packetPath) &&
-          planCapabilities.every((capability) =>
+          (transitional === undefined
+            ? adapter.authorityPackets.includes(packetPath)
+            : true) &&
+          requiredCapabilities.every((capability) =>
             isAdapterCapability(adapter, capability)
           )
       );
 
       if (advertisingAdapter === undefined) {
         failures.push({
-          message: `plan ${plan.planId} at ${plan.path} requires applicability capabilities ${[...planCapabilities].toSorted().join(", ")} but no ${manifest.boundary}-boundary adapter advertises that full set; the portability promotion of ${manifest.packetId} would record zero applicable evidence`,
+          message: `plan ${plan.planId} at ${plan.path} requires applicability capabilities ${[...requiredCapabilities].toSorted().join(", ")} but no ${manifest.boundary}-boundary adapter advertises that full set; the portability promotion of ${manifest.packetId} would record zero applicable evidence`,
           rule: "plan-applicability-has-adapter",
         });
       }
@@ -1220,7 +1314,9 @@ const main = async (): Promise<void> => {
   );
 };
 
-await main();
+if (import.meta.main) {
+  await main();
+}
 
 interface InventoryLoadResult {
   failures: PortabilityGateFailure[];

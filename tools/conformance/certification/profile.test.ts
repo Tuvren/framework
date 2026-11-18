@@ -177,23 +177,16 @@ test("a claimed profile rejects a non-applicable required check", async () => {
   });
 });
 
-test("the composite capability retains legacy coverage without selecting it for Rust", async () => {
-  const adapters = [
-    "go/kernel-conformance-adapter/adapter.json",
-    "python/kernel-conformance-adapter/adapter.json",
-    "dart/kernel-conformance-adapter/adapter.json",
-    "typescript/kernel/conformance-adapter/adapter.json",
-    "typescript/kernel/conformance-adapter/adapter-mutant.json",
-    "typescript/kernel/conformance-adapter/adapter-postgres.json",
-    "typescript/kernel/conformance-adapter/adapter-sqlite.json",
-    "rust/kernel-conformance-adapter/adapter.json",
-    "rust/kernel-conformance-adapter/adapter-mutant.json",
-  ];
-  const catalog: unknown = JSON.parse(
+test("legacy composite checks load and select only through the legacy packet", async () => {
+  const legacyCatalog: unknown = JSON.parse(
+    await readFile("spec/conformance/kernel/legacy-operations.json", "utf8")
+  );
+  const canonicalCatalog: unknown = JSON.parse(
     await readFile("spec/conformance/kernel/operations.json", "utf8")
   );
-  expect(catalog).toEqual(
+  expect(legacyCatalog).toEqual(
     expect.objectContaining({
+      packetId: "tuvren.kernel.legacy",
       operations: expect.arrayContaining([
         expect.objectContaining({
           operationId: "kernel.protocol.edge-validation",
@@ -202,16 +195,42 @@ test("the composite capability retains legacy coverage without selecting it for 
       ]),
     })
   );
+  expect(
+    (
+      canonicalCatalog as {
+        operations: { deprecated?: boolean }[];
+      }
+    ).operations.some((operation) => operation.deprecated === true)
+  ).toBe(false);
 
-  for (const path of adapters) {
+  const lanes: readonly [string, boolean][] = [
+    ["go/kernel-conformance-adapter/adapter.json", true],
+    ["python/kernel-conformance-adapter/adapter.json", true],
+    ["dart/kernel-conformance-adapter/adapter.json", true],
+    ["typescript/kernel/conformance-adapter/adapter.json", false],
+    ["typescript/kernel/conformance-adapter/adapter-mutant.json", false],
+    ["typescript/kernel/conformance-adapter/adapter-postgres.json", false],
+    ["typescript/kernel/conformance-adapter/adapter-sqlite.json", false],
+    ["rust/kernel-conformance-adapter/adapter.json", false],
+    ["rust/kernel-conformance-adapter/adapter-mutant.json", false],
+  ];
+  for (const [path, selectsLegacy] of lanes) {
     const adapter = await readAdapterManifest(path);
+    expect(
+      adapter.authorityPackets.includes(
+        "spec/kernel/legacy/authority-packet.json"
+      )
+    ).toBe(selectsLegacy);
     const plans = await readPlans(adapter, { packets: [], plans: [] });
     const legacy = plans.flatMap((plan) =>
       plan.checks.filter(({ check }) =>
         check.checkId.startsWith("kernel-protocol-af.")
       )
     );
-    expect(legacy).toHaveLength(7);
+    expect(legacy).toHaveLength(selectsLegacy ? 7 : 0);
+    if (!selectsLegacy) {
+      continue;
+    }
     expect(
       legacy.every(({ check }) =>
         check.capabilities?.includes("kernel.edge-validation.composite")
@@ -228,7 +247,7 @@ test("the composite capability retains legacy coverage without selecting it for 
           steps: check.steps,
         }).selected
     );
-    expect(selected).toHaveLength(path.startsWith("rust/") ? 0 : 7);
+    expect(selected).toHaveLength(7);
     expect(adapter.capabilities).toContain("kernel.edge-validation");
   }
 });
