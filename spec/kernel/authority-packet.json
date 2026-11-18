@@ -85,6 +85,14 @@
     {
       "path": "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-codec.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/codec-obligation-map.json",
+      "format": "fixture-set"
     }
   ],
   "conformancePlans": [
@@ -172,6 +180,11 @@
       "planId": "tuvren.kernel.clock-skew.syscall",
       "planVersion": "0.1.0",
       "path": "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.codec",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-codec.json"
     }
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
@@ -296,6 +309,10 @@
     {
       "kind": "conformance-plan",
       "target": "spec/conformance/kernel/plans/kernel-clock-skew-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-codec.json"
     }
   ],
   "operationCatalog": "spec/conformance/kernel/operations.json",

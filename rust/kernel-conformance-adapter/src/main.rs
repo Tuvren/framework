@@ -145,6 +145,7 @@ fn dispatch_request(
             adapter_id: "rust-kernel",
             capabilities: vec![
                 "kernel.syscall",
+                "kernel.codec",
                 "kernel.barrier",
                 "kernel.fault-injection",
                 "kernel.protocol",

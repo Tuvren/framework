@@ -1,0 +1,1765 @@
+{
+  "input": {
+    "deterministic": {
+      "rawOpaqueBytes": {
+        "$bytes": "000102030405faff"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          [
+            "consumedStagedResults",
+            [
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "3333333333333333333333333333333333333333333333333333333333333333"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "completed"],
+                  ["taskId", "tool_call_1"],
+                  ["timestamp", 1717171717171]
+                ]
+              }
+            ]
+          ],
+          [
+            "eventHash",
+            "4444444444444444444444444444444444444444444444444444444444444444"
+          ],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_main"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "context_manifest"],
+                  ["targetPath", "context.manifest"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  [
+                    "metadata",
+                    {
+                      "$map": [["role", "chat"]]
+                    }
+                  ],
+                  ["path", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "single"],
+                  [
+                    "metadata",
+                    {
+                      "$map": [["version", 1]]
+                    }
+                  ],
+                  ["path", "context.manifest"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_main"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578742e6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646b736368656d615f6d61696e696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018fcf6904336a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c74"
+      },
+      "node": {
+        "consumedStagedResults": [
+          {
+            "objectHash": "3333333333333333333333333333333333333333333333333333333333333333",
+            "objectType": "tool_result",
+            "status": "completed",
+            "taskId": "tool_call_1",
+            "timestamp": 1717171717171
+          }
+        ],
+        "eventHash": "4444444444444444444444444444444444444444444444444444444444444444",
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_main",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "empty-bytes": {
+      "rawOpaqueBytes": {
+        "$bytes": ""
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "single-byte": {
+      "rawOpaqueBytes": {
+        "$bytes": "2a"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          [
+            "consumedStagedResults",
+            [
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "3333333333333333333333333333333333333333333333333333333333333333"
+                  ],
+                  ["objectType", "message"],
+                  ["status", "completed"],
+                  ["taskId", "task_only"],
+                  ["timestamp", 1700000000000]
+                ]
+              }
+            ]
+          ],
+          [
+            "eventHash",
+            "4444444444444444444444444444444444444444444444444444444444444444"
+          ],
+          [
+            "previousTurnNodeHash",
+            "5555555555555555555555555555555555555555555555555555555555555555"
+          ],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353575636f6e73756d6564537461676564526573756c747381a56673746174757369636f6d706c65746564667461736b4964697461736b5f6f6e6c796974696d657374616d701b0000018bcfe568006a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a65637454797065676d657373616765"
+      },
+      "node": {
+        "consumedStagedResults": [
+          {
+            "objectHash": "3333333333333333333333333333333333333333333333333333333333333333",
+            "objectType": "message",
+            "status": "completed",
+            "taskId": "task_only",
+            "timestamp": 1700000000000
+          }
+        ],
+        "eventHash": "4444444444444444444444444444444444444444444444444444444444444444",
+        "previousTurnNodeHash": "5555555555555555555555555555555555555555555555555555555555555555",
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "all-zero-bytes": {
+      "rawOpaqueBytes": {
+        "$bytes": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "all-ones-bytes": {
+      "rawOpaqueBytes": {
+        "$bytes": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "large-bytes": {
+      "rawOpaqueBytes": {
+        "$bytes": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "multi-path-schema": {
+      "rawOpaqueBytes": {
+        "$bytes": "0a141e2832"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          [
+            "consumedStagedResults",
+            [
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "3333333333333333333333333333333333333333333333333333333333333333"
+                  ],
+                  ["objectType", "message"],
+                  ["status", "completed"],
+                  ["taskId", "msg_1"],
+                  ["timestamp", 1700000000000]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "4444444444444444444444444444444444444444444444444444444444444444"
+                  ],
+                  ["objectType", "tool_call"],
+                  ["status", "completed"],
+                  ["taskId", "tool_call_1"],
+                  ["timestamp", 1700000000001]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "5555555555555555555555555555555555555555555555555555555555555555"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "completed"],
+                  ["taskId", "tool_result_1"],
+                  ["timestamp", 1700000000002]
+                ]
+              }
+            ]
+          ],
+          [
+            "eventHash",
+            "6666666666666666666666666666666666666666666666666666666666666666"
+          ],
+          [
+            "previousTurnNodeHash",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          ["schemaId", "schema_multi_path"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "tool_call"],
+                  ["targetPath", "tools.calls"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "tool_result"],
+                  ["targetPath", "tools.results"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "context_manifest"],
+                  ["targetPath", "context.manifest"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "approval"],
+                  ["targetPath", "approval.last"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "tools.calls"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "tools.results"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "single"],
+                  ["path", "context.manifest"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "single"],
+                  ["path", "approval.last"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_multi_path"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687385a26470617468686d657373616765736a636f6c6c656374696f6e676f726465726564a264706174686b746f6f6c732e63616c6c736a636f6c6c656374696f6e676f726465726564a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f726465726564a2647061746870636f6e746578742e6d616e69666573746a636f6c6c656374696f6e6673696e676c65a264706174686d617070726f76616c2e6c6173746a636f6c6c656374696f6e6673696e676c6568736368656d61496471736368656d615f6d756c74695f7061746872696e636f72706f726174696f6e52756c657385a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706569746f6f6c5f63616c6c6a746172676574506174686b746f6f6c732e63616c6c73a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374a26a6f626a6563745479706568617070726f76616c6a746172676574506174686d617070726f76616c2e6c617374"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d61496471736368656d615f6d756c74695f70617468696576656e74486173687840363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636366c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313175636f6e73756d6564537461676564526573756c747383a56673746174757369636f6d706c65746564667461736b4964656d73675f316974696d657374616d701b0000018bcfe568006a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a65637454797065676d657373616765a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018bcfe568016a6f626a656374486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346a6f626a6563745479706569746f6f6c5f63616c6ca56673746174757369636f6d706c65746564667461736b49646d746f6f6c5f726573756c745f316974696d657374616d701b0000018bcfe568026a6f626a656374486173687840353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535356a6f626a656374547970656b746f6f6c5f726573756c74"
+      },
+      "node": {
+        "consumedStagedResults": [
+          {
+            "objectHash": "3333333333333333333333333333333333333333333333333333333333333333",
+            "objectType": "message",
+            "status": "completed",
+            "taskId": "msg_1",
+            "timestamp": 1700000000000
+          },
+          {
+            "objectHash": "4444444444444444444444444444444444444444444444444444444444444444",
+            "objectType": "tool_call",
+            "status": "completed",
+            "taskId": "tool_call_1",
+            "timestamp": 1700000000001
+          },
+          {
+            "objectHash": "5555555555555555555555555555555555555555555555555555555555555555",
+            "objectType": "tool_result",
+            "status": "completed",
+            "taskId": "tool_result_1",
+            "timestamp": 1700000000002
+          }
+        ],
+        "eventHash": "6666666666666666666666666666666666666666666666666666666666666666",
+        "previousTurnNodeHash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "schemaId": "schema_multi_path",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "all-single-paths": {
+      "rawOpaqueBytes": {
+        "$bytes": "63"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_singletons"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "context_manifest"],
+                  ["targetPath", "context.manifest"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "approval"],
+                  ["targetPath", "approval"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "single"],
+                  ["path", "context.manifest"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "single"],
+                  ["path", "approval"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_singletons"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687382a2647061746870636f6e746578742e6d616e69666573746a636f6c6c656374696f6e6673696e676c65a2647061746868617070726f76616c6a636f6c6c656374696f6e6673696e676c6568736368656d61496471736368656d615f73696e676c65746f6e7372696e636f72706f726174696f6e52756c657382a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374a26a6f626a6563745479706568617070726f76616c6a7461726765745061746868617070726f76616c"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d61496471736368656d615f73696e676c65746f6e73696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_singletons",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "all-ordered-paths": {
+      "rawOpaqueBytes": {
+        "$bytes": "010203"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_all_ordered"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "tool_call"],
+                  ["targetPath", "tool_calls"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "tool_calls"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_all_ordered"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687382a26470617468686d657373616765736a636f6c6c656374696f6e676f726465726564a264706174686a746f6f6c5f63616c6c736a636f6c6c656374696f6e676f72646572656468736368656d61496472736368656d615f616c6c5f6f72646572656472696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706569746f6f6c5f63616c6c6a746172676574506174686a746f6f6c5f63616c6c73"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d61496472736368656d615f616c6c5f6f726465726564696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_all_ordered",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "with-prev-turn": {
+      "rawOpaqueBytes": {
+        "$bytes": "070707"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          [
+            "previousTurnNodeHash",
+            "5555555555555555555555555555555555555555555555555555555555555555"
+          ],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353575636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": "5555555555555555555555555555555555555555555555555555555555555555",
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "with-event-hash": {
+      "rawOpaqueBytes": {
+        "$bytes": "080808"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          [
+            "eventHash",
+            "4444444444444444444444444444444444444444444444444444444444444444"
+          ],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": "4444444444444444444444444444444444444444444444444444444444444444",
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "staged-failed": {
+      "rawOpaqueBytes": {
+        "$bytes": "09"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          [
+            "consumedStagedResults",
+            [
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "3333333333333333333333333333333333333333333333333333333333333333"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "failed"],
+                  ["taskId", "tool_call_failed"],
+                  ["timestamp", 1700000000010]
+                ]
+              }
+            ]
+          ],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_tool_results"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "tool_result"],
+                  ["targetPath", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_tool_results"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d61496473736368656d615f746f6f6c5f726573756c747372696e636f72706f726174696f6e52756c657381a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d61496473736368656d615f746f6f6c5f726573756c7473696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a566737461747573666661696c6564667461736b496470746f6f6c5f63616c6c5f6661696c65646974696d657374616d701b0000018bcfe5680a6a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c74"
+      },
+      "node": {
+        "consumedStagedResults": [
+          {
+            "objectHash": "3333333333333333333333333333333333333333333333333333333333333333",
+            "objectType": "tool_result",
+            "status": "failed",
+            "taskId": "tool_call_failed",
+            "timestamp": 1700000000010
+          }
+        ],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_tool_results",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "staged-interrupted": {
+      "rawOpaqueBytes": {
+        "$bytes": "0a"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          [
+            "consumedStagedResults",
+            [
+              {
+                "$map": [
+                  [
+                    "interruptPayload",
+                    {
+                      "$map": [
+                        ["reason", "tool_paused"],
+                        ["remainingMs", 5000]
+                      ]
+                    }
+                  ],
+                  [
+                    "objectHash",
+                    "3333333333333333333333333333333333333333333333333333333333333333"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "interrupted"],
+                  ["taskId", "tool_call_interrupted"],
+                  ["timestamp", 1700000000020]
+                ]
+              }
+            ]
+          ],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_tool_results"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "tool_result"],
+                  ["targetPath", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_tool_results"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d61496473736368656d615f746f6f6c5f726573756c747372696e636f72706f726174696f6e52756c657381a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d61496473736368656d615f746f6f6c5f726573756c7473696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a6667374617475736b696e746572727570746564667461736b496475746f6f6c5f63616c6c5f696e7465727275707465646974696d657374616d701b0000018bcfe568146a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c7470696e746572727570745061796c6f6164a266726561736f6e6b746f6f6c5f7061757365646b72656d61696e696e674d73191388"
+      },
+      "node": {
+        "consumedStagedResults": [
+          {
+            "interruptPayload": {
+              "$map": [
+                ["reason", "tool_paused"],
+                ["remainingMs", 5000]
+              ]
+            },
+            "objectHash": "3333333333333333333333333333333333333333333333333333333333333333",
+            "objectType": "tool_result",
+            "status": "interrupted",
+            "taskId": "tool_call_interrupted",
+            "timestamp": 1700000000020
+          }
+        ],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_tool_results",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "many-staged-results": {
+      "rawOpaqueBytes": {
+        "$bytes": "0b0c0d0e"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          [
+            "consumedStagedResults",
+            [
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "0101010101010101010101010101010101010101010101010101010101010101"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "completed"],
+                  ["taskId", "tool_call_1"],
+                  ["timestamp", 1700000000000]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "0202020202020202020202020202020202020202020202020202020202020202"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "completed"],
+                  ["taskId", "tool_call_2"],
+                  ["timestamp", 1700000000001]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "0303030303030303030303030303030303030303030303030303030303030303"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "completed"],
+                  ["taskId", "tool_call_3"],
+                  ["timestamp", 1700000000002]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "0404040404040404040404040404040404040404040404040404040404040404"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "completed"],
+                  ["taskId", "tool_call_4"],
+                  ["timestamp", 1700000000003]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "0505050505050505050505050505050505050505050505050505050505050505"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "completed"],
+                  ["taskId", "tool_call_5"],
+                  ["timestamp", 1700000000004]
+                ]
+              }
+            ]
+          ],
+          [
+            "eventHash",
+            "6666666666666666666666666666666666666666666666666666666666666666"
+          ],
+          [
+            "previousTurnNodeHash",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          ["schemaId", "schema_tool_results"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "tool_result"],
+                  ["targetPath", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_tool_results"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d61496473736368656d615f746f6f6c5f726573756c747372696e636f72706f726174696f6e52756c657381a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d61496473736368656d615f746f6f6c5f726573756c7473696576656e74486173687840363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636366c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313175636f6e73756d6564537461676564526573756c747385a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018bcfe568006a6f626a656374486173687840303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130316a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f326974696d657374616d701b0000018bcfe568016a6f626a656374486173687840303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230326a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f336974696d657374616d701b0000018bcfe568026a6f626a656374486173687840303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330336a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f346974696d657374616d701b0000018bcfe568036a6f626a656374486173687840303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430346a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f356974696d657374616d701b0000018bcfe568046a6f626a656374486173687840303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530356a6f626a656374547970656b746f6f6c5f726573756c74"
+      },
+      "node": {
+        "consumedStagedResults": [
+          {
+            "objectHash": "0101010101010101010101010101010101010101010101010101010101010101",
+            "objectType": "tool_result",
+            "status": "completed",
+            "taskId": "tool_call_1",
+            "timestamp": 1700000000000
+          },
+          {
+            "objectHash": "0202020202020202020202020202020202020202020202020202020202020202",
+            "objectType": "tool_result",
+            "status": "completed",
+            "taskId": "tool_call_2",
+            "timestamp": 1700000000001
+          },
+          {
+            "objectHash": "0303030303030303030303030303030303030303030303030303030303030303",
+            "objectType": "tool_result",
+            "status": "completed",
+            "taskId": "tool_call_3",
+            "timestamp": 1700000000002
+          },
+          {
+            "objectHash": "0404040404040404040404040404040404040404040404040404040404040404",
+            "objectType": "tool_result",
+            "status": "completed",
+            "taskId": "tool_call_4",
+            "timestamp": 1700000000003
+          },
+          {
+            "objectHash": "0505050505050505050505050505050505050505050505050505050505050505",
+            "objectType": "tool_result",
+            "status": "completed",
+            "taskId": "tool_call_5",
+            "timestamp": 1700000000004
+          }
+        ],
+        "eventHash": "6666666666666666666666666666666666666666666666666666666666666666",
+        "previousTurnNodeHash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "schemaId": "schema_tool_results",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "deep-path-schema": {
+      "rawOpaqueBytes": {
+        "$bytes": "0f"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_deep_path"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "deep"],
+                  ["targetPath", "a.b.c.d.deep_value"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "single"],
+                  ["path", "a.b.c.d.deep_value"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_deep_path"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a2647061746872612e622e632e642e646565705f76616c75656a636f6c6c656374696f6e6673696e676c6568736368656d61496470736368656d615f646565705f7061746872696e636f72706f726174696f6e52756c657381a26a6f626a6563745479706564646565706a7461726765745061746872612e622e632e642e646565705f76616c7565"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d61496470736368656d615f646565705f70617468696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_deep_path",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "non-utf8-bytes": {
+      "rawOpaqueBytes": {
+        "$bytes": "c328a0a1fffefd"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "zero-turn-tree-hash": {
+      "rawOpaqueBytes": {
+        "$bytes": "10"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          ["consumedStagedResults", []],
+          ["eventHash", null],
+          ["previousTurnNodeHash", null],
+          ["schemaId", "schema_minimal"],
+          [
+            "turnTreeHash",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_minimal"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030307470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380"
+      },
+      "node": {
+        "consumedStagedResults": [],
+        "eventHash": null,
+        "previousTurnNodeHash": null,
+        "schemaId": "schema_minimal",
+        "turnTreeHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    "mixed-status-staged": {
+      "rawOpaqueBytes": {
+        "$bytes": "1112"
+      },
+      "turnNodeIdentityRecord": {
+        "$map": [
+          [
+            "consumedStagedResults",
+            [
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "0101010101010101010101010101010101010101010101010101010101010101"
+                  ],
+                  ["objectType", "message"],
+                  ["status", "completed"],
+                  ["taskId", "msg_1"],
+                  ["timestamp", 1700000000000]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "objectHash",
+                    "0202020202020202020202020202020202020202020202020202020202020202"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "failed"],
+                  ["taskId", "tool_failed_1"],
+                  ["timestamp", 1700000000001]
+                ]
+              },
+              {
+                "$map": [
+                  [
+                    "interruptPayload",
+                    {
+                      "$map": [["reason", "user_interrupt"]]
+                    }
+                  ],
+                  [
+                    "objectHash",
+                    "0303030303030303030303030303030303030303030303030303030303030303"
+                  ],
+                  ["objectType", "tool_result"],
+                  ["status", "interrupted"],
+                  ["taskId", "tool_int_1"],
+                  ["timestamp", 1700000000002]
+                ]
+              }
+            ]
+          ],
+          ["eventHash", null],
+          [
+            "previousTurnNodeHash",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          ["schemaId", "schema_mixed"],
+          [
+            "turnTreeHash",
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        ]
+      },
+      "turnTreeSchemaRecord": {
+        "$map": [
+          [
+            "incorporationRules",
+            [
+              {
+                "$map": [
+                  ["objectType", "message"],
+                  ["targetPath", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["objectType", "tool_result"],
+                  ["targetPath", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          [
+            "paths",
+            [
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "messages"]
+                ]
+              },
+              {
+                "$map": [
+                  ["collection", "ordered"],
+                  ["path", "tools.results"]
+                ]
+              }
+            ]
+          ],
+          ["schemaId", "schema_mixed"]
+        ]
+      },
+      "turnTreeSchemaRecordBytes": {
+        "$bytes": "a365706174687382a26470617468686d657373616765736a636f6c6c656374696f6e676f726465726564a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d6149646c736368656d615f6d6978656472696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473"
+      },
+      "turnNodeIdentityRecordBytes": {
+        "$bytes": "a568736368656d6149646c736368656d615f6d69786564696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313175636f6e73756d6564537461676564526573756c747383a56673746174757369636f6d706c65746564667461736b4964656d73675f316974696d657374616d701b0000018bcfe568006a6f626a656374486173687840303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130316a6f626a65637454797065676d657373616765a566737461747573666661696c6564667461736b49646d746f6f6c5f6661696c65645f316974696d657374616d701b0000018bcfe568016a6f626a656374486173687840303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230326a6f626a656374547970656b746f6f6c5f726573756c74a6667374617475736b696e746572727570746564667461736b49646a746f6f6c5f696e745f316974696d657374616d701b0000018bcfe568026a6f626a656374486173687840303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330336a6f626a656374547970656b746f6f6c5f726573756c7470696e746572727570745061796c6f6164a166726561736f6e6e757365725f696e74657272757074"
+      },
+      "node": {
+        "consumedStagedResults": [
+          {
+            "objectHash": "0101010101010101010101010101010101010101010101010101010101010101",
+            "objectType": "message",
+            "status": "completed",
+            "taskId": "msg_1",
+            "timestamp": 1700000000000
+          },
+          {
+            "objectHash": "0202020202020202020202020202020202020202020202020202020202020202",
+            "objectType": "tool_result",
+            "status": "failed",
+            "taskId": "tool_failed_1",
+            "timestamp": 1700000000001
+          },
+          {
+            "interruptPayload": {
+              "$map": [["reason", "user_interrupt"]]
+            },
+            "objectHash": "0303030303030303030303030303030303030303030303030303030303030303",
+            "objectType": "tool_result",
+            "status": "interrupted",
+            "taskId": "tool_int_1",
+            "timestamp": 1700000000002
+          }
+        ],
+        "eventHash": null,
+        "previousTurnNodeHash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "schemaId": "schema_mixed",
+        "turnTreeHash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "non-minimal-uint-head": {
+      "bytes": {
+        "$bytes": "1805"
+      }
+    },
+    "non-minimal-length-head": {
+      "bytes": {
+        "$bytes": "980100"
+      }
+    },
+    "unsorted-map-keys": {
+      "bytes": {
+        "$bytes": "a2616201616102"
+      }
+    },
+    "duplicate-map-key": {
+      "bytes": {
+        "$bytes": "a2616101616102"
+      }
+    },
+    "float64-value": {
+      "bytes": {
+        "$bytes": "fb3ff0000000000000"
+      }
+    },
+    "tagged-value": {
+      "bytes": {
+        "$bytes": "c06161"
+      }
+    },
+    "indefinite-length-array": {
+      "bytes": {
+        "$bytes": "9f0102ff"
+      }
+    },
+    "indefinite-length-map": {
+      "bytes": {
+        "$bytes": "bf616101ff"
+      }
+    },
+    "indefinite-length-text-string": {
+      "bytes": {
+        "$bytes": "7f6161ff"
+      }
+    },
+    "trailing-bytes-after-top-level-value": {
+      "bytes": {
+        "$bytes": "0102"
+      }
+    },
+    "truncated-input": {
+      "bytes": {
+        "$bytes": "a16161"
+      }
+    },
+    "uint-beyond-safe-integer-range": {
+      "bytes": {
+        "$bytes": "1bffffffffffffffff"
+      }
+    },
+    "negative-int-beyond-safe-integer-range": {
+      "bytes": {
+        "$bytes": "3bffffffffffffffff"
+      }
+    },
+    "control-canonical-map": {
+      "bytes": {
+        "$bytes": "a1616101"
+      }
+    },
+    "turn-tree": {
+      "schemaId": "schema_main",
+      "manifest": {
+        "$map": [
+          [
+            "context.manifest",
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          [
+            "messages",
+            [
+              "2222222222222222222222222222222222222222222222222222222222222222",
+              "2323232323232323232323232323232323232323232323232323232323232323"
+            ]
+          ]
+        ]
+      },
+      "schema": {
+        "incorporationRules": [
+          {
+            "objectType": "message",
+            "targetPath": "messages"
+          },
+          {
+            "objectType": "context_manifest",
+            "targetPath": "context.manifest"
+          }
+        ],
+        "paths": [
+          {
+            "collection": "ordered",
+            "metadata": {
+              "$map": [["role", "chat"]]
+            },
+            "path": "messages"
+          },
+          {
+            "collection": "single",
+            "metadata": {
+              "$map": [["version", 1]]
+            },
+            "path": "context.manifest"
+          }
+        ],
+        "schemaId": "schema_main"
+      }
+    }
+  },
+  "expected": {
+    "deterministic": {
+      "rawOpaqueBytesSha256Hex": "68e4b69f67af1d263b6c6818ef79cb2c48aa3f18bec18b7436806a316cb4204c",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646b736368656d615f6d61696e696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018fcf6904336a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c74",
+      "turnNodeIdentityRecordSha256Hex": "44ab935c53fcd44b91ede01abf694507fa9605827db0b93185e2a72f13814bbb",
+      "turnTreeSchemaRecordCborHex": "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578742e6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374",
+      "turnTreeSchemaRecordSha256Hex": "addd90a22e8a72dc1aad6011e78dc324dba747ab380cb78b9b50f2a9dc33b098"
+    },
+    "empty-bytes": {
+      "rawOpaqueBytesSha256Hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "1e3b86ae67b180d559e7fd0277fc208da32e8807d9c07028541ba0233675e8d7",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "single-byte": {
+      "rawOpaqueBytesSha256Hex": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353575636f6e73756d6564537461676564526573756c747381a56673746174757369636f6d706c65746564667461736b4964697461736b5f6f6e6c796974696d657374616d701b0000018bcfe568006a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a65637454797065676d657373616765",
+      "turnNodeIdentityRecordSha256Hex": "110cf20772417a1f52b25659c1d5c02bb2f75e928e9832168e517f0c67ff0e6e",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "all-zero-bytes": {
+      "rawOpaqueBytesSha256Hex": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "1e3b86ae67b180d559e7fd0277fc208da32e8807d9c07028541ba0233675e8d7",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "all-ones-bytes": {
+      "rawOpaqueBytesSha256Hex": "8667e718294e9e0df1d30600ba3eeb201f764aad2dad72748643e4a285e1d1f7",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "1e3b86ae67b180d559e7fd0277fc208da32e8807d9c07028541ba0233675e8d7",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "large-bytes": {
+      "rawOpaqueBytesSha256Hex": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "1e3b86ae67b180d559e7fd0277fc208da32e8807d9c07028541ba0233675e8d7",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "multi-path-schema": {
+      "rawOpaqueBytesSha256Hex": "6ef53a6408ec4429791fa808e4fbe7843f936316950a20ba5fbbbdd01cd29899",
+      "turnNodeIdentityRecordCborHex": "a568736368656d61496471736368656d615f6d756c74695f70617468696576656e74486173687840363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636366c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313175636f6e73756d6564537461676564526573756c747383a56673746174757369636f6d706c65746564667461736b4964656d73675f316974696d657374616d701b0000018bcfe568006a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a65637454797065676d657373616765a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018bcfe568016a6f626a656374486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346a6f626a6563745479706569746f6f6c5f63616c6ca56673746174757369636f6d706c65746564667461736b49646d746f6f6c5f726573756c745f316974696d657374616d701b0000018bcfe568026a6f626a656374486173687840353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535356a6f626a656374547970656b746f6f6c5f726573756c74",
+      "turnNodeIdentityRecordSha256Hex": "f1b1198a60898d1f88caf322da81a7d4580240a9ae6ccd313b723dcd42df8ed8",
+      "turnTreeSchemaRecordCborHex": "a365706174687385a26470617468686d657373616765736a636f6c6c656374696f6e676f726465726564a264706174686b746f6f6c732e63616c6c736a636f6c6c656374696f6e676f726465726564a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f726465726564a2647061746870636f6e746578742e6d616e69666573746a636f6c6c656374696f6e6673696e676c65a264706174686d617070726f76616c2e6c6173746a636f6c6c656374696f6e6673696e676c6568736368656d61496471736368656d615f6d756c74695f7061746872696e636f72706f726174696f6e52756c657385a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706569746f6f6c5f63616c6c6a746172676574506174686b746f6f6c732e63616c6c73a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374a26a6f626a6563745479706568617070726f76616c6a746172676574506174686d617070726f76616c2e6c617374",
+      "turnTreeSchemaRecordSha256Hex": "4063c8d4ebee3607b4871c34f40b8ede911404702a5da182d9e052a8eecfc92b"
+    },
+    "all-single-paths": {
+      "rawOpaqueBytesSha256Hex": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+      "turnNodeIdentityRecordCborHex": "a568736368656d61496471736368656d615f73696e676c65746f6e73696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "47ed0cf25473a546eb1eea3518aace2fdb95d7475ddcc89998990dc500209847",
+      "turnTreeSchemaRecordCborHex": "a365706174687382a2647061746870636f6e746578742e6d616e69666573746a636f6c6c656374696f6e6673696e676c65a2647061746868617070726f76616c6a636f6c6c656374696f6e6673696e676c6568736368656d61496471736368656d615f73696e676c65746f6e7372696e636f72706f726174696f6e52756c657382a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374a26a6f626a6563745479706568617070726f76616c6a7461726765745061746868617070726f76616c",
+      "turnTreeSchemaRecordSha256Hex": "42b9b03194ff2216b97b9bdfa0c21ec0591d06d7147960cd3b3d98ff2fae53f0"
+    },
+    "all-ordered-paths": {
+      "rawOpaqueBytesSha256Hex": "039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81",
+      "turnNodeIdentityRecordCborHex": "a568736368656d61496472736368656d615f616c6c5f6f726465726564696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "4f163a3904faf187a3cf9d8f49ebdf129a09acbe50491039367f073e6a26eb3c",
+      "turnTreeSchemaRecordCborHex": "a365706174687382a26470617468686d657373616765736a636f6c6c656374696f6e676f726465726564a264706174686a746f6f6c5f63616c6c736a636f6c6c656374696f6e676f72646572656468736368656d61496472736368656d615f616c6c5f6f72646572656472696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706569746f6f6c5f63616c6c6a746172676574506174686a746f6f6c5f63616c6c73",
+      "turnTreeSchemaRecordSha256Hex": "603cc8090cbef97a27a1b28551f0414b9958b9ec84bdd51aa29ec8fe1952ea3c"
+    },
+    "with-prev-turn": {
+      "rawOpaqueBytesSha256Hex": "6a7dc6f4267242f01f6636a45c31da51c036da1e9879abce7e1d0aaa76aad876",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353575636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "11434f9654ea6cf5befc391fa77d5c9da496a4de2dee54601f19b6967e498a7d",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "with-event-hash": {
+      "rawOpaqueBytesSha256Hex": "79d95b7f2e0c9f6bd91827e6a281f67e21e07fa4a025c7ccf9c93025f3156c04",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "bfbe44eb9abc2700ecbbe2db16a3080ac39ff617943a6df29c41be34304d1b73",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "staged-failed": {
+      "rawOpaqueBytesSha256Hex": "2b4c342f5433ebe591a1da77e013d1b72475562d48578dca8b84bac6651c3cb9",
+      "turnNodeIdentityRecordCborHex": "a568736368656d61496473736368656d615f746f6f6c5f726573756c7473696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a566737461747573666661696c6564667461736b496470746f6f6c5f63616c6c5f6661696c65646974696d657374616d701b0000018bcfe5680a6a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c74",
+      "turnNodeIdentityRecordSha256Hex": "57144bf5ad481ae008f962eab2d9dd8c6db54595fa1a3b50b390b37d9c097892",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d61496473736368656d615f746f6f6c5f726573756c747372696e636f72706f726174696f6e52756c657381a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473",
+      "turnTreeSchemaRecordSha256Hex": "cf08030b3377ade927d9927caba19afebfec75a4507b3d02bab88914185efd00"
+    },
+    "staged-interrupted": {
+      "rawOpaqueBytesSha256Hex": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "turnNodeIdentityRecordCborHex": "a568736368656d61496473736368656d615f746f6f6c5f726573756c7473696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a6667374617475736b696e746572727570746564667461736b496475746f6f6c5f63616c6c5f696e7465727275707465646974696d657374616d701b0000018bcfe568146a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c7470696e746572727570745061796c6f6164a266726561736f6e6b746f6f6c5f7061757365646b72656d61696e696e674d73191388",
+      "turnNodeIdentityRecordSha256Hex": "dc8dcca01c890f48314381dc2ed217ecaeb2a81536ade333c71bace1cd69585c",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d61496473736368656d615f746f6f6c5f726573756c747372696e636f72706f726174696f6e52756c657381a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473",
+      "turnTreeSchemaRecordSha256Hex": "cf08030b3377ade927d9927caba19afebfec75a4507b3d02bab88914185efd00"
+    },
+    "many-staged-results": {
+      "rawOpaqueBytesSha256Hex": "cbb5b121270f1e0073b10a9aab5a0e37d9c13ea0ad4d74231d70eb53c07faaf8",
+      "turnNodeIdentityRecordCborHex": "a568736368656d61496473736368656d615f746f6f6c5f726573756c7473696576656e74486173687840363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636366c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313175636f6e73756d6564537461676564526573756c747385a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018bcfe568006a6f626a656374486173687840303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130316a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f326974696d657374616d701b0000018bcfe568016a6f626a656374486173687840303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230326a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f336974696d657374616d701b0000018bcfe568026a6f626a656374486173687840303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330336a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f346974696d657374616d701b0000018bcfe568036a6f626a656374486173687840303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430343034303430346a6f626a656374547970656b746f6f6c5f726573756c74a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f356974696d657374616d701b0000018bcfe568046a6f626a656374486173687840303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530353035303530356a6f626a656374547970656b746f6f6c5f726573756c74",
+      "turnNodeIdentityRecordSha256Hex": "ee4288ba0e2b352f68fcba52c75c314c3dfecde62b11eddc5bbd603d416b2f32",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d61496473736368656d615f746f6f6c5f726573756c747372696e636f72706f726174696f6e52756c657381a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473",
+      "turnTreeSchemaRecordSha256Hex": "cf08030b3377ade927d9927caba19afebfec75a4507b3d02bab88914185efd00"
+    },
+    "deep-path-schema": {
+      "rawOpaqueBytesSha256Hex": "dc0e9c3658a1a3ed1ec94274d8b19925c93e1abb7ddba294923ad9bde30f8cb8",
+      "turnNodeIdentityRecordCborHex": "a568736368656d61496470736368656d615f646565705f70617468696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "c9ba7412548dafcf91a47741007ddc770e697a8c626a649d9dd1c2dc94159c33",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a2647061746872612e622e632e642e646565705f76616c75656a636f6c6c656374696f6e6673696e676c6568736368656d61496470736368656d615f646565705f7061746872696e636f72706f726174696f6e52756c657381a26a6f626a6563745479706564646565706a7461726765745061746872612e622e632e642e646565705f76616c7565",
+      "turnTreeSchemaRecordSha256Hex": "bdbc9d79ee36dc14ce55165b1427d19209f11366d3412f5a3d5a578cbd008489"
+    },
+    "non-utf8-bytes": {
+      "rawOpaqueBytesSha256Hex": "0fc1abcf5d72d31643a5aa26f2e7eae967f68b6d3622ce74ef78bd01f45250ee",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "1e3b86ae67b180d559e7fd0277fc208da32e8807d9c07028541ba0233675e8d7",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "zero-turn-tree-hash": {
+      "rawOpaqueBytesSha256Hex": "c555eab45d08845ae9f10d452a99bfcb06f74a50b988fe7e48dd323789b88ee3",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646e736368656d615f6d696e696d616c696576656e7448617368f66c7475726e54726565486173687840303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030307470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747380",
+      "turnNodeIdentityRecordSha256Hex": "4fc33641150e58027bf4ce1ba9a2aca09aef40d10ae836f8ba224e34aee3d9db",
+      "turnTreeSchemaRecordCborHex": "a365706174687381a26470617468686d657373616765736a636f6c6c656374696f6e676f72646572656468736368656d6149646e736368656d615f6d696e696d616c72696e636f72706f726174696f6e52756c657381a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573",
+      "turnTreeSchemaRecordSha256Hex": "043cbfe8a443b19253835d1bda84461e4e3755b11eac46861c90c93d5f4b709d"
+    },
+    "mixed-status-staged": {
+      "rawOpaqueBytesSha256Hex": "c979d5f872609b04c5d8f05f95a4bd0694a914bc3d84231ff2d79f8fa6ea3ad4",
+      "turnNodeIdentityRecordCborHex": "a568736368656d6149646c736368656d615f6d69786564696576656e7448617368f66c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f64654861736878403131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313175636f6e73756d6564537461676564526573756c747383a56673746174757369636f6d706c65746564667461736b4964656d73675f316974696d657374616d701b0000018bcfe568006a6f626a656374486173687840303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130313031303130316a6f626a65637454797065676d657373616765a566737461747573666661696c6564667461736b49646d746f6f6c5f6661696c65645f316974696d657374616d701b0000018bcfe568016a6f626a656374486173687840303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230323032303230326a6f626a656374547970656b746f6f6c5f726573756c74a6667374617475736b696e746572727570746564667461736b49646a746f6f6c5f696e745f316974696d657374616d701b0000018bcfe568026a6f626a656374486173687840303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330333033303330336a6f626a656374547970656b746f6f6c5f726573756c7470696e746572727570745061796c6f6164a166726561736f6e6e757365725f696e74657272757074",
+      "turnNodeIdentityRecordSha256Hex": "4baa3b4ad7244ae38dceca37b2bd010734215eda134cb95660527312a697023a",
+      "turnTreeSchemaRecordCborHex": "a365706174687382a26470617468686d657373616765736a636f6c6c656374696f6e676f726465726564a264706174686d746f6f6c732e726573756c74736a636f6c6c656374696f6e676f72646572656468736368656d6149646c736368656d615f6d6978656472696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a656374547970656b746f6f6c5f726573756c746a746172676574506174686d746f6f6c732e726573756c7473",
+      "turnTreeSchemaRecordSha256Hex": "22d2be3d8c20216332a92f0a3a62047cecf6479f707523ca793a58f047911820"
+    },
+    "control-canonical-map": {
+      "record": {
+        "$map": [["a", 1]]
+      }
+    },
+    "turn-tree": {
+      "hash": "b71d4907b25aad8ed0443a8a170437bd3749ab0dc5b336df0af9076848073b3e"
+    }
+  }
+}

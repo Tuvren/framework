@@ -52,6 +52,7 @@ const defaultCapabilities = (
     return [
       "kernel.fault-injection",
       "kernel.syscall",
+      "kernel.codec",
       "kernel.protocol",
       "kernel.edge-validation",
       "kernel.edge-validation.composite",
@@ -77,6 +78,7 @@ const defaultCapabilities = (
     return [
       "kernel.fault-injection",
       "kernel.syscall",
+      "kernel.codec",
       "kernel.protocol",
       "kernel.edge-validation",
       "kernel.edge-validation.composite",
@@ -93,6 +95,7 @@ const defaultCapabilities = (
   return [
     "kernel.fault-injection",
     "kernel.syscall",
+    "kernel.codec",
     "kernel.protocol",
     "kernel.edge-validation",
     "kernel.edge-validation.composite",

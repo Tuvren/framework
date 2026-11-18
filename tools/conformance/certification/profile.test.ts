@@ -265,7 +265,7 @@ test("each kernel profile has an exact two-way claim inventory", async () => {
   expect(
     profiles.map(({ profileId, claimIds }) => [profileId, claimIds.length])
   ).toEqual([
-    ["kernel.memory", 75],
+    ["kernel.memory", 144],
     ["kernel.persistent-reopen", 6],
     ["kernel.process-crash", 4],
     ["kernel.shared-backend", 3],
@@ -567,4 +567,74 @@ test("inventory fails closed when capability-based ownership is ambiguous", asyn
   expect(() =>
     assertProfileClaimInventory(shared, plans, ambiguousAuthority)
   ).toThrow("ambiguous profile ownership");
+});
+
+test("memory codec inventory rejects omitted claims, capability, and unclaimed codec checks", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const authority = await readProfileAuthority(adapter.authorityPackets);
+  const profile = authority
+    .get("tuvren.kernel.protocol")
+    ?.find(({ profileId }) => profileId === "kernel.memory");
+  if (profile === undefined) {
+    throw new Error("missing memory profile");
+  }
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  const codecs = plans.filter(({ plan }) =>
+    plan.applicability.capabilities.includes("kernel.codec")
+  );
+  expect(codecs).toHaveLength(1);
+  const claims = codecs.flatMap(({ checks }) =>
+    checks.flatMap(({ check }) => check.claimIds ?? [])
+  );
+  expect(claims).toHaveLength(69);
+  for (const claim of claims) {
+    expect(() =>
+      assertProfileClaimInventory(
+        { ...profile, claimIds: profile.claimIds.filter((id) => id !== claim) },
+        plans,
+        authority
+      )
+    ).toThrow(claim);
+  }
+  expect(() =>
+    assertProfileClaimInventory(
+      {
+        ...profile,
+        requiredCapabilities: profile.requiredCapabilities.filter(
+          (capability) => capability !== "kernel.codec"
+        ),
+      },
+      plans,
+      authority
+    )
+  ).toThrow("kernel.codec");
+  expect(() =>
+    assertProfileCapabilities(
+      [profile],
+      adapter.capabilities.filter(
+        (capability) => capability !== "kernel.codec"
+      ),
+      true
+    )
+  ).toThrow("kernel.codec");
+  const missing = plans.map((plan) =>
+    plan.plan.applicability.capabilities.includes("kernel.codec")
+      ? {
+          ...plan,
+          checks: plan.checks.map(({ check, ...compiled }) => ({
+            ...compiled,
+            check: {
+              ...check,
+              claimIds: [],
+              steps: check.steps?.map((step) => ({ ...step, claimIds: [] })),
+            },
+          })),
+        }
+      : plan
+  );
+  expect(() =>
+    assertProfileClaimInventory(profile, missing, authority)
+  ).toThrow("requires codec claimIds");
 });

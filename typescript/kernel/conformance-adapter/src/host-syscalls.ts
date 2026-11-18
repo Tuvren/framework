@@ -4,6 +4,14 @@ import { TuvrenPersistenceError } from "@tuvren/core";
 import type { KernelRecord } from "@tuvren/core";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import {
+  decodeDeterministicKernelRecord,
+  encodeDeterministicKernelRecord,
+  hashKernelRecord,
+  hashOpaqueObjectBytes,
+  hashTurnNodeIdentity,
+  hashTurnTreeIdentity,
+} from "@tuvren/kernel-protocol";
+import {
   createKernelTestClock,
   createKernelBarrierControl,
   createKernelFaultControl,
@@ -80,6 +88,37 @@ const parameters = {
     method: "set",
     protocolMethod: "setClock",
     target: "clock",
+  },
+  "kernel.codec.decode": {
+    arguments: ["bytes"],
+    method: "decodeDeterministicKernelRecord",
+    recordResult: true,
+    target: "codec",
+  },
+  "kernel.codec.encode": {
+    arguments: ["record"],
+    method: "encodeDeterministicKernelRecord",
+    target: "codec",
+  },
+  "kernel.codec.hashOpaque": {
+    arguments: ["bytes"],
+    method: "hashOpaqueObjectBytes",
+    target: "codec",
+  },
+  "kernel.codec.hashRecord": {
+    arguments: ["record"],
+    method: "hashKernelRecord",
+    target: "codec",
+  },
+  "kernel.codec.hashTurnNode": {
+    arguments: ["node"],
+    method: "hashTurnNodeIdentity",
+    target: "codec",
+  },
+  "kernel.codec.hashTurnTree": {
+    arguments: ["schemaId", "manifest", "schema"],
+    method: "hashTurnTreeIdentity",
+    target: "codec",
   },
   "kernel.fault.arm": {
     arguments: ["point", "selector", "occurrence", "mode"],
@@ -425,6 +464,14 @@ interface AdapterClock {
 }
 
 interface InstanceState {
+  codec: {
+    decodeDeterministicKernelRecord: typeof decodeDeterministicKernelRecord;
+    encodeDeterministicKernelRecord: typeof encodeDeterministicKernelRecord;
+    hashKernelRecord: typeof hashKernelRecord;
+    hashOpaqueObjectBytes: typeof hashOpaqueObjectBytes;
+    hashTurnNodeIdentity: typeof hashTurnNodeIdentity;
+    hashTurnTreeIdentity: typeof hashTurnTreeIdentity;
+  };
   config: KernelAdapterConfig;
   clock: AdapterClock;
   fault?: ReturnType<typeof createDurableFaultControl>;
@@ -466,6 +513,7 @@ export const createSyscallBindings = (
     const handle = randomUUID();
     const injectedClock = createKernelTestClock();
     let backendServer = false;
+    const codec = { decodeDeterministicKernelRecord, hashOpaqueObjectBytes };
     const state: InstanceState = {
       clock: {
         ...injectedClock,
@@ -504,6 +552,13 @@ export const createSyscallBindings = (
           }
           backendServer = nextServer;
         },
+      },
+      codec: {
+        ...(config.mutant?.wrapCodec(codec) ?? codec),
+        encodeDeterministicKernelRecord,
+        hashKernelRecord,
+        hashTurnNodeIdentity,
+        hashTurnTreeIdentity,
       },
       config: { ...config, ...options },
       inFlight: new Set(),

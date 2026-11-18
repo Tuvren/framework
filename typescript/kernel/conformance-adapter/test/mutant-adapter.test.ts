@@ -107,7 +107,7 @@ const readManifest = (relativePath: string): AdapterManifest => {
   return manifest;
 };
 
-const readPlanChecks = (): Map<string, ResolvedCheck> => {
+const readCompositePlanChecks = (): Map<string, ResolvedCheck> => {
   const checks = new Map<string, ResolvedCheck>();
   for (const file of readdirSync(path.join(REPO_ROOT, PLANS_DIRECTORY))) {
     const planPath = path.join(PLANS_DIRECTORY, file);
@@ -118,7 +118,9 @@ const readPlanChecks = (): Map<string, ResolvedCheck> => {
       ? planRecord.applicability
       : {};
     const planCapabilities = readStrings(applicability.capabilities);
-    for (const check of readRecords(planRecord.checks).map(readPlanCheck)) {
+    for (const check of readRecords(planRecord.checks)
+      .filter((candidate) => !Array.isArray(candidate.steps))
+      .map(readPlanCheck)) {
       const fixturePath =
         check.fixture === undefined ? undefined : fixtures[check.fixture];
       checks.set(check.checkId, {
@@ -249,7 +251,7 @@ const readResult = (response: RpcResponse | undefined): unknown => {
 
 const mutantManifest = readManifest(MUTANT_MANIFEST);
 const memoryManifest = readManifest(`${ADAPTER_DIRECTORY}/adapter.json`);
-const planChecks = readPlanChecks();
+const planChecks = readCompositePlanChecks();
 
 describe("mutant adapter manifest", () => {
   test("is a non-certifying memory adapter that selects its mutant by id", () => {
@@ -259,12 +261,29 @@ describe("mutant adapter manifest", () => {
     expect(mutantManifest.capabilities).toEqual(memoryManifest.capabilities);
   });
 
-  test("certifying manifests never launch a mutant", () => {
+  test("certifying manifests exclude mutants and all launch capabilities match declarations", () => {
     for (const manifestPath of CERTIFYING_MANIFESTS) {
       expect({
         manifestPath,
         mutant: isMutantAdapterCommand(readManifest(manifestPath).command),
       }).toEqual({ manifestPath, mutant: false });
+    }
+    for (const file of readdirSync(
+      path.join(REPO_ROOT, ADAPTER_DIRECTORY)
+    ).filter((name) => name.startsWith("adapter") && name.endsWith(".json"))) {
+      const manifestPath = `${ADAPTER_DIRECTORY}/${file}`;
+      const manifest = readManifest(manifestPath);
+      const launchedCapabilities = manifest.command.flatMap(
+        (argument, index) =>
+          argument === "--capability" ? [manifest.command[index + 1]] : []
+      );
+      expect({
+        capabilities: launchedCapabilities.toSorted(),
+        manifestPath,
+      }).toEqual({
+        capabilities: manifest.capabilities.toSorted(),
+        manifestPath,
+      });
     }
   });
 

@@ -1,0 +1,4470 @@
+{
+  "planId": "tuvren.kernel.codec",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.codec"]
+  },
+  "fixtures": {
+    "vectors": "../fixtures/codec/vectors.json"
+  },
+  "checks": [
+    {
+      "checkId": "kernel.codec.deterministic.opaque",
+      "claimIds": ["kernel.codec.deterministic.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.deterministic.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deterministic.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.deterministic.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.deterministic.schema",
+      "claimIds": ["kernel.codec.deterministic.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deterministic.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deterministic.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.deterministic.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deterministic.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deterministic.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deterministic.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.deterministic.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.deterministic.turn-node",
+      "claimIds": ["kernel.codec.deterministic.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deterministic.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deterministic.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.deterministic.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deterministic.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deterministic.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deterministic.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.deterministic.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deterministic.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deterministic.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.deterministic.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.empty-bytes.opaque",
+      "claimIds": ["kernel.codec.empty-bytes.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.empty-bytes.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.empty-bytes.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.empty-bytes.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.empty-bytes.schema",
+      "claimIds": ["kernel.codec.empty-bytes.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.empty-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.empty-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.empty-bytes.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.empty-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.empty-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.empty-bytes.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.empty-bytes.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.empty-bytes.turn-node",
+      "claimIds": ["kernel.codec.empty-bytes.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.empty-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.empty-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.empty-bytes.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.empty-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.empty-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.empty-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.empty-bytes.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.empty-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.empty-bytes.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.empty-bytes.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.single-byte.opaque",
+      "claimIds": ["kernel.codec.single-byte.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.single-byte.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.single-byte.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.single-byte.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.single-byte.schema",
+      "claimIds": ["kernel.codec.single-byte.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.single-byte.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.single-byte.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.single-byte.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.single-byte.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.single-byte.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.single-byte.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.single-byte.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.single-byte.turn-node",
+      "claimIds": ["kernel.codec.single-byte.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.single-byte.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.single-byte.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.single-byte.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.single-byte.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.single-byte.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.single-byte.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.single-byte.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.single-byte.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.single-byte.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.single-byte.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-zero-bytes.opaque",
+      "claimIds": ["kernel.codec.all-zero-bytes.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-zero-bytes.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-zero-bytes.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-zero-bytes.schema",
+      "claimIds": ["kernel.codec.all-zero-bytes.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-zero-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-zero-bytes.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-zero-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-zero-bytes.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-zero-bytes.turn-node",
+      "claimIds": ["kernel.codec.all-zero-bytes.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-zero-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-zero-bytes.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-zero-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.all-zero-bytes.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-zero-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-zero-bytes.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-zero-bytes.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-ones-bytes.opaque",
+      "claimIds": ["kernel.codec.all-ones-bytes.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-ones-bytes.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-ones-bytes.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-ones-bytes.schema",
+      "claimIds": ["kernel.codec.all-ones-bytes.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ones-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-ones-bytes.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ones-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-ones-bytes.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-ones-bytes.turn-node",
+      "claimIds": ["kernel.codec.all-ones-bytes.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ones-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-ones-bytes.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ones-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.all-ones-bytes.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ones-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ones-bytes.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-ones-bytes.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.large-bytes.opaque",
+      "claimIds": ["kernel.codec.large-bytes.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.large-bytes.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.large-bytes.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.large-bytes.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.large-bytes.schema",
+      "claimIds": ["kernel.codec.large-bytes.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.large-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.large-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.large-bytes.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.large-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.large-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.large-bytes.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.large-bytes.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.large-bytes.turn-node",
+      "claimIds": ["kernel.codec.large-bytes.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.large-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.large-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.large-bytes.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.large-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.large-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.large-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.large-bytes.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.large-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.large-bytes.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.large-bytes.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.multi-path-schema.opaque",
+      "claimIds": ["kernel.codec.multi-path-schema.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.multi-path-schema.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.multi-path-schema.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.multi-path-schema.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.multi-path-schema.schema",
+      "claimIds": ["kernel.codec.multi-path-schema.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.multi-path-schema.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.multi-path-schema.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.multi-path-schema.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.multi-path-schema.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.multi-path-schema.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.multi-path-schema.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.multi-path-schema.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.multi-path-schema.turn-node",
+      "claimIds": ["kernel.codec.multi-path-schema.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.multi-path-schema.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.multi-path-schema.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.multi-path-schema.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.multi-path-schema.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.multi-path-schema.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.multi-path-schema.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.multi-path-schema.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.multi-path-schema.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.multi-path-schema.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.multi-path-schema.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-single-paths.opaque",
+      "claimIds": ["kernel.codec.all-single-paths.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-single-paths.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-single-paths.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-single-paths.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-single-paths.schema",
+      "claimIds": ["kernel.codec.all-single-paths.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-single-paths.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-single-paths.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-single-paths.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-single-paths.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-single-paths.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-single-paths.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-single-paths.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-single-paths.turn-node",
+      "claimIds": ["kernel.codec.all-single-paths.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-single-paths.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-single-paths.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-single-paths.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-single-paths.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-single-paths.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-single-paths.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.all-single-paths.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-single-paths.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-single-paths.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-single-paths.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-ordered-paths.opaque",
+      "claimIds": ["kernel.codec.all-ordered-paths.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-ordered-paths.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-ordered-paths.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-ordered-paths.schema",
+      "claimIds": ["kernel.codec.all-ordered-paths.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ordered-paths.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-ordered-paths.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ordered-paths.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-ordered-paths.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.all-ordered-paths.turn-node",
+      "claimIds": ["kernel.codec.all-ordered-paths.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ordered-paths.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.all-ordered-paths.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.all-ordered-paths.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.all-ordered-paths.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.all-ordered-paths.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.all-ordered-paths.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.all-ordered-paths.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.with-prev-turn.opaque",
+      "claimIds": ["kernel.codec.with-prev-turn.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.with-prev-turn.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-prev-turn.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.with-prev-turn.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.with-prev-turn.schema",
+      "claimIds": ["kernel.codec.with-prev-turn.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-prev-turn.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-prev-turn.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.with-prev-turn.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-prev-turn.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-prev-turn.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-prev-turn.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.with-prev-turn.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.with-prev-turn.turn-node",
+      "claimIds": ["kernel.codec.with-prev-turn.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-prev-turn.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-prev-turn.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.with-prev-turn.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-prev-turn.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-prev-turn.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-prev-turn.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.with-prev-turn.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-prev-turn.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-prev-turn.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.with-prev-turn.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.with-event-hash.opaque",
+      "claimIds": ["kernel.codec.with-event-hash.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.with-event-hash.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-event-hash.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.with-event-hash.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.with-event-hash.schema",
+      "claimIds": ["kernel.codec.with-event-hash.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-event-hash.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-event-hash.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.with-event-hash.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-event-hash.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-event-hash.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-event-hash.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.with-event-hash.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.with-event-hash.turn-node",
+      "claimIds": ["kernel.codec.with-event-hash.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-event-hash.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-event-hash.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.with-event-hash.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.with-event-hash.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.with-event-hash.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-event-hash.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.with-event-hash.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.with-event-hash.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.with-event-hash.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.with-event-hash.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.staged-failed.opaque",
+      "claimIds": ["kernel.codec.staged-failed.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.staged-failed.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-failed.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.staged-failed.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.staged-failed.schema",
+      "claimIds": ["kernel.codec.staged-failed.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-failed.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-failed.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.staged-failed.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-failed.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-failed.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-failed.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.staged-failed.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.staged-failed.turn-node",
+      "claimIds": ["kernel.codec.staged-failed.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-failed.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-failed.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.staged-failed.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-failed.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-failed.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-failed.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.staged-failed.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-failed.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-failed.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.staged-failed.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.staged-interrupted.opaque",
+      "claimIds": ["kernel.codec.staged-interrupted.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.staged-interrupted.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-interrupted.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.staged-interrupted.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.staged-interrupted.schema",
+      "claimIds": ["kernel.codec.staged-interrupted.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-interrupted.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-interrupted.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.staged-interrupted.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-interrupted.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-interrupted.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-interrupted.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.staged-interrupted.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.staged-interrupted.turn-node",
+      "claimIds": ["kernel.codec.staged-interrupted.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-interrupted.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-interrupted.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.staged-interrupted.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.staged-interrupted.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.staged-interrupted.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-interrupted.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.staged-interrupted.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.staged-interrupted.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.staged-interrupted.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.staged-interrupted.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.many-staged-results.opaque",
+      "claimIds": ["kernel.codec.many-staged-results.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.many-staged-results.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.many-staged-results.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.many-staged-results.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.many-staged-results.schema",
+      "claimIds": ["kernel.codec.many-staged-results.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.many-staged-results.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.many-staged-results.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.many-staged-results.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.many-staged-results.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.many-staged-results.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.many-staged-results.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.many-staged-results.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.many-staged-results.turn-node",
+      "claimIds": ["kernel.codec.many-staged-results.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.many-staged-results.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.many-staged-results.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.many-staged-results.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.many-staged-results.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.many-staged-results.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.many-staged-results.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.many-staged-results.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.many-staged-results.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.many-staged-results.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.many-staged-results.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.deep-path-schema.opaque",
+      "claimIds": ["kernel.codec.deep-path-schema.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.deep-path-schema.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deep-path-schema.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.deep-path-schema.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.deep-path-schema.schema",
+      "claimIds": ["kernel.codec.deep-path-schema.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deep-path-schema.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deep-path-schema.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.deep-path-schema.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deep-path-schema.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deep-path-schema.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deep-path-schema.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.deep-path-schema.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.deep-path-schema.turn-node",
+      "claimIds": ["kernel.codec.deep-path-schema.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deep-path-schema.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deep-path-schema.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.deep-path-schema.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.deep-path-schema.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.deep-path-schema.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deep-path-schema.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.deep-path-schema.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.deep-path-schema.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.deep-path-schema.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.deep-path-schema.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.non-utf8-bytes.opaque",
+      "claimIds": ["kernel.codec.non-utf8-bytes.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.non-utf8-bytes.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.non-utf8-bytes.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.non-utf8-bytes.schema",
+      "claimIds": ["kernel.codec.non-utf8-bytes.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.non-utf8-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.non-utf8-bytes.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.non-utf8-bytes.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.non-utf8-bytes.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.non-utf8-bytes.turn-node",
+      "claimIds": ["kernel.codec.non-utf8-bytes.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.non-utf8-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.non-utf8-bytes.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.non-utf8-bytes.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.non-utf8-bytes.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.non-utf8-bytes.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.non-utf8-bytes.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.non-utf8-bytes.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.zero-turn-tree-hash.opaque",
+      "claimIds": ["kernel.codec.zero-turn-tree-hash.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.zero-turn-tree-hash.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.zero-turn-tree-hash.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.zero-turn-tree-hash.schema",
+      "claimIds": ["kernel.codec.zero-turn-tree-hash.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.zero-turn-tree-hash.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.zero-turn-tree-hash.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.zero-turn-tree-hash.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.zero-turn-tree-hash.turn-node",
+      "claimIds": ["kernel.codec.zero-turn-tree-hash.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.zero-turn-tree-hash.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.zero-turn-tree-hash.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.zero-turn-tree-hash.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.zero-turn-tree-hash.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.zero-turn-tree-hash.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.zero-turn-tree-hash.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.mixed-status-staged.opaque",
+      "claimIds": ["kernel.codec.mixed-status-staged.opaque"],
+      "operation": "kernel.codec.hashOpaque",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashOpaque",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.mixed-status-staged.rawOpaqueBytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.rawOpaqueBytesSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.opaque"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.mixed-status-staged.rawOpaqueBytesSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.mixed-status-staged.schema",
+      "claimIds": ["kernel.codec.mixed-status-staged.schema"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.mixed-status-staged.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.schema"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.mixed-status-staged.turnTreeSchemaRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.schema"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.turnTreeSchemaRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.schema"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.mixed-status-staged.turnTreeSchemaRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.turnTreeSchemaRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.schema"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.mixed-status-staged.turnTreeSchemaRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.mixed-status-staged.turn-node",
+      "claimIds": ["kernel.codec.mixed-status-staged.turn-node"],
+      "operation": "kernel.codec.encode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "encode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.mixed-status-staged.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.turn-node"]
+        },
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.mixed-status-staged.turnNodeIdentityRecordBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "decoded",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.turn-node"]
+        },
+        {
+          "stepId": "reencode",
+          "operation": "kernel.codec.encode",
+          "arguments": {
+            "record": {
+              "$ref": "capture.decoded"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$bytes",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.turnNodeIdentityRecordCborHex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.turn-node"]
+        },
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashRecord",
+          "arguments": {
+            "record": {
+              "$ref": "fixture.input.mixed-status-staged.turnNodeIdentityRecord"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.turn-node"]
+        },
+        {
+          "stepId": "identity",
+          "operation": "kernel.codec.hashTurnNode",
+          "arguments": {
+            "node": {
+              "$ref": "fixture.input.mixed-status-staged.node"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.mixed-status-staged.turnNodeIdentityRecordSha256Hex"
+            }
+          ],
+          "claimIds": ["kernel.codec.mixed-status-staged.turn-node"]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.mixed-status-staged.turnNodeIdentityRecordSha256Hex"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.non-minimal-uint-head",
+      "claimIds": ["kernel.codec.decode.non-minimal-uint-head"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.non-minimal-uint-head"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.non-minimal-uint-head.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.non-minimal-length-head",
+      "claimIds": ["kernel.codec.decode.non-minimal-length-head"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.non-minimal-length-head"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.non-minimal-length-head.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.unsorted-map-keys",
+      "claimIds": ["kernel.codec.decode.unsorted-map-keys"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.unsorted-map-keys"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.unsorted-map-keys.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.duplicate-map-key",
+      "claimIds": ["kernel.codec.decode.duplicate-map-key"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.duplicate-map-key"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.duplicate-map-key.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.float64-value",
+      "claimIds": ["kernel.codec.decode.float64-value"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.float64-value"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.float64-value.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.tagged-value",
+      "claimIds": ["kernel.codec.decode.tagged-value"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.tagged-value"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.tagged-value.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.indefinite-length-array",
+      "claimIds": ["kernel.codec.decode.indefinite-length-array"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.indefinite-length-array"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.indefinite-length-array.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.indefinite-length-map",
+      "claimIds": ["kernel.codec.decode.indefinite-length-map"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.indefinite-length-map"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.indefinite-length-map.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.indefinite-length-text-string",
+      "claimIds": ["kernel.codec.decode.indefinite-length-text-string"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.indefinite-length-text-string"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.indefinite-length-text-string.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.trailing-bytes-after-top-level-value",
+      "claimIds": ["kernel.codec.decode.trailing-bytes-after-top-level-value"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": [
+            "kernel.codec.decode.trailing-bytes-after-top-level-value"
+          ],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.trailing-bytes-after-top-level-value.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.truncated-input",
+      "claimIds": ["kernel.codec.decode.truncated-input"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.truncated-input"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.truncated-input.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.uint-beyond-safe-integer-range",
+      "claimIds": ["kernel.codec.decode.uint-beyond-safe-integer-range"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.uint-beyond-safe-integer-range"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.uint-beyond-safe-integer-range.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+      "claimIds": [
+        "kernel.codec.decode.negative-int-beyond-safe-integer-range"
+      ],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": [
+            "kernel.codec.decode.negative-int-beyond-safe-integer-range"
+          ],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.negative-int-beyond-safe-integer-range.bytes"
+            }
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.outcome.kind",
+          "equals": "error"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.trace.decode.state.adapterError",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        },
+        {
+          "kind": "stateField",
+          "field": "$.trace.decode.state.adapterError.code",
+          "matches": "^(non_canonical_kernel_record_encoding|invalid_decoded_kernel_record|invalid_kernel_record_value|invalid_kernel_record_integer)$",
+          "when": {
+            "path": "$.result.trace.decode.outcome.kind",
+            "equals": "error"
+          }
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.decode.control-canonical-map",
+      "claimIds": ["kernel.codec.decode.control-canonical-map"],
+      "operation": "kernel.codec.decode",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "decode",
+          "operation": "kernel.codec.decode",
+          "claimIds": ["kernel.codec.decode.control-canonical-map"],
+          "arguments": {
+            "bytes": {
+              "$ref": "fixture.input.control-canonical-map.bytes"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.control-canonical-map.record"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.decode.result",
+          "equalsPath": "$.fixture.expected.control-canonical-map.record"
+        }
+      ]
+    },
+    {
+      "checkId": "kernel.codec.turn-tree.identity",
+      "claimIds": ["kernel.codec.turn-tree.identity"],
+      "operation": "kernel.codec.hashTurnTree",
+      "fixture": "vectors",
+      "steps": [
+        {
+          "stepId": "hash",
+          "operation": "kernel.codec.hashTurnTree",
+          "claimIds": ["kernel.codec.turn-tree.identity"],
+          "arguments": {
+            "schemaId": {
+              "$ref": "fixture.input.turn-tree.schemaId"
+            },
+            "manifest": {
+              "$ref": "fixture.input.turn-tree.manifest"
+            },
+            "schema": {
+              "$ref": "fixture.input.turn-tree.schema"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.turn-tree.hash"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.hash.result",
+          "equalsPath": "$.fixture.expected.turn-tree.hash"
+        }
+      ]
+    }
+  ]
+}
