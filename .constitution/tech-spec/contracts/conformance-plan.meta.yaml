@@ -6,6 +6,9 @@ flows:
 boundaries: [BND-23, BND-27]
 companion: conformance-certification.md
 pinned: true
-certainty: assumed
-assumption: "The existing plan schema is exercised by tools/conformance/plan-compiler/certification-rules.test.ts. Named instance selection for cross-scope checks is planned and not yet exercised."
-settles_when: "KRT-DQ002 closeout cites schema and runner tests for two scoped instances on one substrate, including rejected unknown and duplicate names."
+certainty: settled
+evidence:
+  kind: repository
+  ref: tools/conformance/harness/test/named-instances.test.ts
+  date: 2026-11-18
+  note: "Schema (optional steps[].instance) and runner tests for named instances on one per-check substrate, including rejected unknown, duplicate and released-substrate names, pass at b5934f7; the scope plan proves same-scope sharing since 9ee682e, as the sidecar's settles_when requires."

@@ -1,55 +1,55 @@
 id: DQ
-name: "Move TypeScript and Rust to canonical kernel plans"
+name: Move TypeScript and Rust to canonical kernel plans
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DO, DP]
 priority: 3
 scope:
   paths:
-    - "spec/kernel/authority-packet.json"
-    - "spec/kernel/legacy/authority-packet.json"
-    - "spec/conformance/kernel"
-    - "tools/schemas"
-    - "tools/conformance/adapter-protocol"
-    - "tools/conformance/harness"
-    - "tools/conformance/plan-compiler"
-    - "tools/conformance/certification"
-    - "tools/conformance/meta-conformance"
-    - "tools/scripts/authority-guardrails"
-    - "tools/scripts/compatibility-report.ts"
-    - "typescript/kernel/protocol"
-    - "typescript/kernel/conformance-adapter"
-    - "typescript/kernel/testkit"
-    - "rust/kernel"
-    - "rust/kernel-conformance-adapter"
-    - "go/kernel-conformance-adapter/adapter.json"
-    - "python/kernel-conformance-adapter/adapter.json"
-    - "dart/kernel-conformance-adapter/adapter.json"
-    - "reports/compatibility"
-    - "tools/scripts/portability-gate.ts"
+    - spec/kernel/authority-packet.json
+    - spec/kernel/legacy/authority-packet.json
+    - spec/conformance/kernel
+    - tools/schemas
+    - tools/conformance/adapter-protocol
+    - tools/conformance/harness
+    - tools/conformance/plan-compiler
+    - tools/conformance/certification
+    - tools/conformance/meta-conformance
+    - tools/scripts/authority-guardrails
+    - tools/scripts/compatibility-report.ts
+    - typescript/kernel/protocol
+    - typescript/kernel/conformance-adapter
+    - typescript/kernel/testkit
+    - rust/kernel
+    - rust/kernel-conformance-adapter
+    - go/kernel-conformance-adapter/adapter.json
+    - python/kernel-conformance-adapter/adapter.json
+    - dart/kernel-conformance-adapter/adapter.json
+    - reports/compatibility
+    - tools/scripts/portability-gate.ts
     - ".constitution/reports/epic-al-portability-inventory.json"
     - ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
-    - "tools/scripts/conformance/generate-kernel-plans.ts"
+    - tools/scripts/conformance/generate-kernel-plans.ts
     - ".changeset/kernel-dq-canonical-plans.md"
-    - "tools/scripts/check.ts"
-    - "tools/scripts/generated-prerequisites.test.ts"
-    - "tools/scripts/verify-kernel.ts"
-    - "tools/scripts/verify.ts"
+    - tools/scripts/check.ts
+    - tools/scripts/generated-prerequisites.test.ts
+    - tools/scripts/verify-kernel.ts
+    - tools/scripts/verify.ts
   tech_spec_patchable: []
 estimated_diff_lines: 15000
 estimate_source: planned
 tickets:
   - id: KRT-DQ005
-    title: "Lint tools/ in the inner-loop check"
+    title: Lint tools/ in the inner-loop check
     type: Chore
     effort: 1
     depends_on: []
     scope:
       in:
-        - "tools/scripts/check.ts"
-        - "tools/scripts/generated-prerequisites.test.ts"
+        - tools/scripts/check.ts
+        - tools/scripts/generated-prerequisites.test.ts
     verification:
-      command: "bun run check"
+      command: bun run check
       expected: "Exit 0; the inner loop runs the root workspace lint and a Biome finding under tools/ fails it."
     stop_conditions:
       - "STOP if the root workspace lint cannot run inside bun run check without starting a service or changing lint configuration; report it instead of narrowing the lint."
@@ -57,32 +57,31 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "The check phases include the root workspace lint step, asserted where tools/scripts/generated-prerequisites.test.ts already asserts the check phase shape. A Biome finding seeded in a tools/ file makes bun run check exit nonzero, and removing it restores exit 0. No lint rule, ignore comment, or configuration changes."
-    flows: ["flow-authority-packet-driven-conformance"]
+    flows: [flow-authority-packet-driven-conformance]
     certainty: settled
     status: done
-    replaces:
-      - "EPIC-DP#follow-up:14104e81e6e5"
+    replaces: ["EPIC-DP#follow-up:14104e81e6e5"]
   - id: KRT-DQ001
-    title: "Catalogue kernel.codec and migrate the 68 codec assertions"
+    title: Catalogue kernel.codec and migrate the 68 codec assertions
     type: Feature
     effort: 8
     depends_on: [KRT-DQ005]
     scope:
       in:
-        - "spec/kernel/authority-packet.json"
-        - "spec/conformance/kernel"
-        - "typescript/kernel/protocol"
-        - "typescript/kernel/conformance-adapter"
-        - "rust/kernel"
-        - "rust/kernel-conformance-adapter"
-        - "tools/conformance/plan-compiler"
-        - "tools/conformance/certification"
-        - "tools/conformance/meta-conformance"
-        - "reports/compatibility"
-        - "tools/scripts/verify-kernel.ts"
-        - "tools/scripts/verify.ts"
+        - spec/kernel/authority-packet.json
+        - spec/conformance/kernel
+        - typescript/kernel/protocol
+        - typescript/kernel/conformance-adapter
+        - rust/kernel
+        - rust/kernel-conformance-adapter
+        - tools/conformance/plan-compiler
+        - tools/conformance/certification
+        - tools/conformance/meta-conformance
+        - reports/compatibility
+        - tools/scripts/verify-kernel.ts
+        - tools/scripts/verify.ts
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if a codec operation needs an adapter-computed verdict or an assertion has no authority-backed mapping; route the gap."
@@ -90,31 +89,33 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "The map accounts for all 68 existing assertions, valid and noncanonical inputs are observed through codec operations, TypeScript and Rust run the canonical checks, and the accept-noncanonical-cbor mutant has a designated detecting assertion. The memory inventory fails if a codec claim or required kernel.codec capability is omitted."
-    flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
+    flows:
+      - flow-authority-packet-driven-conformance
+      - flow-multi-implementation-conformance-compatibility
     certainty: assumed
     status: done
   - id: KRT-DQ002
-    title: "Move both legacy-only controls to observable plan assertions"
+    title: Move both legacy-only controls to observable plan assertions
     type: Feature
     effort: 5
     depends_on: [KRT-DQ001]
     scope:
       in:
-        - "spec/kernel/authority-packet.json"
-        - "spec/conformance/kernel"
-        - "typescript/kernel/conformance-adapter"
-        - "typescript/kernel/testkit"
-        - "rust/kernel"
-        - "rust/kernel-conformance-adapter"
-        - "tools/schemas"
-        - "tools/conformance/harness"
-        - "tools/conformance/adapter-protocol"
-        - "tools/conformance/plan-compiler"
-        - "tools/conformance/meta-conformance"
-        - "tools/scripts/verify-kernel.ts"
-        - "tools/scripts/verify.ts"
+        - spec/kernel/authority-packet.json
+        - spec/conformance/kernel
+        - typescript/kernel/conformance-adapter
+        - typescript/kernel/testkit
+        - rust/kernel
+        - rust/kernel-conformance-adapter
+        - tools/schemas
+        - tools/conformance/harness
+        - tools/conformance/adapter-protocol
+        - tools/conformance/plan-compiler
+        - tools/conformance/meta-conformance
+        - tools/scripts/verify-kernel.ts
+        - tools/scripts/verify.ts
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if the two scopes cannot share a substrate without a production hook or if either TypeScript control cannot be detected; route a decision."
@@ -123,7 +124,7 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Each control has a profile-scoped designated assertion and activation; TypeScript produces the expected kill and Rust passes the positive canonical checks without loading a legacy plan. Two named instances use different scopes on the same isolated substrate; unknown and duplicate names fail. The memory inventory rejects an omitted scope capability or cross-scope claim. Own-scope checks and the cross-scope miss are independently observable, and no control designation references a legacy assertion. A server-clock selection whose post-restart timed thread creation has no bracketed observation in the new epoch fails as unverified, while kernel-clock-skew-syscall.json keeps its verdict. tsc --project tools/tsconfig.json reports no error in durable-control-mutants.test.ts."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
     deviations:
@@ -136,38 +137,38 @@ tickets:
       - "EPIC-DP#follow-up:6d0ed19ed986"
       - "EPIC-DP#follow-up:4410843dc7cf"
   - id: KRT-DQ003
-    title: "Isolate the six legacy kernel plans in their own packet"
+    title: Isolate the six legacy kernel plans in their own packet
     type: Feature
     effort: 5
     depends_on: [KRT-DQ002]
     scope:
       in:
-        - "spec/kernel/authority-packet.json"
-        - "spec/kernel/legacy/authority-packet.json"
-        - "spec/conformance/kernel"
-        - "tools/schemas"
-        - "tools/conformance/adapter-protocol"
-        - "tools/conformance/harness"
-        - "tools/conformance/plan-compiler"
-        - "tools/conformance/certification"
-        - "tools/conformance/meta-conformance"
-        - "tools/scripts/authority-guardrails"
-        - "tools/scripts/compatibility-report.ts"
-        - "go/kernel-conformance-adapter/adapter.json"
-        - "python/kernel-conformance-adapter/adapter.json"
-        - "dart/kernel-conformance-adapter/adapter.json"
-        - "reports/compatibility"
-        - "tools/scripts/portability-gate.ts"
+        - spec/kernel/authority-packet.json
+        - spec/kernel/legacy/authority-packet.json
+        - spec/conformance/kernel
+        - tools/schemas
+        - tools/conformance/adapter-protocol
+        - tools/conformance/harness
+        - tools/conformance/plan-compiler
+        - tools/conformance/certification
+        - tools/conformance/meta-conformance
+        - tools/scripts/authority-guardrails
+        - tools/scripts/compatibility-report.ts
+        - go/kernel-conformance-adapter/adapter.json
+        - python/kernel-conformance-adapter/adapter.json
+        - dart/kernel-conformance-adapter/adapter.json
+        - reports/compatibility
+        - tools/scripts/portability-gate.ts
         - ".constitution/reports/epic-al-portability-inventory.json"
         - ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
-        - "tools/scripts/conformance/generate-kernel-plans.ts"
+        - tools/scripts/conformance/generate-kernel-plans.ts
         - ".changeset/kernel-dq-canonical-plans.md"
-        - "typescript/kernel/conformance-adapter"
-        - "rust/kernel-conformance-adapter"
-        - "tools/scripts/verify-kernel.ts"
-        - "tools/scripts/verify.ts"
+        - typescript/kernel/conformance-adapter
+        - rust/kernel-conformance-adapter
+        - tools/scripts/verify-kernel.ts
+        - tools/scripts/verify.ts
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if the packet changes expected observations, hides a required canonical claim, or requires a Go, Python, or Dart kernel migration to publish the testkit; report the evidence instead."
@@ -175,7 +176,9 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "Go, Python, and Dart resolve the same legacy checks and observations, with refreshed packet-bound provenance, without kernel implementation migration. TypeScript and Rust load none of the legacy packet or its six plans in normal, certificate, control, compatibility, or generated-authority inputs. A claimed-profile certificate cannot rely on the legacy packet, and no language or adapter ID selects a plan. The 21 composites exist only in the legacy-owned catalog. Missing or extra transitional adapter references and stale topology inventories fail. All three legacy lanes retain lossless observation and schema rejection tests. TypeScript and Rust handlers are deleted. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest."
-    flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
+    flows:
+      - flow-authority-packet-driven-conformance
+      - flow-multi-implementation-conformance-compatibility
     certainty: assumed
     status: done
     deviations:
@@ -185,62 +188,33 @@ tickets:
           - typescript/kernel/protocol/test/kernel-certification-authority.test.ts
         justification: "The transitionalAdapters exact-set rule needed its own test beside tools/scripts/portability-gate.ts, and the workspace Biome gate requires every linted file to be listed in a tools/biome-coverage list. Neither path is in the epic's scope.paths; the wave lead ruled both in-envelope on 2026-11-18 because the wave has one lane, no other active epic owns them, and both only accompany the owned portability gate. kernel-certification-authority.test.ts is inside the epic's scope.paths but outside the ticket's scope.in; it asserts the canonical catalog no longer holds the composites."
   - id: KRT-DQ004
-    title: "Verify canonical-only TypeScript and Rust selection"
+    title: Verify canonical-only TypeScript and Rust selection
     type: Chore
     effort: 3
     depends_on: [KRT-DQ003]
     scope:
       in:
-        - "spec/conformance/kernel"
-        - "tools/conformance/harness"
-        - "tools/conformance/plan-compiler"
-        - "tools/conformance/certification"
-        - "tools/conformance/meta-conformance"
-        - "tools/scripts/compatibility-report.ts"
-        - "reports/compatibility"
+        - spec/conformance/kernel
+        - tools/conformance/harness
+        - tools/conformance/plan-compiler
+        - tools/conformance/certification
+        - tools/conformance/meta-conformance
+        - tools/scripts/compatibility-report.ts
+        - reports/compatibility
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0 with the operator-provided PostgreSQL service; canonical TypeScript and Rust inventories and the retained legacy selections validate."
     stop_conditions:
-      - "STOP if a passing result requires suppressing a required claim or treating an absent check as a pass."
+      - STOP if a passing result requires suppressing a required claim or treating an absent check as a pass.
     description: "Check the complete, unfiltered TypeScript and Rust positive memory-profile runs against the canonical packet and retained codec obligations. Refresh the compatibility evidence affected by the packet selection; do not delete the legacy packet while any adapter uses it."
     acceptance:
       mode: contract_test
       evidence: "TypeScript and Rust report no legacy packet, plan, designation, or input digest, while the three unmigrated adapters still select the legacy packet. Missing canonical assertions and accidental filtered certification fail. The aggregate verifierAuthority excludes all legacy packet, catalog, plan, and legacy-only fixture paths for adapters that do not select the packet and includes them for adapters that do; global file validation does not add unselected files to a run digest. Assert that mutating a legacy-only input changes only selecting adapters' aggregate digest. Rust provides a positive run, without requiring a Rust control kill before DS."
-    flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
+    flows:
+      - flow-authority-packet-driven-conformance
+      - flow-multi-implementation-conformance-compatibility
     certainty: assumed
     status: done
-decisions:
-  - id: OD-27
-    question: "Moving the six legacy plans and two fixture-set sources out of the canonical kernel authority packet removes referenced conformance plans and declared authoritative sources, which guidelines §2.1 classes as a major packet change. While the packet is still 0.x, does a major change bump it to 1.0.0 or bump the minor version?"
-    blocks: [KRT-DQ003]
-    options:
-      - name: Bump to 1.0.0 as guidelines §2.1 states
-        pros:
-          - "Follows the binding Stage 3 record literally; no silent deviation."
-          - "Consumers that select by packet see an unambiguous breaking signal."
-        cons:
-          - "Declares the first stable version of a packet that EPIC-DJ and the remaining certification epics will keep changing."
-      - name: Bump the minor version while the packet is 0.x
-        pros:
-          - "Matches semver's 0.x convention and the packet's history (0.10.0 to 0.16.0 were all minor bumps)."
-          - "Leaves 1.0.0 for when the kernel catalog stabilises."
-        cons:
-          - "Contradicts guidelines §2.1 as written until Stage 3 adds a 0.x clause."
-    recommendation: Bump to 1.0.0 as guidelines §2.1 states
-    closure: ruling
-    ruler: Owner
-    status: proposed
-    asked:
-      date: 2026-11-18
-      in: EPIC-DQ
-    proposed_by: "EPIC-DQ @ bfb3c18"
-    interim:
-      assumption: "The canonical kernel packet tuvren.kernel.protocol goes from 0.16.0 to 1.0.0 in KRT-DQ003, and the canonical kernel operation catalog, which lost the 21 composites, goes from 0.4.0 to 1.0.0 by the same reading; the temporary legacy packet and its catalog keep their own versions."
-      applied_by:
-        - spec/kernel/authority-packet.json
-        - spec/conformance/kernel/operations.json
-        - KRT-DQ003
 closeout:
   tickets_completed: [KRT-DQ005, KRT-DQ001, KRT-DQ002, KRT-DQ003, KRT-DQ004]
   tickets_deferred: []
@@ -271,15 +245,19 @@ closeout:
     - "The plan error-code guard in kernel-certification-authority.test.ts does not walk checks[].steps[].assertions[] (12 code assertions, all valid today)."
     - "The EPIC-DO follow-up asking docs/guides/add-a-kernel-backend.md to list kernel.edge-validation.composite is stale: TypeScript no longer declares that capability (dd3c898)."
     - "AGENTS.md and CLAUDE.md still describe bun run check as the authority gate plus nx affected typecheck, test and lint, without the workspace lint added by KRT-DQ005."
-    - "The testkit-undetected-claims publish preflight gate named in guidelines 5.10 rule 9 is not implemented in tools/scripts/publish-registry.ts yet (KRT-DN003)."
+    - The testkit-undetected-claims publish preflight gate named in guidelines 5.10 rule 9 is not implemented in tools/scripts/publish-registry.ts yet (KRT-DN003).
   code_decisions:
     - summary: "The memory claim inventory covers codec-only plans: a kernel.codec plan's checks carry claimIds and kernel.memory owns them as core checks, so an omitted codec claim or kernel.codec capability fails the two-way inventory."
       kind: convention
-      paths: [tools/conformance/certification/profile.ts, spec/conformance/kernel/profiles.json]
+      paths:
+        - tools/conformance/certification/profile.ts
+        - spec/conformance/kernel/profiles.json
       commit: 3eed4cb
     - summary: "Migrated families ship a committed obligation map file beside the plan (spec/conformance/kernel/codec-obligation-map.json, scope-isolation-obligation-map.json) listing legacy assertion, new claim and assertion ids, status and authority paths, checked by tests."
       kind: convention
-      paths: [spec/conformance/kernel/codec-obligation-map.json, spec/conformance/kernel/scope-isolation-obligation-map.json]
+      paths:
+        - spec/conformance/kernel/codec-obligation-map.json
+        - spec/conformance/kernel/scope-isolation-obligation-map.json
       commit: 3eed4cb
     - summary: "Adapter manifests that launch with explicit --capability flags must declare exactly the capabilities they launch with; mutant-adapter.test.ts checks declared against launch for source and dist entrypoints."
       kind: convention
@@ -287,7 +265,9 @@ closeout:
       commit: 3eed4cb
     - summary: "Durable negative-control runs batch by (control adapter, profile) with up to four concurrent streams; each stream stays FIFO so its baseline, mutants and post-baseline bracket one batch, and report order is preserved."
       kind: pattern
-      paths: [tools/conformance/meta-conformance/control-batches.ts, tools/conformance/meta-conformance/negative-controls.ts]
+      paths:
+        - tools/conformance/meta-conformance/control-batches.ts
+        - tools/conformance/meta-conformance/negative-controls.ts
       commit: b5934f7
     - summary: "Rust gains a SharedSubstrate construction seam behind the conformance feature, keyed by (substrate, scope), for runner-owned named instances."
       kind: pattern
@@ -295,7 +275,10 @@ closeout:
       commit: b5934f7
     - summary: "Authority packets may declare transitionalAdapters: the exact adapter-manifest set that must reference the packet; plan-level applicability of a transitional packet must be satisfiable by a declared transitional adapter, and provenance excludes an unselected transitional packet's owned files while keeping shared ones."
       kind: contract_shape
-      paths: [tools/schemas/authority-packet.schema.json, tools/scripts/portability-gate.ts, tools/conformance/certification/provenance.ts]
+      paths:
+        - tools/schemas/authority-packet.schema.json
+        - tools/scripts/portability-gate.ts
+        - tools/conformance/certification/provenance.ts
       commit: 6fccb66
     - summary: "readClaimedProfiles rejects a claimed profile whose selected packets include one that declares transitionalAdapters, whether the packet comes from a manifest or --packet."
       kind: convention
@@ -314,3 +297,26 @@ closeout:
         ref: tools/conformance/certification/provenance.test.ts
         date: 2026-11-18
         note: "Go, Python and Dart resolve the legacy packet with check results identical to their previous evidence (6fccb66); manifest-driven provenance tests prove TypeScript and Rust load none of the legacy packet's 30 owned files while the three legacy lanes include them (2906d18); their adapter tests keep lossless observation and schema rejection against the legacy-owned catalog."
+  actuals:
+    diff_lines: 46940
+    files_touched: 99
+    milestones: 11
+    review_rounds: 2
+    per_ticket:
+      - id: KRT-DQ005
+        diff_lines: 122
+        review_rounds: 1
+      - id: KRT-DQ001
+        diff_lines: 19419
+        review_rounds: 0
+      - id: KRT-DQ002
+        diff_lines: 26595
+        review_rounds: 0
+      - id: KRT-DQ003
+        diff_lines: 307
+        review_rounds: 1
+      - id: KRT-DQ004
+        diff_lines: 497
+        review_rounds: 0
+    merged_commit: dc18ffb
+    measured_at: 2026-11-18

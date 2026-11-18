@@ -1,8 +1,13 @@
 artifact_path: spec/kernel/legacy/authority-packet.json
 surface: json
-flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
+flows:
+  - flow-authority-packet-driven-conformance
+  - flow-multi-implementation-conformance-compatibility
 boundaries: [BND-27, BND-29]
 companion: conformance-certification.md
-certainty: assumed
-assumption: "A separate temporary packet with its own catalog of 21 composites and exact transitionalAdapters gate preserves the six legacy plans for unmigrated adapters without loading them into TypeScript or Rust certification."
-settles_when: "A closeout cites packet resolution and compatibility evidence for the three unmigrated adapters and proves that TypeScript and Rust load none of the packet's paths, and the retained lanes still validate lossless observations against the legacy-owned catalog."
+certainty: settled
+evidence:
+  kind: repository
+  ref: tools/conformance/certification/provenance.test.ts
+  date: 2026-11-18
+  note: "Go, Python and Dart resolve the legacy packet with check results identical to their previous evidence (6fccb66); manifest-driven provenance tests prove TypeScript and Rust load none of the legacy packet's 30 owned files while the three legacy lanes include them (2906d18); their adapter tests keep lossless observation and schema rejection against the legacy-owned catalog."

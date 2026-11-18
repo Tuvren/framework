@@ -1,0 +1,36 @@
+date: 2026-11-18
+commit: dc18ffb
+epics: [DQ]
+routed:
+  - stage: tech-spec
+    item: "OD-27 (proposed, interim applied): guidelines section 2.1 classes removing a referenced conformance plan as a major packet change with no 0.x clause; EPIC-DQ bumped tuvren.kernel.protocol 0.16.0 to 1.0.0 (6fccb66) and the canonical operation catalog 0.4.0 to 1.0.0 (dd3c898). Rule whether 0.x packets and catalogs take a minor bump for breaking changes, and add the clause either way; the catalog's semver rule is not written down at all."
+    from: DQ
+  - stage: tech-spec
+    item: "conformance-certification.md 'Planned cross-scope selection' and the kernel.memory paragraph still describe named instances and the Rust shared-substrate binding as planned or assumed. Since b5934f7 and 9ee682e steps[].instance is in the plan schema, the runner owns names, unknown, duplicate and released-substrate names fail, and the scope plan proves same-scope sharing with a third instance; Rust's conformance SharedSubstrate keys state by (substrate, scope)."
+    from: DQ
+  - stage: tech-spec
+    item: "guidelines 5.10 rule 6 and the companion say DJ deletes the legacy packet; record the transitionalAdapters exact-set rule, the readClaimedProfiles guard rejecting a claimed profile whose selected packets include a transitional packet (dd3c898), and that the legacy packet's own version and catalog version are independent of the canonical ones."
+    from: DQ
+  - stage: tech-spec
+    item: "code decision (convention): The memory claim inventory covers codec-only plans: a kernel.codec plan's checks carry claimIds and kernel.memory owns them as core checks, so an omitted codec claim or kernel.codec capability fails the two-way inventory. [tools/conformance/certification/profile.ts, spec/conformance/kernel/profiles.json] at 3eed4cb"
+    from: DQ
+  - stage: tech-spec
+    item: "code decision (convention): Migrated families ship a committed obligation map file beside the plan (spec/conformance/kernel/codec-obligation-map.json, scope-isolation-obligation-map.json) listing legacy assertion, new claim and assertion ids, status and authority paths, checked by tests. [spec/conformance/kernel/codec-obligation-map.json, spec/conformance/kernel/scope-isolation-obligation-map.json] at 3eed4cb"
+    from: DQ
+  - stage: tech-spec
+    item: "code decision (convention): Adapter manifests that launch with explicit --capability flags must declare exactly the capabilities they launch with; mutant-adapter.test.ts checks declared against launch for source and dist entrypoints. [typescript/kernel/conformance-adapter/test/mutant-adapter.test.ts] at 3eed4cb"
+    from: DQ
+  - stage: tech-spec
+    item: "code decision (pattern): Durable negative-control runs batch by (control adapter, profile) with up to four concurrent streams; each stream stays FIFO so its baseline, mutants and post-baseline bracket one batch, and report order is preserved. [tools/conformance/meta-conformance/control-batches.ts, tools/conformance/meta-conformance/negative-controls.ts] at b5934f7"
+    from: DQ
+  - stage: tech-spec
+    item: "code decision (pattern): Rust gains a SharedSubstrate construction seam behind the conformance feature, keyed by (substrate, scope), for runner-owned named instances. [rust/kernel/src/memory/conformance.rs, rust/kernel/src/memory.rs] at b5934f7"
+    from: DQ
+  - stage: tech-spec
+    item: "code decision (contract_shape): Authority packets may declare transitionalAdapters: the exact adapter-manifest set that must reference the packet; plan-level applicability of a transitional packet must be satisfiable by a declared transitional adapter, and provenance excludes an unselected transitional packet's owned files while keeping shared ones. [tools/schemas/authority-packet.schema.json, tools/scripts/portability-gate.ts, tools/conformance/certification/provenance.ts] at 6fccb66"
+    from: DQ
+  - stage: tech-spec
+    item: "code decision (convention): readClaimedProfiles rejects a claimed profile whose selected packets include one that declares transitionalAdapters, whether the packet comes from a manifest or --packet. [tools/conformance/certification/profile.ts] at dd3c898"
+    from: DQ
+proposed_decisions: [OD-27]
+candidate_terms: []

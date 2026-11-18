@@ -1,4 +1,29 @@
 entries:
+  - version: v0.52.5
+    date: 2026-11-18
+    changed:
+      - "EPIC-DQ Move TypeScript and Rust to canonical kernel plans archived: 5 tickets, 22 points, 46940 diff lines, 2 review rounds"
+    added:
+      - "EPIC-DQ moved TypeScript and Rust to canonical kernel plans. bun run check now runs the root workspace lint. Per OD-16, six native codec operations are catalogued under kernel.codec and the 68 legacy codec assertions migrated to kernel-codec.json with a committed obligation map; kernel.memory requires kernel.codec and kernel.scope-isolation. Plan steps gain a runner-owned named-instance selector, both legacy-only controls have canonical designations, and server-clock verification is keyed by process epoch. The six legacy plans and 21 composites live in the temporary tuvren.kernel.legacy packet, selected only by the Go, Python and Dart manifests through an exact transitionalAdapters gate; TypeScript and Rust composite handlers are deleted, provenance excludes unselected transitional inputs, and the canonical packet and catalog are 1.0.0 (interim OD-27)."
+      - "Follow-up from EPIC-DQ: OD-27 needs an owner ruling: canonical kernel packet and catalog went to 1.0.0 as an interim; revisit spec/kernel/authority-packet.json and spec/conformance/kernel/operations.json if the ruling is a 0.x minor bump."
+      - "Follow-up from EPIC-DQ: 50 of the 69 kernel.codec claims and kernel.scope-isolation.enumeration_is_scope_confined have no designated detector (OD-16 reasons in kernel-memory-undetected.json); KRT-DR004 owns the own-scope content and enumeration detectors, no epic plans the cross-scope enumeration detector or schema, turn-node and decode-rejection codec mutants."
+      - "Follow-up from EPIC-DQ: Rust validates turn-tree and turn-node identity inputs differently from TypeScript (the Rust binding drops the schema for hashTurnTree), so catalogued invalid_turn_tree_hash and invalid_turn_node_hash are not enforceable cross-language; EPIC-DS owns the Rust codec reproductions."
+      - "Follow-up from EPIC-DQ: Plan authority cannot catch an adapter that keeps one backend per scope string, because kernel syscalls are scope-free; closing it needs a test-only substrate observation (EPIC-DR or EPIC-DS)."
+      - "Follow-up from EPIC-DQ: Four legacy checks now run on no adapter (kernel.run-liveness.clock_skew_preemption, kernel.restart-recovery.close_reopen_checkpoint, kernel-restart-af.invalid-staged-result-reexecutes, kernel.crash-recovery.durable_fault_points); they ran only on the TypeScript SQLite and PostgreSQL adapters, and canonical counterparts exist for the first two. EPIC-DJ deletes the legacy plans."
+      - "Follow-up from EPIC-DQ: tools/scripts/docs-authority-freeze-gate.ts and the .constitution/reports/epic-ad-* artifacts still anchor kernel surfaces to the six legacy plan paths; they pass while the files exist and need repointing when EPIC-DJ deletes the legacy packet."
+      - "Follow-up from EPIC-DQ: Go, Python and Dart packet-bound provenance is proved at source level (provenance.ts with manifest-driven provenance.test.ts); their evidence files carry no digests because they hold no certificates, and their matrix rows keep suiteId tuvren.kernel.protocol, a suite label, without naming the packet each check came from."
+      - "Follow-up from EPIC-DQ: bun run check's Rust gate does not run cargo fmt --check, so the trailing blank line left by the composite removal failed only bun run verify (fixed in 38970d3)."
+      - "Follow-up from EPIC-DQ: The machine authority guardrails (runner-oracle) run only in bun run verify and verify:kernel, not bun run check, so a literal promoted operation id in a Rust adapter unit test (bfb3c18) passed its fix-batch checks and review and failed only the final verify (fixed in c5a089e)."
+      - "Follow-up from EPIC-DQ: The plan error-code guard in kernel-certification-authority.test.ts does not walk checks[].steps[].assertions[] (12 code assertions, all valid today)."
+      - "Follow-up from EPIC-DQ: The EPIC-DO follow-up asking docs/guides/add-a-kernel-backend.md to list kernel.edge-validation.composite is stale: TypeScript no longer declares that capability (dd3c898)."
+      - "Follow-up from EPIC-DQ: AGENTS.md and CLAUDE.md still describe bun run check as the authority gate plus nx affected typecheck, test and lint, without the workspace lint added by KRT-DQ005."
+      - "Follow-up from EPIC-DQ: The testkit-undetected-claims publish preflight gate named in guidelines 5.10 rule 9 is not implemented in tools/scripts/publish-registry.ts yet (KRT-DN003)."
+    by: reconcile
+    fast_lane_through: dc18ffb9364536d8014d349cb8ec2b246ddf1a6e
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.50.2
   - version: v0.52.4
     date: 2026-11-17
     by: stage

@@ -890,3 +890,33 @@ decisions:
         - KRT-DO007
         - spec/conformance/kernel/kernel-process-crash-undetected.json
     proposed_by: EPIC-DO @ 98af76b
+  - id: OD-27
+    question: "Moving the six legacy plans and two fixture-set sources out of the canonical kernel authority packet removes referenced conformance plans and declared authoritative sources, which guidelines §2.1 classes as a major packet change. While the packet is still 0.x, does a major change bump it to 1.0.0 or bump the minor version?"
+    blocks: [KRT-DQ003]
+    options:
+      - name: "Bump to 1.0.0 as guidelines §2.1 states"
+        pros:
+          - "Follows the binding Stage 3 record literally; no silent deviation."
+          - Consumers that select by packet see an unambiguous breaking signal.
+        cons:
+          - Declares the first stable version of a packet that EPIC-DJ and the remaining certification epics will keep changing.
+      - name: Bump the minor version while the packet is 0.x
+        pros:
+          - "Matches semver's 0.x convention and the packet's history (0.10.0 to 0.16.0 were all minor bumps)."
+          - Leaves 1.0.0 for when the kernel catalog stabilises.
+        cons:
+          - "Contradicts guidelines §2.1 as written until Stage 3 adds a 0.x clause."
+    recommendation: "Bump to 1.0.0 as guidelines §2.1 states"
+    closure: ruling
+    ruler: Owner
+    status: proposed
+    asked:
+      date: 2026-11-18
+      in: EPIC-DQ
+    proposed_by: EPIC-DQ @ dc18ffb
+    interim:
+      assumption: "The canonical kernel packet tuvren.kernel.protocol goes from 0.16.0 to 1.0.0 in KRT-DQ003, and the canonical kernel operation catalog, which lost the 21 composites, goes from 0.4.0 to 1.0.0 by the same reading; the temporary legacy packet and its catalog keep their own versions."
+      applied_by:
+        - spec/kernel/authority-packet.json
+        - spec/conformance/kernel/operations.json
+        - KRT-DQ003
