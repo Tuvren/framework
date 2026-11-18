@@ -178,6 +178,9 @@ const groupBarrierParticipants = (
   return [...grouped.values()];
 };
 
+const readErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 const destroyProcessInstances = async (
   process: TraceProcess,
   failures: unknown[]
@@ -823,7 +826,10 @@ export const runMultiTraceCheck = async (
         throw failures[0];
       }
       if (failures.length > 1) {
-        throw new AggregateError(failures, "process cleanup failed");
+        throw new AggregateError(
+          failures,
+          `process cleanup failed: ${failures.map(readErrorMessage).join("; ")}`
+        );
       }
     },
     (result, error) => {
