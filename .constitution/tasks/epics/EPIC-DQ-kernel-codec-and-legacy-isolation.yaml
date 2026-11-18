@@ -126,6 +126,12 @@ tickets:
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: done
+    deviations:
+      - files:
+          - tools/conformance/certification
+          - reports/compatibility
+          - tools/conformance/meta-conformance/control-batches.ts
+        justification: "The memory inventory had to reject an omitted scope capability or cross-scope claim (tools/conformance/certification/profile.ts), the register and designation changes required regenerated compatibility evidence, and the durable control gate needed per-(adapter, profile) batching to stay inside its timeout. All paths are inside the epic's scope.paths but outside the ticket's scope.in."
     replaces:
       - "EPIC-DP#follow-up:6d0ed19ed986"
       - "EPIC-DP#follow-up:4410843dc7cf"
@@ -176,7 +182,8 @@ tickets:
       - files:
           - tools/scripts/portability-gate.test.ts
           - tools/biome-coverage/bv.json
-        justification: "The transitionalAdapters exact-set rule needed its own test beside tools/scripts/portability-gate.ts, and the workspace Biome gate requires every linted file to be listed in a tools/biome-coverage list. Neither path is in the epic's scope.paths; the wave lead ruled both in-envelope on 2026-11-18 because the wave has one lane, no other active epic owns them, and both only accompany the owned portability gate."
+          - typescript/kernel/protocol/test/kernel-certification-authority.test.ts
+        justification: "The transitionalAdapters exact-set rule needed its own test beside tools/scripts/portability-gate.ts, and the workspace Biome gate requires every linted file to be listed in a tools/biome-coverage list. Neither path is in the epic's scope.paths; the wave lead ruled both in-envelope on 2026-11-18 because the wave has one lane, no other active epic owns them, and both only accompany the owned portability gate. kernel-certification-authority.test.ts is inside the epic's scope.paths but outside the ticket's scope.in; it asserts the canonical catalog no longer holds the composites."
   - id: KRT-DQ004
     title: "Verify canonical-only TypeScript and Rust selection"
     type: Chore
@@ -234,3 +241,76 @@ decisions:
         - spec/kernel/authority-packet.json
         - spec/conformance/kernel/operations.json
         - KRT-DQ003
+closeout:
+  tickets_completed: [KRT-DQ005, KRT-DQ001, KRT-DQ002, KRT-DQ003, KRT-DQ004]
+  tickets_deferred: []
+  points_completed: 22
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: added
+      text: "EPIC-DQ moved TypeScript and Rust to canonical kernel plans. bun run check now runs the root workspace lint. Per OD-16, six native codec operations are catalogued under kernel.codec and the 68 legacy codec assertions migrated to kernel-codec.json with a committed obligation map; kernel.memory requires kernel.codec and kernel.scope-isolation. Plan steps gain a runner-owned named-instance selector, both legacy-only controls have canonical designations, and server-clock verification is keyed by process epoch. The six legacy plans and 21 composites live in the temporary tuvren.kernel.legacy packet, selected only by the Go, Python and Dart manifests through an exact transitionalAdapters gate; TypeScript and Rust composite handlers are deleted, provenance excludes unselected transitional inputs, and the canonical packet and catalog are 1.0.0 (interim OD-27)."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "OD-27 (proposed, interim applied): guidelines section 2.1 classes removing a referenced conformance plan as a major packet change with no 0.x clause; EPIC-DQ bumped tuvren.kernel.protocol 0.16.0 to 1.0.0 (6fccb66) and the canonical operation catalog 0.4.0 to 1.0.0 (dd3c898). Rule whether 0.x packets and catalogs take a minor bump for breaking changes, and add the clause either way; the catalog's semver rule is not written down at all."
+    - stage: tech-spec
+      item: "conformance-certification.md 'Planned cross-scope selection' and the kernel.memory paragraph still describe named instances and the Rust shared-substrate binding as planned or assumed. Since b5934f7 and 9ee682e steps[].instance is in the plan schema, the runner owns names, unknown, duplicate and released-substrate names fail, and the scope plan proves same-scope sharing with a third instance; Rust's conformance SharedSubstrate keys state by (substrate, scope)."
+    - stage: tech-spec
+      item: "guidelines 5.10 rule 6 and the companion say DJ deletes the legacy packet; record the transitionalAdapters exact-set rule, the readClaimedProfiles guard rejecting a claimed profile whose selected packets include a transitional packet (dd3c898), and that the legacy packet's own version and catalog version are independent of the canonical ones."
+  follow_ups:
+    - "OD-27 needs an owner ruling: canonical kernel packet and catalog went to 1.0.0 as an interim; revisit spec/kernel/authority-packet.json and spec/conformance/kernel/operations.json if the ruling is a 0.x minor bump."
+    - "50 of the 69 kernel.codec claims and kernel.scope-isolation.enumeration_is_scope_confined have no designated detector (OD-16 reasons in kernel-memory-undetected.json); KRT-DR004 owns the own-scope content and enumeration detectors, no epic plans the cross-scope enumeration detector or schema, turn-node and decode-rejection codec mutants."
+    - "Rust validates turn-tree and turn-node identity inputs differently from TypeScript (the Rust binding drops the schema for hashTurnTree), so catalogued invalid_turn_tree_hash and invalid_turn_node_hash are not enforceable cross-language; EPIC-DS owns the Rust codec reproductions."
+    - "Plan authority cannot catch an adapter that keeps one backend per scope string, because kernel syscalls are scope-free; closing it needs a test-only substrate observation (EPIC-DR or EPIC-DS)."
+    - "Four legacy checks now run on no adapter (kernel.run-liveness.clock_skew_preemption, kernel.restart-recovery.close_reopen_checkpoint, kernel-restart-af.invalid-staged-result-reexecutes, kernel.crash-recovery.durable_fault_points); they ran only on the TypeScript SQLite and PostgreSQL adapters, and canonical counterparts exist for the first two. EPIC-DJ deletes the legacy plans."
+    - "tools/scripts/docs-authority-freeze-gate.ts and the .constitution/reports/epic-ad-* artifacts still anchor kernel surfaces to the six legacy plan paths; they pass while the files exist and need repointing when EPIC-DJ deletes the legacy packet."
+    - "Go, Python and Dart packet-bound provenance is proved at source level (provenance.ts with manifest-driven provenance.test.ts); their evidence files carry no digests because they hold no certificates, and their matrix rows keep suiteId tuvren.kernel.protocol, a suite label, without naming the packet each check came from."
+    - "bun run check's Rust gate does not run cargo fmt --check, so the trailing blank line left by the composite removal failed only bun run verify (fixed in 38970d3)."
+    - "The machine authority guardrails (runner-oracle) run only in bun run verify and verify:kernel, not bun run check, so a literal promoted operation id in a Rust adapter unit test (bfb3c18) passed its fix-batch checks and review and failed only the final verify (fixed in c5a089e)."
+    - "The plan error-code guard in kernel-certification-authority.test.ts does not walk checks[].steps[].assertions[] (12 code assertions, all valid today)."
+    - "The EPIC-DO follow-up asking docs/guides/add-a-kernel-backend.md to list kernel.edge-validation.composite is stale: TypeScript no longer declares that capability (dd3c898)."
+    - "AGENTS.md and CLAUDE.md still describe bun run check as the authority gate plus nx affected typecheck, test and lint, without the workspace lint added by KRT-DQ005."
+    - "The testkit-undetected-claims publish preflight gate named in guidelines 5.10 rule 9 is not implemented in tools/scripts/publish-registry.ts yet (KRT-DN003)."
+  code_decisions:
+    - summary: "The memory claim inventory covers codec-only plans: a kernel.codec plan's checks carry claimIds and kernel.memory owns them as core checks, so an omitted codec claim or kernel.codec capability fails the two-way inventory."
+      kind: convention
+      paths: [tools/conformance/certification/profile.ts, spec/conformance/kernel/profiles.json]
+      commit: 3eed4cb
+    - summary: "Migrated families ship a committed obligation map file beside the plan (spec/conformance/kernel/codec-obligation-map.json, scope-isolation-obligation-map.json) listing legacy assertion, new claim and assertion ids, status and authority paths, checked by tests."
+      kind: convention
+      paths: [spec/conformance/kernel/codec-obligation-map.json, spec/conformance/kernel/scope-isolation-obligation-map.json]
+      commit: 3eed4cb
+    - summary: "Adapter manifests that launch with explicit --capability flags must declare exactly the capabilities they launch with; mutant-adapter.test.ts checks declared against launch for source and dist entrypoints."
+      kind: convention
+      paths: [typescript/kernel/conformance-adapter/test/mutant-adapter.test.ts]
+      commit: 3eed4cb
+    - summary: "Durable negative-control runs batch by (control adapter, profile) with up to four concurrent streams; each stream stays FIFO so its baseline, mutants and post-baseline bracket one batch, and report order is preserved."
+      kind: pattern
+      paths: [tools/conformance/meta-conformance/control-batches.ts, tools/conformance/meta-conformance/negative-controls.ts]
+      commit: b5934f7
+    - summary: "Rust gains a SharedSubstrate construction seam behind the conformance feature, keyed by (substrate, scope), for runner-owned named instances."
+      kind: pattern
+      paths: [rust/kernel/src/memory/conformance.rs, rust/kernel/src/memory.rs]
+      commit: b5934f7
+    - summary: "Authority packets may declare transitionalAdapters: the exact adapter-manifest set that must reference the packet; plan-level applicability of a transitional packet must be satisfiable by a declared transitional adapter, and provenance excludes an unselected transitional packet's owned files while keeping shared ones."
+      kind: contract_shape
+      paths: [tools/schemas/authority-packet.schema.json, tools/scripts/portability-gate.ts, tools/conformance/certification/provenance.ts]
+      commit: 6fccb66
+    - summary: "readClaimedProfiles rejects a claimed profile whose selected packets include one that declares transitionalAdapters, whether the packet comes from a manifest or --packet."
+      kind: convention
+      paths: [tools/conformance/certification/profile.ts]
+      commit: dd3c898
+  settled:
+    - record: tech-spec/contracts/conformance-plan.meta.yaml
+      evidence:
+        kind: repository
+        ref: tools/conformance/harness/test/named-instances.test.ts
+        date: 2026-11-18
+        note: "Schema (optional steps[].instance) and runner tests for named instances on one per-check substrate, including rejected unknown, duplicate and released-substrate names, pass at b5934f7; the scope plan proves same-scope sharing since 9ee682e, as the sidecar's settles_when requires."
+    - record: tech-spec/contracts/kernel-legacy-packet.meta.yaml
+      evidence:
+        kind: repository
+        ref: tools/conformance/certification/provenance.test.ts
+        date: 2026-11-18
+        note: "Go, Python and Dart resolve the legacy packet with check results identical to their previous evidence (6fccb66); manifest-driven provenance tests prove TypeScript and Rust load none of the legacy packet's 30 owned files while the three legacy lanes include them (2906d18); their adapter tests keep lossless observation and schema rejection against the legacy-owned catalog."
