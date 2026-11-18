@@ -1316,25 +1316,23 @@ test("control assertion scoping follows manifest claims alone", async () => {
   if (!Array.isArray(controls)) {
     throw new Error("missing control manifest entries");
   }
-  const outside = controls.map(record).find((control) => {
-    const claims = control.claimIds;
-    const profiles = control.profiles;
-    return (
-      Array.isArray(profiles) &&
-      profiles.includes(profile.profileId) &&
-      Array.isArray(claims) &&
-      claims.length > 0 &&
-      claims.every(
-        (claim) =>
-          typeof claim === "string" && !profile.claimIds.includes(claim)
-      )
+  const outside = controls
+    .map(record)
+    .find(
+      (control) => control.mutantId === "kernel.resolve-object-across-scopes"
     );
-  });
   if (outside === undefined || !Array.isArray(outside.claimIds)) {
-    throw new Error("missing memory-tagged control outside the profile claims");
+    throw new Error("missing scope control authority");
   }
+  const outsideClaims = outside.claimIds.map(string);
+  const excluded = await readProfileScopedControls(manifest, {
+    ...profile,
+    claimIds: profile.claimIds.filter(
+      (claim) => !outsideClaims.includes(claim)
+    ),
+  });
   const outsideId = string(outside.mutantId);
-  expect(scoped).not.toContain(outsideId);
+  expect(excluded).not.toContain(outsideId);
   const reassigned = await readProfileScopedControls(manifest, {
     ...profile,
     claimIds: outside.claimIds.map(string),

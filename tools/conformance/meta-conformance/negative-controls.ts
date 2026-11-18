@@ -72,6 +72,7 @@ import {
   profileConditionalAssertions,
   profileSemanticAssertions,
 } from "./claim-coverage.ts";
+import { runControlBatches } from "./control-batches.ts";
 import { NEGATIVE_CONTROL_PORTS } from "./negative-control-config.ts";
 import type { NegativeControlPortConfig } from "./negative-control-config.ts";
 
@@ -1575,7 +1576,7 @@ const main = async (): Promise<void> => {
         async (group) => await snapshotControls(group.configs)
       )
     : [];
-  const reports = await inSequence(configs, async (config) => {
+  const reports = await runControlBatches(configs, async (config) => {
     const report = await runNegativeControls(config, options);
     process.stdout.write(formatNegativeControlSummary(report));
     return report;

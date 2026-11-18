@@ -64,7 +64,7 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.promote-staged-before-checkpoint":
         "no Rust reproduction yet; not run",
       "kernel.resolve-object-across-scopes":
-        "no shared-substrate construction seam in the Rust kernel; not run",
+        "no Rust reproduction yet; DS owns the scope-resolution mutant",
       "kernel.sweep-inside-grace-window": "no Rust reproduction yet; not run",
     },
     profile: "kernel.memory",

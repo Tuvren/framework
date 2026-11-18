@@ -16,6 +16,7 @@ impl Adapter {
     fn with_args(args: &[&str]) -> Self {
         let mut child = Command::new(env!("CARGO_BIN_EXE_tuvren-kernel-rust-conformance-adapter"))
             .args(args)
+            .current_dir(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -515,21 +516,21 @@ fn production_grpc_dependency_graph_excludes_test_controls() {
 }
 
 #[test]
-fn syscall_capabilities_do_not_claim_legacy_scope_and_restart_composites() {
+fn syscall_instances_reject_legacy_composites() {
     let mut adapter = Adapter::new();
     let initialized = adapter.request(
         "initialize",
         json!({"packetId":"test","planVersion":"0.1.0"}),
     );
     let capabilities = initialized["result"]["capabilities"].as_array().unwrap();
-    for capability in ["kernel.scope-isolation", "kernel.restart-recovery"] {
-        assert!(!capabilities.contains(&json!(capability)), "{capability}");
-    }
+    assert!(capabilities.contains(&json!("kernel.scope-isolation")));
+    assert!(!capabilities.contains(&json!("kernel.restart-recovery")));
     let instance = adapter.instance();
     for operation in [
         "kernel.logical.recovery-state",
         "kernel.reclamation.erasure-probe",
         "kernel.reclamation.reclaim-probe",
+        "kernel.scope-isolation.cross-scope-probe",
         "kernel.run-liveness.lease-renewal",
     ] {
         let response = adapter.call(&instance, operation, json!({}));
@@ -601,6 +602,14 @@ fn every_memory_plan_syscall_has_a_native_binding() {
         let plan: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
         for check in plan["checks"].as_array().unwrap() {
             for step in check["steps"].as_array().unwrap() {
+                if step["action"] == "createInstance" {
+                    let response = adapter.request(
+                        "createInstance",
+                        json!({"input":{},"scope":"binding-probe"}),
+                    );
+                    assert!(response.get("result").is_some(), "{response}");
+                    continue;
+                }
                 let operation = step["operation"].as_str().unwrap();
                 let response = adapter.call(&instance, operation, json!({}));
                 assert_ne!(
@@ -656,4 +665,41 @@ fn codec_bridge_preserves_tagged_records_and_native_rejections() {
         json!({"bytes":{"$bytes":"GG"}}),
     );
     assert_eq!(malformed["error"]["code"], "adapter_invalid_encoding");
+}
+
+#[test]
+fn scoped_instance_options_reject_invalid_partition_and_substrate_values() {
+    let mut adapter = Adapter::new();
+    for key in ["scope", "storageRef"] {
+        for value in [json!(null), json!(42), json!("")] {
+            let mut options = json!({"input":{}});
+            options[key] = value;
+            let response = adapter.request("createInstance", options);
+            assert!(response.get("error").is_some(), "{key}: {response}");
+            assert!(response.get("result").is_none(), "{key}: {response}");
+        }
+    }
+}
+
+#[test]
+fn transitional_scope_probe_reports_native_scope_observations() {
+    let mut adapter = Adapter::new();
+    let response = adapter.request(
+        "dispatch",
+        json!({
+            "operation":"kernel.scope-isolation.cross-scope-probe",
+            "input":{},
+        }),
+    );
+    assert_eq!(
+        response["result"],
+        json!({
+            "kind":"result",
+            "value":{"result":{
+                "enumeration":{"crossScopeThreadVisible":false,"sameScopeThreadVisible":true},
+                "storeGet":{"crossScopeReturnsNull":true,"sameScopeReturnsObject":true},
+                "storeHas":{"crossScopeObservesOtherContent":false,"sameScopeObservesOwnContent":true},
+            }},
+        })
+    );
 }

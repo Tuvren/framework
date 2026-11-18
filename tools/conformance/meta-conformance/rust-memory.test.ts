@@ -98,11 +98,7 @@ test("Rust memory controls count supported mutations and report unsupported ones
     if (mutant.outcome === "unsupported") {
       expect(mutant.reason?.trim()).toBeTruthy();
       if (ORIGINAL_CONTROLS.includes(mutant.mutantId)) {
-        expect(mutant.reason).toContain(
-          mutant.mutantId === "kernel.resolve-object-across-scopes"
-            ? "no shared-substrate construction seam in the Rust kernel"
-            : "no Rust reproduction yet"
-        );
+        expect(mutant.reason).toContain("no Rust reproduction yet");
       }
       expect(mutant.activated).toBe(false);
       continue;
@@ -166,7 +162,11 @@ test("exploratory Rust syscall evidence covers every check in all four memory fa
         evidence.selection?.find((entry) => entry.checkId === checkId)
       ).toMatchObject({
         selected: false,
-        reason: expect.stringContaining("missing capabilities:"),
+        reason: expect.stringContaining(
+          checkId.startsWith("kernel.scope-isolation.")
+            ? "outside requested capabilities:"
+            : "missing capabilities:"
+        ),
       });
     }
     for (const family of [

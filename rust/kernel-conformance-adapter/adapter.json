@@ -20,7 +20,8 @@
     "kernel-protocol.thread.enumeration",
     "kernel.run-liveness",
     "kernel.reclamation",
-    "kernel.codec"
+    "kernel.codec",
+    "kernel.scope-isolation"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "profiles": ["kernel.memory"],

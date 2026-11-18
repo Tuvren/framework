@@ -283,3 +283,43 @@ test("the compiler rejects collection of sequential contenders", async () => {
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("named handle selectors use the owning process namespace", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "named-handle-"));
+  const file = path.join(directory, "plan.json");
+  try {
+    await writeFile(
+      file,
+      JSON.stringify(
+        plan([
+          {
+            stepId: "peer",
+            action: "spawn",
+            operation: "kernel.process.spawn",
+            process: "peer",
+            arguments: {},
+          },
+          {
+            stepId: "scoped",
+            action: "createInstance",
+            operation: "kernel.instance.create",
+            process: "peer",
+            instance: "scoped",
+            arguments: { scope: "peer-scope" },
+          },
+          { ...start, process: "peer", instance: "scoped" },
+          {
+            stepId: "done",
+            action: "await",
+            operation: "probe",
+            instance: "scoped",
+            arguments: { operationHandle: { $ref: "capture.pending" } },
+          },
+        ])
+      )
+    );
+    await expect(loadConformancePlan(file)).resolves.toBeDefined();
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

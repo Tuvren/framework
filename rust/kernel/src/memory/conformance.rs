@@ -1,6 +1,11 @@
 use super::*;
 use crate::testkit::KernelTestControls;
 
+#[derive(Clone, Default)]
+pub struct SharedSubstrate {
+    scopes: Arc<Mutex<std::collections::BTreeMap<String, Arc<Mutex<KernelState>>>>>,
+}
+
 #[derive(Default)]
 pub(super) struct StateCloneCount(Arc<std::sync::atomic::AtomicU64>);
 
@@ -37,6 +42,24 @@ impl InMemoryKernel {
             test_controls: Some(controls),
             operation: None,
         })
+    }
+
+    pub fn with_scoped_test_controls(
+        controls: KernelTestControls,
+        substrate: &SharedSubstrate,
+        scope: &str,
+    ) -> KernelResult<Self> {
+        let mut kernel = Self::with_test_controls(controls)?;
+        let mut scopes = substrate
+            .scopes
+            .lock()
+            .map_err(|_| KernelError::new("internal_error", "substrate lock poisoned", None))?;
+        kernel.state = Arc::clone(
+            scopes
+                .entry(scope.to_owned())
+                .or_insert_with(|| Arc::new(Mutex::new(KernelState::default()))),
+        );
+        Ok(kernel)
     }
 
     pub fn for_operation(&self, operation: crate::testkit::barrier::OperationContext) -> Self {

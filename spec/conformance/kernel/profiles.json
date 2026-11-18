@@ -12,7 +12,8 @@
         "kernel.reclamation",
         "kernel.run-liveness",
         "kernel.syscall",
-        "kernel.codec"
+        "kernel.codec",
+        "kernel.scope-isolation"
       ],
       "claimIds": [
         "kernel.syscall.backend_capability.shared_lease_clock",
@@ -158,7 +159,10 @@
         "kernel.codec.decode.uint-beyond-safe-integer-range",
         "kernel.codec.decode.negative-int-beyond-safe-integer-range",
         "kernel.codec.decode.control-canonical-map",
-        "kernel.codec.turn-tree.identity"
+        "kernel.codec.turn-tree.identity",
+        "kernel.scope-isolation.store_has_is_scope_confined",
+        "kernel.scope-isolation.store_get_is_scope_confined",
+        "kernel.scope-isolation.enumeration_is_scope_confined"
       ],
       "faultPoints": ["after-commit-before-ack", "before-commit"],
       "negativeControls": [

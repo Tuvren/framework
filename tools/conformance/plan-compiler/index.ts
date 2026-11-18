@@ -175,6 +175,7 @@ export interface ConformancePlanStep {
     deadlineMs?: number;
   };
   input?: unknown;
+  instance?: string;
   inspectState?: unknown;
   operation: string;
   participants?: string[];

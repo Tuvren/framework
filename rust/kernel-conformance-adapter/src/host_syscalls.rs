@@ -377,6 +377,9 @@ struct Lifecycle {
 }
 
 struct Instance {
+    substrate: tuvren_kernel_rust::memory::SharedSubstrate,
+    storage_ref: Option<String>,
+    scope: String,
     kernel: Mutex<Option<InMemoryKernel>>,
     controls: KernelTestControls,
     barrier: BarrierControl,
@@ -462,6 +465,7 @@ pub(crate) struct Operation {
 struct Registry {
     instances: BTreeMap<String, Arc<Instance>>,
     operations: BTreeMap<String, Arc<Operation>>,
+    substrates: BTreeMap<String, Option<tuvren_kernel_rust::memory::SharedSubstrate>>,
     next_instance: u64,
     next_operation: u64,
 }
@@ -495,16 +499,33 @@ impl Syscalls {
         })
     }
 
-    pub(crate) fn create(&self) -> Result<String, AdapterErrorEnvelope> {
+    pub(crate) fn create(&self, options: &Value) -> Result<String, AdapterErrorEnvelope> {
         let mut registry = self
             .registry
             .lock()
             .map_err(|_| host_error("registry lock poisoned"))?;
+        let storage_ref = values::optional_text(options, "storageRef")?;
+        let scope = values::optional_text(options, "scope")?.unwrap_or_else(|| "default".into());
+        if scope.is_empty() || storage_ref.as_ref().is_some_and(String::is_empty) {
+            return Err(invalid("scope and storageRef must be nonempty text"));
+        }
+        let substrate = match &storage_ref {
+            Some(reference) => registry
+                .substrates
+                .entry(reference.clone())
+                .or_insert_with(|| Some(Default::default()))
+                .clone()
+                .ok_or_else(|| host_error("cannot reuse a released substrate"))?,
+            None => Default::default(),
+        };
         registry.next_instance += 1;
         let handle = format!("rust-kernel-{}", registry.next_instance);
         registry.instances.insert(
             handle.clone(),
             Arc::new(Instance {
+                substrate,
+                storage_ref,
+                scope,
                 kernel: Mutex::new(None),
                 controls: KernelTestControls::with_mutant(self.mutant.clone()),
                 barrier: BarrierControl::default(),
@@ -580,6 +601,14 @@ impl Syscalls {
             .lock()
             .map_err(|_| host_error("registry lock poisoned"))?;
         registry.instances.remove(key);
+        if let Some(reference) = &instance.storage_ref
+            && !registry
+                .instances
+                .values()
+                .any(|other| other.storage_ref.as_ref() == Some(reference))
+        {
+            registry.substrates.insert(reference.clone(), None);
+        }
         registry
             .operations
             .retain(|_, operation| operation.instance != key);
@@ -786,9 +815,14 @@ impl Syscalls {
                 .map_err(|_| host_error("kernel lock poisoned"))?;
             if kernel_guard.is_none() {
                 *kernel_guard = Some(
-                    InMemoryKernel::with_test_controls(instance.controls.clone()).map_err(
-                        |error| adapter_error(&error.payload.code, &error.payload.message, None),
-                    )?,
+                    InMemoryKernel::with_scoped_test_controls(
+                        instance.controls.clone(),
+                        &instance.substrate,
+                        &instance.scope,
+                    )
+                    .map_err(|error| {
+                        adapter_error(&error.payload.code, &error.payload.message, None)
+                    })?,
                 );
             }
             let kernel = kernel_guard
@@ -939,7 +973,7 @@ mod tests {
     #[test]
     fn cancellation_before_native_entry_is_a_protocol_error_on_every_await() {
         let syscalls = Arc::new(Syscalls::default());
-        let handle = json!(syscalls.create().unwrap());
+        let handle = json!(syscalls.create(&json!({})).unwrap());
         let instance = syscalls.instance(&handle).unwrap();
         for domain in [ClockDomain::Backend, ClockDomain::Worker] {
             instance.controls.set_clock(domain, 0).unwrap();

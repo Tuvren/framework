@@ -452,3 +452,34 @@ test("does not sanction different canonical node hashes for identical records", 
     report.every(({ classification }) => classification === "disagreement")
   ).toBe(true);
 });
+
+test("named instance observations retain creation order and handle identity", () => {
+  const steps = [
+    {
+      stepId: "scopeA",
+      action: "createInstance",
+      operation: "kernel.instance.create",
+    },
+    {
+      stepId: "scopeB",
+      action: "createInstance",
+      operation: "kernel.instance.create",
+    },
+  ];
+  const stream = (first: string, second: string) => [
+    { method: "createInstance", outcome: first },
+    { method: "createInstance", outcome: second },
+  ];
+  expect(() =>
+    validateObservationSteps("scopes", steps, stream("a", "b"))
+  ).not.toThrow();
+  expect(() =>
+    validateObservationSteps("scopes", steps, stream("a", "b").slice(0, 1))
+  ).toThrow();
+  expect(stabilizeObservations(stream("a", "b"))).toEqual(
+    stabilizeObservations(stream("rust-1", "rust-2"))
+  );
+  expect(stabilizeObservations(stream("a", "b"))).not.toEqual(
+    stabilizeObservations(stream("same", "same"))
+  );
+});

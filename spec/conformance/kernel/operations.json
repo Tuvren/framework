@@ -6128,12 +6128,17 @@
     {
       "operationId": "kernel.instance.create",
       "kind": "control",
-      "capability": "kernel.persistence.durable",
+      "capability": "kernel.syscall",
       "binding": "tools/conformance/adapter-protocol/protocol.schema.json#/$defs/CreateInstanceParams",
       "input": {
         "type": "object",
         "additionalProperties": false,
-        "properties": {},
+        "properties": {
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
         "required": []
       },
       "observation": {

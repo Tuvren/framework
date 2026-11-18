@@ -125,7 +125,7 @@ tickets:
       evidence: "Each control has a profile-scoped designated assertion and activation; TypeScript produces the expected kill and Rust passes the positive canonical checks without loading a legacy plan. Two named instances use different scopes on the same isolated substrate; unknown and duplicate names fail. The memory inventory rejects an omitted scope capability or cross-scope claim. Own-scope checks and the cross-scope miss are independently observable, and no control designation references a legacy assertion. A server-clock selection whose post-restart timed thread creation has no bracketed observation in the new epoch fails as unverified, while kernel-clock-skew-syscall.json keeps its verdict. tsc --project tools/tsconfig.json reports no error in durable-control-mutants.test.ts."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
     replaces:
       - "EPIC-DP#follow-up:6d0ed19ed986"
       - "EPIC-DP#follow-up:4410843dc7cf"

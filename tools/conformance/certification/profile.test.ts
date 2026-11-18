@@ -265,7 +265,7 @@ test("each kernel profile has an exact two-way claim inventory", async () => {
   expect(
     profiles.map(({ profileId, claimIds }) => [profileId, claimIds.length])
   ).toEqual([
-    ["kernel.memory", 144],
+    ["kernel.memory", 147],
     ["kernel.persistent-reopen", 6],
     ["kernel.process-crash", 4],
     ["kernel.shared-backend", 3],
@@ -637,4 +637,51 @@ test("memory codec inventory rejects omitted claims, capability, and unclaimed c
   expect(() =>
     assertProfileClaimInventory(profile, missing, authority)
   ).toThrow("requires codec claimIds");
+});
+
+test("memory scope inventory rejects omitted capabilities and cross-scope claims", async () => {
+  const adapter = await readAdapterManifest(
+    "typescript/kernel/conformance-adapter/adapter.json"
+  );
+  const [profile] = await readClaimedProfiles(
+    adapter,
+    adapter.authorityPackets
+  );
+  if (profile === undefined) {
+    throw new Error("missing memory profile");
+  }
+  const plans = await readPlans(adapter, { packets: [], plans: [] });
+  const authority = await readProfileAuthority(adapter.authorityPackets);
+  for (const claim of [
+    "kernel.scope-isolation.store_has_is_scope_confined",
+    "kernel.scope-isolation.store_get_is_scope_confined",
+    "kernel.scope-isolation.enumeration_is_scope_confined",
+  ]) {
+    expect(() =>
+      assertProfileClaimInventory(
+        { ...profile, claimIds: profile.claimIds.filter((id) => id !== claim) },
+        plans,
+        authority
+      )
+    ).toThrow(claim);
+  }
+  expect(() =>
+    assertProfileClaimInventory(
+      {
+        ...profile,
+        requiredCapabilities: profile.requiredCapabilities.filter(
+          (id) => id !== "kernel.scope-isolation"
+        ),
+      },
+      plans,
+      authority
+    )
+  ).toThrow("kernel.scope-isolation");
+  expect(() =>
+    assertProfileCapabilities(
+      [profile],
+      adapter.capabilities.filter((id) => id !== "kernel.scope-isolation"),
+      true
+    )
+  ).toThrow("kernel.scope-isolation");
 });

@@ -1,10 +1,14 @@
 {
   "planId": "tuvren.kernel.scope-isolation.syscall",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "packetId": "tuvren.kernel.protocol",
   "certificationRules": "enforcing",
   "applicability": {
-    "capabilities": ["kernel.syscall", "kernel.protocol"]
+    "capabilities": [
+      "kernel.syscall",
+      "kernel.protocol",
+      "kernel.scope-isolation"
+    ]
   },
   "checks": [
     {
@@ -12,6 +16,16 @@
       "claimIds": ["kernel.syscall.scope-isolation.own_content"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "scopeA",
+          "operation": "kernel.instance.create",
+          "action": "createInstance",
+          "instance": "scopeA",
+          "arguments": {
+            "scope": "tuvren.scope.a"
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"]
+        },
         {
           "stepId": "backend0",
           "operation": "kernel.clock.set",
@@ -21,7 +35,8 @@
           },
           "claimIds": ["kernel.syscall.scope-isolation.own_content"],
           "assertions": [],
-          "action": "setClock"
+          "action": "setClock",
+          "instance": "scopeA"
         },
         {
           "stepId": "worker0",
@@ -32,7 +47,8 @@
           },
           "claimIds": ["kernel.syscall.scope-isolation.own_content"],
           "assertions": [],
-          "action": "setClock"
+          "action": "setClock",
+          "instance": "scopeA"
         },
         {
           "stepId": "put",
@@ -49,7 +65,8 @@
               "name": "put",
               "path": "result"
             }
-          ]
+          ],
+          "instance": "scopeA"
         },
         {
           "stepId": "has",
@@ -72,7 +89,8 @@
               "name": "has",
               "path": "result"
             }
-          ]
+          ],
+          "instance": "scopeA"
         },
         {
           "stepId": "get",
@@ -89,7 +107,85 @@
               "name": "get",
               "path": "result"
             }
+          ],
+          "instance": "scopeA"
+        },
+        {
+          "stepId": "scopeB",
+          "operation": "kernel.instance.create",
+          "action": "createInstance",
+          "instance": "scopeB",
+          "arguments": {
+            "scope": "tuvren.scope.b"
+          },
+          "claimIds": [
+            "kernel.scope-isolation.store_has_is_scope_confined",
+            "kernel.scope-isolation.store_get_is_scope_confined"
           ]
+        },
+        {
+          "stepId": "backendB",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeB",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.scope-isolation.store_has_is_scope_confined",
+            "kernel.scope-isolation.store_get_is_scope_confined"
+          ]
+        },
+        {
+          "stepId": "workerB",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeB",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.scope-isolation.store_has_is_scope_confined",
+            "kernel.scope-isolation.store_get_is_scope_confined"
+          ]
+        },
+        {
+          "stepId": "otherHas",
+          "operation": "kernel.store.has",
+          "instance": "scopeB",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": false
+            }
+          ],
+          "claimIds": ["kernel.scope-isolation.store_has_is_scope_confined"]
+        },
+        {
+          "stepId": "otherGet",
+          "operation": "kernel.store.get",
+          "instance": "scopeB",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": null
+            }
+          ],
+          "claimIds": ["kernel.scope-isolation.store_get_is_scope_confined"]
         }
       ],
       "assertions": [
@@ -106,14 +202,29 @@
           "equalsPath": "$.result.trace.put.result"
         }
       ],
-      "evidence": ["trace.has.result", "trace.get.result"],
-      "capabilities": ["kernel.protocol"]
+      "evidence": [
+        "trace.has.result",
+        "trace.get.result",
+        "trace.otherHas.result",
+        "trace.otherGet.result"
+      ],
+      "capabilities": ["kernel.protocol", "kernel.syscall"]
     },
     {
       "checkId": "kernel.syscall.scope-isolation.own_enumeration",
       "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "scopeA",
+          "operation": "kernel.instance.create",
+          "action": "createInstance",
+          "instance": "scopeA",
+          "arguments": {
+            "scope": "tuvren.scope.a"
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"]
+        },
         {
           "stepId": "backend0",
           "operation": "kernel.clock.set",
@@ -123,7 +234,8 @@
           },
           "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
           "assertions": [],
-          "action": "setClock"
+          "action": "setClock",
+          "instance": "scopeA"
         },
         {
           "stepId": "worker0",
@@ -134,7 +246,8 @@
           },
           "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
           "assertions": [],
-          "action": "setClock"
+          "action": "setClock",
+          "instance": "scopeA"
         },
         {
           "stepId": "schema",
@@ -165,7 +278,8 @@
               "name": "schema",
               "path": "result"
             }
-          ]
+          ],
+          "instance": "scopeA"
         },
         {
           "stepId": "thread",
@@ -182,7 +296,8 @@
               "name": "thread",
               "path": "result"
             }
-          ]
+          ],
+          "instance": "scopeA"
         },
         {
           "stepId": "list",
@@ -206,7 +321,54 @@
               "name": "list",
               "path": "result"
             }
-          ]
+          ],
+          "instance": "scopeA"
+        },
+        {
+          "stepId": "scopeB",
+          "operation": "kernel.instance.create",
+          "action": "createInstance",
+          "instance": "scopeB",
+          "arguments": {
+            "scope": "tuvren.scope.b"
+          },
+          "claimIds": ["kernel.scope-isolation.enumeration_is_scope_confined"]
+        },
+        {
+          "stepId": "backendB",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeB",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.scope-isolation.enumeration_is_scope_confined"]
+        },
+        {
+          "stepId": "workerB",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "instance": "scopeB",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.scope-isolation.enumeration_is_scope_confined"]
+        },
+        {
+          "stepId": "otherList",
+          "operation": "kernel.thread.list",
+          "instance": "scopeB",
+          "arguments": {},
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threads",
+              "length": 0
+            }
+          ],
+          "claimIds": ["kernel.scope-isolation.enumeration_is_scope_confined"]
         }
       ],
       "assertions": [
@@ -216,8 +378,12 @@
           "equalsPath": "$.result.trace.thread.result.rootTurnNodeHash"
         }
       ],
-      "evidence": ["trace.list.result"],
-      "capabilities": ["kernel-protocol.thread.enumeration", "kernel.protocol"]
+      "evidence": ["trace.list.result", "trace.otherList.result"],
+      "capabilities": [
+        "kernel-protocol.thread.enumeration",
+        "kernel.protocol",
+        "kernel.syscall"
+      ]
     }
   ]
 }

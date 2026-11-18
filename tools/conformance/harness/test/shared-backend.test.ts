@@ -208,6 +208,20 @@ test("a restarted PostgreSQL process restores the server and worker clock source
       action: "openInstance",
       operation: "kernel.instance.open",
       arguments: {},
+    },
+    {
+      stepId: "reopenedClockThread",
+      operation: "kernel.thread.create",
+      arguments: {
+        threadId: "reopenedClockThread",
+        schemaId: "run_liveness",
+        initialBranchId: "reopenedClockBranch",
+      },
+    },
+    {
+      stepId: "reopenedClockObservation",
+      operation: "kernel.thread.list",
+      arguments: {},
     }
   );
   const [entry] = await runScheduledChecks(

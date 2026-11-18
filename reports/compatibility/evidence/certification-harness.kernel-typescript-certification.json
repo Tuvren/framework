@@ -9687,6 +9687,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.1.resultField",
           "status": "pass"
         },
@@ -9703,11 +9711,27 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.otherGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.otherHas.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.get.result",
           "status": "pass"
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.has.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.otherGet.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.otherHas.result",
           "status": "pass"
         }
       ],
@@ -9715,7 +9739,19 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.scope-isolation.syscall",
-        "traceStepIds": ["backend0", "worker0", "put", "has", "get"]
+        "traceStepIds": [
+          "scopeA",
+          "backend0",
+          "worker0",
+          "put",
+          "has",
+          "get",
+          "scopeB",
+          "backendB",
+          "workerB",
+          "otherHas",
+          "otherGet"
+        ]
       },
       "status": "pass"
     },
@@ -9727,6 +9763,10 @@
         },
         {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.otherList.1.resultField",
           "status": "pass"
         },
         {
@@ -9746,7 +9786,15 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.otherList.result.threads",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.list.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.otherList.result",
           "status": "pass"
         }
       ],
@@ -9754,7 +9802,18 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.scope-isolation.syscall",
-        "traceStepIds": ["backend0", "worker0", "schema", "thread", "list"]
+        "traceStepIds": [
+          "scopeA",
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "list",
+          "scopeB",
+          "backendB",
+          "workerB",
+          "otherList"
+        ]
       },
       "status": "pass"
     }
