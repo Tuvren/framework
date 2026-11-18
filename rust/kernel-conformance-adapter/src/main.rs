@@ -242,4 +242,3 @@ fn error_response(id: Value, code: &str, message: &str) -> Value {
         "error": adapter_error(code, message, None)
     })
 }
-
