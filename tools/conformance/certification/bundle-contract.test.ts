@@ -1302,18 +1302,45 @@ test("control assertion scoping follows manifest claims alone", async () => {
     manifest,
     manifest.authorityPackets
   );
-  if (profile === undefined) {
-    throw new Error("missing memory profile");
+  const packetPath = manifest.authorityPackets[0];
+  if (profile === undefined || packetPath === undefined) {
+    throw new Error("missing memory profile authority");
   }
   const scoped = await readProfileScopedControls(manifest, profile);
   expect(scoped).toContain("kernel.drop-uncommitted-staged-result-on-recovery");
-  expect(scoped).not.toContain("kernel.accept-noncanonical-cbor");
-  expect(scoped).not.toContain("kernel.resolve-object-across-scopes");
+  expect(scoped).toContain("kernel.accept-noncanonical-cbor");
+  const packet = record(JSON.parse(await readFile(packetPath, "utf8")));
+  const controls = record(
+    JSON.parse(await readFile(string(packet.negativeControlManifest), "utf8"))
+  ).controls;
+  if (!Array.isArray(controls)) {
+    throw new Error("missing control manifest entries");
+  }
+  const outside = controls.map(record).find((control) => {
+    const claims = control.claimIds;
+    const profiles = control.profiles;
+    return (
+      Array.isArray(profiles) &&
+      profiles.includes(profile.profileId) &&
+      Array.isArray(claims) &&
+      claims.length > 0 &&
+      claims.every(
+        (claim) =>
+          typeof claim === "string" && !profile.claimIds.includes(claim)
+      )
+    );
+  });
+  if (outside === undefined || !Array.isArray(outside.claimIds)) {
+    throw new Error("missing memory-tagged control outside the profile claims");
+  }
+  const outsideId = string(outside.mutantId);
+  expect(scoped).not.toContain(outsideId);
   const reassigned = await readProfileScopedControls(manifest, {
     ...profile,
-    claimIds: ["kernel.protocol.canonical_rejection"],
+    claimIds: outside.claimIds.map(string),
   });
-  expect(reassigned).toContain("kernel.accept-noncanonical-cbor");
+  expect(reassigned).toContain(outsideId);
+  expect(reassigned).not.toContain("kernel.accept-noncanonical-cbor");
   expect(reassigned).not.toContain(
     "kernel.drop-uncommitted-staged-result-on-recovery"
   );

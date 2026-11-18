@@ -92,7 +92,7 @@ tickets:
       evidence: "The map accounts for all 68 existing assertions, valid and noncanonical inputs are observed through codec operations, TypeScript and Rust run the canonical checks, and the accept-noncanonical-cbor mutant has a designated detecting assertion. The memory inventory fails if a codec claim or required kernel.codec capability is omitted."
     flows: ["flow-authority-packet-driven-conformance", "flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DQ002
     title: "Move both legacy-only controls to observable plan assertions"
     type: Feature

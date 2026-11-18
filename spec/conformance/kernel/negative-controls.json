@@ -4,14 +4,18 @@
       "mutantId": "kernel.accept-noncanonical-cbor",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#23-hash",
-      "claimIds": ["kernel.protocol.canonical_rejection"],
+      "claimIds": [
+        "kernel.protocol.canonical_rejection",
+        "kernel.codec.decode.non-minimal-uint-head"
+      ],
       "activation": {
         "precondition": "the deterministic decoder rejects a top-level unsigned integer whose one-byte argument head carries a value below 24",
         "signal": "mutant.accept-noncanonical-cbor.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.protocol.canonical_rejection.1.resultField"
+        "kernel.protocol.canonical_rejection.1.resultField",
+        "kernel.codec.decode.non-minimal-uint-head.1.resultField"
       ]
     },
     {
@@ -311,7 +315,25 @@
         "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
         "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
         "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
-        "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
+        "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+        "kernel.codec.deterministic.opaque",
+        "kernel.codec.empty-bytes.opaque",
+        "kernel.codec.single-byte.opaque",
+        "kernel.codec.all-zero-bytes.opaque",
+        "kernel.codec.all-ones-bytes.opaque",
+        "kernel.codec.large-bytes.opaque",
+        "kernel.codec.multi-path-schema.opaque",
+        "kernel.codec.all-single-paths.opaque",
+        "kernel.codec.all-ordered-paths.opaque",
+        "kernel.codec.with-prev-turn.opaque",
+        "kernel.codec.with-event-hash.opaque",
+        "kernel.codec.staged-failed.opaque",
+        "kernel.codec.staged-interrupted.opaque",
+        "kernel.codec.many-staged-results.opaque",
+        "kernel.codec.deep-path-schema.opaque",
+        "kernel.codec.non-utf8-bytes.opaque",
+        "kernel.codec.zero-turn-tree-hash.opaque",
+        "kernel.codec.mixed-status-staged.opaque"
       ],
       "activation": {
         "precondition": "an opaque object's bytes are hashed",
@@ -336,7 +358,25 @@
         "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
         "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
         "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField",
-        "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField"
+        "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+        "kernel.codec.deterministic.opaque.hash.1.resultField",
+        "kernel.codec.empty-bytes.opaque.hash.1.resultField",
+        "kernel.codec.single-byte.opaque.hash.1.resultField",
+        "kernel.codec.all-zero-bytes.opaque.hash.1.resultField",
+        "kernel.codec.all-ones-bytes.opaque.hash.1.resultField",
+        "kernel.codec.large-bytes.opaque.hash.1.resultField",
+        "kernel.codec.multi-path-schema.opaque.hash.1.resultField",
+        "kernel.codec.all-single-paths.opaque.hash.1.resultField",
+        "kernel.codec.all-ordered-paths.opaque.hash.1.resultField",
+        "kernel.codec.with-prev-turn.opaque.hash.1.resultField",
+        "kernel.codec.with-event-hash.opaque.hash.1.resultField",
+        "kernel.codec.staged-failed.opaque.hash.1.resultField",
+        "kernel.codec.staged-interrupted.opaque.hash.1.resultField",
+        "kernel.codec.many-staged-results.opaque.hash.1.resultField",
+        "kernel.codec.deep-path-schema.opaque.hash.1.resultField",
+        "kernel.codec.non-utf8-bytes.opaque.hash.1.resultField",
+        "kernel.codec.zero-turn-tree-hash.opaque.hash.1.resultField",
+        "kernel.codec.mixed-status-staged.opaque.hash.1.resultField"
       ]
     },
     {

@@ -442,6 +442,20 @@ const addOwnedClaims = (
   }
 };
 
+const checkClaims = (
+  check: ConformancePlanCheck,
+  codecPlan: boolean
+): string[] => {
+  const claims = [
+    ...(check.claimIds ?? []),
+    ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
+  ];
+  if (claims.length === 0 && codecPlan) {
+    throw new Error(`${check.checkId} requires codec claimIds`);
+  }
+  return claims;
+};
+
 const expectedProfileClaims = (
   profile: CertificationProfile,
   plans: readonly CompiledConformancePlan[],
@@ -455,10 +469,9 @@ const expectedProfileClaims = (
       continue;
     }
     for (const { check } of plan.checks) {
-      const claims = [
-        ...(check.claimIds ?? []),
-        ...(check.steps ?? []).flatMap((step) => step.claimIds ?? []),
-      ];
+      const codecPlan =
+        plan.plan.applicability.capabilities.includes("kernel.codec");
+      const claims = checkClaims(check, codecPlan);
       if (claims.length === 0) {
         continue;
       }
@@ -467,6 +480,11 @@ const expectedProfileClaims = (
         plan.plan.applicability.capabilities,
         profiles
       );
+      if (owner === undefined && codecPlan) {
+        throw new Error(
+          `${check.checkId} has no profile owner; kernel.memory requires kernel.codec`
+        );
+      }
       if (owner === undefined) {
         continue;
       }

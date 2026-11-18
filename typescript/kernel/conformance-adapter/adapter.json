@@ -38,7 +38,9 @@
     "--capability",
     "kernel.fault-injection",
     "--capability",
-    "kernel.barrier"
+    "kernel.barrier",
+    "--capability",
+    "kernel.codec"
   ],
   "capabilities": [
     "kernel.protocol",
@@ -52,7 +54,8 @@
     "kernel-protocol.thread.enumeration",
     "kernel.syscall",
     "kernel.fault-injection",
-    "kernel.barrier"
+    "kernel.barrier",
+    "kernel.codec"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "profiles": ["kernel.memory"],

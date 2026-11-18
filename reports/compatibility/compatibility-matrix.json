@@ -4,19 +4,219 @@
     {
       "backend": "memory",
       "digests": {
-        "adapterManifest": "4acfae5c3310713181146242d75c2cb2a15b5090aa5ea64f744f9745fefbfe0e",
-        "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
-        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
-        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
-        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
-        "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
+        "adapterManifest": "5bbc491738262cd750589620774bf31940306ec96cb2fb99cdd48b729c517f35",
+        "packet": "e43c8c726513d203dcc82472948a80b730c2e0a01646de23eb8bf8ee7912457d",
+        "plans": "1c6ce98af4de7de783a018d838e37476aa5c5d3081c7633647a63621a8c18e42",
+        "catalogs": "dd3526ac546c592d1e52fc15a143cae019350972357d4630afd94f0884770edf",
+        "fixtures": "1a3b0e3d4c5b21b57d3b729154c22214ced07be042cbf02f3b17e0f063cfe593",
+        "profiles": "43f54b76c51c0f06241efe5031a5e819aea5c7f21288b68d55c9f8a8848436ba",
+        "controls": "c3c99e62f7dca56f4c6db4a1787bba14b7a85f730f826f3d40fb3fc5abc37754",
+        "verifierAuthority": "a0871ab5094ac6417b8fe14d135853956dc52402b826cf6c8693a12c77a4beae"
       },
       "implementationId": "typescript-kernel-memory",
       "profile": "kernel.memory",
       "status": "certified",
       "undetectedClaims": [
+        {
+          "claimId": "kernel.codec.all-ones-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ones-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ordered-paths.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ordered-paths.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-single-paths.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-single-paths.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-zero-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-zero-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.control-canonical-map",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.duplicate-map-key",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.float64-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-array",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-map",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-text-string",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.non-minimal-length-head",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.tagged-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.trailing-bytes-after-top-level-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.truncated-input",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.uint-beyond-safe-integer-range",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.unsorted-map-keys",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deep-path-schema.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deep-path-schema.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deterministic.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deterministic.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.empty-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.empty-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.large-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.large-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.many-staged-results.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.many-staged-results.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.mixed-status-staged.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.mixed-status-staged.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.multi-path-schema.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.multi-path-schema.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.non-utf8-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.non-utf8-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.single-byte.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.single-byte.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-failed.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-failed.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-interrupted.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-interrupted.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.turn-tree.identity",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-event-hash.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-event-hash.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-prev-turn.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-prev-turn.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.zero-turn-tree-hash.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.zero-turn-tree-hash.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
         {
           "claimId": "kernel.syscall.backend_capability.shared_lease_clock",
           "reason": "No designated control falsifies the backend capability descriptor or changes the transaction clock used for staged-result timestamps."
@@ -182,14 +382,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
-        "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
-        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
-        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
-        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
-        "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
+        "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
+        "packet": "e43c8c726513d203dcc82472948a80b730c2e0a01646de23eb8bf8ee7912457d",
+        "plans": "1c6ce98af4de7de783a018d838e37476aa5c5d3081c7633647a63621a8c18e42",
+        "catalogs": "dd3526ac546c592d1e52fc15a143cae019350972357d4630afd94f0884770edf",
+        "fixtures": "1a3b0e3d4c5b21b57d3b729154c22214ced07be042cbf02f3b17e0f063cfe593",
+        "profiles": "43f54b76c51c0f06241efe5031a5e819aea5c7f21288b68d55c9f8a8848436ba",
+        "controls": "c3c99e62f7dca56f4c6db4a1787bba14b7a85f730f826f3d40fb3fc5abc37754",
+        "verifierAuthority": "a0871ab5094ac6417b8fe14d135853956dc52402b826cf6c8693a12c77a4beae"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
@@ -199,14 +399,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
-        "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
-        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
-        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
-        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
-        "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
+        "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
+        "packet": "e43c8c726513d203dcc82472948a80b730c2e0a01646de23eb8bf8ee7912457d",
+        "plans": "1c6ce98af4de7de783a018d838e37476aa5c5d3081c7633647a63621a8c18e42",
+        "catalogs": "dd3526ac546c592d1e52fc15a143cae019350972357d4630afd94f0884770edf",
+        "fixtures": "1a3b0e3d4c5b21b57d3b729154c22214ced07be042cbf02f3b17e0f063cfe593",
+        "profiles": "43f54b76c51c0f06241efe5031a5e819aea5c7f21288b68d55c9f8a8848436ba",
+        "controls": "c3c99e62f7dca56f4c6db4a1787bba14b7a85f730f826f3d40fb3fc5abc37754",
+        "verifierAuthority": "a0871ab5094ac6417b8fe14d135853956dc52402b826cf6c8693a12c77a4beae"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
@@ -216,14 +416,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "f75034e5bb413fb7743a7a7fb0e30f3edf61f79f4ec4228cce6b61c8f07aea6f",
-        "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
-        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
-        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
-        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
-        "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
+        "adapterManifest": "d667a38c33286f00e48c344a78d387494e2c1599c6dd37acf2cdd6a70142dc1d",
+        "packet": "e43c8c726513d203dcc82472948a80b730c2e0a01646de23eb8bf8ee7912457d",
+        "plans": "1c6ce98af4de7de783a018d838e37476aa5c5d3081c7633647a63621a8c18e42",
+        "catalogs": "dd3526ac546c592d1e52fc15a143cae019350972357d4630afd94f0884770edf",
+        "fixtures": "1a3b0e3d4c5b21b57d3b729154c22214ced07be042cbf02f3b17e0f063cfe593",
+        "profiles": "43f54b76c51c0f06241efe5031a5e819aea5c7f21288b68d55c9f8a8848436ba",
+        "controls": "c3c99e62f7dca56f4c6db4a1787bba14b7a85f730f826f3d40fb3fc5abc37754",
+        "verifierAuthority": "a0871ab5094ac6417b8fe14d135853956dc52402b826cf6c8693a12c77a4beae"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
@@ -233,14 +433,14 @@
     {
       "backend": "sqlite",
       "digests": {
-        "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8",
-        "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
-        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
-        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
-        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
-        "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
+        "adapterManifest": "c936dc68aaa14e00c3030c3a56d84a90eb8b07420b72973df0cf3dc08378df94",
+        "packet": "e43c8c726513d203dcc82472948a80b730c2e0a01646de23eb8bf8ee7912457d",
+        "plans": "1c6ce98af4de7de783a018d838e37476aa5c5d3081c7633647a63621a8c18e42",
+        "catalogs": "dd3526ac546c592d1e52fc15a143cae019350972357d4630afd94f0884770edf",
+        "fixtures": "1a3b0e3d4c5b21b57d3b729154c22214ced07be042cbf02f3b17e0f063cfe593",
+        "profiles": "43f54b76c51c0f06241efe5031a5e819aea5c7f21288b68d55c9f8a8848436ba",
+        "controls": "c3c99e62f7dca56f4c6db4a1787bba14b7a85f730f826f3d40fb3fc5abc37754",
+        "verifierAuthority": "a0871ab5094ac6417b8fe14d135853956dc52402b826cf6c8693a12c77a4beae"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.persistent-reopen",
@@ -250,14 +450,14 @@
     {
       "backend": "sqlite",
       "digests": {
-        "adapterManifest": "24a695ab61e0757055862206fc78c89315a663d7bb47a42ef8b35374a46ed4f8",
-        "packet": "c9b9bb84a7bd6c6254d0b5729306d1db7dff9d1b52a74a22da3ca59489b326a2",
-        "plans": "071594e3d276087becb6bceccfa97ba8a538a3b7c4d86c2425eecb348ca05791",
-        "catalogs": "15cb67a0ae35ca55066db93f07a41d8167543dd3c65ae4d9e5617bdbbc7c63c5",
-        "fixtures": "44d49c54f909abb6675ecfbeb9845efb0897604b343b077c76ff63185f754fd9",
-        "profiles": "c932d6ce897f5aa1ac4569982604815a35f4b5b3029d353239a54fe017e12aed",
-        "controls": "a907f09620a1b1fdc7200b79357532eb20f786872e5d1d5fd0a4f9082b2d850c",
-        "verifierAuthority": "b8ef8a5ff3d96958b0b2e6c64a73fb831e5c188f926e01bae485ad8c9b38a93c"
+        "adapterManifest": "c936dc68aaa14e00c3030c3a56d84a90eb8b07420b72973df0cf3dc08378df94",
+        "packet": "e43c8c726513d203dcc82472948a80b730c2e0a01646de23eb8bf8ee7912457d",
+        "plans": "1c6ce98af4de7de783a018d838e37476aa5c5d3081c7633647a63621a8c18e42",
+        "catalogs": "dd3526ac546c592d1e52fc15a143cae019350972357d4630afd94f0884770edf",
+        "fixtures": "1a3b0e3d4c5b21b57d3b729154c22214ced07be042cbf02f3b17e0f063cfe593",
+        "profiles": "43f54b76c51c0f06241efe5031a5e819aea5c7f21288b68d55c9f8a8848436ba",
+        "controls": "c3c99e62f7dca56f4c6db4a1787bba14b7a85f730f826f3d40fb3fc5abc37754",
+        "verifierAuthority": "a0871ab5094ac6417b8fe14d135853956dc52402b826cf6c8693a12c77a4beae"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.process-crash",
@@ -855,6 +1055,75 @@
       "results": [
         {
           "checkIds": [
+            "kernel.codec.all-ones-bytes.opaque",
+            "kernel.codec.all-ones-bytes.schema",
+            "kernel.codec.all-ones-bytes.turn-node",
+            "kernel.codec.all-ordered-paths.opaque",
+            "kernel.codec.all-ordered-paths.schema",
+            "kernel.codec.all-ordered-paths.turn-node",
+            "kernel.codec.all-single-paths.opaque",
+            "kernel.codec.all-single-paths.schema",
+            "kernel.codec.all-single-paths.turn-node",
+            "kernel.codec.all-zero-bytes.opaque",
+            "kernel.codec.all-zero-bytes.schema",
+            "kernel.codec.all-zero-bytes.turn-node",
+            "kernel.codec.decode.control-canonical-map",
+            "kernel.codec.decode.duplicate-map-key",
+            "kernel.codec.decode.float64-value",
+            "kernel.codec.decode.indefinite-length-array",
+            "kernel.codec.decode.indefinite-length-map",
+            "kernel.codec.decode.indefinite-length-text-string",
+            "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+            "kernel.codec.decode.non-minimal-length-head",
+            "kernel.codec.decode.non-minimal-uint-head",
+            "kernel.codec.decode.tagged-value",
+            "kernel.codec.decode.trailing-bytes-after-top-level-value",
+            "kernel.codec.decode.truncated-input",
+            "kernel.codec.decode.uint-beyond-safe-integer-range",
+            "kernel.codec.decode.unsorted-map-keys",
+            "kernel.codec.deep-path-schema.opaque",
+            "kernel.codec.deep-path-schema.schema",
+            "kernel.codec.deep-path-schema.turn-node",
+            "kernel.codec.deterministic.opaque",
+            "kernel.codec.deterministic.schema",
+            "kernel.codec.deterministic.turn-node",
+            "kernel.codec.empty-bytes.opaque",
+            "kernel.codec.empty-bytes.schema",
+            "kernel.codec.empty-bytes.turn-node",
+            "kernel.codec.large-bytes.opaque",
+            "kernel.codec.large-bytes.schema",
+            "kernel.codec.large-bytes.turn-node",
+            "kernel.codec.many-staged-results.opaque",
+            "kernel.codec.many-staged-results.schema",
+            "kernel.codec.many-staged-results.turn-node",
+            "kernel.codec.mixed-status-staged.opaque",
+            "kernel.codec.mixed-status-staged.schema",
+            "kernel.codec.mixed-status-staged.turn-node",
+            "kernel.codec.multi-path-schema.opaque",
+            "kernel.codec.multi-path-schema.schema",
+            "kernel.codec.multi-path-schema.turn-node",
+            "kernel.codec.non-utf8-bytes.opaque",
+            "kernel.codec.non-utf8-bytes.schema",
+            "kernel.codec.non-utf8-bytes.turn-node",
+            "kernel.codec.single-byte.opaque",
+            "kernel.codec.single-byte.schema",
+            "kernel.codec.single-byte.turn-node",
+            "kernel.codec.staged-failed.opaque",
+            "kernel.codec.staged-failed.schema",
+            "kernel.codec.staged-failed.turn-node",
+            "kernel.codec.staged-interrupted.opaque",
+            "kernel.codec.staged-interrupted.schema",
+            "kernel.codec.staged-interrupted.turn-node",
+            "kernel.codec.turn-tree.identity",
+            "kernel.codec.with-event-hash.opaque",
+            "kernel.codec.with-event-hash.schema",
+            "kernel.codec.with-event-hash.turn-node",
+            "kernel.codec.with-prev-turn.opaque",
+            "kernel.codec.with-prev-turn.schema",
+            "kernel.codec.with-prev-turn.turn-node",
+            "kernel.codec.zero-turn-tree-hash.opaque",
+            "kernel.codec.zero-turn-tree-hash.schema",
+            "kernel.codec.zero-turn-tree-hash.turn-node",
             "kernel.syscall.concurrent_writer.a_first",
             "kernel.syscall.concurrent_writer.b_first",
             "kernel.lineage.cross_thread_rejection",
@@ -993,14 +1262,15 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 135,
-            "totalChecks": 146,
-            "applicableChecks": 135,
+            "passedChecks": 204,
+            "totalChecks": 215,
+            "applicableChecks": 204,
             "nonApplicableChecks": 11
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.barrier",
+            "kernel.codec",
             "kernel.edge-validation",
             "kernel.edge-validation.composite",
             "kernel.fault-injection",
@@ -1029,6 +1299,75 @@
         {
           "checkIds": [
             "kernel.syscall.reopen.close_reopen_checkpoint",
+            "kernel.codec.all-ones-bytes.opaque",
+            "kernel.codec.all-ones-bytes.schema",
+            "kernel.codec.all-ones-bytes.turn-node",
+            "kernel.codec.all-ordered-paths.opaque",
+            "kernel.codec.all-ordered-paths.schema",
+            "kernel.codec.all-ordered-paths.turn-node",
+            "kernel.codec.all-single-paths.opaque",
+            "kernel.codec.all-single-paths.schema",
+            "kernel.codec.all-single-paths.turn-node",
+            "kernel.codec.all-zero-bytes.opaque",
+            "kernel.codec.all-zero-bytes.schema",
+            "kernel.codec.all-zero-bytes.turn-node",
+            "kernel.codec.decode.control-canonical-map",
+            "kernel.codec.decode.duplicate-map-key",
+            "kernel.codec.decode.float64-value",
+            "kernel.codec.decode.indefinite-length-array",
+            "kernel.codec.decode.indefinite-length-map",
+            "kernel.codec.decode.indefinite-length-text-string",
+            "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+            "kernel.codec.decode.non-minimal-length-head",
+            "kernel.codec.decode.non-minimal-uint-head",
+            "kernel.codec.decode.tagged-value",
+            "kernel.codec.decode.trailing-bytes-after-top-level-value",
+            "kernel.codec.decode.truncated-input",
+            "kernel.codec.decode.uint-beyond-safe-integer-range",
+            "kernel.codec.decode.unsorted-map-keys",
+            "kernel.codec.deep-path-schema.opaque",
+            "kernel.codec.deep-path-schema.schema",
+            "kernel.codec.deep-path-schema.turn-node",
+            "kernel.codec.deterministic.opaque",
+            "kernel.codec.deterministic.schema",
+            "kernel.codec.deterministic.turn-node",
+            "kernel.codec.empty-bytes.opaque",
+            "kernel.codec.empty-bytes.schema",
+            "kernel.codec.empty-bytes.turn-node",
+            "kernel.codec.large-bytes.opaque",
+            "kernel.codec.large-bytes.schema",
+            "kernel.codec.large-bytes.turn-node",
+            "kernel.codec.many-staged-results.opaque",
+            "kernel.codec.many-staged-results.schema",
+            "kernel.codec.many-staged-results.turn-node",
+            "kernel.codec.mixed-status-staged.opaque",
+            "kernel.codec.mixed-status-staged.schema",
+            "kernel.codec.mixed-status-staged.turn-node",
+            "kernel.codec.multi-path-schema.opaque",
+            "kernel.codec.multi-path-schema.schema",
+            "kernel.codec.multi-path-schema.turn-node",
+            "kernel.codec.non-utf8-bytes.opaque",
+            "kernel.codec.non-utf8-bytes.schema",
+            "kernel.codec.non-utf8-bytes.turn-node",
+            "kernel.codec.single-byte.opaque",
+            "kernel.codec.single-byte.schema",
+            "kernel.codec.single-byte.turn-node",
+            "kernel.codec.staged-failed.opaque",
+            "kernel.codec.staged-failed.schema",
+            "kernel.codec.staged-failed.turn-node",
+            "kernel.codec.staged-interrupted.opaque",
+            "kernel.codec.staged-interrupted.schema",
+            "kernel.codec.staged-interrupted.turn-node",
+            "kernel.codec.turn-tree.identity",
+            "kernel.codec.with-event-hash.opaque",
+            "kernel.codec.with-event-hash.schema",
+            "kernel.codec.with-event-hash.turn-node",
+            "kernel.codec.with-prev-turn.opaque",
+            "kernel.codec.with-prev-turn.schema",
+            "kernel.codec.with-prev-turn.turn-node",
+            "kernel.codec.zero-turn-tree-hash.opaque",
+            "kernel.codec.zero-turn-tree-hash.schema",
+            "kernel.codec.zero-turn-tree-hash.turn-node",
             "kernel.syscall.process-crash.after_commit_before_ack",
             "kernel.syscall.process-crash.after_head_move_before_staging_clear",
             "kernel.syscall.process-crash.after_turn_node_write_before_head",
@@ -1172,13 +1511,14 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 141,
-            "totalChecks": 146,
-            "applicableChecks": 141,
+            "passedChecks": 210,
+            "totalChecks": 215,
+            "applicableChecks": 210,
             "nonApplicableChecks": 5
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
+            "kernel.codec",
             "kernel.edge-validation",
             "kernel.edge-validation.composite",
             "kernel.fault-injection",
@@ -1209,6 +1549,75 @@
           "checkIds": [
             "kernel.syscall.clock_skew.preemption",
             "kernel.syscall.reopen.close_reopen_checkpoint",
+            "kernel.codec.all-ones-bytes.opaque",
+            "kernel.codec.all-ones-bytes.schema",
+            "kernel.codec.all-ones-bytes.turn-node",
+            "kernel.codec.all-ordered-paths.opaque",
+            "kernel.codec.all-ordered-paths.schema",
+            "kernel.codec.all-ordered-paths.turn-node",
+            "kernel.codec.all-single-paths.opaque",
+            "kernel.codec.all-single-paths.schema",
+            "kernel.codec.all-single-paths.turn-node",
+            "kernel.codec.all-zero-bytes.opaque",
+            "kernel.codec.all-zero-bytes.schema",
+            "kernel.codec.all-zero-bytes.turn-node",
+            "kernel.codec.decode.control-canonical-map",
+            "kernel.codec.decode.duplicate-map-key",
+            "kernel.codec.decode.float64-value",
+            "kernel.codec.decode.indefinite-length-array",
+            "kernel.codec.decode.indefinite-length-map",
+            "kernel.codec.decode.indefinite-length-text-string",
+            "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+            "kernel.codec.decode.non-minimal-length-head",
+            "kernel.codec.decode.non-minimal-uint-head",
+            "kernel.codec.decode.tagged-value",
+            "kernel.codec.decode.trailing-bytes-after-top-level-value",
+            "kernel.codec.decode.truncated-input",
+            "kernel.codec.decode.uint-beyond-safe-integer-range",
+            "kernel.codec.decode.unsorted-map-keys",
+            "kernel.codec.deep-path-schema.opaque",
+            "kernel.codec.deep-path-schema.schema",
+            "kernel.codec.deep-path-schema.turn-node",
+            "kernel.codec.deterministic.opaque",
+            "kernel.codec.deterministic.schema",
+            "kernel.codec.deterministic.turn-node",
+            "kernel.codec.empty-bytes.opaque",
+            "kernel.codec.empty-bytes.schema",
+            "kernel.codec.empty-bytes.turn-node",
+            "kernel.codec.large-bytes.opaque",
+            "kernel.codec.large-bytes.schema",
+            "kernel.codec.large-bytes.turn-node",
+            "kernel.codec.many-staged-results.opaque",
+            "kernel.codec.many-staged-results.schema",
+            "kernel.codec.many-staged-results.turn-node",
+            "kernel.codec.mixed-status-staged.opaque",
+            "kernel.codec.mixed-status-staged.schema",
+            "kernel.codec.mixed-status-staged.turn-node",
+            "kernel.codec.multi-path-schema.opaque",
+            "kernel.codec.multi-path-schema.schema",
+            "kernel.codec.multi-path-schema.turn-node",
+            "kernel.codec.non-utf8-bytes.opaque",
+            "kernel.codec.non-utf8-bytes.schema",
+            "kernel.codec.non-utf8-bytes.turn-node",
+            "kernel.codec.single-byte.opaque",
+            "kernel.codec.single-byte.schema",
+            "kernel.codec.single-byte.turn-node",
+            "kernel.codec.staged-failed.opaque",
+            "kernel.codec.staged-failed.schema",
+            "kernel.codec.staged-failed.turn-node",
+            "kernel.codec.staged-interrupted.opaque",
+            "kernel.codec.staged-interrupted.schema",
+            "kernel.codec.staged-interrupted.turn-node",
+            "kernel.codec.turn-tree.identity",
+            "kernel.codec.with-event-hash.opaque",
+            "kernel.codec.with-event-hash.schema",
+            "kernel.codec.with-event-hash.turn-node",
+            "kernel.codec.with-prev-turn.opaque",
+            "kernel.codec.with-prev-turn.schema",
+            "kernel.codec.with-prev-turn.turn-node",
+            "kernel.codec.zero-turn-tree-hash.opaque",
+            "kernel.codec.zero-turn-tree-hash.schema",
+            "kernel.codec.zero-turn-tree-hash.turn-node",
             "kernel.syscall.concurrent_writer.a_first",
             "kernel.syscall.concurrent_writer.b_first",
             "kernel.syscall.process-crash.after_commit_before_ack",
@@ -1356,15 +1765,16 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 146,
-            "totalChecks": 146,
-            "applicableChecks": 146,
+            "passedChecks": 215,
+            "totalChecks": 215,
+            "applicableChecks": 215,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
             "clock.backend-server",
             "kernel-protocol.thread.enumeration",
             "kernel.barrier",
+            "kernel.codec",
             "kernel.edge-validation",
             "kernel.edge-validation.composite",
             "kernel.fault-injection",
@@ -1489,6 +1899,75 @@
       "results": [
         {
           "checkIds": [
+            "kernel.codec.all-ones-bytes.opaque",
+            "kernel.codec.all-ones-bytes.schema",
+            "kernel.codec.all-ones-bytes.turn-node",
+            "kernel.codec.all-ordered-paths.opaque",
+            "kernel.codec.all-ordered-paths.schema",
+            "kernel.codec.all-ordered-paths.turn-node",
+            "kernel.codec.all-single-paths.opaque",
+            "kernel.codec.all-single-paths.schema",
+            "kernel.codec.all-single-paths.turn-node",
+            "kernel.codec.all-zero-bytes.opaque",
+            "kernel.codec.all-zero-bytes.schema",
+            "kernel.codec.all-zero-bytes.turn-node",
+            "kernel.codec.decode.control-canonical-map",
+            "kernel.codec.decode.duplicate-map-key",
+            "kernel.codec.decode.float64-value",
+            "kernel.codec.decode.indefinite-length-array",
+            "kernel.codec.decode.indefinite-length-map",
+            "kernel.codec.decode.indefinite-length-text-string",
+            "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+            "kernel.codec.decode.non-minimal-length-head",
+            "kernel.codec.decode.non-minimal-uint-head",
+            "kernel.codec.decode.tagged-value",
+            "kernel.codec.decode.trailing-bytes-after-top-level-value",
+            "kernel.codec.decode.truncated-input",
+            "kernel.codec.decode.uint-beyond-safe-integer-range",
+            "kernel.codec.decode.unsorted-map-keys",
+            "kernel.codec.deep-path-schema.opaque",
+            "kernel.codec.deep-path-schema.schema",
+            "kernel.codec.deep-path-schema.turn-node",
+            "kernel.codec.deterministic.opaque",
+            "kernel.codec.deterministic.schema",
+            "kernel.codec.deterministic.turn-node",
+            "kernel.codec.empty-bytes.opaque",
+            "kernel.codec.empty-bytes.schema",
+            "kernel.codec.empty-bytes.turn-node",
+            "kernel.codec.large-bytes.opaque",
+            "kernel.codec.large-bytes.schema",
+            "kernel.codec.large-bytes.turn-node",
+            "kernel.codec.many-staged-results.opaque",
+            "kernel.codec.many-staged-results.schema",
+            "kernel.codec.many-staged-results.turn-node",
+            "kernel.codec.mixed-status-staged.opaque",
+            "kernel.codec.mixed-status-staged.schema",
+            "kernel.codec.mixed-status-staged.turn-node",
+            "kernel.codec.multi-path-schema.opaque",
+            "kernel.codec.multi-path-schema.schema",
+            "kernel.codec.multi-path-schema.turn-node",
+            "kernel.codec.non-utf8-bytes.opaque",
+            "kernel.codec.non-utf8-bytes.schema",
+            "kernel.codec.non-utf8-bytes.turn-node",
+            "kernel.codec.single-byte.opaque",
+            "kernel.codec.single-byte.schema",
+            "kernel.codec.single-byte.turn-node",
+            "kernel.codec.staged-failed.opaque",
+            "kernel.codec.staged-failed.schema",
+            "kernel.codec.staged-failed.turn-node",
+            "kernel.codec.staged-interrupted.opaque",
+            "kernel.codec.staged-interrupted.schema",
+            "kernel.codec.staged-interrupted.turn-node",
+            "kernel.codec.turn-tree.identity",
+            "kernel.codec.with-event-hash.opaque",
+            "kernel.codec.with-event-hash.schema",
+            "kernel.codec.with-event-hash.turn-node",
+            "kernel.codec.with-prev-turn.opaque",
+            "kernel.codec.with-prev-turn.schema",
+            "kernel.codec.with-prev-turn.turn-node",
+            "kernel.codec.zero-turn-tree-hash.opaque",
+            "kernel.codec.zero-turn-tree-hash.schema",
+            "kernel.codec.zero-turn-tree-hash.turn-node",
             "kernel.syscall.concurrent_writer.a_first",
             "kernel.syscall.concurrent_writer.b_first",
             "kernel.lineage.cross_thread_rejection",
@@ -1615,14 +2094,15 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 123,
-            "totalChecks": 146,
-            "applicableChecks": 123,
+            "passedChecks": 192,
+            "totalChecks": 215,
+            "applicableChecks": 192,
             "nonApplicableChecks": 23
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.barrier",
+            "kernel.codec",
             "kernel.edge-validation",
             "kernel.fault-injection",
             "kernel.logical",
@@ -1719,9 +2199,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 146,
+            "totalChecks": 215,
             "applicableChecks": 68,
-            "nonApplicableChecks": 78
+            "nonApplicableChecks": 147
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1822,9 +2302,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 146,
+            "totalChecks": 215,
             "applicableChecks": 68,
-            "nonApplicableChecks": 78
+            "nonApplicableChecks": 147
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1925,9 +2405,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 146,
+            "totalChecks": 215,
             "applicableChecks": 68,
-            "nonApplicableChecks": 78
+            "nonApplicableChecks": 147
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

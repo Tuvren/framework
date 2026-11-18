@@ -87,6 +87,42 @@ const planOperations = new Set(
     })
   )
 );
+const CODEC_BINDINGS = new Map([
+  [
+    "kernel.codec.decode",
+    {
+      file: "src/lib/kernel-record-identity.ts",
+      symbol: "decodeDeterministicKernelRecord",
+    },
+  ],
+  [
+    "kernel.codec.encode",
+    {
+      file: "src/lib/kernel-record-identity.ts",
+      symbol: "encodeDeterministicKernelRecord",
+    },
+  ],
+  [
+    "kernel.codec.hashOpaque",
+    {
+      file: "src/lib/kernel-record-identity.ts",
+      symbol: "hashOpaqueObjectBytes",
+    },
+  ],
+  [
+    "kernel.codec.hashRecord",
+    { file: "src/lib/kernel-record-identity.ts", symbol: "hashKernelRecord" },
+  ],
+  [
+    "kernel.codec.hashTurnNode",
+    { file: "src/lib/kernel-identity.ts", symbol: "hashTurnNodeIdentity" },
+  ],
+  [
+    "kernel.codec.hashTurnTree",
+    { file: "src/lib/kernel-identity.ts", symbol: "hashTurnTreeIdentity" },
+  ],
+]);
+
 const SYSCALLS = [
   "backend.capabilities",
   "store.put",
@@ -215,9 +251,10 @@ describe("kernel certification catalog", () => {
         .map((operation) => operation.operationId)
         .toSorted((left, right) => string(left).localeCompare(string(right)))
     ).toEqual(
-      SYSCALLS.map((name) => `kernel.${name}`).toSorted((left, right) =>
-        string(left).localeCompare(string(right))
-      )
+      [
+        ...SYSCALLS.map((name) => `kernel.${name}`),
+        ...CODEC_BINDINGS.keys(),
+      ].toSorted((left, right) => string(left).localeCompare(string(right)))
     );
     const [, syscallText] = readFileSync(
       path.join(ROOT, "docs/KrakenKernelSpecification.md"),
@@ -249,6 +286,34 @@ describe("kernel certification catalog", () => {
         expect(target).toBeDefined();
         continue;
       }
+      const codec = CODEC_BINDINGS.get(string(operation.operationId));
+      if (codec !== undefined) {
+        expect(symbol).toBe(codec.symbol);
+        expect(operation.capability).toBe("kernel.codec");
+        expect(operation.kind).toBe("syscall");
+        expect(operation.handles).toEqual({ consumes: ["instance"] });
+        const file = path.join(string(projection), codec.file);
+        const source = ts.createSourceFile(
+          file,
+          readFileSync(path.join(ROOT, file), "utf-8"),
+          ts.ScriptTarget.Latest,
+          true
+        );
+        expect(
+          source.statements.some(
+            (statement) =>
+              ts.isVariableStatement(statement) &&
+              statement.modifiers?.some(
+                (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+              ) === true &&
+              statement.declarationList.declarations.some(
+                (declaration) =>
+                  declaration.name.getText(source) === codec.symbol
+              )
+          )
+        ).toBe(true);
+        continue;
+      }
       const [type, ...method] = string(symbol).split(".");
       const file = `${string(projection)}/${string(bindingSources.get(`${string(projection)}#${string(type)}`) ?? bindingSources.get(string(projection)))}`;
       const source = ts.createSourceFile(
@@ -278,6 +343,7 @@ describe("kernel certification catalog", () => {
     const entries = operations();
     const nativeIds = new Set([
       ...SYSCALLS.map((name) => `kernel.${name}`),
+      ...CODEC_BINDINGS.keys(),
       "kernel.barrier.arm",
       "kernel.barrier.wait",
       "kernel.barrier.release",
@@ -309,7 +375,7 @@ describe("kernel certification catalog", () => {
       for (const check of array(plan.checks).map(object)) {
         for (const assertion of array(check.assertions).map(object)) {
           if (
-            /code/iu.test(String(assertion.field)) &&
+            /(?:^|\.)(?:code|errorCode)$/iu.test(String(assertion.field)) &&
             typeof assertion.equals === "string"
           ) {
             expect(codes.has(assertion.equals)).toBe(true);

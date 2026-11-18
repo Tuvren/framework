@@ -402,12 +402,14 @@ export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/plan-compiler/barrier-rules.test.ts",
   "tools/conformance/plan-compiler/certification-rules.test.ts",
   "tools/conformance/plan-compiler/index.test.ts",
+  "tools/conformance/plan-compiler/codec.test.ts",
   "tools/conformance/plan-compiler/handle-steps.test.ts",
   "tools/scripts/conformance/certification-schemas.test.ts",
   "tools/scripts/lib/conformance-contract.test.ts",
 ];
 
 export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
+  "tools/conformance/meta-conformance/codec.test.ts",
   "tools/conformance/certification/bundle-contract.test.ts",
   "tools/conformance/certification/compatibility-certificates.test.ts",
   "tools/conformance/certification/durable-bundle-contract.test.ts",

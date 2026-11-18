@@ -41,6 +41,58 @@ macro_rules! routing {
     };
 }
 
+type CodecBinding = fn(&Value) -> CallResult;
+
+fn nullable_text(value: &Value, key: &str) -> EncodingResult<Option<String>> {
+    match field(value, key)? {
+        Value::Null => Ok(None),
+        _ => text(value, key).map(|value| Some(value.to_owned())),
+    }
+}
+
+const CODEC_BINDINGS: &[(&str, CodecBinding)] = routing![
+    "kernel.codec.encode" => |a| {
+        Ok(encoding::bytes(&tuvren_kernel_rust::encode_deterministic_kernel_record(
+            &encoding::decode_record(field(a, "record")?)?,
+        )?))
+    },
+    "kernel.codec.decode" => |a| {
+        Ok(encoding::encode_record(&tuvren_kernel_rust::decode_deterministic_kernel_record(
+            &encoding::decode_bytes(field(a, "bytes")?)?,
+        )?)?)
+    },
+    "kernel.codec.hashRecord" => |a| {
+        Ok(tuvren_kernel_rust::hash_kernel_record(
+            &encoding::decode_record(field(a, "record")?)?,
+        )?.encode()?)
+    },
+    "kernel.codec.hashOpaque" => |a| {
+        Ok(tuvren_kernel_rust::hash_bytes_to_hex(
+            &encoding::decode_bytes(field(a, "bytes")?)?,
+        ).encode()?)
+    },
+    "kernel.codec.hashTurnNode" => |a| {
+        let node = field(a, "node")?;
+        Ok(tuvren_kernel_rust::hash_turn_node_identity(&tuvren_kernel_rust::TurnNode {
+            hash: String::new(),
+            created_at_ms: 0,
+            schema_id: text(node, "schemaId")?.into(),
+            turn_tree_hash: text(node, "turnTreeHash")?.into(),
+            previous_turn_node_hash: nullable_text(node, "previousTurnNodeHash")?,
+            event_hash: nullable_text(node, "eventHash")?,
+            consumed_staged_results: list(node, "consumedStagedResults")?.iter()
+                .map(values::staged).collect::<EncodingResult<Vec<_>>>()?,
+        })?.encode()?)
+    },
+    "kernel.codec.hashTurnTree" => |a| {
+        Ok(tuvren_kernel_rust::identity::hash_turn_tree_identity(
+            text(a, "schemaId")?,
+            &values::changes(field(a, "manifest")?)?,
+        )?.encode()?)
+    },
+
+];
+
 const BINDINGS: &[(&str, Binding)] = routing![
     "kernel.backend.capabilities" => |k, _| {
         let capabilities = k.capabilities();
@@ -691,6 +743,7 @@ impl Syscalls {
     }
     pub(crate) fn has(operation: &str) -> bool {
         BINDINGS.iter().any(|(name, _)| *name == operation)
+            || CODEC_BINDINGS.iter().any(|(name, _)| *name == operation)
             || CONTROLS.iter().any(|(name, _)| *name == operation)
             || PROCESS_CONTROLS.iter().any(|(name, _)| *name == operation)
     }
@@ -723,8 +776,10 @@ impl Syscalls {
             });
         }
         let result = if let Some((_, binding)) =
-            BINDINGS.iter().find(|(name, _)| *name == operation)
+            CODEC_BINDINGS.iter().find(|(name, _)| *name == operation)
         {
+            binding(input)
+        } else if let Some((_, binding)) = BINDINGS.iter().find(|(name, _)| *name == operation) {
             let mut kernel_guard = instance
                 .kernel
                 .lock()

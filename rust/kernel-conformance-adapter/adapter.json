@@ -19,7 +19,8 @@
     "kernel.logical",
     "kernel-protocol.thread.enumeration",
     "kernel.run-liveness",
-    "kernel.reclamation"
+    "kernel.reclamation",
+    "kernel.codec"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "profiles": ["kernel.memory"],

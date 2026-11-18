@@ -46,7 +46,9 @@
     "kernel-protocol.thread.enumeration",
     "--capability",
     "kernel.syscall",
-    "--mutant-from-env"
+    "--mutant-from-env",
+    "--capability",
+    "kernel.codec"
   ],
   "capabilities": [
     "kernel.fault-injection",
@@ -63,7 +65,8 @@
     "kernel.scope-isolation",
     "kernel.reclamation",
     "kernel-protocol.thread.enumeration",
-    "kernel.syscall"
+    "kernel.syscall",
+    "kernel.codec"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",

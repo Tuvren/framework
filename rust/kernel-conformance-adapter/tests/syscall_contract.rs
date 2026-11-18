@@ -615,3 +615,45 @@ fn every_memory_plan_syscall_has_a_native_binding() {
         }
     }
 }
+
+#[test]
+fn codec_bridge_preserves_tagged_records_and_native_rejections() {
+    let mut adapter = Adapter::new();
+    let initialized = adapter.request(
+        "initialize",
+        json!({"packetId":"tuvren.kernel.protocol","planVersion":"0.1.0"}),
+    );
+    assert!(
+        initialized["result"]["capabilities"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("kernel.codec"))
+    );
+    let instance = adapter.instance();
+    let record = json!({"$map":[["a",1],["b",{"$bytes":"00ff"}]]});
+    let bytes = json!({"$bytes":"a261610161624200ff"});
+    assert_eq!(
+        adapter.result(&instance, "kernel.codec.encode", json!({"record":record})),
+        bytes
+    );
+    assert_eq!(
+        adapter.result(&instance, "kernel.codec.decode", json!({"bytes":bytes})),
+        record
+    );
+    let rejected = adapter.call(
+        &instance,
+        "kernel.codec.decode",
+        json!({"bytes":{"$bytes":"1805"}}),
+    );
+    assert_eq!(rejected["result"]["kind"], "error");
+    assert_eq!(
+        rejected["result"]["error"]["code"],
+        "non_canonical_kernel_record_encoding"
+    );
+    let malformed = adapter.call(
+        &instance,
+        "kernel.codec.decode",
+        json!({"bytes":{"$bytes":"GG"}}),
+    );
+    assert_eq!(malformed["error"]["code"], "adapter_invalid_encoding");
+}

@@ -5,6 +5,7 @@
     "clock.backend-server",
     "kernel-protocol.thread.enumeration",
     "kernel.barrier",
+    "kernel.codec",
     "kernel.edge-validation",
     "kernel.edge-validation.composite",
     "kernel.fault-injection",
@@ -363,6 +364,2515 @@
           "lineage",
           "visibleMessages"
         ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-ones-bytes.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-ones-bytes.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ones-bytes.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-ones-bytes.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-ordered-paths.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-ordered-paths.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-ordered-paths.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-ordered-paths.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-single-paths.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-single-paths.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-single-paths.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-single-paths.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-single-paths.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-single-paths.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-zero-bytes.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-zero-bytes.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.all-zero-bytes.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.all-zero-bytes.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.control-canonical-map.decode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.control-canonical-map.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.control-canonical-map.requiredEvidence.result.trace.decode.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.control-canonical-map",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.duplicate-map-key.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.duplicate-map-key.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.duplicate-map-key.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.duplicate-map-key.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.duplicate-map-key",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "non_canonical_kernel_record_encoding",
+            "details": {
+              "canonicalHex": "a1616102",
+              "receivedHex": "a2616101616102"
+            },
+            "message": "decoded kernel record must already use the canonical deterministic CBOR encoding"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.float64-value.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.float64-value.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.float64-value.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.float64-value.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.float64-value",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "non_canonical_kernel_record_encoding",
+            "details": {
+              "canonicalHex": "01",
+              "receivedHex": "fb3ff0000000000000"
+            },
+            "message": "decoded kernel record must already use the canonical deterministic CBOR encoding"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-array.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-array.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-array.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-array.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.indefinite-length-array",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "non_canonical_kernel_record_encoding",
+            "details": {
+              "canonicalHex": "820102",
+              "receivedHex": "9f0102ff"
+            },
+            "message": "decoded kernel record must already use the canonical deterministic CBOR encoding"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-map.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-map.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-map.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-map.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.indefinite-length-map",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "non_canonical_kernel_record_encoding",
+            "details": {
+              "canonicalHex": "a1616101",
+              "receivedHex": "bf616101ff"
+            },
+            "message": "decoded kernel record must already use the canonical deterministic CBOR encoding"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-text-string.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-text-string.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-text-string.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.indefinite-length-text-string.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.indefinite-length-text-string",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "invalid_decoded_kernel_record",
+            "details": {
+              "cause": "Indefinite length not supported for byte or text strings"
+            },
+            "message": "decoded kernel record bytes must contain valid deterministic CBOR"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.negative-int-beyond-safe-integer-range.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.negative-int-beyond-safe-integer-range.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.negative-int-beyond-safe-integer-range.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.negative-int-beyond-safe-integer-range.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "invalid_decoded_kernel_record",
+            "details": {
+              "value": "-18446744073709551616"
+            },
+            "message": "value decoded to an out-of-range bigint value"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-length-head.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-length-head.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-length-head.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-length-head.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.non-minimal-length-head",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "non_canonical_kernel_record_encoding",
+            "details": {
+              "canonicalHex": "8100",
+              "receivedHex": "980100"
+            },
+            "message": "decoded kernel record must already use the canonical deterministic CBOR encoding"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-uint-head.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-uint-head.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-uint-head.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.non-minimal-uint-head.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.non-minimal-uint-head",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "non_canonical_kernel_record_encoding",
+            "details": {
+              "canonicalHex": "05",
+              "receivedHex": "1805"
+            },
+            "message": "decoded kernel record must already use the canonical deterministic CBOR encoding"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.tagged-value.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.tagged-value.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.tagged-value.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.tagged-value.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.tagged-value",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "invalid_decoded_kernel_record",
+            "details": {
+              "decodedType": "[object Date]"
+            },
+            "message": "value decoded to an unsupported kernel record type"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.trailing-bytes-after-top-level-value.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.trailing-bytes-after-top-level-value.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.trailing-bytes-after-top-level-value.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.trailing-bytes-after-top-level-value.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.trailing-bytes-after-top-level-value",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "invalid_decoded_kernel_record",
+            "details": {
+              "cause": "Data read, but end of buffer not reached"
+            },
+            "message": "decoded kernel record bytes must contain valid deterministic CBOR"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.truncated-input.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.truncated-input.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.truncated-input.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.truncated-input.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.truncated-input",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "invalid_decoded_kernel_record",
+            "details": {
+              "cause": "Unexpected end of CBOR data"
+            },
+            "message": "decoded kernel record bytes must contain valid deterministic CBOR"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.uint-beyond-safe-integer-range.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.uint-beyond-safe-integer-range.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.uint-beyond-safe-integer-range.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.uint-beyond-safe-integer-range.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.uint-beyond-safe-integer-range",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "invalid_decoded_kernel_record",
+            "details": {
+              "value": "18446744073709551615"
+            },
+            "message": "value decoded to an out-of-range bigint value"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.decode.unsorted-map-keys.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.decode.unsorted-map-keys.2.errorEnvelope",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.unsorted-map-keys.3.stateField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.codec.decode.unsorted-map-keys.requiredEvidence.result.trace.decode.outcome.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.decode.unsorted-map-keys",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "adapterErrors": {
+          "decode": {
+            "code": "non_canonical_kernel_record_encoding",
+            "details": {
+              "canonicalHex": "a2616102616201",
+              "receivedHex": "a2616201616102"
+            },
+            "message": "decoded kernel record must already use the canonical deterministic CBOR encoding"
+          }
+        },
+        "traceStepIds": ["decode"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.deep-path-schema.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.deep-path-schema.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.deep-path-schema.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.deep-path-schema.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deep-path-schema.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.deep-path-schema.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.deterministic.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.deterministic.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.deterministic.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.deterministic.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.deterministic.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.deterministic.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.empty-bytes.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.empty-bytes.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.empty-bytes.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.empty-bytes.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.empty-bytes.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.empty-bytes.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.large-bytes.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.large-bytes.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.large-bytes.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.large-bytes.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.large-bytes.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.large-bytes.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.many-staged-results.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.many-staged-results.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.many-staged-results.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.many-staged-results.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.many-staged-results.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.many-staged-results.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.mixed-status-staged.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.mixed-status-staged.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.mixed-status-staged.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.mixed-status-staged.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.multi-path-schema.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.multi-path-schema.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.multi-path-schema.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.multi-path-schema.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.multi-path-schema.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.multi-path-schema.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.non-utf8-bytes.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.non-utf8-bytes.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.non-utf8-bytes.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.non-utf8-bytes.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.single-byte.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.single-byte.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.single-byte.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.single-byte.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.single-byte.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.single-byte.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.staged-failed.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.staged-failed.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.staged-failed.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.staged-failed.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-failed.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.staged-failed.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.staged-interrupted.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.staged-interrupted.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.staged-interrupted.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.staged-interrupted.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.staged-interrupted.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.staged-interrupted.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.turn-tree.identity.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.turn-tree.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.turn-tree.identity.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.turn-tree.identity",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.with-event-hash.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.with-event-hash.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.with-event-hash.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.with-event-hash.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-event-hash.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.with-event-hash.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.with-prev-turn.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.with-prev-turn.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.with-prev-turn.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.with-prev-turn.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.with-prev-turn.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.with-prev-turn.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.opaque.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.opaque.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.opaque.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.zero-turn-tree-hash.opaque",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.schema.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.schema.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.schema.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.schema.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.schema.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.schema.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.zero-turn-tree-hash.schema",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.encode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.reencode.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.requiredEvidence.result.trace.encode.result.$bytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.requiredEvidence.result.trace.hash.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.requiredEvidence.result.trace.identity.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.codec.zero-turn-tree-hash.turn-node.requiredEvidence.result.trace.reencode.result.$bytes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.codec.zero-turn-tree-hash.turn-node",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.codec",
+        "traceStepIds": ["encode", "decode", "reencode", "hash", "identity"]
       },
       "status": "pass"
     },
@@ -934,7 +3444,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -943,7 +3453,7 @@
                 }
               },
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -961,7 +3471,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -970,7 +3480,7 @@
               }
             },
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1278,7 +3788,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1287,7 +3797,7 @@
                 }
               },
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1305,7 +3815,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1314,7 +3824,7 @@
               }
             },
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1622,7 +4132,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1631,7 +4141,7 @@
                 }
               },
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1649,7 +4159,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -1658,7 +4168,7 @@
               }
             },
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -1966,7 +4476,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -1975,7 +4485,7 @@
                 }
               },
               {
-                "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+                "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -1993,7 +4503,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -2002,7 +4512,7 @@
               }
             },
             {
-              "executableDigest": "fdc9d1cb8ca0e1dd1d4d278b47ab24e5bf839e6af5325f4ad4df0aad634cc3a6",
+              "executableDigest": "cb278724ceb01904eb9b243ee86f793351e00a30ab5e618d53b6e5e67537cc96",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -9531,9 +12041,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 146,
-    "totalChecks": 146,
-    "applicableChecks": 146,
+    "passedChecks": 215,
+    "totalChecks": 215,
+    "applicableChecks": 215,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",
