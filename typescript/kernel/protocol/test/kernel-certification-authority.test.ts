@@ -375,7 +375,7 @@ describe("kernel certification catalog", () => {
       for (const check of array(plan.checks).map(object)) {
         for (const assertion of array(check.assertions).map(object)) {
           if (
-            /(?:^|\.)(?:code|errorCode)$/iu.test(String(assertion.field)) &&
+            /code$/iu.test(String(assertion.field)) &&
             typeof assertion.equals === "string"
           ) {
             expect(codes.has(assertion.equals)).toBe(true);
