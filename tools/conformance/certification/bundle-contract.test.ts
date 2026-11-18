@@ -998,6 +998,7 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
       new Set(profileSemanticAssertions(claims, plans))
     );
     const legacyIds = await legacyPlanCheckIds();
+    expect(legacyIds.size).toBeGreaterThan(0);
     const assertionIds = new Set(
       plans.flatMap((plan) =>
         plan.checks.flatMap(({ check }) =>
@@ -1009,6 +1010,8 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
     if (!Array.isArray(manifestControls)) {
       throw new TypeError("missing control manifest entries");
     }
+    expect(manifestControls.length).toBeGreaterThan(0);
+    let designatedAssertionCount = 0;
     for (const value of manifestControls) {
       const designated = record(value).designatedAssertions;
       if (!Array.isArray(designated)) {
@@ -1016,8 +1019,10 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
       }
       for (const assertion of designated) {
         expect(assertionIds.has(string(assertion))).toBe(true);
+        designatedAssertionCount += 1;
       }
     }
+    expect(designatedAssertionCount).toBeGreaterThan(0);
     for (const adapter of adapters) {
       const evidencePath = path.join(
         directory,
