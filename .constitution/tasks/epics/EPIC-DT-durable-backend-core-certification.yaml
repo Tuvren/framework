@@ -82,7 +82,12 @@ closeout:
         - typescript/kernel/conformance-adapter/adapter-sqlite.json
         - typescript/kernel/conformance-adapter/adapter-postgres.json
       commit: 5c71a65
-    - summary: "Mutants that corrupt a clock-dependent listing decorate the backend transaction (decorateTransactions) rather than the kernel facade, so the corruption survives a shared-lease-clock clamp; a composed mutant calls activate only after the violating action succeeds."
+    - summary: "Mutants that corrupt a clock-dependent listing decorate the backend transaction (decorateTransactions) rather than the kernel facade, so the corruption survives a shared-lease-clock clamp."
+      kind: pattern
+      paths:
+        - typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts
+      commit: 5c71a65
+    - summary: "A composed mutant calls activate only after the violating action succeeds, so a retry that a backend rejects does not count as activation."
       kind: pattern
       paths:
         - typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts
