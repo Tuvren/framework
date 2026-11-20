@@ -3,6 +3,7 @@
   "boundary": "kernel",
   "capabilities": [
     "kernel-protocol.thread.enumeration",
+    "kernel.barrier",
     "kernel.codec",
     "kernel.edge-validation",
     "kernel.fault-injection",
@@ -2764,6 +2765,288 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.firstOutcome.result.branch.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.result.trace.secondOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.a_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.concurrent_writer.a_first",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.concurrent-writer.syscall",
+        "adapterErrors": {
+          "secondOutcome": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch.setHead cannot move laterally: \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" and \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" share no lineage"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "head"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aCheckpoint.result.turnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.aNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.bNode.result.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.commonHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.firstOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.head.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.heldHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondOutcome.outcome.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.result.trace.secondOutcome.result.branch.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.firstReceipt.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.head.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.concurrent_writer.b_first.requiredEvidence.trace.secondReceipt.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.concurrent_writer.b_first",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.concurrent-writer.syscall",
+        "adapterErrors": {
+          "firstOutcome": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch.setHead cannot move laterally: \"71387b2759262f439bce30ec858230501f97a9bf3c89088facba892954f85ae8\" and \"ab80486e7a00983dcc08fd99456ac21d32fc2d58661ea5f5f71c37f1222e4419\" share no lineage"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "baseTurn",
+          "baseRun",
+          "baseBegin",
+          "baseStage",
+          "baseCheckpoint",
+          "baseComplete",
+          "aBranch",
+          "aTurn",
+          "aRun",
+          "aBegin",
+          "aStage",
+          "aCheckpoint",
+          "aComplete",
+          "aNode",
+          "bBranch",
+          "bTurn",
+          "bRun",
+          "bBegin",
+          "bStage",
+          "bCheckpoint",
+          "bComplete",
+          "bNode",
+          "commonHead",
+          "arm",
+          "firstReceipt",
+          "secondReceipt",
+          "heldHead",
+          "release",
+          "firstOutcome",
+          "secondOutcome",
+          "head"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.syscall.process-crash.after_commit_before_ack.baselineCheckpoint.1.resultField",
           "status": "pass"
         },
@@ -3047,7 +3330,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3056,7 +3339,7 @@
                 }
               },
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3074,7 +3357,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3083,7 +3366,7 @@
               }
             },
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -3391,7 +3674,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3400,7 +3683,7 @@
                 }
               },
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3418,7 +3701,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3427,7 +3710,7 @@
               }
             },
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -3735,7 +4018,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -3744,7 +4027,7 @@
                 }
               },
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -3762,7 +4045,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -3771,7 +4054,7 @@
               }
             },
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -4079,7 +4362,7 @@
             "name": "primary",
             "epochs": [
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 1,
                 "signal": "SIGKILL",
                 "exit": {
@@ -4088,7 +4371,7 @@
                 }
               },
               {
-                "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+                "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
                 "epoch": 2,
                 "signal": null,
                 "exit": {
@@ -4106,7 +4389,7 @@
         "process": {
           "epochs": [
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 1,
               "signal": "SIGKILL",
               "exit": {
@@ -4115,7 +4398,7 @@
               }
             },
             {
-              "executableDigest": "d36aedc5e53bbd5e2cba73d80e2f57856e7e58938738aaaa9e2d8006deec2f2e",
+              "executableDigest": "323b96fc7f7c7a80734d09211c580ff4fa10f4535bdcb37b8f0e3ee5ff46da23",
               "epoch": 2,
               "signal": null,
               "exit": {
@@ -8311,8 +8594,6 @@
   "implementationId": "typescript-kernel-sqlite",
   "nonApplicableCheckIds": [
     "kernel.syscall.clock_skew.preemption",
-    "kernel.syscall.concurrent_writer.a_first",
-    "kernel.syscall.concurrent_writer.b_first",
     "kernel.syscall.shared_writer.race"
   ],
   "project": "kernel-typescript-sqlite-certification",
@@ -8321,10 +8602,10 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 139,
+    "passedChecks": 141,
     "totalChecks": 143,
-    "applicableChecks": 139,
-    "nonApplicableChecks": 4
+    "applicableChecks": 141,
+    "nonApplicableChecks": 2
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

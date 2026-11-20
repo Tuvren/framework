@@ -27,6 +27,8 @@
     "--capability",
     "kernel.run-liveness",
     "--capability",
+    "kernel.barrier",
+    "--capability",
     "kernel.persistence.durable",
     "--capability",
     "kernel.restart-recovery",
@@ -47,6 +49,7 @@
     "kernel.edge-validation",
     "kernel.logical",
     "kernel.run-liveness",
+    "kernel.barrier",
     "kernel.persistence.durable",
     "kernel.restart-recovery",
     "kernel.scope-isolation",
@@ -58,5 +61,9 @@
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0",
-  "profiles": ["kernel.persistent-reopen", "kernel.process-crash"]
+  "profiles": [
+    "kernel.persistent-reopen",
+    "kernel.process-crash",
+    "kernel.memory"
+  ]
 }

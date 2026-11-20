@@ -456,6 +456,8 @@ test("durable certificates share a run and link to matching profile control gate
       "kernel.process-crash",
       "--profile",
       "kernel.shared-backend",
+      "--profile",
+      "kernel.memory",
       "--report-out",
       reportPath,
     ]);
@@ -466,7 +468,11 @@ test("durable certificates share a run and link to matching profile control gate
       throw new TypeError("missing per-profile control runs");
     }
     for (const [backend, adapter, profiles] of [
-      ["sqlite", sqlite, ["kernel.persistent-reopen", "kernel.process-crash"]],
+      [
+        "sqlite",
+        sqlite,
+        ["kernel.persistent-reopen", "kernel.process-crash", "kernel.memory"],
+      ],
       [
         "postgres",
         postgres,
@@ -474,6 +480,7 @@ test("durable certificates share a run and link to matching profile control gate
           "kernel.persistent-reopen",
           "kernel.process-crash",
           "kernel.shared-backend",
+          "kernel.memory",
         ],
       ],
     ] as const) {
@@ -508,7 +515,21 @@ test("durable certificates share a run and link to matching profile control gate
             status: "certified",
             complete: true,
           });
-          expect(bundle.undetectedClaims).toEqual([]);
+          const manifest = await readAdapterManifest(adapter);
+          const claimed = [
+            ...(await readProfileAuthority(manifest.authorityPackets)).values(),
+          ]
+            .flat()
+            .find((entry) => entry.profileId === profile);
+          if (claimed === undefined) {
+            throw new Error(`missing ${profile} profile authority`);
+          }
+          expect(bundle.undetectedClaims).toEqual(
+            await readProfileUndetectedClaims(
+              manifest.authorityPackets,
+              claimed
+            )
+          );
           expect(typeof bundle.runId).toBe("string");
           const control = controlRuns.find(
             (entry: unknown) => object(entry).id === bundle.negativeControlRunId
@@ -565,4 +586,4 @@ test("durable certificates share a run and link to matching profile control gate
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
-}, 600_000);
+}, 1_500_000);

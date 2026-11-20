@@ -78,6 +78,7 @@ const defaultCapabilities = (
       "kernel.edge-validation",
       "kernel.logical",
       "kernel.run-liveness",
+      "kernel.barrier",
       "kernel.persistence.durable",
       "kernel.restart-recovery",
       "kernel.scope-isolation",
@@ -181,8 +182,9 @@ const CERTIFIED_PROFILES: Readonly<
     "kernel.persistent-reopen",
     "kernel.process-crash",
     "kernel.shared-backend",
+    "kernel.memory",
   ],
-  sqlite: ["kernel.persistent-reopen", "kernel.process-crash"],
+  sqlite: ["kernel.persistent-reopen", "kernel.process-crash", "kernel.memory"],
 };
 
 let notificationSink:
