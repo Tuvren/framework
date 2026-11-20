@@ -24,12 +24,14 @@ import type {
   ConformanceFailureClassification,
 } from "../../scripts/lib/conformance-contract.ts";
 import { runControlBatches } from "./control-batches.ts";
+import { NEGATIVE_CONTROL_PORTS } from "./negative-control-config.ts";
 import type { NegativeControlPortConfig } from "./negative-control-config.ts";
 import {
   baselinesCoverKills,
   classifyMutantRun,
   runBranchControl,
   runNegativeControls,
+  selectControlConfigs,
 } from "./negative-controls.ts";
 import type {
   HarnessRun,
@@ -692,6 +694,73 @@ describe("mutant run classification", () => {
       ).outcome
     ).toBe("invalid");
   });
+});
+
+test("control config selection narrows by adapter manifest and fails closed", () => {
+  expect(
+    selectControlConfigs({ adapters: [], ports: [], profiles: [] })
+  ).toEqual([...NEGATIVE_CONTROL_PORTS]);
+  expect(
+    selectControlConfigs({
+      adapters: [],
+      ports: ["kernel"],
+      profiles: ["kernel.memory"],
+    }).map(({ controlAdapter }) => controlAdapter)
+  ).toEqual([
+    "typescript/kernel/conformance-adapter/adapter.json",
+    "rust/kernel-conformance-adapter/adapter.json",
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+    "typescript/kernel/conformance-adapter/adapter-postgres.json",
+  ]);
+  const durable = selectControlConfigs({
+    adapters: [
+      "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+      "typescript/kernel/conformance-adapter/adapter-postgres.json",
+    ],
+    ports: ["kernel"],
+    profiles: [
+      "kernel.memory",
+      "kernel.persistent-reopen",
+      "kernel.process-crash",
+      "kernel.shared-backend",
+    ],
+  });
+  expect(
+    durable.map(({ controlAdapter, profile }) => `${controlAdapter} ${profile}`)
+  ).toEqual([
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json kernel.memory",
+    "typescript/kernel/conformance-adapter/adapter-postgres.json kernel.memory",
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json kernel.persistent-reopen",
+    "typescript/kernel/conformance-adapter/adapter-postgres.json kernel.persistent-reopen",
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json kernel.process-crash",
+    "typescript/kernel/conformance-adapter/adapter-postgres.json kernel.process-crash",
+    "typescript/kernel/conformance-adapter/adapter-postgres.json kernel.shared-backend",
+  ]);
+  expect(
+    selectControlConfigs({
+      adapters: ["./typescript/kernel/conformance-adapter/adapter-sqlite.json"],
+      ports: [],
+      profiles: [],
+    }).map(({ controlAdapter, profile }) => `${controlAdapter} ${profile}`)
+  ).toEqual([
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json kernel.memory",
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json kernel.persistent-reopen",
+    "typescript/kernel/conformance-adapter/adapter-sqlite.json kernel.process-crash",
+  ]);
+  expect(() =>
+    selectControlConfigs({
+      adapters: ["typescript/kernel/conformance-adapter/adapter-mutant.json"],
+      ports: [],
+      profiles: [],
+    })
+  ).toThrow("unknown negative-control adapter(s)");
+  expect(() =>
+    selectControlConfigs({
+      adapters: ["typescript/kernel/conformance-adapter/adapter-sqlite.json"],
+      ports: [],
+      profiles: ["kernel.shared-backend"],
+    })
+  ).toThrow("no negative-control configuration selected");
 });
 
 test("control batches overlap independent adapter profiles while preserving each profile queue and report order", async () => {

@@ -120,6 +120,9 @@ const LEASE_HORIZON_MS = Number.MAX_SAFE_INTEGER;
 // Corrupt the expiry listing at the transaction seam: shared-lease-clock
 // backends clamp the caller's nowMs to their own transaction clock inside
 // runtime-kernel-runs listExpired, so a kernel-facade wrap cannot reach them.
+// On shared-lease-clock backends the listing seam is the operative corruption
+// because the retained kernel-seam preemptExpired retry is clamped to the
+// transaction clock in runtime-kernel-runs.
 const leaseTakeoverBeforeExpiry = (
   backend: RuntimeBackend,
   activate: KernelMutantActivate
@@ -129,10 +132,8 @@ const leaseTakeoverBeforeExpiry = (
     runs: {
       ...tx.runs,
       async listExpired(nowMs) {
-        const [requested, horizon] = await Promise.all([
-          tx.runs.listExpired(nowMs),
-          tx.runs.listExpired(LEASE_HORIZON_MS),
-        ]);
+        const requested = await tx.runs.listExpired(nowMs);
+        const horizon = await tx.runs.listExpired(LEASE_HORIZON_MS);
         if (horizon.length > requested.length) {
           activate();
         }
