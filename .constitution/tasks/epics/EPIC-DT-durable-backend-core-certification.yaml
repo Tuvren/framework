@@ -60,35 +60,31 @@ closeout:
   changelog_entries:
     - directory: tasks
       type: added
-      text: "EPIC-DT certified the TypeScript SQLite and PostgreSQL backends on kernel.memory. Both durable manifests claim the profile after their durable profiles, SQLite declares kernel.barrier and proves both concurrent-writer orderings through the testkit seam, and each backend kills all 13 kernel.memory controls in its own enforcing control run. The lease-takeover control's listing corruption moved to the backend transaction seam so it is observable on shared-lease-clock backends, and the negative-control runner gained an --adapter selector."
+      text: "EPIC-DT certified the TypeScript SQLite and PostgreSQL backends on kernel.memory. Both durable manifests claim the profile, SQLite declares kernel.barrier and passes both concurrent-writer orderings through the testkit seam with its real lateral-conflict outcome, and each backend kills all 13 kernel.memory controls in its own enforcing control run. The lease-takeover control's listing corruption moved to the backend transaction seam so it is observable on shared-lease-clock backends, and its preemption half counts activation only when the early takeover succeeds."
   candidate_terms: []
   routed_upstream:
     - stage: tech-spec
-      item: "conformance-certification.md and guidelines 5.10/5.11 describe the negative-control runner's selection by port and profile only; record the repeatable --adapter selector added in e0b4f4d (restricts a run to configs whose control adapter manifest matches, rejects unknown adapters and empty selections) and that certificate linking stays per profile and adapter, so a filtered report cannot certify an unselected backend."
-    - stage: tech-spec
       item: "Record the mutant-seam rule learned from kernel.lease-takeover-before-expiry: a control that corrupts a clock-dependent result must inject below any backend clock clamp (the backend transaction seam), because shared-lease-clock backends replace the caller's clock in the kernel facade."
+    - stage: tech-spec
+      item: "conformance-certification.md should state outright that a negative-control run may be narrowed only by port and profile, never to a subset of a profile's configs: stale-register detection aggregates over every counted enforcing report of the profile. A per-adapter selector was added and removed during EPIC-DT for this reason (e0b4f4d, 47e9936)."
   follow_ups:
     - "The kernel.memory certificates for SQLite and PostgreSQL list the same 91 undetected claims as the memory backend (shared register); EPIC-DR's detectors must run against all three claimed backends."
-    - "The kernel-seam preemptExpired half of kernel.lease-takeover-before-expiry has no effect on shared-lease-clock backends because the retry is clamped to the transaction clock; the listing seam carries the kill there. Moving the preemption corruption below the clamp is unplanned."
-    - "The certificate and negative-control contract phase of bun run verify:kernel takes about 19 minutes on the development host with four kernel.memory configs; bundle-contract.test.ts and durable-bundle-contract.test.ts carry 1,200 s and 1,500 s timeouts with roughly 2x headroom, and EPIC-DR's added detectors will lengthen it. A shared control report between the two tests would remove the remaining overlap."
+    - "The kernel-seam preemptExpired half of kernel.lease-takeover-before-expiry cannot take effect on shared-lease-clock backends because the retry is clamped to the transaction clock; the listing seam carries the kill and the activation there. Moving the preemption corruption below the clamp is unplanned."
+    - "bundle-contract.test.ts and durable-bundle-contract.test.ts each run the full kernel.memory control fleet (four configs), so the certificate and negative-control phase of bun run verify:kernel took 19 to 27 minutes on a loaded development host; the tests carry 1,200 s and 1,500 s timeouts, and the durable test once exceeded 1,500 s under heavy unrelated load. EPIC-DR's detectors will lengthen it. One control report shared by both tests would halve the phase without narrowing any run."
     - "tools/scripts/verification-lifecycle.test.ts fails when bun run verify runs with VERIFY_SERIAL=1, because the test's child verification inherits the variable and it asserts parallel steps; the test should clear the variable for its child."
-    - "Several tooling acceptance tests (biome coverage partition, oxc configuration contract, testkit source-only self aliases) rely on bun's default 5 s timeout and fail under host CPU load; they passed on an unloaded rerun."
+    - "Several tests rely on bun's default 5 s timeout and fail under host CPU load (biome coverage partition, oxc configuration contract, testkit source-only self aliases, framework-runtime's high-iteration loop memory test); they pass on an unloaded rerun."
     - "tools/scripts/verify-kernel.ts and tools/scripts/verify.ts were edited for test registration only; tools/scripts is outside EPIC-DT's scope paths and no epic scope lists the verify lane registries."
+    - "durable-barrier.test.ts proves the SQLite barrier through the plan's own assertions (check pass, held-head and lateral-conflict assertions on the SQLite adapter); the harness report exposes no receipt timing, so a test cannot assert receipt-before-release ordering independently of the plan."
   code_decisions:
-    - summary: "A durable backend that also claims kernel.memory lists it last in its manifest profiles array, so the first claimed profile stays the durable one that bundle-contract.test.ts reads."
+    - summary: "A durable backend that also claims kernel.memory lists it after its durable profiles in the manifest profiles array. The order is a readability convention; certificate linking and the certified inventory do not depend on it."
       kind: convention
       paths:
         - typescript/kernel/conformance-adapter/adapter-sqlite.json
         - typescript/kernel/conformance-adapter/adapter-postgres.json
       commit: 5c71a65
-    - summary: "Mutants that corrupt a clock-dependent listing decorate the backend transaction (decorateTransactions) rather than the kernel facade, so the corruption survives a shared-lease-clock clamp."
+    - summary: "Mutants that corrupt a clock-dependent listing decorate the backend transaction (decorateTransactions) rather than the kernel facade, so the corruption survives a shared-lease-clock clamp; a composed mutant calls activate only after the violating action succeeds."
       kind: pattern
       paths:
         - typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts
-      commit: 5c71a65
-    - summary: "negative-controls.ts selects configs through the exported selectControlConfigs, with a repeatable --adapter option matched against each config's control adapter manifest path."
-      kind: contract_shape
-      paths:
-        - tools/conformance/meta-conformance/negative-controls.ts
-      commit: e0b4f4d
+      commit: 47e9936
   settled: []

@@ -1,18 +1,18 @@
 {
   "controlRuns": [
     {
-      "id": "ff2ce21fc8b0e21702563714546991b86d1f859f1a2d430eb59ac3d3d85decd6",
+      "id": "4c96137ab8450acc3ec842d57a20dd37eeb28cefc9426ad791bf44da813b81bf",
       "profile": "kernel.memory",
       "status": "pass",
       "adapters": [
         {
           "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
           "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
-          "implementation": "e9efb1b8cedd76b39d66a44adbc8cb50ec8bb9006be21d7dba430125133174af"
+          "implementation": "f14c2f8c6204e9f334038d3d994687196600f2591943eb59bb454bd6363e44b8"
         }
       ],
       "verifierDigests": {
-        "harness": "b1c77d8b06d457792e8a7ec93934f23ff6b021b892d1c2180c5377916e6edac8",
+        "harness": "786b49a396d0cb8b9ac28680d83352fb17f1cf2fac91f62912551c82a213b042",
         "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
@@ -23,18 +23,18 @@
       }
     },
     {
-      "id": "37816fdf95f2e32e6b95857bb07a37022a78c9bfc3bbd94e5b5f5ff427a52344",
+      "id": "a0f4931908dc769ab9800bfe8bec84d78960159f171bd42c00e95633dc3b4753",
       "profile": "kernel.memory",
       "status": "pass",
       "adapters": [
         {
           "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
           "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
-          "implementation": "e9efb1b8cedd76b39d66a44adbc8cb50ec8bb9006be21d7dba430125133174af"
+          "implementation": "f14c2f8c6204e9f334038d3d994687196600f2591943eb59bb454bd6363e44b8"
         }
       ],
       "verifierDigests": {
-        "harness": "b1c77d8b06d457792e8a7ec93934f23ff6b021b892d1c2180c5377916e6edac8",
+        "harness": "786b49a396d0cb8b9ac28680d83352fb17f1cf2fac91f62912551c82a213b042",
         "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
@@ -320,7 +320,7 @@
           "mutantId": "kernel.lease-takeover-before-expiry",
           "outcome": "killed",
           "activated": true,
-          "activationCount": 4,
+          "activationCount": 3,
           "designatedFailures": [
             "kernel.syscall.run-liveness.expired_listing.2.resultField",
             "kernel.syscall.run-liveness.lease_renewal.8.resultField"
