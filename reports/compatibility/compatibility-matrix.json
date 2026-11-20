@@ -11,7 +11,7 @@
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "30f318b466992abe044750652e5fbecf7a940b18467eb49964db97408277e2ee"
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
       },
       "implementationId": "typescript-kernel-memory",
       "profile": "kernel.memory",
@@ -386,14 +386,396 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "cb2273ba43b933d8fc58433372bac1f341a2923708d08437afded687e5dd928b",
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
         "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "30f318b466992abe044750652e5fbecf7a940b18467eb49964db97408277e2ee"
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "implementationId": "typescript-kernel-postgres",
+      "profile": "kernel.memory",
+      "status": "certified",
+      "undetectedClaims": [
+        {
+          "claimId": "kernel.codec.all-ones-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ones-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ordered-paths.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ordered-paths.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-single-paths.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-single-paths.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-zero-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-zero-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.control-canonical-map",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.duplicate-map-key",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.float64-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-array",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-map",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-text-string",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.non-minimal-length-head",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.tagged-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.trailing-bytes-after-top-level-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.truncated-input",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.uint-beyond-safe-integer-range",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.unsorted-map-keys",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deep-path-schema.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deep-path-schema.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deterministic.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deterministic.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.empty-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.empty-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.large-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.large-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.many-staged-results.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.many-staged-results.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.mixed-status-staged.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.mixed-status-staged.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.multi-path-schema.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.multi-path-schema.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.non-utf8-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.non-utf8-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.single-byte.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.single-byte.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-failed.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-failed.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-interrupted.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-interrupted.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.turn-tree.identity",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-event-hash.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-event-hash.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-prev-turn.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-prev-turn.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.zero-turn-tree-hash.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.zero-turn-tree-hash.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.scope-isolation.enumeration_is_scope_confined",
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets the independently observed cross-scope enumeration result; no epic currently plans its detector."
+        },
+        {
+          "claimId": "kernel.syscall.backend_capability.shared_lease_clock",
+          "reason": "No designated control falsifies the backend capability descriptor or changes the transaction clock used for staged-result timestamps."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+          "reason": "No required control accepts a branch head from lateral lineage; the stale-head control designates concurrent-writer assertions instead."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+          "reason": "No required control permits a run to begin an out-of-order step."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+          "reason": "No required control permits run completion with a missing event object."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+          "reason": "No required control permits creation of a run on a busy branch."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+          "reason": "No required control permits schema registration with a duplicate path."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+          "reason": "No required control permits tree creation without a required schema path."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+          "reason": "No required control permits a tree diff across mismatched schemas."
+        },
+        {
+          "claimId": "kernel.syscall.lineage.cross_thread_rejection",
+          "reason": "The supplied controls contain no mutant that accepts a cross-thread node in branch lineage."
+        },
+        {
+          "claimId": "kernel.syscall.logical.branch_list",
+          "reason": "The supplied controls contain no branch-enumeration omission or pagination mutant."
+        },
+        {
+          "claimId": "kernel.syscall.logical.thread_list",
+          "reason": "The supplied controls contain no thread-enumeration omission or pagination mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.modify_composition",
+          "reason": "The supplied controls contain no verdict-composition mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+          "reason": "The supplied controls contain no verdict-composition mutant for this fixture."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.node_identity_walk",
+          "reason": "The supplied controls contain no TurnNode identity or lineage-walk corruption mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_canonical_cbor",
+          "reason": "The noncanonical-CBOR control targets decoder acceptance, not schema encoding; no schema-encoding mutant is designated."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip",
+          "reason": "The supplied controls contain no schema registration or roundtrip corruption mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.tree_manifest_identity",
+          "reason": "The supplied controls contain no tree-manifest or TurnTree identity corruption mutant."
+        },
+        {
+          "claimId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+          "reason": "The supplied controls contain no ciphertext-retention or unchanged-lineage mutant; host key destruction remains outside the kernel claim."
+        },
+        {
+          "claimId": "kernel.syscall.run-liveness.expired_listing",
+          "reason": "The premature-takeover control detects live-lease inclusion, not the complete expired-record membership claim; no dedicated membership mutant is designated."
+        },
+        {
+          "claimId": "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
+          "reason": "The supplied controls contain no mutant that includes paused runs in expiry listing."
+        },
+        {
+          "claimId": "kernel.syscall.run-liveness.stale_preemption",
+          "reason": "The supplied controls contain no designated mutant for the complete stale-preemption checkpoint and recovery claim; collateral failures do not count as detection."
+        },
+        {
+          "claimId": "kernel.syscall.scope-isolation.own_content",
+          "reason": "OD-16: The scope-resolution mutant leaves own-scope reads unchanged; no supplied mutant targets these independently observed content results; the detectors for them are owned by KRT-DR004."
+        },
+        {
+          "claimId": "kernel.syscall.scope-isolation.own_enumeration",
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets these independently observed own-scope enumeration results; the detectors for them are owned by KRT-DR004."
+        }
+      ]
+    },
+    {
+      "backend": "postgres",
+      "digests": {
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.persistent-reopen",
@@ -403,14 +785,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "cb2273ba43b933d8fc58433372bac1f341a2923708d08437afded687e5dd928b",
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
         "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "30f318b466992abe044750652e5fbecf7a940b18467eb49964db97408277e2ee"
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.process-crash",
@@ -420,14 +802,14 @@
     {
       "backend": "postgres",
       "digests": {
-        "adapterManifest": "cb2273ba43b933d8fc58433372bac1f341a2923708d08437afded687e5dd928b",
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
         "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "30f318b466992abe044750652e5fbecf7a940b18467eb49964db97408277e2ee"
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
       },
       "implementationId": "typescript-kernel-postgres",
       "profile": "kernel.shared-backend",
@@ -437,14 +819,396 @@
     {
       "backend": "sqlite",
       "digests": {
-        "adapterManifest": "22df69fa2bdca85b6b49e99dc2c874addf0e7c8ae6abee52603874dcb7359fac",
+        "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
         "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "30f318b466992abe044750652e5fbecf7a940b18467eb49964db97408277e2ee"
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "implementationId": "typescript-kernel-sqlite",
+      "profile": "kernel.memory",
+      "status": "certified",
+      "undetectedClaims": [
+        {
+          "claimId": "kernel.codec.all-ones-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ones-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ordered-paths.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-ordered-paths.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-single-paths.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-single-paths.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-zero-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.all-zero-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.control-canonical-map",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.duplicate-map-key",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.float64-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-array",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-map",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.indefinite-length-text-string",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.negative-int-beyond-safe-integer-range",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.non-minimal-length-head",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.tagged-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.trailing-bytes-after-top-level-value",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.truncated-input",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.uint-beyond-safe-integer-range",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.decode.unsorted-map-keys",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deep-path-schema.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deep-path-schema.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deterministic.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.deterministic.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.empty-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.empty-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.large-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.large-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.many-staged-results.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.many-staged-results.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.mixed-status-staged.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.mixed-status-staged.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.multi-path-schema.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.multi-path-schema.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.non-utf8-bytes.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.non-utf8-bytes.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.single-byte.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.single-byte.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-failed.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-failed.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-interrupted.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.staged-interrupted.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.turn-tree.identity",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-event-hash.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-event-hash.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-prev-turn.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.with-prev-turn.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.zero-turn-tree-hash.schema",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.codec.zero-turn-tree-hash.turn-node",
+          "reason": "OD-16 catalogues the codec obligation with committed vector expectations; no designated implementation mutant currently detects this claim."
+        },
+        {
+          "claimId": "kernel.scope-isolation.enumeration_is_scope_confined",
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets the independently observed cross-scope enumeration result; no epic currently plans its detector."
+        },
+        {
+          "claimId": "kernel.syscall.backend_capability.shared_lease_clock",
+          "reason": "No designated control falsifies the backend capability descriptor or changes the transaction clock used for staged-result timestamps."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+          "reason": "No required control accepts a branch head from lateral lineage; the stale-head control designates concurrent-writer assertions instead."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+          "reason": "No required control permits a run to begin an out-of-order step."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+          "reason": "No required control permits run completion with a missing event object."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+          "reason": "No required control permits creation of a run on a busy branch."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+          "reason": "No required control permits schema registration with a duplicate path."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+          "reason": "No required control permits tree creation without a required schema path."
+        },
+        {
+          "claimId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+          "reason": "No required control permits a tree diff across mismatched schemas."
+        },
+        {
+          "claimId": "kernel.syscall.lineage.cross_thread_rejection",
+          "reason": "The supplied controls contain no mutant that accepts a cross-thread node in branch lineage."
+        },
+        {
+          "claimId": "kernel.syscall.logical.branch_list",
+          "reason": "The supplied controls contain no branch-enumeration omission or pagination mutant."
+        },
+        {
+          "claimId": "kernel.syscall.logical.thread_list",
+          "reason": "The supplied controls contain no thread-enumeration omission or pagination mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.modify_composition",
+          "reason": "The supplied controls contain no verdict-composition mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+          "reason": "The supplied controls contain no verdict-composition mutant for this fixture."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.node_identity_walk",
+          "reason": "The supplied controls contain no TurnNode identity or lineage-walk corruption mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_canonical_cbor",
+          "reason": "The noncanonical-CBOR control targets decoder acceptance, not schema encoding; no schema-encoding mutant is designated."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip",
+          "reason": "The supplied controls contain no schema registration or roundtrip corruption mutant."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+          "reason": "The supplied controls contain no schema-roundtrip corruption mutant for this fixture; hashing controls do not designate roundtrip assertions."
+        },
+        {
+          "claimId": "kernel.syscall.protocol.tree_manifest_identity",
+          "reason": "The supplied controls contain no tree-manifest or TurnTree identity corruption mutant."
+        },
+        {
+          "claimId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+          "reason": "The supplied controls contain no ciphertext-retention or unchanged-lineage mutant; host key destruction remains outside the kernel claim."
+        },
+        {
+          "claimId": "kernel.syscall.run-liveness.expired_listing",
+          "reason": "The premature-takeover control detects live-lease inclusion, not the complete expired-record membership claim; no dedicated membership mutant is designated."
+        },
+        {
+          "claimId": "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
+          "reason": "The supplied controls contain no mutant that includes paused runs in expiry listing."
+        },
+        {
+          "claimId": "kernel.syscall.run-liveness.stale_preemption",
+          "reason": "The supplied controls contain no designated mutant for the complete stale-preemption checkpoint and recovery claim; collateral failures do not count as detection."
+        },
+        {
+          "claimId": "kernel.syscall.scope-isolation.own_content",
+          "reason": "OD-16: The scope-resolution mutant leaves own-scope reads unchanged; no supplied mutant targets these independently observed content results; the detectors for them are owned by KRT-DR004."
+        },
+        {
+          "claimId": "kernel.syscall.scope-isolation.own_enumeration",
+          "reason": "OD-16: The scope-resolution mutant targets store reads; no supplied mutant targets these independently observed own-scope enumeration results; the detectors for them are owned by KRT-DR004."
+        }
+      ]
+    },
+    {
+      "backend": "sqlite",
+      "digests": {
+        "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.persistent-reopen",
@@ -454,14 +1218,14 @@
     {
       "backend": "sqlite",
       "digests": {
-        "adapterManifest": "22df69fa2bdca85b6b49e99dc2c874addf0e7c8ae6abee52603874dcb7359fac",
+        "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
         "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
         "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
         "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
         "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
         "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
         "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
-        "verifierAuthority": "30f318b466992abe044750652e5fbecf7a940b18467eb49964db97408277e2ee"
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
       },
       "implementationId": "typescript-kernel-sqlite",
       "profile": "kernel.process-crash",
@@ -1303,6 +2067,8 @@
             "kernel.codec.zero-turn-tree-hash.opaque",
             "kernel.codec.zero-turn-tree-hash.schema",
             "kernel.codec.zero-turn-tree-hash.turn-node",
+            "kernel.syscall.concurrent_writer.a_first",
+            "kernel.syscall.concurrent_writer.b_first",
             "kernel.syscall.process-crash.after_commit_before_ack",
             "kernel.syscall.process-crash.after_head_move_before_staging_clear",
             "kernel.syscall.process-crash.after_turn_node_write_before_head",
@@ -1375,13 +2141,14 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 139,
+            "passedChecks": 141,
             "totalChecks": 143,
-            "applicableChecks": 139,
-            "nonApplicableChecks": 4
+            "applicableChecks": 141,
+            "nonApplicableChecks": 2
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
+            "kernel.barrier",
             "kernel.codec",
             "kernel.edge-validation",
             "kernel.fault-injection",

@@ -69,6 +69,8 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
     },
     profile: "kernel.memory",
   },
+  durable("sqlite", "kernel.memory"),
+  durable("postgres", "kernel.memory"),
   durable("sqlite", "kernel.persistent-reopen"),
   durable("postgres", "kernel.persistent-reopen"),
   durable("sqlite", "kernel.process-crash"),

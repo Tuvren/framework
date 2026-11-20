@@ -70,6 +70,7 @@
   "profiles": [
     "kernel.persistent-reopen",
     "kernel.process-crash",
-    "kernel.shared-backend"
+    "kernel.shared-backend",
+    "kernel.memory"
   ]
 }

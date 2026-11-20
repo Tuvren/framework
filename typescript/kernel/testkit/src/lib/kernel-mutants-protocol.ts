@@ -17,7 +17,10 @@
 import type { KernelRecord } from "@tuvren/core";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 
-import { readErrorCode } from "./kernel-mutant-backend.js";
+import {
+  decorateTransactions,
+  readErrorCode,
+} from "./kernel-mutant-backend.js";
 import type {
   KernelMutantActivate,
   KernelMutantCodec,
@@ -114,24 +117,37 @@ const dropUncommittedStagedResultOnRecovery = (
 
 const LEASE_HORIZON_MS = Number.MAX_SAFE_INTEGER;
 
-// Expiry is judged at a clock past every lease, so a live lease can be listed
-// as expired and taken over. Effective only where the kernel uses the caller's
-// clock (no shared-lease-clock backend), which is every memory backend.
+// Corrupt the expiry listing at the transaction seam: shared-lease-clock
+// backends clamp the caller's nowMs to their own transaction clock inside
+// runtime-kernel-runs listExpired, so a kernel-facade wrap cannot reach them.
 const leaseTakeoverBeforeExpiry = (
+  backend: RuntimeBackend,
+  activate: KernelMutantActivate
+): RuntimeBackend =>
+  decorateTransactions(backend, (tx) => ({
+    ...tx,
+    runs: {
+      ...tx.runs,
+      async listExpired(nowMs) {
+        const [requested, horizon] = await Promise.all([
+          tx.runs.listExpired(nowMs),
+          tx.runs.listExpired(LEASE_HORIZON_MS),
+        ]);
+        if (horizon.length > requested.length) {
+          activate();
+        }
+        return horizon;
+      },
+    },
+  }));
+
+const leaseTakeoverBeforeExpiryKernel = (
   kernel: KernelMutantKernel,
   activate: KernelMutantActivate
 ): KernelMutantKernel => ({
   ...kernel,
   runLiveness: {
     ...kernel.runLiveness,
-    async listExpired(nowMs) {
-      const expired = await kernel.runLiveness.listExpired(nowMs);
-      const listed = await kernel.runLiveness.listExpired(LEASE_HORIZON_MS);
-      if (listed.length > expired.length) {
-        activate();
-      }
-      return listed;
-    },
     async preemptExpired(runId, preemptingOwnerId, nowMs, reason) {
       try {
         return await kernel.runLiveness.preemptExpired(
@@ -230,8 +246,10 @@ export const PROTOCOL_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   },
   {
     createSeams: () => ({
+      backend: (backend, _context, activate) =>
+        leaseTakeoverBeforeExpiry(backend, activate),
       kernel: (kernel, _backend, activate) =>
-        leaseTakeoverBeforeExpiry(kernel, activate),
+        leaseTakeoverBeforeExpiryKernel(kernel, activate),
     }),
     kind: "implementation",
     mutantId: "kernel.lease-takeover-before-expiry",

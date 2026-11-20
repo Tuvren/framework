@@ -415,6 +415,7 @@ export const BUILT_ADAPTER_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/conformance/certification/bundle-contract.test.ts",
   "tools/conformance/certification/compatibility-certificates.test.ts",
   "tools/conformance/certification/durable-bundle-contract.test.ts",
+  "tools/conformance/harness/test/durable-barrier.test.ts",
   "tools/conformance/harness/test/durable-control-mutants.test.ts",
   "tools/conformance/harness/test/durable-crash.test.ts",
   "tools/conformance/harness/test/durable-faults.test.ts",

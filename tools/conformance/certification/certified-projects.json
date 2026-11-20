@@ -96,12 +96,20 @@
       "profile": "kernel.shared-backend"
     },
     {
+      "project": "kernel-typescript-postgres-certification",
+      "profile": "kernel.memory"
+    },
+    {
       "project": "kernel-typescript-sqlite-certification",
       "profile": "kernel.persistent-reopen"
     },
     {
       "project": "kernel-typescript-sqlite-certification",
       "profile": "kernel.process-crash"
+    },
+    {
+      "project": "kernel-typescript-sqlite-certification",
+      "profile": "kernel.memory"
     },
     {
       "project": "providers-typescript-certification",
