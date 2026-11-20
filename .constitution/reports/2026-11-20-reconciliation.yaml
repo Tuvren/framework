@@ -1,0 +1,22 @@
+date: 2026-11-20
+commit: fc20d7c
+epics: [DT]
+routed:
+  - stage: tech-spec
+    item: "Record the mutant-seam rule learned from kernel.lease-takeover-before-expiry: a control that corrupts a clock-dependent result must inject below any backend clock clamp (the backend transaction seam), because shared-lease-clock backends replace the caller's clock in the kernel facade."
+    from: DT
+  - stage: tech-spec
+    item: "conformance-certification.md should state outright that a negative-control run may be narrowed only by port and profile, never to a subset of a profile's configs: stale-register detection aggregates over every counted enforcing report of the profile. A per-adapter selector was added and removed during EPIC-DT for this reason (e0b4f4d, 47e9936)."
+    from: DT
+  - stage: tech-spec
+    item: "code decision (convention): A durable backend that also claims kernel.memory lists it after its durable profiles in the manifest profiles array. The order is a readability convention; certificate linking and the certified inventory do not depend on it. [typescript/kernel/conformance-adapter/adapter-sqlite.json, typescript/kernel/conformance-adapter/adapter-postgres.json] at 5c71a65"
+    from: DT
+  - stage: tech-spec
+    item: "code decision (pattern): Mutants that corrupt a clock-dependent listing decorate the backend transaction (decorateTransactions) rather than the kernel facade, so the corruption survives a shared-lease-clock clamp. [typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts] at 5c71a65"
+    from: DT
+  - stage: tech-spec
+    item: "code decision (pattern): A composed mutant calls activate only after the violating action succeeds, so a retry that a backend rejects does not count as activation. [typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts] at 47e9936"
+    from: DT
+proposed_decisions: []
+candidate_terms: []
+stale_owners: [".constitution/evidence/KRT-DT001/manifest.yaml: KRT-DT001"]

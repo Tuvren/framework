@@ -1,4 +1,23 @@
 entries:
+  - version: v0.52.6
+    date: 2026-11-20
+    changed:
+      - "EPIC-DT Certify durable backends on core rules archived: 1 tickets, 5 points, 2490 diff lines, 2 review rounds"
+    added:
+      - "EPIC-DT certified the TypeScript SQLite and PostgreSQL backends on kernel.memory. Both durable manifests claim the profile, SQLite declares kernel.barrier and passes both concurrent-writer orderings through the testkit seam with its real lateral-conflict outcome, and each backend kills all 13 kernel.memory controls in its own enforcing control run. The lease-takeover control's listing corruption moved to the backend transaction seam so it is observable on shared-lease-clock backends, and its preemption half counts activation only when the early takeover succeeds."
+      - "Follow-up from EPIC-DT: The kernel.memory certificates for SQLite and PostgreSQL list the same 91 undetected claims as the memory backend (shared register); EPIC-DR's detectors must run against all three claimed backends."
+      - "Follow-up from EPIC-DT: The kernel-seam preemptExpired half of kernel.lease-takeover-before-expiry cannot take effect on shared-lease-clock backends because the retry is clamped to the transaction clock; the listing seam carries the kill and the activation there. Moving the preemption corruption below the clamp is unplanned."
+      - "Follow-up from EPIC-DT: bundle-contract.test.ts and durable-bundle-contract.test.ts each run the full kernel.memory control fleet (four configs), so the certificate and negative-control phase of bun run verify:kernel took 19 to 27 minutes on a loaded development host; the tests carry 1,200 s and 1,500 s timeouts, and the durable test once exceeded 1,500 s under heavy unrelated load. EPIC-DR's detectors will lengthen it. One control report shared by both tests would halve the phase without narrowing any run."
+      - "Follow-up from EPIC-DT: tools/scripts/verification-lifecycle.test.ts fails when bun run verify runs with VERIFY_SERIAL=1, because the test's child verification inherits the variable and it asserts parallel steps; the test should clear the variable for its child."
+      - "Follow-up from EPIC-DT: Several tests rely on bun's default 5 s timeout and fail under host CPU load (biome coverage partition, oxc configuration contract, testkit source-only self aliases, framework-runtime's high-iteration loop memory test); they pass on an unloaded rerun."
+      - "Follow-up from EPIC-DT: tools/scripts/verify-kernel.ts and tools/scripts/verify.ts were edited for test registration only; tools/scripts is outside EPIC-DT's scope paths and no epic scope lists the verify lane registries."
+      - "Follow-up from EPIC-DT: durable-barrier.test.ts proves the SQLite barrier through the plan's own assertions (check pass, held-head and lateral-conflict assertions on the SQLite adapter); the harness report exposes no receipt timing, so a test cannot assert receipt-before-release ordering independently of the plan."
+    by: reconcile
+    fast_lane_through: fc20d7c583a6779f4a9ccc3bd9a3e03401489f5b
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.50.2
   - version: v0.52.5
     date: 2026-11-18
     changed:

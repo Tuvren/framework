@@ -1,46 +1,45 @@
 id: DT
-name: "Certify durable backends on core rules"
+name: Certify durable backends on core rules
 kind: product
 capabilities: [CAP-035, CAP-037, CAP-038]
 depends_on: [DQ]
 priority: 4
 scope:
   paths:
-    - "spec/conformance/kernel"
-    - "typescript/kernel/backends"
-    - "typescript/kernel/runtime"
-    - "typescript/kernel/testkit"
-    - "typescript/kernel/conformance-adapter"
-    - "tools/conformance/meta-conformance"
-    - "tools/conformance/harness/test"
-    - "reports/compatibility"
-    - "typescript/kernel/certification-sqlite"
-    - "typescript/kernel/certification-postgres"
-    - "tools/conformance/certification"
+    - spec/conformance/kernel
+    - typescript/kernel/backends
+    - typescript/kernel/runtime
+    - typescript/kernel/testkit
+    - typescript/kernel/conformance-adapter
+    - tools/conformance/meta-conformance
+    - tools/conformance/harness/test
+    - reports/compatibility
+    - typescript/kernel/certification-sqlite
+    - typescript/kernel/certification-postgres
+    - tools/conformance/certification
   tech_spec_patchable: []
 estimated_diff_lines: 3500
 estimate_source: planned
-# Estimate: 5 points at about 711 diff lines per point, rounded to 3,500 lines; includes checked-in generated evidence because diff_exclusions excludes lockfiles and snapshots, not generated evidence.
 tickets:
   - id: KRT-DT001
-    title: "Certify SQLite and PostgreSQL on kernel.memory"
+    title: Certify SQLite and PostgreSQL on kernel.memory
     type: Feature
     effort: 5
     depends_on: []
     scope:
       in:
-        - "spec/conformance/kernel"
-        - "typescript/kernel/backends"
-        - "typescript/kernel/runtime"
-        - "typescript/kernel/testkit"
-        - "typescript/kernel/conformance-adapter"
-        - "tools/conformance/meta-conformance"
-        - "typescript/kernel/certification-sqlite"
-        - "typescript/kernel/certification-postgres"
-        - "tools/conformance/certification"
-        - "reports/compatibility"
+        - spec/conformance/kernel
+        - typescript/kernel/backends
+        - typescript/kernel/runtime
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+        - tools/conformance/meta-conformance
+        - typescript/kernel/certification-sqlite
+        - typescript/kernel/certification-postgres
+        - tools/conformance/certification
+        - reports/compatibility
     verification:
-      command: "bun run conformance"
+      command: bun run conformance
       expected: "Exit 0; the scoped conformance and negative-control assertions pass."
     stop_conditions:
       - "STOP if SQLite cannot provide kernel.barrier through the testkit seam or a required core rule cannot run; fix the finding without weakening the profile."
@@ -49,7 +48,7 @@ tickets:
     acceptance:
       mode: contract_test
       evidence: "SQLite and PostgreSQL each execute the complete kernel.memory inventory and their own applicable controls that exist after DQ, including protocol, edge-validation, lineage, codec, scopes, and concurrency positive checks; later DR detectors are outside this acceptance. SQLite proves kernel.barrier activation and both arrival orderings through its testkit seam. Certificates link matching backend identity and control runs; every discovered failure has a triage entry and cannot count as a pass. Implementation findings are fixed, and both affected certificates pass at close; no certificate remains withheld."
-    flows: ["flow-multi-implementation-conformance-compatibility"]
+    flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     status: done
 closeout:
@@ -84,12 +83,21 @@ closeout:
       commit: 5c71a65
     - summary: "Mutants that corrupt a clock-dependent listing decorate the backend transaction (decorateTransactions) rather than the kernel facade, so the corruption survives a shared-lease-clock clamp."
       kind: pattern
-      paths:
-        - typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts
+      paths: [typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts]
       commit: 5c71a65
     - summary: "A composed mutant calls activate only after the violating action succeeds, so a retry that a backend rejects does not count as activation."
       kind: pattern
-      paths:
-        - typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts
+      paths: [typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts]
       commit: "47e9936"
   settled: []
+  actuals:
+    diff_lines: 2490
+    files_touched: 24
+    milestones: 4
+    review_rounds: 2
+    per_ticket:
+      - id: KRT-DT001
+        diff_lines: 2490
+        review_rounds: 2
+    merged_commit: fc20d7c
+    measured_at: 2026-11-20
