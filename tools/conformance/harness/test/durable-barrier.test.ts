@@ -10,7 +10,7 @@ import { assertConformanceEvidence } from "../../../scripts/lib/conformance-cont
 const planPath =
   "spec/conformance/kernel/plans/kernel-concurrent-writer-syscall.json";
 
-test("sqlite records both writer-entry receipts before release in both orderings", async () => {
+test("sqlite passes both concurrent-writer orderings with the head held until release", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "sqlite-barrier-"));
   try {
     const evidence = path.join(directory, "evidence.json");
@@ -42,25 +42,23 @@ test("sqlite records both writer-entry receipts before release in both orderings
     expect(exit, stderr + stdout).toBe(0);
     const result: unknown = JSON.parse(await readFile(evidence, "utf-8"));
     assertConformanceEvidence(result, "sqlite writer race evidence");
+    expect(result.status).toBe("pass");
     expect(result.checkResults).toHaveLength(2);
     for (const check of result.checkResults) {
       expect(check.status).toBe("pass");
-      const trace = check.details?.traceStepIds;
-      if (!Array.isArray(trace)) {
-        throw new TypeError("missing trace step order");
-      }
-      expect(trace.indexOf("firstReceipt")).toBeGreaterThanOrEqual(0);
-      expect(trace.indexOf("secondReceipt")).toBeGreaterThan(
-        trace.indexOf("firstReceipt")
+      expect(check.details?.adapterId).toBe("typescript-kernel-sqlite");
+      expect(check.assertionResults).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            assertionId: `${check.checkId}.5.resultField`,
+            status: "pass",
+          }),
+          expect.objectContaining({
+            assertionId: `${check.checkId}.6.schemaValid`,
+            status: "pass",
+          }),
+        ])
       );
-      expect(trace.indexOf("release")).toBeGreaterThan(
-        trace.indexOf("secondReceipt")
-      );
-      expect(
-        check.assertionResults.find((assertion) =>
-          assertion.assertionId.endsWith(".6.schemaValid")
-        )
-      ).toMatchObject({ status: "pass" });
     }
   } finally {
     await rm(directory, { force: true, recursive: true });

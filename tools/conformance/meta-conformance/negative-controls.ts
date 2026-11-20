@@ -1338,72 +1338,19 @@ export const formatNegativeControlSummary = (
   return `${lines.join("\n")}\n`;
 };
 
-export interface NegativeControlSelection {
-  adapters: readonly string[];
-  ports: readonly string[];
-  profiles: readonly string[];
-}
-
-export const selectControlConfigs = (
-  selection: NegativeControlSelection
-): NegativeControlPortConfig[] => {
-  const unknown = selection.ports.filter(
-    (port) => !NEGATIVE_CONTROL_PORTS.some((config) => config.port === port)
-  );
-  if (unknown.length > 0) {
-    throw new Error(`unknown negative-control port(s) ${unknown.join(", ")}`);
-  }
-  const unknownProfiles = selection.profiles.filter(
-    (profile) =>
-      !NEGATIVE_CONTROL_PORTS.some((config) => config.profile === profile)
-  );
-  if (unknownProfiles.length > 0) {
-    throw new Error(
-      `unknown negative-control profile(s) ${unknownProfiles.join(", ")}`
-    );
-  }
-  const controlAdapters = new Set(
-    NEGATIVE_CONTROL_PORTS.map((config) => fromRoot(config.controlAdapter))
-  );
-  const unknownAdapters = selection.adapters.filter(
-    (adapter) => !controlAdapters.has(fromRoot(adapter))
-  );
-  if (unknownAdapters.length > 0) {
-    throw new Error(
-      `unknown negative-control adapter(s) ${unknownAdapters.join(", ")}`
-    );
-  }
-  const adapters = new Set(
-    selection.adapters.map((adapter) => fromRoot(adapter))
-  );
-  const configs = NEGATIVE_CONTROL_PORTS.filter(
-    ({ controlAdapter, port, profile }) =>
-      (selection.ports.length === 0 || selection.ports.includes(port)) &&
-      (selection.profiles.length === 0 ||
-        selection.profiles.includes(profile)) &&
-      (adapters.size === 0 || adapters.has(fromRoot(controlAdapter)))
-  );
-  if (configs.length === 0) {
-    throw new Error("no negative-control configuration selected");
-  }
-  return configs;
-};
-
 const parseCli = (
   args: readonly string[]
 ): NegativeControlRunOptions & {
-  adapters: string[];
   ports: string[];
   profiles: string[];
   reportOut?: string;
 } => {
   const parsed: NegativeControlRunOptions & {
-    adapters: string[];
     mutants: string[];
     ports: string[];
     profiles: string[];
     reportOut?: string;
-  } = { adapters: [], mutants: [], ports: [], profiles: [] };
+  } = { mutants: [], ports: [], profiles: [] };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     const value = args[index + 1];
@@ -1412,10 +1359,6 @@ const parseCli = (
     }
     index += 1;
     switch (arg) {
-      case "--adapter": {
-        parsed.adapters.push(value);
-        break;
-      }
       case "--port": {
         parsed.ports.push(value);
         break;
@@ -1596,7 +1539,29 @@ export const checkFleetGate = async (
 
 const main = async (): Promise<void> => {
   const options = parseCli(process.argv.slice(2));
-  const configs = selectControlConfigs(options);
+  const unknown = options.ports.filter(
+    (port) => !NEGATIVE_CONTROL_PORTS.some((config) => config.port === port)
+  );
+  if (unknown.length > 0) {
+    throw new Error(`unknown negative-control port(s) ${unknown.join(", ")}`);
+  }
+  const unknownProfiles = options.profiles.filter(
+    (profile) =>
+      !NEGATIVE_CONTROL_PORTS.some((config) => config.profile === profile)
+  );
+  if (unknownProfiles.length > 0) {
+    throw new Error(
+      `unknown negative-control profile(s) ${unknownProfiles.join(", ")}`
+    );
+  }
+  const configs = NEGATIVE_CONTROL_PORTS.filter(
+    ({ port, profile }) =>
+      (options.ports.length === 0 || options.ports.includes(port)) &&
+      (options.profiles.length === 0 || options.profiles.includes(profile))
+  );
+  if (configs.length === 0) {
+    throw new Error("no negative-control configuration selected");
+  }
   const recordProvenance =
     options.reportOut !== undefined && (options.mutants?.length ?? 0) === 0;
   const groups = [...new Set(configs.map(({ profile }) => profile))].map(

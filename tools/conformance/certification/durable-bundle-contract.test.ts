@@ -458,10 +458,6 @@ test("durable certificates share a run and link to matching profile control gate
       "kernel.shared-backend",
       "--profile",
       "kernel.memory",
-      "--adapter",
-      sqlite,
-      "--adapter",
-      postgres,
       "--report-out",
       reportPath,
     ]);
