@@ -1,0 +1,25 @@
+owner: KRT-DT001
+mode: contract_test
+produced:
+  date: 2026-11-20
+  commit: "e0b4f4d"
+  command: "bun run compatibility:evidence; bun run compatibility:check; bun tools/conformance/meta-conformance/negative-controls.ts --port kernel --profile kernel.memory --adapter typescript/kernel/conformance-adapter/adapter-sqlite.json --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --report-out controls.json; bun run conformance; bun run verify:kernel; bun run verify"
+result: pass
+pass_criteria: "SQLite and PostgreSQL each pass every applicable kernel.memory check with no non-applicable check inside the profile; each backend's own enforcing control run kills all 13 kernel.memory controls with activation and none unsupported; both concurrent-writer orderings pass on SQLite through the testkit barrier; the compatibility matrix certifies both backends on kernel.memory; every discovered failure has a triage entry."
+files:
+  - path: certificate-summary.json
+    sha256: 0c72bea54a1ba62c26d1625340a8fc7bc16dfce83ab7c82fbde66e160818569a
+    bytes: 6650
+    role: measurement
+  - path: control-summary.json
+    sha256: be80c38e1de884b13f8d099e5c788d4a1fa27f70c0ba220f8cc8c847c7da3f51
+    bytes: 19185
+    role: measurement
+  - path: positive-inventory-summary.json
+    sha256: e72dfa23fe0e3fa6001572057a6e29152af945ab050716ff5ca209e44a1b0a9f
+    bytes: 1373
+    role: measurement
+  - path: certification-triage.yaml
+    sha256: c59a22fcb6bb8098c3f9d844e07722e72f41ee7b698b8985e7aa58a8c11d268f
+    bytes: 2150
+    role: transcript

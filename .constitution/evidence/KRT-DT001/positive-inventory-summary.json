@@ -1,0 +1,55 @@
+[
+  {
+    "backend": "sqlite",
+    "project": "kernel-typescript-sqlite-certification",
+    "adapterId": "typescript-kernel-sqlite",
+    "status": "pass",
+    "reportStatus": "capability_subset_pass",
+    "summary": {
+      "failedChecks": 0,
+      "passedChecks": 141,
+      "totalChecks": 143,
+      "applicableChecks": 141,
+      "nonApplicableChecks": 2
+    },
+    "nonApplicableCheckIds": [
+      "kernel.syscall.clock_skew.preemption",
+      "kernel.syscall.shared_writer.race"
+    ],
+    "concurrentWriter": [
+      {
+        "checkId": "kernel.syscall.concurrent_writer.a_first",
+        "status": "pass"
+      },
+      {
+        "checkId": "kernel.syscall.concurrent_writer.b_first",
+        "status": "pass"
+      }
+    ]
+  },
+  {
+    "backend": "postgres",
+    "project": "kernel-typescript-postgres-certification",
+    "adapterId": "typescript-kernel-postgres",
+    "status": "pass",
+    "reportStatus": "full_pass",
+    "summary": {
+      "failedChecks": 0,
+      "passedChecks": 143,
+      "totalChecks": 143,
+      "applicableChecks": 143,
+      "nonApplicableChecks": 0
+    },
+    "nonApplicableCheckIds": [],
+    "concurrentWriter": [
+      {
+        "checkId": "kernel.syscall.concurrent_writer.a_first",
+        "status": "pass"
+      },
+      {
+        "checkId": "kernel.syscall.concurrent_writer.b_first",
+        "status": "pass"
+      }
+    ]
+  }
+]
