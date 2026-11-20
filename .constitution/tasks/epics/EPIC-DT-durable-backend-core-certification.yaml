@@ -86,5 +86,5 @@ closeout:
       kind: pattern
       paths:
         - typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts
-      commit: 47e9936
+      commit: "47e9936"
   settled: []
