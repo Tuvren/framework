@@ -12,3 +12,9 @@ entries:
     owner: EPIC-DT lead
     resolution: "Transient on a memory-constrained shared host; not reproduced and outside the SQLite and PostgreSQL kernel.memory families. The failing record was never committed."
     status: resolved
+  - id: negative-control-adapter-selector-partial-register-gate
+    class: V
+    evidence: "PR review of e0b4f4d: a control run narrowed by the --adapter option evaluated the stale-register gate over only the selected configs and still emitted control runs that certificate linking accepted, while the certification contract aggregates staleness over every counted enforcing report of a profile. No committed certificate used a narrowed run; compatibility evidence and bun run conformance run the unfiltered fleet."
+    owner: EPIC-DT lead
+    resolution: "The selector was removed in 47e9936; the runner filters by port and profile only, as before the epic, and the durable bundle contract test runs the full profile fleet."
+    status: resolved
