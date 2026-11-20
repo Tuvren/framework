@@ -1,0 +1,428 @@
+{
+  "controlRuns": [
+    {
+      "id": "ff2ce21fc8b0e21702563714546991b86d1f859f1a2d430eb59ac3d3d85decd6",
+      "profile": "kernel.memory",
+      "status": "pass",
+      "adapters": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+          "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
+          "implementation": "e9efb1b8cedd76b39d66a44adbc8cb50ec8bb9006be21d7dba430125133174af"
+        }
+      ],
+      "verifierDigests": {
+        "harness": "b1c77d8b06d457792e8a7ec93934f23ff6b021b892d1c2180c5377916e6edac8",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      }
+    },
+    {
+      "id": "37816fdf95f2e32e6b95857bb07a37022a78c9bfc3bbd94e5b5f5ff427a52344",
+      "profile": "kernel.memory",
+      "status": "pass",
+      "adapters": [
+        {
+          "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+          "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
+          "implementation": "e9efb1b8cedd76b39d66a44adbc8cb50ec8bb9006be21d7dba430125133174af"
+        }
+      ],
+      "verifierDigests": {
+        "harness": "b1c77d8b06d457792e8a7ec93934f23ff6b021b892d1c2180c5377916e6edac8",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      }
+    }
+  ],
+  "reports": [
+    {
+      "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+      "profile": "kernel.memory",
+      "mode": "enforcing",
+      "counted": true,
+      "baseline": {
+        "failedChecks": 0,
+        "passedChecks": 141,
+        "totalChecks": 143,
+        "applicableChecks": 141,
+        "nonApplicableChecks": 2
+      },
+      "totals": {
+        "activated": 13,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 13,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "findings": [],
+      "notRun": [],
+      "mutants": [
+        {
+          "mutantId": "kernel.accept-noncanonical-cbor",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.codec.decode.non-minimal-uint-head.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.accept-stale-head-update",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 7,
+          "designatedFailures": [
+            "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+            "kernel.syscall.concurrent_writer.a_first.7.resultField",
+            "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+            "kernel.syscall.concurrent_writer.b_first.10.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.accept-stale-owner-after-takeover",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 2,
+          "designatedFailures": [
+            "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+            "kernel.syscall.run-liveness.lease_renewal.4.schemaValid"
+          ]
+        },
+        {
+          "mutantId": "kernel.delete-object-reachable-through-live-root",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.syscall.reclamation.reachability.8.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 7,
+          "designatedFailures": [
+            "kernel.syscall.logical.recovery_state.3.resultField",
+            "kernel.syscall.crash-recovery.before_commit.6.resultField",
+            "kernel.syscall.crash-recovery.before_commit.12.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.fault-seam-never-fires",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 8,
+          "designatedFailures": []
+        },
+        {
+          "mutantId": "kernel.lease-takeover-before-expiry",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 3,
+          "designatedFailures": [
+            "kernel.syscall.run-liveness.expired_listing.2.resultField",
+            "kernel.syscall.run-liveness.lease_renewal.8.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.never-sweep-eligible-objects",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 5,
+          "designatedFailures": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+            "kernel.syscall.reclamation.reachability.1.resultField",
+            "kernel.syscall.reclamation.reachability.2.resultField",
+            "kernel.syscall.reclamation.reachability.4.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.noncanonical-changed-paths-order",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.syscall.logical.diff_paths.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.promote-staged-before-checkpoint",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.syscall.crash-recovery.before_commit.8.resultField",
+            "kernel.syscall.crash-recovery.before_commit.9.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.resolve-object-across-scopes",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 2,
+          "designatedFailures": [
+            "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+            "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.sweep-inside-grace-window",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 3,
+          "designatedFailures": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.wrong-opaque-object-hash",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 44,
+          "designatedFailures": [
+            "kernel.codec.all-ones-bytes.opaque.hash.1.resultField",
+            "kernel.codec.all-ordered-paths.opaque.hash.1.resultField",
+            "kernel.codec.all-single-paths.opaque.hash.1.resultField",
+            "kernel.codec.all-zero-bytes.opaque.hash.1.resultField",
+            "kernel.codec.deep-path-schema.opaque.hash.1.resultField",
+            "kernel.codec.deterministic.opaque.hash.1.resultField",
+            "kernel.codec.empty-bytes.opaque.hash.1.resultField",
+            "kernel.codec.large-bytes.opaque.hash.1.resultField",
+            "kernel.codec.many-staged-results.opaque.hash.1.resultField",
+            "kernel.codec.mixed-status-staged.opaque.hash.1.resultField",
+            "kernel.codec.multi-path-schema.opaque.hash.1.resultField",
+            "kernel.codec.non-utf8-bytes.opaque.hash.1.resultField",
+            "kernel.codec.single-byte.opaque.hash.1.resultField",
+            "kernel.codec.staged-failed.opaque.hash.1.resultField",
+            "kernel.codec.staged-interrupted.opaque.hash.1.resultField",
+            "kernel.codec.with-event-hash.opaque.hash.1.resultField",
+            "kernel.codec.with-prev-turn.opaque.hash.1.resultField",
+            "kernel.codec.zero-turn-tree-hash.opaque.hash.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+          ]
+        }
+      ]
+    },
+    {
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+      "profile": "kernel.memory",
+      "mode": "enforcing",
+      "counted": true,
+      "baseline": {
+        "failedChecks": 0,
+        "passedChecks": 143,
+        "totalChecks": 143,
+        "applicableChecks": 143,
+        "nonApplicableChecks": 0
+      },
+      "totals": {
+        "activated": 13,
+        "equivalent": 0,
+        "invalid": 0,
+        "killed": 13,
+        "survived": 0,
+        "unsupported": 0
+      },
+      "findings": [],
+      "notRun": [],
+      "mutants": [
+        {
+          "mutantId": "kernel.accept-noncanonical-cbor",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.codec.decode.non-minimal-uint-head.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.accept-stale-head-update",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 8,
+          "designatedFailures": [
+            "kernel.syscall.concurrent_writer.a_first.6.schemaValid",
+            "kernel.syscall.concurrent_writer.a_first.7.resultField",
+            "kernel.syscall.concurrent_writer.b_first.6.schemaValid",
+            "kernel.syscall.concurrent_writer.b_first.10.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.accept-stale-owner-after-takeover",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 2,
+          "designatedFailures": [
+            "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+            "kernel.syscall.run-liveness.lease_renewal.4.schemaValid"
+          ]
+        },
+        {
+          "mutantId": "kernel.delete-object-reachable-through-live-root",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.syscall.reclamation.reachability.8.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 7,
+          "designatedFailures": [
+            "kernel.syscall.logical.recovery_state.3.resultField",
+            "kernel.syscall.crash-recovery.before_commit.6.resultField",
+            "kernel.syscall.crash-recovery.before_commit.12.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.fault-seam-never-fires",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 8,
+          "designatedFailures": []
+        },
+        {
+          "mutantId": "kernel.lease-takeover-before-expiry",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 4,
+          "designatedFailures": [
+            "kernel.syscall.run-liveness.expired_listing.2.resultField",
+            "kernel.syscall.run-liveness.lease_renewal.8.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.never-sweep-eligible-objects",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 5,
+          "designatedFailures": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+            "kernel.syscall.reclamation.reachability.1.resultField",
+            "kernel.syscall.reclamation.reachability.2.resultField",
+            "kernel.syscall.reclamation.reachability.4.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.noncanonical-changed-paths-order",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.syscall.logical.diff_paths.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.promote-staged-before-checkpoint",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 1,
+          "designatedFailures": [
+            "kernel.syscall.crash-recovery.before_commit.8.resultField",
+            "kernel.syscall.crash-recovery.before_commit.9.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.resolve-object-across-scopes",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 2,
+          "designatedFailures": [
+            "kernel.syscall.scope-isolation.own_content.otherHas.1.resultField",
+            "kernel.syscall.scope-isolation.own_content.otherGet.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.sweep-inside-grace-window",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 3,
+          "designatedFailures": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+          ]
+        },
+        {
+          "mutantId": "kernel.wrong-opaque-object-hash",
+          "outcome": "killed",
+          "activated": true,
+          "activationCount": 44,
+          "designatedFailures": [
+            "kernel.codec.all-ones-bytes.opaque.hash.1.resultField",
+            "kernel.codec.all-ordered-paths.opaque.hash.1.resultField",
+            "kernel.codec.all-single-paths.opaque.hash.1.resultField",
+            "kernel.codec.all-zero-bytes.opaque.hash.1.resultField",
+            "kernel.codec.deep-path-schema.opaque.hash.1.resultField",
+            "kernel.codec.deterministic.opaque.hash.1.resultField",
+            "kernel.codec.empty-bytes.opaque.hash.1.resultField",
+            "kernel.codec.large-bytes.opaque.hash.1.resultField",
+            "kernel.codec.many-staged-results.opaque.hash.1.resultField",
+            "kernel.codec.mixed-status-staged.opaque.hash.1.resultField",
+            "kernel.codec.multi-path-schema.opaque.hash.1.resultField",
+            "kernel.codec.non-utf8-bytes.opaque.hash.1.resultField",
+            "kernel.codec.single-byte.opaque.hash.1.resultField",
+            "kernel.codec.staged-failed.opaque.hash.1.resultField",
+            "kernel.codec.staged-interrupted.opaque.hash.1.resultField",
+            "kernel.codec.with-event-hash.opaque.hash.1.resultField",
+            "kernel.codec.with-prev-turn.opaque.hash.1.resultField",
+            "kernel.codec.zero-turn-tree-hash.opaque.hash.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+            "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField"
+          ]
+        }
+      ]
+    }
+  ]
+}

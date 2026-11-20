@@ -1,0 +1,14 @@
+ticket: KRT-DT001
+entries:
+  - id: postgres-lease-takeover-before-expiry-survived
+    class: V
+    evidence: "Replay before the fix: TUVREN_KERNEL_MUTANT=kernel.lease-takeover-before-expiry bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres-mutant.json --check kernel.syscall.run-liveness.expired_listing --check kernel.syscall.run-liveness.lease_renewal exited 0 with every check passing, so the control activated and survived in the PostgreSQL kernel.memory control run. The same replay after the fix exits 1 with expired_listing.2.resultField and lease_renewal.8.resultField failing."
+    owner: EPIC-DT lead
+    resolution: "Testkit mutant defect, not a backend defect. The mutant corrupted listExpired by passing a far-future clock through the kernel facade, and a shared-lease-clock backend replaces the caller's clock with its transaction clock, so the corruption never reached an observable on PostgreSQL. The listExpired corruption now sits at the backend transaction seam in typescript/kernel/testkit/src/lib/kernel-mutants-protocol.ts and models the same defect on every backend. The control is killed with activation in the memory, SQLite, and PostgreSQL control runs, each by its own run. The surviving control never counted as a pass and no certificate was issued from the surviving run."
+    status: resolved
+  - id: interop-smoke-rust-kernel-evidence-refresh
+    class: E
+    evidence: "The first bun run compatibility:evidence after the milestone change recorded unexpected_fail for tuvren.framework.kernel-interop-smoke on typescript-framework__rust-kernel with 'interop runner exited without a parseable scenario report'. bun run interop-smoke alone then passed all 11 scenarios, and a second bun run compatibility:evidence recorded the lane as passing with that evidence file byte-identical to the committed one; bun run compatibility:check exited 0."
+    owner: EPIC-DT lead
+    resolution: "Transient on a memory-constrained shared host; not reproduced and outside the SQLite and PostgreSQL kernel.memory families. The failing record was never committed."
+    status: resolved

@@ -1,0 +1,124 @@
+{
+  "sourceRevision": "checked-in-workspace",
+  "certificates": [
+    {
+      "backend": "postgres",
+      "implementationId": "typescript-kernel-postgres",
+      "profile": "kernel.memory",
+      "status": "certified",
+      "digests": {
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "undetectedClaimCount": 91
+    },
+    {
+      "backend": "postgres",
+      "implementationId": "typescript-kernel-postgres",
+      "profile": "kernel.persistent-reopen",
+      "status": "certified",
+      "digests": {
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "undetectedClaimCount": 0
+    },
+    {
+      "backend": "postgres",
+      "implementationId": "typescript-kernel-postgres",
+      "profile": "kernel.process-crash",
+      "status": "certified",
+      "digests": {
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "undetectedClaimCount": 0
+    },
+    {
+      "backend": "postgres",
+      "implementationId": "typescript-kernel-postgres",
+      "profile": "kernel.shared-backend",
+      "status": "certified",
+      "digests": {
+        "adapterManifest": "e50cd616e82ac554b85832a7d67c59ca62ed3b6f2dca44054456c90995adb508",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "undetectedClaimCount": 0
+    },
+    {
+      "backend": "sqlite",
+      "implementationId": "typescript-kernel-sqlite",
+      "profile": "kernel.memory",
+      "status": "certified",
+      "digests": {
+        "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "undetectedClaimCount": 91
+    },
+    {
+      "backend": "sqlite",
+      "implementationId": "typescript-kernel-sqlite",
+      "profile": "kernel.persistent-reopen",
+      "status": "certified",
+      "digests": {
+        "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "undetectedClaimCount": 0
+    },
+    {
+      "backend": "sqlite",
+      "implementationId": "typescript-kernel-sqlite",
+      "profile": "kernel.process-crash",
+      "status": "certified",
+      "digests": {
+        "adapterManifest": "0d2a45f2a453f4117ed20bab74616c37d65daf030a6901968e016e6ea7b37a7e",
+        "packet": "d5635b1e2fd067de52119e37defc1ab2ce7b01ccdc2c33b6ccda80afc2b60dd0",
+        "plans": "db9584f3ad35d16ce0d0bd0fc58b044c92b9dff12250c35d586cb173b4c5ba11",
+        "catalogs": "ecaa472f4cbd45d7d9143b1b664c013a63498009b24cb55f3cb9348de76cd029",
+        "fixtures": "bc99ac2255ab4d6c1b18cfaf26f05b08530f9d372f90f6f375f5b2c6be4cf1a6",
+        "profiles": "900947e1d7425b1ebefb9a41e1b22f6f7ae12eb54516ec5f96496a2008d4c1ea",
+        "controls": "ab21f0276113d9593d229b8f32126fe50ef7a66ae3dcd2b281da3ee0faed3d9b",
+        "verifierAuthority": "5a602e0d62ac1e6ea811b16ae315b7f2c478a22d24c40b531a8592653a1deb37"
+      },
+      "undetectedClaimCount": 0
+    }
+  ]
+}
