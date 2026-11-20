@@ -1,6 +1,6 @@
 # Certify the kernels
 
-Run these commands from the repository root with the worktree environment loaded. The build targets produce the memory backend and the Rust adapter executable.
+Run these commands from the repository root with the worktree environment loaded. The build targets produce the kernel backends, the TypeScript kernel adapter bundle, and the Rust adapter executable.
 
 ```sh
 bun run nx run backend-memory:build
@@ -11,9 +11,9 @@ bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-ada
 bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --control-report .cache/kernel-memory-controls.json --concurrency 4 --evidence-out .cache/rust-memory-certificate.json
 ```
 
-The control report must contain a passing fleet run. Each certificate checks its implementation and adapter digests and every verifier digest against that report. A filtered or sharded run, a missing or changed control report, an incomplete profile, or changed inputs leave the result uncertified.
+The `kernel.memory` profile selects four control configurations: the TypeScript memory adapter, the Rust adapter, and the SQLite and PostgreSQL adapters. The adapter build above produces the TypeScript kernel runtime, testkit, and all three kernel backends through its build dependencies, so the durable configurations need no extra build step, but they do need a running PostgreSQL service. Start services once per session with `bun run services:up` before the control command; without it the PostgreSQL configurations fail. The control report must contain a passing fleet run. Each certificate checks its implementation and adapter digests and every verifier digest against that report. A filtered or sharded run, a missing or changed control report, an incomplete profile, or changed inputs leave the result uncertified.
 
-To certify the durable backends, build the SQLite and PostgreSQL backends and the TypeScript kernel adapter. Then run the full kernel control fleet and each durable adapter:
+To certify the durable backends, build the SQLite and PostgreSQL backends and the TypeScript kernel adapter. The `--port kernel` run selects every kernel profile, including the PostgreSQL configurations, so the PostgreSQL service must already be running via `bun run services:up` at session start. Then run the full kernel control fleet and each durable adapter:
 
 ```sh
 bun run nx run-many -t build -p backend-sqlite,backend-postgres,kernel-runtime,kernel-typescript-conformance-adapter

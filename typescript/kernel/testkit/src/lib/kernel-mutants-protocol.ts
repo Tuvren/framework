@@ -161,13 +161,14 @@ const leaseTakeoverBeforeExpiryKernel = (
         if (readErrorCode(error) !== "kernel_runtime_run_lease_not_expired") {
           throw error;
         }
-        activate();
-        return await kernel.runLiveness.preemptExpired(
+        const preempted = await kernel.runLiveness.preemptExpired(
           runId,
           preemptingOwnerId,
           LEASE_HORIZON_MS,
           reason
         );
+        activate();
+        return preempted;
       }
     },
   },
