@@ -181,6 +181,7 @@
         "kernel.accept-unsafe-negint",
         "kernel.accept-unsafe-uint",
         "kernel.accept-unsorted-map-keys",
+        "kernel.corrupt-schema-roundtrip",
         "kernel.delete-object-reachable-through-live-root",
         "kernel.drop-canonical-map-entry",
         "kernel.drop-uncommitted-staged-result-on-recovery",
