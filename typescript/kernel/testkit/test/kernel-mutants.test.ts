@@ -85,6 +85,9 @@ const EXPECTED_MUTANTS = [
   ["kernel.sweep-inside-grace-window", "implementation"],
   ["kernel.worker-clock-expiry", "implementation"],
   ["kernel.wrong-opaque-object-hash", "implementation"],
+  ["kernel.wrong-schema-record-hash", "implementation"],
+  ["kernel.wrong-turn-node-record-hash", "implementation"],
+  ["kernel.wrong-turn-tree-hash", "implementation"],
 ] as const;
 
 interface ManifestControl {

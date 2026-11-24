@@ -547,6 +547,120 @@
       ]
     },
     {
+      "mutantId": "kernel.wrong-schema-record-hash",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": [
+        "kernel.codec.deterministic.schema",
+        "kernel.codec.empty-bytes.schema",
+        "kernel.codec.single-byte.schema",
+        "kernel.codec.all-zero-bytes.schema",
+        "kernel.codec.all-ones-bytes.schema",
+        "kernel.codec.large-bytes.schema",
+        "kernel.codec.multi-path-schema.schema",
+        "kernel.codec.all-single-paths.schema",
+        "kernel.codec.all-ordered-paths.schema",
+        "kernel.codec.with-prev-turn.schema",
+        "kernel.codec.with-event-hash.schema",
+        "kernel.codec.staged-failed.schema",
+        "kernel.codec.staged-interrupted.schema",
+        "kernel.codec.many-staged-results.schema",
+        "kernel.codec.deep-path-schema.schema",
+        "kernel.codec.non-utf8-bytes.schema",
+        "kernel.codec.zero-turn-tree-hash.schema",
+        "kernel.codec.mixed-status-staged.schema"
+      ],
+      "activation": {
+        "precondition": "kernel.codec.hashRecord receives a TurnTreeSchema-shaped record (incorporationRules, paths, schemaId); the mutant hashes a copy whose schemaId is altered",
+        "signal": "mutant.wrong-schema-record-hash.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.deterministic.schema.hash.1.resultField",
+        "kernel.codec.empty-bytes.schema.hash.1.resultField",
+        "kernel.codec.single-byte.schema.hash.1.resultField",
+        "kernel.codec.all-zero-bytes.schema.hash.1.resultField",
+        "kernel.codec.all-ones-bytes.schema.hash.1.resultField",
+        "kernel.codec.large-bytes.schema.hash.1.resultField",
+        "kernel.codec.multi-path-schema.schema.hash.1.resultField",
+        "kernel.codec.all-single-paths.schema.hash.1.resultField",
+        "kernel.codec.all-ordered-paths.schema.hash.1.resultField",
+        "kernel.codec.with-prev-turn.schema.hash.1.resultField",
+        "kernel.codec.with-event-hash.schema.hash.1.resultField",
+        "kernel.codec.staged-failed.schema.hash.1.resultField",
+        "kernel.codec.staged-interrupted.schema.hash.1.resultField",
+        "kernel.codec.many-staged-results.schema.hash.1.resultField",
+        "kernel.codec.deep-path-schema.schema.hash.1.resultField",
+        "kernel.codec.non-utf8-bytes.schema.hash.1.resultField",
+        "kernel.codec.zero-turn-tree-hash.schema.hash.1.resultField",
+        "kernel.codec.mixed-status-staged.schema.hash.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.wrong-turn-node-record-hash",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": [
+        "kernel.codec.deterministic.turn-node",
+        "kernel.codec.empty-bytes.turn-node",
+        "kernel.codec.single-byte.turn-node",
+        "kernel.codec.all-zero-bytes.turn-node",
+        "kernel.codec.all-ones-bytes.turn-node",
+        "kernel.codec.large-bytes.turn-node",
+        "kernel.codec.multi-path-schema.turn-node",
+        "kernel.codec.all-single-paths.turn-node",
+        "kernel.codec.all-ordered-paths.turn-node",
+        "kernel.codec.with-prev-turn.turn-node",
+        "kernel.codec.with-event-hash.turn-node",
+        "kernel.codec.staged-failed.turn-node",
+        "kernel.codec.staged-interrupted.turn-node",
+        "kernel.codec.many-staged-results.turn-node",
+        "kernel.codec.deep-path-schema.turn-node",
+        "kernel.codec.non-utf8-bytes.turn-node",
+        "kernel.codec.zero-turn-tree-hash.turn-node",
+        "kernel.codec.mixed-status-staged.turn-node"
+      ],
+      "activation": {
+        "precondition": "kernel.codec.hashRecord receives a TurnNode-identity-shaped record (consumedStagedResults, turnTreeHash); the mutant hashes a copy whose turnTreeHash is altered",
+        "signal": "mutant.wrong-turn-node-record-hash.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.deterministic.turn-node.hash.1.resultField",
+        "kernel.codec.empty-bytes.turn-node.hash.1.resultField",
+        "kernel.codec.single-byte.turn-node.hash.1.resultField",
+        "kernel.codec.all-zero-bytes.turn-node.hash.1.resultField",
+        "kernel.codec.all-ones-bytes.turn-node.hash.1.resultField",
+        "kernel.codec.large-bytes.turn-node.hash.1.resultField",
+        "kernel.codec.multi-path-schema.turn-node.hash.1.resultField",
+        "kernel.codec.all-single-paths.turn-node.hash.1.resultField",
+        "kernel.codec.all-ordered-paths.turn-node.hash.1.resultField",
+        "kernel.codec.with-prev-turn.turn-node.hash.1.resultField",
+        "kernel.codec.with-event-hash.turn-node.hash.1.resultField",
+        "kernel.codec.staged-failed.turn-node.hash.1.resultField",
+        "kernel.codec.staged-interrupted.turn-node.hash.1.resultField",
+        "kernel.codec.many-staged-results.turn-node.hash.1.resultField",
+        "kernel.codec.deep-path-schema.turn-node.hash.1.resultField",
+        "kernel.codec.non-utf8-bytes.turn-node.hash.1.resultField",
+        "kernel.codec.zero-turn-tree-hash.turn-node.hash.1.resultField",
+        "kernel.codec.mixed-status-staged.turn-node.hash.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.wrong-turn-tree-hash",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.turn-tree.identity"],
+      "activation": {
+        "precondition": "kernel.codec.hashTurnTree receives a TurnTree identity tuple; the mutant hashes a manifest copy whose path values are altered",
+        "signal": "mutant.wrong-turn-tree-hash.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.turn-tree.identity.hash.1.resultField"
+      ]
+    },
+    {
       "mutantId": "kernel.ignore-expired-lease-preemption",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",

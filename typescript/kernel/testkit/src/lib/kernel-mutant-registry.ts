@@ -23,6 +23,7 @@ import type {
   SelectedKernelMutant,
 } from "./kernel-mutant-types.js";
 import { CLOCK_KERNEL_MUTANTS } from "./kernel-mutants-clock.js";
+import { CODEC_KERNEL_MUTANTS } from "./kernel-mutants-codec.js";
 import { DURABLE_KERNEL_MUTANTS } from "./kernel-mutants-durable.js";
 import { PROTOCOL_KERNEL_MUTANTS } from "./kernel-mutants-protocol.js";
 import { REOPEN_KERNEL_MUTANTS } from "./kernel-mutants-reopen.js";
@@ -30,6 +31,7 @@ import { STORAGE_KERNEL_MUTANTS } from "./kernel-mutants-storage.js";
 
 const KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   ...CLOCK_KERNEL_MUTANTS,
+  ...CODEC_KERNEL_MUTANTS,
   ...PROTOCOL_KERNEL_MUTANTS,
   ...STORAGE_KERNEL_MUTANTS,
   ...DURABLE_KERNEL_MUTANTS,

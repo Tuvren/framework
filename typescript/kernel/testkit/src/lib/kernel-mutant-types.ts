@@ -19,6 +19,9 @@ import type {
   RuntimeBackend,
   RuntimeKernel,
   RuntimeKernelRunLiveness,
+  TurnNode,
+  TurnTreeManifest,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
 import type { FaultPlan } from "./fault-injecting-backend.js";
@@ -32,7 +35,16 @@ export type KernelMutantKind =
 /** Reference-implementation functions a conformance adapter calls directly. */
 export interface KernelMutantCodec {
   decodeDeterministicKernelRecord: (bytes: Uint8Array) => KernelRecord;
+  hashKernelRecord?: (record: KernelRecord) => Promise<HashString>;
   hashOpaqueObjectBytes: (bytes: Uint8Array) => Promise<HashString>;
+  hashTurnNodeIdentity?: (
+    node: Omit<TurnNode, "hash"> | TurnNode
+  ) => Promise<HashString>;
+  hashTurnTreeIdentity?: (
+    schemaId: string,
+    manifest: TurnTreeManifest,
+    schema: TurnTreeSchema
+  ) => Promise<HashString>;
 }
 
 export type KernelMutantKernel = RuntimeKernel & RuntimeKernelRunLiveness;

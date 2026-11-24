@@ -83,6 +83,9 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.resolve-object-across-scopes":
         "no Rust reproduction yet; DS owns the scope-resolution mutant",
       "kernel.sweep-inside-grace-window": "no Rust reproduction yet; not run",
+      "kernel.wrong-schema-record-hash": "no Rust reproduction yet; not run",
+      "kernel.wrong-turn-node-record-hash": "no Rust reproduction yet; not run",
+      "kernel.wrong-turn-tree-hash": "no Rust reproduction yet; not run",
     },
     profile: "kernel.memory",
   },

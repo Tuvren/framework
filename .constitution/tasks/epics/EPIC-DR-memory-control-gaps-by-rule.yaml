@@ -154,4 +154,4 @@ tickets:
       evidence: "Every migrated codec claim has a designated activated detector and a TypeScript kill over the claimed implementation. A missing detector or omitted claim fails the two-way inventory. Registers use the expanded inventory and preserve unexplained claims for DR closure."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
