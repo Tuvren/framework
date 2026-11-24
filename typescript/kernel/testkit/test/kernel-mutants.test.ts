@@ -50,11 +50,24 @@ const KERNEL_SPEC_PATH = "docs/KrakenKernelSpecification.md";
 const ADR_DIRECTORY = ".constitution/tech-spec/adrs";
 
 const EXPECTED_MUTANTS = [
+  ["kernel.accept-duplicate-map-key", "implementation"],
+  ["kernel.accept-float64-value", "implementation"],
+  ["kernel.accept-indefinite-length-array", "implementation"],
+  ["kernel.accept-indefinite-length-map", "implementation"],
+  ["kernel.accept-indefinite-length-text-string", "implementation"],
+  ["kernel.accept-non-minimal-length-head", "implementation"],
   ["kernel.accept-noncanonical-cbor", "implementation"],
   ["kernel.accept-stale-head-update", "implementation"],
   ["kernel.accept-stale-owner-after-takeover", "implementation"],
   ["kernel.accept-stale-shared-writer", "implementation"],
+  ["kernel.accept-tagged-value", "implementation"],
+  ["kernel.accept-trailing-bytes", "implementation"],
+  ["kernel.accept-truncated-input", "implementation"],
+  ["kernel.accept-unsafe-negint", "implementation"],
+  ["kernel.accept-unsafe-uint", "implementation"],
+  ["kernel.accept-unsorted-map-keys", "implementation"],
   ["kernel.delete-object-reachable-through-live-root", "implementation"],
+  ["kernel.drop-canonical-map-entry", "implementation"],
   ["kernel.drop-uncommitted-staged-result-on-recovery", "implementation"],
   ["kernel.expose-incomplete-checkpoint", "implementation"],
   ["kernel.fault-seam-never-fires", "instrumentation"],
@@ -303,6 +316,123 @@ describe("kernel mutant registry", () => {
     expect(() =>
       mutated.decodeDeterministicKernelRecord(Uint8Array.of(152, 1, 0))
     ).toThrow();
+    expect(mutated.decodeDeterministicKernelRecord(Uint8Array.of(5))).toBe(5);
+    expect(selected.readActivation().activationCount).toBe(1);
+  });
+
+  const CANONICAL_CONTROL = Uint8Array.of(161, 97, 97, 1);
+
+  const DECODE_ACCEPT_CASES: readonly {
+    readonly bytes: number[];
+    readonly expected: unknown;
+    readonly mutantId: string;
+  }[] = [
+    {
+      bytes: [152, 1, 0],
+      expected: [0],
+      mutantId: "kernel.accept-non-minimal-length-head",
+    },
+    {
+      bytes: [162, 97, 98, 1, 97, 97, 2],
+      expected: { a: 2, b: 1 },
+      mutantId: "kernel.accept-unsorted-map-keys",
+    },
+    {
+      bytes: [162, 97, 97, 1, 97, 97, 2],
+      expected: { a: 2 },
+      mutantId: "kernel.accept-duplicate-map-key",
+    },
+    {
+      bytes: [251, 63, 240, 0, 0, 0, 0, 0, 0],
+      expected: 1,
+      mutantId: "kernel.accept-float64-value",
+    },
+    {
+      bytes: [192, 97, 97],
+      expected: "a",
+      mutantId: "kernel.accept-tagged-value",
+    },
+    {
+      bytes: [159, 1, 2, 255],
+      expected: [1, 2],
+      mutantId: "kernel.accept-indefinite-length-array",
+    },
+    {
+      bytes: [191, 97, 97, 1, 255],
+      expected: { a: 1 },
+      mutantId: "kernel.accept-indefinite-length-map",
+    },
+    {
+      bytes: [127, 97, 97, 255],
+      expected: "a",
+      mutantId: "kernel.accept-indefinite-length-text-string",
+    },
+    {
+      bytes: [1, 2],
+      expected: 1,
+      mutantId: "kernel.accept-trailing-bytes",
+    },
+    {
+      bytes: [161, 97, 97],
+      expected: { a: null },
+      mutantId: "kernel.accept-truncated-input",
+    },
+    {
+      bytes: [27, 255, 255, 255, 255, 255, 255, 255, 255],
+      expected: Number.MAX_SAFE_INTEGER,
+      mutantId: "kernel.accept-unsafe-uint",
+    },
+    {
+      bytes: [59, 255, 255, 255, 255, 255, 255, 255, 255],
+      expected: Number.MIN_SAFE_INTEGER,
+      mutantId: "kernel.accept-unsafe-negint",
+    },
+  ];
+
+  test.each(DECODE_ACCEPT_CASES)(
+    "$mutantId accepts exactly its designated noncanonical decode input",
+    ({ bytes, expected, mutantId }) => {
+      const selected = selectKernelMutant(mutantId);
+      const mutated = selected.wrapCodec(referenceCodec);
+      const input = Uint8Array.from(bytes);
+
+      expect(() =>
+        referenceCodec.decodeDeterministicKernelRecord(input)
+      ).toThrow();
+      expect(mutated.decodeDeterministicKernelRecord(input)).toEqual(expected);
+      expect(selected.readActivation().activationCount).toBe(1);
+      for (const other of DECODE_ACCEPT_CASES.filter(
+        (entry) => entry.mutantId !== mutantId
+      )) {
+        expect(() =>
+          mutated.decodeDeterministicKernelRecord(
+            Uint8Array.from(other.bytes)
+          )
+        ).toThrow();
+      }
+      expect(mutated.decodeDeterministicKernelRecord(CANONICAL_CONTROL)).toEqual(
+        { a: 1 }
+      );
+      expect(selected.readActivation().activationCount).toBe(1);
+    }
+  );
+
+  test("the canonical-map mutant drops the entry from the canonical control encoding", () => {
+    const selected = selectKernelMutant("kernel.drop-canonical-map-entry");
+    const mutated = selected.wrapCodec(referenceCodec);
+
+    expect(
+      referenceCodec.decodeDeterministicKernelRecord(CANONICAL_CONTROL)
+    ).toEqual({ a: 1 });
+    expect(mutated.decodeDeterministicKernelRecord(CANONICAL_CONTROL)).toEqual(
+      {}
+    );
+    expect(selected.readActivation().activationCount).toBe(1);
+    for (const { bytes } of DECODE_ACCEPT_CASES) {
+      expect(() =>
+        mutated.decodeDeterministicKernelRecord(Uint8Array.from(bytes))
+      ).toThrow();
+    }
     expect(mutated.decodeDeterministicKernelRecord(Uint8Array.of(5))).toBe(5);
     expect(selected.readActivation().activationCount).toBe(1);
   });
