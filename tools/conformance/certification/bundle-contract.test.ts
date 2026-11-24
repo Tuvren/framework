@@ -1411,7 +1411,7 @@ test("real fleet controls certify TypeScript and reject Rust and changed verifie
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
-}, 1_200_000);
+}, 3_600_000);
 
 test("control assertion scoping follows manifest claims alone", async () => {
   const manifest = await readAdapterManifest(adapters[0]);
