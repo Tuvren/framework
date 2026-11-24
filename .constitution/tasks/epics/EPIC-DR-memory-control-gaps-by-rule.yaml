@@ -132,6 +132,11 @@ tickets:
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: done
+    deviations:
+      - files:
+          - tools/conformance/certification/bundle-contract.test.ts
+          - tools/conformance/certification/durable-bundle-contract.test.ts
+        justification: "bun run verify:kernel timed out in the certificate phase after kernel.memory grew to 49 controls. Only the two fleet-test timeouts were raised, from 1200000 ms and 1500000 ms to 3600000 ms. No assertion changed."
   - id: KRT-DR006
     title: "Detect every migrated kernel.codec claim"
     type: Feature
@@ -188,3 +193,46 @@ decisions:
       date: 2026-11-24
       summary: "Busy-branch, lateral head, and cross-thread anchor stay in kernel-memory-undetected.json. Skipping the kernel guard still loses to the memory backend invariant. A different error code is not acceptance."
       chosen: "Keep the three claims in the register"
+closeout:
+  tickets_completed:
+    - KRT-DR006
+    - KRT-DR001
+    - KRT-DR002
+    - KRT-DR003
+    - KRT-DR004
+    - KRT-DR005
+  tickets_deferred: []
+  points_completed: 25
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "EPIC-DR closed the kernel.memory gaps that have an observable designated detector. TypeScript memory, SQLite, and PostgreSQL each kill all 49 kernel.memory controls. The register keeps three claims, busy-branch, lateral head, and cross-thread anchor, under closed ruling OD-28, because the memory backend still rejects those operations after the kernel guard is skipped. Certificates list those three claims."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "classifyMutantRun now treats an activated mutant as killed when the only non-implementation failure is an unresolved designated stateField and the check has no adapterError. Other non-implementation failures still invalidate the run. Record that rule. The guard reads details.adapterError and does not see stepped details.adapterErrors."
+    - stage: tech-spec
+      item: "KRT-DL002 removes node:async_hooks from the testkit entry path. kernel-mutants-liveness.ts now imports AsyncLocalStorage the same way kernel-mutants-clock.ts and kernel-mutants-storage.ts do, and the removal list must include it."
+  follow_ups:
+    - "OD-28 stays closed. Busy-branch, lateral head, and cross-thread anchor remain in kernel-memory-undetected.json until an unguarded backend write can accept those operations. A different error code is not a detection."
+    - "KRT-DN003's publish preflight must see OD-28 as closed after reconcile. The register reasons already name that id."
+    - "The two kernel.memory fleet tests in bundle-contract.test.ts and durable-bundle-contract.test.ts now allow 60 minutes. On this host they finished in about 19 and 24 minutes."
+  code_decisions:
+    - summary: "An activated mutant whose designated stateField is unresolved because adapterError is absent is a kill. Any other non-implementation failure still makes the run invalid."
+      kind: pattern
+      paths:
+        - tools/conformance/meta-conformance/negative-controls.ts
+      commit: 27dc26bccac08166541861b62f6209783427bf25
+    - summary: "Codec identity mutants corrupt hashKernelRecord, hashTurnNodeIdentity, and hashTurnTreeIdentity through wrapCodec. encodeDeterministicKernelRecord stays the real import."
+      kind: pattern
+      paths:
+        - typescript/kernel/testkit/src/lib/kernel-mutants-codec.ts
+        - typescript/kernel/conformance-adapter/src/host-syscalls.ts
+      commit: f2875505f8402886f6d67622b9363152eecd398d
+    - summary: "A duplicate-path mutant keeps the last definition of each path and then calls the real schema.register, because the memory backend rethrows duplicate_schema_path for the original bytes."
+      kind: pattern
+      paths:
+        - typescript/kernel/testkit/src/lib/kernel-mutants-edge.ts
+      commit: 27dc26bccac08166541861b62f6209783427bf25
+  settled: []
