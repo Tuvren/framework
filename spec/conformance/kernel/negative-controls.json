@@ -955,6 +955,131 @@
       "designatedAssertions": [
         "kernel.syscall.reopen.close_reopen_checkpoint.1.resultField"
       ]
+    },
+    {
+      "mutantId": "kernel.shift-staged-result-timestamp",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#91-backendcapability-descriptor",
+      "claimIds": ["kernel.syscall.backend_capability.shared_lease_clock"],
+      "activation": {
+        "precondition": "a staged result is returned whose timestamp is shifted one tick off the transaction clock the backend capability descriptor selects (backend clock on shared-lease-clock backends, worker clock otherwise)",
+        "signal": "mutant.shift-staged-result-timestamp.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.controls.before_commit.consumed.1.resultField",
+        "kernel.syscall.controls.before_commit.consumed.2.resultField",
+        "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+        "kernel.syscall.controls.after_commit_before_ack.consumed.2.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.release-object-consumed-by-live-lineage",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
+      "claimIds": [
+        "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+      ],
+      "activation": {
+        "precondition": "reclamation releases objects consumed by a non-archived branch head's lineage, so ciphertext a live root still reaches is no longer retained",
+        "signal": "mutant.release-object-consumed-by-live-lineage.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.2.resultField",
+        "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.3.digest"
+      ]
+    },
+    {
+      "mutantId": "kernel.invert-expired-run-membership",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
+      "claimIds": ["kernel.syscall.run-liveness.expired_listing"],
+      "activation": {
+        "precondition": "an expiry listing returns leased running runs whose lease has not expired and omits the expired members",
+        "signal": "mutant.invert-expired-run-membership.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.run-liveness.expired_listing.4.resultField",
+        "kernel.syscall.run-liveness.expired_listing.7.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.list-paused-run-as-expired",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
+      "claimIds": ["kernel.syscall.run-liveness.paused_run_excluded_from_expiry"],
+      "activation": {
+        "precondition": "an expiry listing includes a paused run as an expired member",
+        "signal": "mutant.list-paused-run-as-expired.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.run-liveness.expired_listing.4.resultField",
+        "kernel.syscall.run-liveness.expired_listing.5.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.stale-preemption-empty-checkpoint",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#stale-running-preemption",
+      "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
+      "activation": {
+        "precondition": "stale preemption checkpoints without consuming the run's staged results, so the recovery state reports none consumed",
+        "signal": "mutant.stale-preemption-empty-checkpoint.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.run-liveness.stale_preemption.7.resultField",
+        "kernel.syscall.run-liveness.stale_preemption.9.resultField",
+        "kernel.syscall.run-liveness.stale_preemption.10.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.append-phantom-thread-member",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#92-threadenumeration-capability",
+      "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
+      "activation": {
+        "precondition": "an own-scope thread enumeration appends a member the scope never created",
+        "signal": "mutant.append-phantom-thread-member.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.scope-isolation.own_enumeration.list.1.resultField",
+        "kernel.syscall.scope-isolation.own_enumeration.sameScopeList.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.leak-sibling-scope-threads",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.scope-isolation.enumeration_is_scope_confined"],
+      "activation": {
+        "precondition": "a scope's thread enumeration returns threads recorded under a sibling scope on the same substrate",
+        "signal": "mutant.leak-sibling-scope-threads.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.scope-isolation.own_enumeration.otherList.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.corrupt-own-scope-store-read",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.syscall.scope-isolation.own_content"],
+      "activation": {
+        "precondition": "an own-scope store.get returns corrupted content",
+        "signal": "mutant.corrupt-own-scope-store-read.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.scope-isolation.own_content.1.resultField",
+        "kernel.syscall.scope-isolation.own_content.2.digest",
+        "kernel.syscall.scope-isolation.own_content.sameScopeGet.1.resultField"
+      ]
     }
   ]
 }

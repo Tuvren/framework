@@ -108,7 +108,7 @@ tickets:
       evidence: "Every remaining rule in these classes has its own activated mutant and designated failing assertion. The positive checks pass and any claimed detected entry leaves the register only after the kill. SQLite and PostgreSQL each kill every applicable control added by this ticket with backend-matched activation and designated failures; their unmutated checks pass. The expanded inventory, including codec claims from DR006, is authoritative; no fixed total of 40 is assumed."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DR005
     title: "Reconcile the complete memory coverage register"
     type: Chore

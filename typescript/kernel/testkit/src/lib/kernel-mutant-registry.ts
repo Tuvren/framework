@@ -26,6 +26,7 @@ import { CLOCK_KERNEL_MUTANTS } from "./kernel-mutants-clock.js";
 import { CODEC_KERNEL_MUTANTS } from "./kernel-mutants-codec.js";
 import { DURABLE_KERNEL_MUTANTS } from "./kernel-mutants-durable.js";
 import { EDGE_KERNEL_MUTANTS } from "./kernel-mutants-edge.js";
+import { LIVENESS_KERNEL_MUTANTS } from "./kernel-mutants-liveness.js";
 import { LOGICAL_KERNEL_MUTANTS } from "./kernel-mutants-logical.js";
 import { PROTOCOL_KERNEL_MUTANTS } from "./kernel-mutants-protocol.js";
 import { REOPEN_KERNEL_MUTANTS } from "./kernel-mutants-reopen.js";
@@ -38,6 +39,7 @@ const KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   ...STORAGE_KERNEL_MUTANTS,
   ...DURABLE_KERNEL_MUTANTS,
   ...EDGE_KERNEL_MUTANTS,
+  ...LIVENESS_KERNEL_MUTANTS,
   ...LOGICAL_KERNEL_MUTANTS,
   ...REOPEN_KERNEL_MUTANTS,
   SHARED_WRITER_KERNEL_MUTANT,
