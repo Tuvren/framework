@@ -539,7 +539,14 @@ export const createSyscallBindings = (
     const handle = randomUUID();
     const injectedClock = createKernelTestClock();
     let backendServer = false;
-    const codec = { decodeDeterministicKernelRecord, hashOpaqueObjectBytes };
+    const codec = {
+      decodeDeterministicKernelRecord,
+      hashKernelRecord,
+      hashOpaqueObjectBytes,
+      hashTurnNodeIdentity,
+      hashTurnTreeIdentity,
+    };
+    const wrappedCodec = config.mutant?.wrapCodec(codec) ?? codec;
     const state: InstanceState = {
       clock: {
         ...injectedClock,
@@ -580,11 +587,15 @@ export const createSyscallBindings = (
         },
       },
       codec: {
-        ...(config.mutant?.wrapCodec(codec) ?? codec),
+        decodeDeterministicKernelRecord:
+          wrappedCodec.decodeDeterministicKernelRecord,
         encodeDeterministicKernelRecord,
-        hashKernelRecord,
-        hashTurnNodeIdentity,
-        hashTurnTreeIdentity,
+        hashKernelRecord: wrappedCodec.hashKernelRecord ?? hashKernelRecord,
+        hashOpaqueObjectBytes: wrappedCodec.hashOpaqueObjectBytes,
+        hashTurnNodeIdentity:
+          wrappedCodec.hashTurnNodeIdentity ?? hashTurnNodeIdentity,
+        hashTurnTreeIdentity:
+          wrappedCodec.hashTurnTreeIdentity ?? hashTurnTreeIdentity,
       },
       config: { ...config, ...options },
       inFlight: new Set(),

@@ -191,7 +191,10 @@
         "kernel.promote-staged-before-checkpoint",
         "kernel.resolve-object-across-scopes",
         "kernel.sweep-inside-grace-window",
-        "kernel.wrong-opaque-object-hash"
+        "kernel.wrong-opaque-object-hash",
+        "kernel.wrong-schema-record-hash",
+        "kernel.wrong-turn-node-record-hash",
+        "kernel.wrong-turn-tree-hash"
       ],
       "requiredEvidence": [
         "trace.after.result",
