@@ -62,7 +62,7 @@ tickets:
       evidence: "Each listed rule has its own activated mutant and profile-scoped designated failing assertion; unmutated checks pass and only proven entries leave the register. SQLite and PostgreSQL each kill every applicable control added by this ticket with backend-matched activation and designated failures; their unmutated checks pass. The expanded inventory, including codec claims from DR006, is authoritative; no fixed total of 40 is assumed."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DR003
     title: "Detect logical and identity rule violations"
     type: Feature
