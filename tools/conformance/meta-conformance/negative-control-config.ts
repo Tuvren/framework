@@ -70,8 +70,12 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.accept-unsafe-negint": "no Rust reproduction yet; not run",
       "kernel.accept-unsafe-uint": "no Rust reproduction yet; not run",
       "kernel.accept-unsorted-map-keys": "no Rust reproduction yet; not run",
+      "kernel.append-phantom-thread-member":
+        "no Rust reproduction yet; not run",
       "kernel.corrupt-branch-head-list": "no Rust reproduction yet; not run",
       "kernel.corrupt-node-walk-lineage":
+        "no Rust reproduction yet; not run",
+      "kernel.corrupt-own-scope-store-read":
         "no Rust reproduction yet; not run",
       "kernel.corrupt-schema-roundtrip": "no Rust reproduction yet; not run",
       "kernel.corrupt-tree-manifest": "no Rust reproduction yet; not run",
@@ -80,7 +84,13 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
       "kernel.ignore-thread-list-cursor":
         "no Rust reproduction yet; not run",
+      "kernel.invert-expired-run-membership":
+        "no Rust reproduction yet; not run",
+      "kernel.leak-sibling-scope-threads":
+        "no Rust reproduction yet; not run",
       "kernel.lease-takeover-before-expiry":
+        "no Rust reproduction yet; not run",
+      "kernel.list-paused-run-as-expired":
         "no Rust reproduction yet; not run",
       "kernel.misreport-diff-schema-rejection":
         "no Rust reproduction yet; not run",
@@ -98,9 +108,15 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
         "no Rust reproduction yet; not run",
       "kernel.promote-staged-before-checkpoint":
         "no Rust reproduction yet; not run",
+      "kernel.release-object-consumed-by-live-lineage":
+        "no Rust reproduction yet; not run",
       "kernel.resolve-object-across-scopes":
         "no Rust reproduction yet; DS owns the scope-resolution mutant",
       "kernel.reverse-modify-transform-order":
+        "no Rust reproduction yet; not run",
+      "kernel.shift-staged-result-timestamp":
+        "no Rust reproduction yet; not run",
+      "kernel.stale-preemption-empty-checkpoint":
         "no Rust reproduction yet; not run",
       "kernel.sweep-inside-grace-window": "no Rust reproduction yet; not run",
       "kernel.wrong-schema-record-hash": "no Rust reproduction yet; not run",
