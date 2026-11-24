@@ -1,4 +1,17 @@
 entries:
+  - version: v0.50.3
+    date: 2026-11-24
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "Alignment pass for the tech-spec items routed by reports/2026-11-24-reconciliation.yaml (EPIC-DR). No ADR decision text changed. Observed (EPIC-DR) records the three shipped patterns under ADR-0084 decisions 1 and 3, the memory register under decision 7, and the new node:async_hooks gap under decision 5. Guidelines 5.10 rule 13 states the same three patterns. Master SHAs replace the closeout's pre-rebase SHAs: cb77304, b35eec8, 24f6d7e, merged at c4e9cee."
+      - "An activated mutant is killed when its only non-implementation failure is an unresolved designated stateField and the check has no details.adapterError. Any other non-implementation failure stays invalid. The guard does not read stepped details.adapterErrors."
+      - "Codec identity mutants wrap hashKernelRecord, hashTurnNodeIdentity, and hashTurnTreeIdentity. encodeDeterministicKernelRecord stays the real import."
+      - "The duplicate-path mutant keeps the last definition of each path and then calls the real schema.register."
+      - "kernel-memory-undetected.json holds three claims whose reasons name closed OD-28, and the memory certificates list them. The publish preflight gate remains KRT-DN003. kernel-mutants-liveness.ts joins the node:async_hooks removal list for KRT-DL002 and the KRT-DK001 inventory."
+      - "No sidecar settles in this pass. derive reported no pin drift. Not handled here: the stack.yaml pins for @cfworker/json-schema and workerd, which stay report-only, and the tech-spec items earlier alignment passes left open."
   - version: v0.50.2
     date: 2026-11-17
     by: stage
