@@ -14,7 +14,31 @@
  * limitations under the License.
  */
 
-import { TuvrenRuntimeError } from "@tuvren/core";
+import {
+  assertHashString,
+  TuvrenRuntimeError,
+  TuvrenValidationError,
+} from "@tuvren/core";
+import type { EpochMs, HashString, KernelRecord } from "@tuvren/core";
+import {
+  assertPathValueForCollectionKind,
+  assertStepDeclaration,
+  assertTurnTreeSchema,
+  decodeDeterministicKernelRecord,
+  encodeDeterministicKernelRecord,
+  hashTurnTreeIdentity,
+} from "@tuvren/kernel-protocol";
+import type {
+  PathValue,
+  RunRecord,
+  RuntimeBackend,
+  RuntimeBackendTx,
+  StepDeclaration,
+  StoredRun,
+  StoredTurnTreePath,
+  TurnTreeManifest,
+  TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
 
 import { readErrorCode } from "./kernel-mutant-backend.js";
 import type {
@@ -23,14 +47,18 @@ import type {
   KernelMutantKernel,
 } from "./kernel-mutant-types.js";
 
-// A rule's rejection still fires, but the adapter envelope carries a sibling
-// verdict's code, the way an implementation whose error mapping conflates two
-// validations would. The swallowed error stays attached as the cause.
-const remapRejectionCode = async <T>(
+// Every edge-validation mutant shares one shape: run the real kernel call,
+// and only when it rejects with the code the rule requires does the mutant
+// activate and replay the operation's success path with that guard skipped —
+// the forbidden operation is what actually happens. The bypass either reaches
+// committed state through the backend (which may enforce its own copy of the
+// invariant and reject with its native code) or drives the real kernel with
+// the guarded input removed; it never fakes a result.
+const acceptOnRejection = async <T>(
   rejected: string,
-  reported: string,
   activate: KernelMutantActivate,
-  call: () => Promise<T>
+  call: () => Promise<T>,
+  bypass: (error: unknown) => Promise<T>
 ): Promise<T> => {
   try {
     return await call();
@@ -39,15 +67,175 @@ const remapRejectionCode = async <T>(
       throw error;
     }
     activate();
-    throw new TuvrenRuntimeError(
-      error instanceof Error ? error.message : String(error),
-      { cause: error, code: reported }
-    );
+    return await bypass(error);
   }
 };
 
-// schema.register reports a duplicate path as a schema-id conflict.
-const misreportDuplicatePath = (
+const txNow = (tx: RuntimeBackendTx): EpochMs => tx.now?.() ?? Date.now();
+
+// The runtime's single CBOR write path (encodeRecord over toKernelRecord); the
+// bypassed writes only ever carry already-validated kernel-record data.
+const encodeRecord = (value: unknown): Uint8Array =>
+  encodeDeterministicKernelRecord(value as KernelRecord);
+
+const decodeKernelRecord = (
+  bytes: Uint8Array,
+  label: string
+): KernelRecord => {
+  const decoded = decodeDeterministicKernelRecord(bytes);
+  if (decoded === undefined) {
+    throw new TuvrenRuntimeError(`${label} could not be decoded`, {
+      code: "kernel_runtime_invalid_record",
+    });
+  }
+  return decoded;
+};
+
+const decodeRecordArray = (
+  bytes: Uint8Array,
+  label: string
+): KernelRecord[] => {
+  const decoded = decodeKernelRecord(bytes, label);
+  if (!Array.isArray(decoded)) {
+    throw new TuvrenRuntimeError(`${label} must decode to an array`, {
+      code: "kernel_runtime_invalid_record",
+    });
+  }
+  return decoded;
+};
+
+const decodeHashArray = (bytes: Uint8Array): HashString[] => {
+  const decoded = decodeRecordArray(bytes, "hash array");
+  const hashes: HashString[] = [];
+  for (const item of decoded) {
+    assertHashString(item, "hash array item");
+    hashes.push(item);
+  }
+  return hashes;
+};
+
+const decodeSteps = (bytes: Uint8Array): StepDeclaration[] => {
+  const decoded = decodeRecordArray(bytes, "run steps");
+  const steps: StepDeclaration[] = [];
+  for (const step of decoded) {
+    assertStepDeclaration(step, "run step");
+    steps.push(step);
+  }
+  return steps;
+};
+
+const decodeSchema = (bytes: Uint8Array): TurnTreeSchema => {
+  const decoded = decodeKernelRecord(bytes, "schema");
+  assertTurnTreeSchema(decoded, "schema");
+  return decoded;
+};
+
+const decodeManifest = (bytes: Uint8Array): TurnTreeManifest => {
+  const decoded = decodeKernelRecord(bytes, "turn tree manifest");
+  if (
+    decoded === null ||
+    typeof decoded !== "object" ||
+    Array.isArray(decoded)
+  ) {
+    throw new TuvrenRuntimeError(
+      "turn tree manifest must decode to an object",
+      { code: "kernel_runtime_invalid_record" }
+    );
+  }
+  const manifest: TurnTreeManifest = {};
+  for (const [path, value] of Object.entries(decoded)) {
+    if (value === null) {
+      manifest[path] = null;
+    } else if (typeof value === "string") {
+      assertHashString(value, `manifest.${path}`);
+      manifest[path] = value;
+    } else if (Array.isArray(value)) {
+      const hashes: HashString[] = [];
+      for (const item of value) {
+        assertHashString(item, `manifest.${path}[]`);
+        hashes.push(item);
+      }
+      manifest[path] = hashes;
+    } else {
+      throw new TuvrenRuntimeError(
+        `turn tree manifest path "${path}" has invalid value`,
+        { code: "kernel_runtime_invalid_record" }
+      );
+    }
+  }
+  return manifest;
+};
+
+const decodeStoredRun = (record: StoredRun): RunRecord => ({
+  branchId: record.branchId,
+  createdTurnNodes: decodeHashArray(record.createdTurnNodesCbor),
+  currentStepIndex: record.currentStepIndex,
+  ...(record.executionOwnerId === undefined
+    ? {}
+    : { executionOwnerId: record.executionOwnerId }),
+  ...(record.fencingToken === undefined
+    ? {}
+    : { fencingToken: record.fencingToken }),
+  ...(record.leaseExpiresAtMs === undefined
+    ? {}
+    : { leaseExpiresAtMs: record.leaseExpiresAtMs }),
+  ...(record.preemptionReason === undefined
+    ? {}
+    : { preemptionReason: record.preemptionReason }),
+  runId: record.runId,
+  schemaId: record.schemaId,
+  startTurnNodeHash: record.startTurnNodeHash,
+  status: record.status,
+  stepSequence: decodeSteps(record.stepSequenceCbor),
+  turnId: record.turnId,
+});
+
+const toStoredTurnTreePath = (
+  turnTreeHash: HashString,
+  collectionKind: "ordered" | "single",
+  path: string,
+  value: PathValue
+): StoredTurnTreePath => {
+  if (collectionKind === "ordered") {
+    const items = Array.isArray(value) ? value : [];
+    return {
+      collectionKind,
+      orderedCount: items.length,
+      orderedEncoding: "flat",
+      orderedInlineCbor: encodeRecord(items),
+      path,
+      turnTreeHash,
+    };
+  }
+  return {
+    collectionKind,
+    path,
+    singleHash: typeof value === "string" ? value : null,
+    turnTreeHash,
+  };
+};
+
+const utf8 = new TextEncoder();
+
+// tree.diff orders changed paths by ascending unsigned UTF-8 bytes (ADR-0080).
+const compareUtf8Bytes = (left: string, right: string): number => {
+  const leftBytes = utf8.encode(left);
+  const rightBytes = utf8.encode(right);
+  const shared = Math.min(leftBytes.length, rightBytes.length);
+  for (let index = 0; index < shared; index += 1) {
+    if (leftBytes[index] !== rightBytes[index]) {
+      return (leftBytes[index] ?? 0) - (rightBytes[index] ?? 0);
+    }
+  }
+  return leftBytes.length - rightBytes.length;
+};
+
+// schema.register accepts a schema whose paths contain a duplicate the way an
+// implementation that indexes paths by name would: the last definition wins
+// and the call completes through the real registration path. A byte-identical
+// commit is impossible — `tx.schemas.put` re-validates the decoded schema and
+// would rethrow the same code — so the guarded input is what changes.
+const acceptDuplicatePath = (
   kernel: KernelMutantKernel,
   activate: KernelMutantActivate
 ): KernelMutantKernel => ({
@@ -55,103 +243,193 @@ const misreportDuplicatePath = (
   schema: {
     ...kernel.schema,
     async register(schema) {
-      return await remapRejectionCode(
+      return await acceptOnRejection(
         "duplicate_schema_path",
-        "kernel_runtime_duplicate_schema",
         activate,
-        async () => await kernel.schema.register(schema)
+        async () => await kernel.schema.register(schema),
+        async () =>
+          await kernel.schema.register({
+            ...schema,
+            paths: [
+              ...new Map(
+                schema.paths.map((definition) => [
+                  definition.path,
+                  definition,
+                ])
+              ).values(),
+            ],
+          })
       );
     },
   },
 });
 
-// tree.create reports a missing required path as an unknown schema path.
-const misreportRequiredPath = (
+// tree.create without a base builds the tree on the schema's empty manifest
+// instead of requiring every path in `changes`.
+const acceptMissingRequiredPath = (
   kernel: KernelMutantKernel,
+  backend: RuntimeBackend,
   activate: KernelMutantActivate
 ): KernelMutantKernel => ({
   ...kernel,
   tree: {
     ...kernel.tree,
     async create(schemaId, changes, baseTurnTreeHash) {
-      return await remapRejectionCode(
+      return await acceptOnRejection(
         "kernel_runtime_missing_required_tree_path",
-        "kernel_runtime_unknown_tree_path",
         activate,
         async () =>
-          await kernel.tree.create(schemaId, changes, baseTurnTreeHash)
+          await kernel.tree.create(schemaId, changes, baseTurnTreeHash),
+        async (error) =>
+          await backend.transact(async (tx) => {
+            const storedSchema = await tx.schemas.get(schemaId);
+            if (storedSchema === null) {
+              throw error;
+            }
+            const schema = decodeSchema(storedSchema.schemaCbor);
+            const pathsByName = new Map(
+              schema.paths.map((definition) => [definition.path, definition])
+            );
+            const manifest: TurnTreeManifest = {};
+            for (const definition of schema.paths) {
+              manifest[definition.path] =
+                definition.collection === "ordered" ? [] : null;
+            }
+            for (const [path, value] of Object.entries(changes)) {
+              const definition = pathsByName.get(path);
+              if (definition === undefined) {
+                throw new TuvrenValidationError(
+                  `unknown path "${path}" in schema "${schema.schemaId}"`,
+                  { code: "kernel_runtime_unknown_tree_path" }
+                );
+              }
+              assertPathValueForCollectionKind(
+                value,
+                definition.collection,
+                `changes.${path}`
+              );
+              manifest[path] = value;
+            }
+            const hash = await hashTurnTreeIdentity(
+              schema.schemaId,
+              manifest,
+              schema
+            );
+            if ((await tx.turnTrees.get(hash)) === null) {
+              await tx.turnTrees.put({
+                createdAtMs: txNow(tx),
+                hash,
+                manifestCbor: encodeRecord(manifest),
+                schemaId: schema.schemaId,
+              });
+              await tx.turnTreePaths.putMany(
+                schema.paths.map((definition) =>
+                  toStoredTurnTreePath(
+                    hash,
+                    definition.collection,
+                    definition.path,
+                    manifest[definition.path]
+                  )
+                )
+              );
+            }
+            return hash;
+          })
       );
     },
   },
 });
 
-// tree.diff reports a cross-schema pair as a base-tree schema mismatch.
-const misreportDiffSchema = (
+// tree.diff compares manifests across a schema boundary.
+const acceptCrossSchemaDiff = (
   kernel: KernelMutantKernel,
+  backend: RuntimeBackend,
   activate: KernelMutantActivate
 ): KernelMutantKernel => ({
   ...kernel,
   tree: {
     ...kernel.tree,
     async diff(treeHashA, treeHashB) {
-      return await remapRejectionCode(
+      return await acceptOnRejection(
         "kernel_runtime_tree_schema_mismatch_diff",
-        "kernel_runtime_tree_schema_mismatch",
         activate,
-        async () => await kernel.tree.diff(treeHashA, treeHashB)
+        async () => await kernel.tree.diff(treeHashA, treeHashB),
+        async (error) =>
+          await backend.transact(async (tx) => {
+            const treeA = await tx.turnTrees.get(treeHashA);
+            const treeB = await tx.turnTrees.get(treeHashB);
+            if (treeA === null || treeB === null) {
+              throw error;
+            }
+            const left = decodeManifest(treeA.manifestCbor);
+            const right = decodeManifest(treeB.manifestCbor);
+            return Object.keys({ ...left, ...right })
+              .filter(
+                (path) =>
+                  JSON.stringify(left[path] ?? null) !==
+                  JSON.stringify(right[path] ?? null)
+              )
+              .toSorted(compareUtf8Bytes);
+          })
       );
     },
   },
 });
 
-// run.create reports a busy branch as a run-id conflict.
-const misreportBusyBranch = (
+// run.beginStep begins any declared step, not only the current one.
+const acceptOutOfOrderStep = (
   kernel: KernelMutantKernel,
-  activate: KernelMutantActivate
-): KernelMutantKernel => ({
-  ...kernel,
-  run: {
-    ...kernel.run,
-    async create(runId, turnId, branchId, schemaId, startTurnNodeHash, steps) {
-      return await remapRejectionCode(
-        "kernel_runtime_branch_already_active",
-        "kernel_runtime_run_exists",
-        activate,
-        async () =>
-          await kernel.run.create(
-            runId,
-            turnId,
-            branchId,
-            schemaId,
-            startTurnNodeHash,
-            steps
-          )
-      );
-    },
-  },
-});
-
-// run.beginStep reports an out-of-order step as a dead run.
-const misreportStepOrder = (
-  kernel: KernelMutantKernel,
+  backend: RuntimeBackend,
   activate: KernelMutantActivate
 ): KernelMutantKernel => ({
   ...kernel,
   run: {
     ...kernel.run,
     async beginStep(runId, stepId) {
-      return await remapRejectionCode(
+      return await acceptOnRejection(
         "kernel_runtime_unexpected_step",
-        "kernel_runtime_run_not_running",
         activate,
-        async () => await kernel.run.beginStep(runId, stepId)
+        async () => await kernel.run.beginStep(runId, stepId),
+        async (error) =>
+          await backend.transact(async (tx) => {
+            const storedRun = await tx.runs.get(runId);
+            if (storedRun === null) {
+              throw error;
+            }
+            const run = decodeStoredRun(storedRun);
+            const step = run.stepSequence.find(
+              (candidate) => candidate.id === stepId
+            );
+            if (step === undefined) {
+              throw error;
+            }
+            const branch = await tx.branches.get(run.branchId);
+            const storedSchema = await tx.schemas.get(run.schemaId);
+            if (branch === null || storedSchema === null) {
+              throw error;
+            }
+            return {
+              currentTurnNodeHash: branch.headTurnNodeHash,
+              schema: decodeSchema(storedSchema.schemaCbor),
+              signals:
+                storedRun.pendingSignalsCbor === undefined
+                  ? []
+                  : decodeRecordArray(
+                      storedRun.pendingSignalsCbor,
+                      "pending signals"
+                    ),
+              step,
+            };
+          })
       );
     },
   },
 });
 
-// run.completeStep reports a missing event object as a step-order violation.
-const misreportEventObject = (
+// run.completeStep completes the step without anchoring the absent event
+// object, the way an implementation that treats the event hash as optional
+// would.
+const acceptAbsentEventObject = (
   kernel: KernelMutantKernel,
   activate: KernelMutantActivate
 ): KernelMutantKernel => ({
@@ -159,9 +437,8 @@ const misreportEventObject = (
   run: {
     ...kernel.run,
     async completeStep(runId, stepId, eventHash, observeResults, treeHash) {
-      return await remapRejectionCode(
+      return await acceptOnRejection(
         "kernel_runtime_missing_event_object",
-        "kernel_runtime_unexpected_step",
         activate,
         async () =>
           await kernel.run.completeStep(
@@ -170,46 +447,15 @@ const misreportEventObject = (
             eventHash,
             observeResults,
             treeHash
-          )
-      );
-    },
-  },
-});
-
-// branch.setHead reports a lateral move as a cross-thread containment error.
-const misreportLateralHead = (
-  kernel: KernelMutantKernel,
-  activate: KernelMutantActivate
-): KernelMutantKernel => ({
-  ...kernel,
-  branch: {
-    ...kernel.branch,
-    async setHead(branchId, turnNodeHash) {
-      return await remapRejectionCode(
-        "kernel_runtime_lateral_head_movement",
-        "turn_node_thread_mismatch",
-        activate,
-        async () => await kernel.branch.setHead(branchId, turnNodeHash)
-      );
-    },
-  },
-});
-
-// branch.create reports a cross-thread anchor as a missing turn node.
-const misreportThreadMismatch = (
-  kernel: KernelMutantKernel,
-  activate: KernelMutantActivate
-): KernelMutantKernel => ({
-  ...kernel,
-  branch: {
-    ...kernel.branch,
-    async create(branchId, threadId, fromTurnNodeHash) {
-      return await remapRejectionCode(
-        "turn_node_thread_mismatch",
-        "kernel_runtime_missing_turn_node",
-        activate,
+          ),
         async () =>
-          await kernel.branch.create(branchId, threadId, fromTurnNodeHash)
+          await kernel.run.completeStep(
+            runId,
+            stepId,
+            undefined,
+            observeResults,
+            treeHash
+          )
       );
     },
   },
@@ -218,17 +464,8 @@ const misreportThreadMismatch = (
 export const EDGE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   {
     createSeams: () => ({
-      kernel: (kernel, _backend, activate) =>
-        misreportBusyBranch(kernel, activate),
-    }),
-    kind: "implementation",
-    mutantId: "kernel.misreport-busy-branch-rejection",
-    signal: "mutant.misreport-busy-branch-rejection.entered",
-  },
-  {
-    createSeams: () => ({
-      kernel: (kernel, _backend, activate) =>
-        misreportDiffSchema(kernel, activate),
+      kernel: (kernel, backend, activate) =>
+        acceptCrossSchemaDiff(kernel, backend, activate),
     }),
     kind: "implementation",
     mutantId: "kernel.misreport-diff-schema-rejection",
@@ -237,7 +474,7 @@ export const EDGE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   {
     createSeams: () => ({
       kernel: (kernel, _backend, activate) =>
-        misreportDuplicatePath(kernel, activate),
+        acceptDuplicatePath(kernel, activate),
     }),
     kind: "implementation",
     mutantId: "kernel.misreport-duplicate-path-rejection",
@@ -246,7 +483,7 @@ export const EDGE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   {
     createSeams: () => ({
       kernel: (kernel, _backend, activate) =>
-        misreportEventObject(kernel, activate),
+        acceptAbsentEventObject(kernel, activate),
     }),
     kind: "implementation",
     mutantId: "kernel.misreport-event-object-rejection",
@@ -254,17 +491,8 @@ export const EDGE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   },
   {
     createSeams: () => ({
-      kernel: (kernel, _backend, activate) =>
-        misreportLateralHead(kernel, activate),
-    }),
-    kind: "implementation",
-    mutantId: "kernel.misreport-lateral-head-rejection",
-    signal: "mutant.misreport-lateral-head-rejection.entered",
-  },
-  {
-    createSeams: () => ({
-      kernel: (kernel, _backend, activate) =>
-        misreportRequiredPath(kernel, activate),
+      kernel: (kernel, backend, activate) =>
+        acceptMissingRequiredPath(kernel, backend, activate),
     }),
     kind: "implementation",
     mutantId: "kernel.misreport-required-path-rejection",
@@ -272,20 +500,11 @@ export const EDGE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
   },
   {
     createSeams: () => ({
-      kernel: (kernel, _backend, activate) =>
-        misreportStepOrder(kernel, activate),
+      kernel: (kernel, backend, activate) =>
+        acceptOutOfOrderStep(kernel, backend, activate),
     }),
     kind: "implementation",
     mutantId: "kernel.misreport-step-order-rejection",
     signal: "mutant.misreport-step-order-rejection.entered",
-  },
-  {
-    createSeams: () => ({
-      kernel: (kernel, _backend, activate) =>
-        misreportThreadMismatch(kernel, activate),
-    }),
-    kind: "implementation",
-    mutantId: "kernel.misreport-thread-mismatch-rejection",
-    signal: "mutant.misreport-thread-mismatch-rejection.entered",
   },
 ];

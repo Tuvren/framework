@@ -1,5 +1,8 @@
 {
   "kernel.syscall.backend_capability.shared_lease_clock": "No designated control falsifies the backend capability descriptor or changes the transaction clock used for staged-result timestamps.",
+  "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage": "OD-28: skipping the kernel guard still loses to the memory backend invariant, which rejects the same operation under a different code. There is no unguarded write, so the forbidden acceptance cannot be observed. A different error code is not a kill.",
+  "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch": "OD-28: skipping the kernel guard still loses to the memory backend invariant, which rejects the same operation under a different code. There is no unguarded write, so the forbidden acceptance cannot be observed. A different error code is not a kill.",
+  "kernel.syscall.lineage.cross_thread_rejection": "OD-28: skipping the kernel guard still loses to the memory backend invariant, which rejects the same operation under a different code. There is no unguarded write, so the forbidden acceptance cannot be observed. A different error code is not a kill.",
   "kernel.syscall.logical.branch_list": "The supplied controls contain no branch-enumeration omission or pagination mutant.",
   "kernel.syscall.logical.thread_list": "The supplied controls contain no thread-enumeration omission or pagination mutant.",
   "kernel.syscall.protocol.modify_composition": "The supplied controls contain no verdict-composition mutant.",

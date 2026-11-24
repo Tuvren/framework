@@ -408,23 +408,6 @@
       ]
     },
     {
-      "mutantId": "kernel.misreport-busy-branch-rejection",
-      "kind": "implementation",
-      "rule": "docs/KrakenKernelSpecification.md#run-creation-legality",
-      "claimIds": [
-        "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
-      ],
-      "activation": {
-        "precondition": "kernel.run.create targets a branch that already has a running run, and the rejection is reported with code kernel_runtime_run_exists instead of kernel_runtime_branch_already_active",
-        "signal": "mutant.misreport-busy-branch-rejection.entered"
-      },
-      "profiles": ["kernel.memory"],
-      "designatedAssertions": [
-        "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.1.stateField",
-        "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.reject.1.stateField"
-      ]
-    },
-    {
       "mutantId": "kernel.misreport-diff-schema-rejection",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#turntree",
@@ -432,7 +415,7 @@
         "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
       ],
       "activation": {
-        "precondition": "kernel.tree.diff is given trees registered under different schemas, and the rejection is reported with code kernel_runtime_tree_schema_mismatch instead of kernel_runtime_tree_schema_mismatch_diff",
+        "precondition": "kernel.tree.diff is given trees registered under different schemas, and the mutant bypasses the schema-match guard and diffs the two manifests",
         "signal": "mutant.misreport-diff-schema-rejection.entered"
       },
       "profiles": ["kernel.memory"],
@@ -449,7 +432,7 @@
         "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
       ],
       "activation": {
-        "precondition": "kernel.schema.register is given a schema whose paths contain a duplicate, and the rejection is reported with code kernel_runtime_duplicate_schema instead of duplicate_schema_path",
+        "precondition": "kernel.schema.register is given a schema whose paths contain a duplicate, and the mutant bypasses the duplicate-path guard by collapsing the duplicate path definition and registering the schema",
         "signal": "mutant.misreport-duplicate-path-rejection.entered"
       },
       "profiles": ["kernel.memory"],
@@ -466,30 +449,13 @@
         "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
       ],
       "activation": {
-        "precondition": "kernel.run.completeStep references an event hash absent from the object store, and the rejection is reported with code kernel_runtime_unexpected_step instead of kernel_runtime_missing_event_object",
+        "precondition": "kernel.run.completeStep references an event hash absent from the object store, and the mutant bypasses the event-object guard and completes the step without anchoring the missing event",
         "signal": "mutant.misreport-event-object-rejection.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
         "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.1.stateField",
         "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.reject.1.stateField"
-      ]
-    },
-    {
-      "mutantId": "kernel.misreport-lateral-head-rejection",
-      "kind": "implementation",
-      "rule": "docs/KrakenKernelSpecification.md#branch-head-movement",
-      "claimIds": [
-        "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
-      ],
-      "activation": {
-        "precondition": "kernel.branch.setHead requests a move to a head that shares no lineage with the current head, and the rejection is reported with code turn_node_thread_mismatch instead of kernel_runtime_lateral_head_movement",
-        "signal": "mutant.misreport-lateral-head-rejection.entered"
-      },
-      "profiles": ["kernel.memory"],
-      "designatedAssertions": [
-        "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.stateField",
-        "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.reject.1.stateField"
       ]
     },
     {
@@ -500,7 +466,7 @@
         "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
       ],
       "activation": {
-        "precondition": "kernel.tree.create without a base omits a required schema path, and the rejection is reported with code kernel_runtime_unknown_tree_path instead of kernel_runtime_missing_required_tree_path",
+        "precondition": "kernel.tree.create without a base omits a required schema path, and the mutant bypasses the required-path guard and builds the tree on the schema's empty manifest",
         "signal": "mutant.misreport-required-path-rejection.entered"
       },
       "profiles": ["kernel.memory"],
@@ -517,28 +483,13 @@
         "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
       ],
       "activation": {
-        "precondition": "kernel.run.beginStep names a step other than the run's current step, and the rejection is reported with code kernel_runtime_run_not_running instead of kernel_runtime_unexpected_step",
+        "precondition": "kernel.run.beginStep names a step other than the run's current step, and the mutant bypasses the step-order guard and returns the named step's context",
         "signal": "mutant.misreport-step-order-rejection.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
         "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.stateField",
         "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.reject.1.stateField"
-      ]
-    },
-    {
-      "mutantId": "kernel.misreport-thread-mismatch-rejection",
-      "kind": "implementation",
-      "rule": "docs/KrakenKernelSpecification.md#branch",
-      "claimIds": ["kernel.syscall.lineage.cross_thread_rejection"],
-      "activation": {
-        "precondition": "kernel.branch.create anchors on a turn node that belongs to another thread, and the rejection is reported with code kernel_runtime_missing_turn_node instead of turn_node_thread_mismatch",
-        "signal": "mutant.misreport-thread-mismatch-rejection.entered"
-      },
-      "profiles": ["kernel.memory"],
-      "designatedAssertions": [
-        "kernel.syscall.lineage.cross_thread_rejection.1.stateField",
-        "kernel.syscall.lineage.cross_thread_rejection.reject.1.stateField"
       ]
     },
     {
