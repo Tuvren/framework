@@ -66,6 +66,7 @@ const EXPECTED_MUTANTS = [
   ["kernel.accept-unsafe-negint", "implementation"],
   ["kernel.accept-unsafe-uint", "implementation"],
   ["kernel.accept-unsorted-map-keys", "implementation"],
+  ["kernel.corrupt-schema-roundtrip", "implementation"],
   ["kernel.delete-object-reachable-through-live-root", "implementation"],
   ["kernel.drop-canonical-map-entry", "implementation"],
   ["kernel.drop-uncommitted-staged-result-on-recovery", "implementation"],

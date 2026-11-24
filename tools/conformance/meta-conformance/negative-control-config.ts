@@ -70,6 +70,7 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.accept-unsafe-negint": "no Rust reproduction yet; not run",
       "kernel.accept-unsafe-uint": "no Rust reproduction yet; not run",
       "kernel.accept-unsorted-map-keys": "no Rust reproduction yet; not run",
+      "kernel.corrupt-schema-roundtrip": "no Rust reproduction yet; not run",
       "kernel.drop-canonical-map-entry": "no Rust reproduction yet; not run",
       "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
       "kernel.lease-takeover-before-expiry":

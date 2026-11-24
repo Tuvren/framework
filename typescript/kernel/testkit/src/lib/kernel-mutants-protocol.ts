@@ -602,6 +602,28 @@ const dropUncommittedStagedResultOnRecovery = (
   },
 });
 
+// Corrupts only the observable roundtrip: schema.register stores the real
+// record, and the wrapped schema.get hands it back with an altered schemaId,
+// the way a read-back path that rewrites the record's identity field would.
+// Registration and the backend-internal schema reads stay untouched.
+const corruptSchemaRoundtrip = (
+  kernel: KernelMutantKernel,
+  activate: KernelMutantActivate
+): KernelMutantKernel => ({
+  ...kernel,
+  schema: {
+    ...kernel.schema,
+    async get(schemaId) {
+      const schema = await kernel.schema.get(schemaId);
+      if (schema === null) {
+        return schema;
+      }
+      activate();
+      return { ...schema, schemaId: `${schema.schemaId}-mutant` };
+    },
+  },
+});
+
 const LEASE_HORIZON_MS = Number.MAX_SAFE_INTEGER;
 
 // Corrupt the expiry listing at the transaction seam: shared-lease-clock
@@ -801,6 +823,15 @@ export const PROTOCOL_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
     kind: "implementation",
     mutantId: "kernel.accept-unsorted-map-keys",
     signal: "mutant.accept-unsorted-map-keys.entered",
+  },
+  {
+    createSeams: () => ({
+      kernel: (kernel, _backend, activate) =>
+        corruptSchemaRoundtrip(kernel, activate),
+    }),
+    kind: "implementation",
+    mutantId: "kernel.corrupt-schema-roundtrip",
+    signal: "mutant.corrupt-schema-roundtrip.entered",
   },
   {
     createSeams: () => ({

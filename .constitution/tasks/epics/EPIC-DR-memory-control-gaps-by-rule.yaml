@@ -39,7 +39,7 @@ tickets:
       evidence: "The mutant activates and every designated schema-roundtrip claim has a detecting assertion; the unmutated checks pass and all 18 corresponding register entries are removed. SQLite and PostgreSQL each kill every applicable control added by this ticket with backend-matched activation and designated failures; their unmutated checks pass. The expanded inventory, including codec claims from DR006, is authoritative; no fixed total of 40 is assumed."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DR002
     title: "Detect edge-validation and lineage rule violations"
     type: Feature
