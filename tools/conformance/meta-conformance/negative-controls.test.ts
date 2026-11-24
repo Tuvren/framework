@@ -43,6 +43,7 @@ const FIXTURE_ADAPTER = nodePath.resolve(
 );
 const MUTANT_ENV = "SYNTHETIC_NEGATIVE_CONTROL_MUTANT";
 const ADAPTER_REPLAY = /--adapter (\S+) /u;
+const CHECK_ID_SUFFIX = /\.\d+\.[A-Za-z]+$/u;
 const ALPHA = "synthetic.alpha_check.1.resultField";
 const BETA = "synthetic.beta_check.1.resultField";
 const GAMMA = "synthetic.gamma_check.1.resultField";
@@ -703,7 +704,7 @@ describe("mutant run classification", () => {
         status: "fail",
       },
     ],
-    checkId: assertionId.replace(/\.\d+\.[A-Za-z]+$/u, ""),
+    checkId: assertionId.replace(CHECK_ID_SUFFIX, ""),
     failure: { classification: "verification", replay: "replay" },
     status: "fail",
   });
@@ -711,7 +712,10 @@ describe("mutant run classification", () => {
   test("an unresolved designated stateField after an accepted forbidden call is a kill", () => {
     const designated = { ...control, designatedAssertions: [ALPHA_STATE] };
     expect(
-      classifyMutantRun(designated, activatedRun([unresolvedCheck(ALPHA_STATE)]))
+      classifyMutantRun(
+        designated,
+        activatedRun([unresolvedCheck(ALPHA_STATE)])
+      )
     ).toMatchObject({
       designatedFailures: [ALPHA_STATE],
       outcome: "killed",

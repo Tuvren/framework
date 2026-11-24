@@ -15,10 +15,7 @@
  */
 
 import type { KernelObject, KernelRecord } from "@tuvren/core";
-import type {
-  PathValue,
-  TurnTreeManifest,
-} from "@tuvren/kernel-protocol";
+import type { PathValue, TurnTreeManifest } from "@tuvren/kernel-protocol";
 
 import type {
   KernelMutantActivate,
@@ -38,9 +35,7 @@ const alternateHash = (hash: string): string =>
 // The schema-hash and TurnNode-hash assertions both call hashKernelRecord;
 // only a record carrying the TurnTreeSchema contract shape is corrupted so
 // TurnNode identity records keep their canonical digest.
-const corruptSchemaRecord = (
-  record: KernelRecord
-): KernelObject | undefined =>
+const corruptSchemaRecord = (record: KernelRecord): KernelObject | undefined =>
   isKernelObject(record) &&
   Array.isArray(record.incorporationRules) &&
   Array.isArray(record.paths) &&
@@ -88,7 +83,7 @@ const hashRecordWithCorruption = (
   activate: KernelMutantActivate,
   corrupt: (record: KernelRecord) => KernelRecord | undefined
 ): KernelMutantCodec => {
-  const hashKernelRecord = codec.hashKernelRecord;
+  const { hashKernelRecord } = codec;
   return {
     ...codec,
     ...(hashKernelRecord === undefined
@@ -110,7 +105,7 @@ const wrongTurnTreeHash = (
   codec: KernelMutantCodec,
   activate: KernelMutantActivate
 ): KernelMutantCodec => {
-  const hashTurnTreeIdentity = codec.hashTurnTreeIdentity;
+  const { hashTurnTreeIdentity } = codec;
   return {
     ...codec,
     ...(hashTurnTreeIdentity === undefined

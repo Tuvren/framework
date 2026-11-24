@@ -73,8 +73,7 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.append-phantom-thread-member":
         "no Rust reproduction yet; not run",
       "kernel.corrupt-branch-head-list": "no Rust reproduction yet; not run",
-      "kernel.corrupt-node-walk-lineage":
-        "no Rust reproduction yet; not run",
+      "kernel.corrupt-node-walk-lineage": "no Rust reproduction yet; not run",
       "kernel.corrupt-own-scope-store-read":
         "no Rust reproduction yet; not run",
       "kernel.corrupt-schema-roundtrip": "no Rust reproduction yet; not run",
@@ -82,16 +81,13 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.disorder-schema-paths": "no Rust reproduction yet; not run",
       "kernel.drop-canonical-map-entry": "no Rust reproduction yet; not run",
       "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
-      "kernel.ignore-thread-list-cursor":
-        "no Rust reproduction yet; not run",
+      "kernel.ignore-thread-list-cursor": "no Rust reproduction yet; not run",
       "kernel.invert-expired-run-membership":
         "no Rust reproduction yet; not run",
-      "kernel.leak-sibling-scope-threads":
-        "no Rust reproduction yet; not run",
+      "kernel.leak-sibling-scope-threads": "no Rust reproduction yet; not run",
       "kernel.lease-takeover-before-expiry":
         "no Rust reproduction yet; not run",
-      "kernel.list-paused-run-as-expired":
-        "no Rust reproduction yet; not run",
+      "kernel.list-paused-run-as-expired": "no Rust reproduction yet; not run",
       "kernel.misreport-diff-schema-rejection":
         "no Rust reproduction yet; not run",
       "kernel.misreport-duplicate-path-rejection":
