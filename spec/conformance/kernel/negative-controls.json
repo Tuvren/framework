@@ -283,6 +283,96 @@
       ]
     },
     {
+      "mutantId": "kernel.corrupt-branch-head-list",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#branch-operations",
+      "claimIds": ["kernel.syscall.logical.branch_list"],
+      "activation": {
+        "precondition": "kernel.branch.list returns at least one branch entry; the mutant reports each entry's head as a perturbed digest, the way an enumeration reading a stale head column would",
+        "signal": "mutant.corrupt-branch-head-list.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.logical.branch_list.list.3.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.corrupt-node-walk-lineage",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#33-turnnode",
+      "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
+      "activation": {
+        "precondition": "kernel.node.walkBack yields a node whose previousTurnNodeHash is non-null; the mutant rewrites the parent link to a perturbed digest so the walked record disagrees with its own identity hash and the chain no longer proves the recorded lineage",
+        "signal": "mutant.corrupt-node-walk-lineage.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.logical.recovery_state.walk.5.identity",
+        "kernel.syscall.logical.recovery_state.walk.6.identity",
+        "kernel.syscall.logical.recovery_state.walk.7.referenceWalk"
+      ]
+    },
+    {
+      "mutantId": "kernel.corrupt-tree-manifest",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#32-turntree",
+      "claimIds": ["kernel.syscall.protocol.tree_manifest_identity"],
+      "activation": {
+        "precondition": "kernel.tree.manifest returns the stored manifest; the mutant rewrites every hash value in it to a perturbed digest",
+        "signal": "mutant.corrupt-tree-manifest.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.protocol.tree_manifest_identity.manifest.2.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.disorder-schema-paths",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#31-turntreeschema",
+      "claimIds": ["kernel.syscall.protocol.schema_canonical_cbor"],
+      "activation": {
+        "precondition": "kernel.schema.get returns a registered schema with at least two path definitions; the mutant hands back the record with its paths array reversed, so the returned record no longer encodes to the registered canonical bytes",
+        "signal": "mutant.disorder-schema-paths.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.protocol.schema_roundtrip.get.2.canonicalCbor"
+      ]
+    },
+    {
+      "mutantId": "kernel.ignore-thread-list-cursor",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#93-cursor-shape-for-threadlist",
+      "claimIds": ["kernel.syscall.logical.thread_list"],
+      "activation": {
+        "precondition": "kernel.thread.list is invoked with a cursor; the mutant drops it so a paginated caller is handed the first page again",
+        "signal": "mutant.ignore-thread-list-cursor.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.logical.thread_list.next.2.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.reverse-modify-transform-order",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#61-verdicts",
+      "claimIds": [
+        "kernel.syscall.protocol.modify_composition",
+        "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+      ],
+      "activation": {
+        "precondition": "kernel.verdicts.compose produces a modify verdict carrying an array of transforms; the mutant returns the transforms in reverse registration order",
+        "signal": "mutant.reverse-modify-transform-order.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.syscall.protocol.modify_composition.compose.2.resultField",
+        "kernel.syscall.protocol.modify_composition.f-verdict-composition.multi-modify-preserves-registration-order.1.resultField"
+      ]
+    },
+    {
       "mutantId": "kernel.delete-object-reachable-through-live-root",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
