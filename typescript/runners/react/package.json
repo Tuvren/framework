@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@tuvren/provider-api": "workspace:*",
-    "ajv": "8.18.0"
+    "ajv": "8.20.0"
   },
   "devDependencies": {
     "@tuvren/stream-agui": "workspace:*",
