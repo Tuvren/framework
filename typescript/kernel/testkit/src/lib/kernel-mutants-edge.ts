@@ -75,13 +75,10 @@ const txNow = (tx: RuntimeBackendTx): EpochMs => tx.now?.() ?? Date.now();
 
 // The runtime's single CBOR write path (encodeRecord over toKernelRecord); the
 // bypassed writes only ever carry already-validated kernel-record data.
-const encodeRecord = (value: unknown): Uint8Array =>
-  encodeDeterministicKernelRecord(value as KernelRecord);
+const encodeRecord = (value: KernelRecord): Uint8Array =>
+  encodeDeterministicKernelRecord(value);
 
-const decodeKernelRecord = (
-  bytes: Uint8Array,
-  label: string
-): KernelRecord => {
+const decodeKernelRecord = (bytes: Uint8Array, label: string): KernelRecord => {
   const decoded = decodeDeterministicKernelRecord(bytes);
   if (decoded === undefined) {
     throw new TuvrenRuntimeError(`${label} could not be decoded`, {
@@ -252,10 +249,7 @@ const acceptDuplicatePath = (
             ...schema,
             paths: [
               ...new Map(
-                schema.paths.map((definition) => [
-                  definition.path,
-                  definition,
-                ])
+                schema.paths.map((definition) => [definition.path, definition])
               ).values(),
             ],
           })

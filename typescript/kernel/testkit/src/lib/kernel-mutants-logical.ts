@@ -15,10 +15,7 @@
  */
 
 import type { HashString } from "@tuvren/core";
-import type {
-  BranchHeadListEntry,
-  PathValue,
-} from "@tuvren/kernel-protocol";
+import type { BranchHeadListEntry, PathValue } from "@tuvren/kernel-protocol";
 
 import type {
   KernelMutantActivate,
@@ -28,15 +25,21 @@ import type {
 
 // Flips the first hex nibble: always changes the digest, stays inside the
 // 64-hex shape, and is injective so distinct hashes stay distinct.
-const perturbedHash = (hash: HashString): HashString =>
-  `${(Number.parseInt(hash[0] ?? "0", 16) ^ 1).toString(16)}${hash.slice(1)}`;
+const perturbedHash = (hash: HashString): HashString => {
+  const nibble = Number.parseInt(hash[0] ?? "0", 16) || 0;
+  const flipped = nibble % 2 === 0 ? nibble + 1 : nibble - 1;
+  return `${flipped.toString(16)}${hash.slice(1)}`;
+};
 
-const perturbedManifestValue = (value: PathValue): PathValue =>
-  value === null
-    ? null
-    : Array.isArray(value)
-      ? value.map(perturbedHash)
-      : perturbedHash(value);
+const perturbedManifestValue = (value: PathValue): PathValue => {
+  if (value === null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    return value.map(perturbedHash);
+  }
+  return perturbedHash(value);
+};
 
 // branch.list reports every entry's head with a perturbed digest, the way an
 // enumeration that reads a stale head column would.

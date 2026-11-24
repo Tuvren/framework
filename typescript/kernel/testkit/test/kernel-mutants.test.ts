@@ -428,14 +428,12 @@ describe("kernel mutant registry", () => {
         (entry) => entry.mutantId !== mutantId
       )) {
         expect(() =>
-          mutated.decodeDeterministicKernelRecord(
-            Uint8Array.from(other.bytes)
-          )
+          mutated.decodeDeterministicKernelRecord(Uint8Array.from(other.bytes))
         ).toThrow();
       }
-      expect(mutated.decodeDeterministicKernelRecord(CANONICAL_CONTROL)).toEqual(
-        { a: 1 }
-      );
+      expect(
+        mutated.decodeDeterministicKernelRecord(CANONICAL_CONTROL)
+      ).toEqual({ a: 1 });
       expect(selected.readActivation().activationCount).toBe(1);
     }
   );

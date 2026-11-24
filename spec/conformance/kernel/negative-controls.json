@@ -108,9 +108,7 @@
         "signal": "mutant.accept-tagged-value.entered"
       },
       "profiles": ["kernel.memory"],
-      "designatedAssertions": [
-        "kernel.codec.decode.tagged-value.1.resultField"
-      ]
+      "designatedAssertions": ["kernel.codec.decode.tagged-value.1.resultField"]
     },
     {
       "mutantId": "kernel.accept-trailing-bytes",
@@ -144,7 +142,9 @@
       "mutantId": "kernel.accept-unsafe-negint",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#23-hash",
-      "claimIds": ["kernel.codec.decode.negative-int-beyond-safe-integer-range"],
+      "claimIds": [
+        "kernel.codec.decode.negative-int-beyond-safe-integer-range"
+      ],
       "activation": {
         "precondition": "the deterministic decoder rejects a top-level negative integer whose eight-byte argument falls below the JS safe-integer range; the mutant clamps it to the safe bound and accepts the record",
         "signal": "mutant.accept-unsafe-negint.entered"
@@ -1009,7 +1009,9 @@
       "mutantId": "kernel.list-paused-run-as-expired",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
-      "claimIds": ["kernel.syscall.run-liveness.paused_run_excluded_from_expiry"],
+      "claimIds": [
+        "kernel.syscall.run-liveness.paused_run_excluded_from_expiry"
+      ],
       "activation": {
         "precondition": "an expiry listing includes a paused run as an expired member",
         "signal": "mutant.list-paused-run-as-expired.entered"

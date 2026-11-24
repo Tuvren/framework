@@ -55,7 +55,7 @@ const appendPhantomThreadMember = (
     ...kernel.thread,
     async list(options) {
       const page = await kernel.thread.list(options);
-      const first = page.threads[0];
+      const [first] = page.threads;
       if (first === undefined) {
         return page;
       }
@@ -100,15 +100,24 @@ const isLeasedRunningRun = (run: StoredRun): boolean =>
   run.fencingToken !== undefined &&
   run.leaseExpiresAtMs !== undefined;
 
-const listScopeRuns = async (tx: RuntimeBackendTx): Promise<StoredRun[]> => {
-  const runs = new Map<string, StoredRun>();
-  for (const branch of await listAllBranches(tx)) {
-    for (const record of await tx.runs.listByBranch(branch.branchId)) {
-      runs.set(record.runId, record);
-    }
+const collectScopeRuns = async (
+  tx: RuntimeBackendTx,
+  branches: readonly StoredBranch[],
+  index = 0,
+  runs = new Map<string, StoredRun>()
+): Promise<StoredRun[]> => {
+  const branch = branches[index];
+  if (branch === undefined) {
+    return [...runs.values()];
   }
-  return [...runs.values()];
+  for (const record of await tx.runs.listByBranch(branch.branchId)) {
+    runs.set(record.runId, record);
+  }
+  return await collectScopeRuns(tx, branches, index + 1, runs);
 };
+
+const listScopeRuns = async (tx: RuntimeBackendTx): Promise<StoredRun[]> =>
+  await collectScopeRuns(tx, await listAllBranches(tx));
 
 // The expiry membership predicate is inverted: the listing returns leased
 // running runs whose lease has NOT expired and omits the expired members.
@@ -122,7 +131,8 @@ const invertExpiredRunMembership = (
       ...tx.runs,
       async listExpired(nowMs) {
         const expired = await tx.runs.listExpired(nowMs);
-        const live = (await listScopeRuns(tx))
+        const scopeRuns = await listScopeRuns(tx);
+        const live = scopeRuns
           .filter(
             (record) =>
               isLeasedRunningRun(record) &&
@@ -156,14 +166,13 @@ const listPausedRunAsExpired = (
       ...tx.runs,
       async listExpired(nowMs) {
         const expired = await tx.runs.listExpired(nowMs);
-        const paused = (await listScopeRuns(tx)).filter(
-          (record) => record.status === "paused"
-        );
+        const scopeRuns = await listScopeRuns(tx);
+        const paused = scopeRuns.filter((record) => record.status === "paused");
         if (paused.length === 0) {
           return expired;
         }
         activate();
-        const donor = expired[0];
+        const [donor] = expired;
         const asExpired = paused.map((record) => ({
           ...record,
           executionOwnerId:
@@ -268,27 +277,50 @@ const readConsumedObjectHashes = (cbor: Uint8Array): HashString[] => {
     : [];
 };
 
+const collectConsumedObjectHashes = async (
+  tx: RuntimeBackendTx,
+  lineage: readonly HashString[],
+  objects: Set<HashString>,
+  index = 0
+): Promise<void> => {
+  const hash = lineage[index];
+  if (hash === undefined) {
+    return;
+  }
+  const node = await tx.turnNodes.get(hash);
+  if (node !== null) {
+    for (const objectHash of readConsumedObjectHashes(
+      node.consumedStagedResultsCbor
+    )) {
+      objects.add(objectHash);
+    }
+  }
+  await collectConsumedObjectHashes(tx, lineage, objects, index + 1);
+};
+
+const visitLiveBranches = async (
+  tx: RuntimeBackendTx,
+  branches: readonly StoredBranch[],
+  objects: Set<HashString>,
+  index = 0
+): Promise<void> => {
+  const branch = branches[index];
+  if (branch === undefined) {
+    return;
+  }
+  if (branch.archivedFromBranchId === undefined) {
+    const lineage = await collectLineage(tx, branch.headTurnNodeHash);
+    await collectConsumedObjectHashes(tx, [...lineage], objects);
+  }
+  await visitLiveBranches(tx, branches, objects, index + 1);
+};
+
 const liveLineageConsumedObjects = async (
   tx: RuntimeBackendTx,
   branches: readonly StoredBranch[],
   objects = new Set<HashString>()
 ): Promise<HashString[]> => {
-  for (const branch of branches) {
-    if (branch.archivedFromBranchId !== undefined) {
-      continue;
-    }
-    for (const hash of await collectLineage(tx, branch.headTurnNodeHash)) {
-      const node = await tx.turnNodes.get(hash);
-      if (node === null) {
-        continue;
-      }
-      for (const objectHash of readConsumedObjectHashes(
-        node.consumedStagedResultsCbor
-      )) {
-        objects.add(objectHash);
-      }
-    }
-  }
+  await visitLiveBranches(tx, branches, objects);
   return [...objects];
 };
 

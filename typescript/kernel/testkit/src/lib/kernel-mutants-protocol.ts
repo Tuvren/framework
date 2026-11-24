@@ -84,9 +84,16 @@ const CBOR_NEGINT64_ARGUMENT_HEAD = 0x3b;
 const MAX_SAFE_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
 const TRUNCATED_PAD_LIMIT = 8;
 const CBOR_ARGUMENT_WIDTHS = [1, 2, 4, 8] as const;
-const CBOR_MINIMAL_ARGUMENT = [24n, 0x100n, 0x10000n, 0x100000000n] as const;
+const CBOR_MINIMAL_ARGUMENT = [
+  24n,
+  0x1_00n,
+  0x1_00_00n,
+  0x1_00_00_00_00n,
+] as const;
 
-class LenientReject extends Error {}
+class LenientRejectError extends Error {
+  override readonly name = "LenientRejectError";
+}
 
 interface CborHead {
   readonly arg?: bigint;
@@ -104,11 +111,11 @@ const readHeadArgument = (
   width: number
 ): bigint => {
   if (start + width > bytes.length) {
-    throw new LenientReject();
+    throw new LenientRejectError();
   }
   let value = 0n;
   for (let index = 0; index < width; index += 1) {
-    value = (value << 8n) | BigInt(bytes[start + index] ?? 0);
+    value = value * 256n + BigInt(bytes[start + index] ?? 0);
   }
   return value;
 };
@@ -116,10 +123,10 @@ const readHeadArgument = (
 const readHead = (bytes: Uint8Array, start: number): CborHead => {
   const initial = bytes[start];
   if (initial === undefined) {
-    throw new LenientReject();
+    throw new LenientRejectError();
   }
-  const major = initial >> 5;
-  const info = initial & 0x1f;
+  const major = Math.trunc(initial / 32);
+  const info = initial % 32;
   if (info < 24) {
     return {
       arg: BigInt(info),
@@ -155,33 +162,29 @@ const readHead = (bytes: Uint8Array, start: number): CborHead => {
       nonMinimal: false,
     };
   }
-  throw new LenientReject();
+  throw new LenientRejectError();
 };
 
-const pushBigEndian = (
-  out: number[],
-  value: bigint,
-  width: number
-): void => {
+const pushBigEndian = (out: number[], value: bigint, width: number): void => {
   for (let index = width - 1; index >= 0; index -= 1) {
-    out.push(Number((value >> BigInt(index * 8)) & 0xffn));
+    out.push(Number((value / 256n ** BigInt(index)) % 256n));
   }
 };
 
 const emitHead = (out: number[], major: number, arg: bigint): void => {
-  const base = major << 5;
+  const base = major * 32;
   if (arg < 24n) {
-    out.push(base | Number(arg));
+    out.push(base + Number(arg));
   } else if (arg <= 0xffn) {
-    out.push(base | 24, Number(arg));
-  } else if (arg <= 0xffffn) {
-    out.push(base | 25);
+    out.push(base + 24, Number(arg));
+  } else if (arg <= 0xff_ffn) {
+    out.push(base + 25);
     pushBigEndian(out, arg, 2);
-  } else if (arg <= 0xffffffffn) {
-    out.push(base | 26);
+  } else if (arg <= 0xff_ff_ff_ffn) {
+    out.push(base + 26);
     pushBigEndian(out, arg, 4);
   } else {
-    out.push(base | 27);
+    out.push(base + 27);
     pushBigEndian(out, arg, 8);
   }
 };
@@ -206,9 +209,99 @@ const compareCanonicalBytes = (
 const bytesKey = (bytes: readonly number[]): string =>
   bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
 
+const canonIntegerItem = (
+  head: CborHead,
+  out: number[],
+  deviations: Set<DecodeDeviation>
+): number => {
+  const arg = head.arg ?? 0n;
+  if (arg > MAX_SAFE_BIGINT) {
+    deviations.add("unsafe-integer");
+  }
+  emitHead(out, head.major, arg);
+  return head.end;
+};
+
+const canonStringItem = (
+  bytes: Uint8Array,
+  head: CborHead,
+  out: number[],
+  deviations: Set<DecodeDeviation>
+): number => {
+  if (!head.indefinite) {
+    const end = head.end + Number(head.arg ?? 0n);
+    if (end > bytes.length) {
+      throw new LenientRejectError();
+    }
+    emitHead(out, head.major, head.arg ?? 0n);
+    out.push(...bytes.subarray(head.end, end));
+    return end;
+  }
+  deviations.add(
+    head.major === 2
+      ? "indefinite-length-byte-string"
+      : "indefinite-length-text-string"
+  );
+  const content: number[] = [];
+  let cursor = head.end;
+  for (;;) {
+    const marker = bytes[cursor];
+    if (marker === undefined) {
+      throw new LenientRejectError();
+    }
+    if (marker === CBOR_BREAK_BYTE) {
+      break;
+    }
+    const chunk = readHead(bytes, cursor);
+    if (chunk.major !== head.major || chunk.indefinite) {
+      throw new LenientRejectError();
+    }
+    if (chunk.nonMinimal) {
+      deviations.add("non-minimal-length-head");
+    }
+    const chunkEnd = chunk.end + Number(chunk.arg ?? 0n);
+    if (chunkEnd > bytes.length) {
+      throw new LenientRejectError();
+    }
+    content.push(...bytes.subarray(chunk.end, chunkEnd));
+    cursor = chunkEnd;
+  }
+  emitHead(out, head.major, BigInt(content.length));
+  out.push(...content);
+  return cursor + 1;
+};
+
+const canonSimpleItem = (
+  bytes: Uint8Array,
+  start: number,
+  head: CborHead,
+  out: number[],
+  deviations: Set<DecodeDeviation>
+): number => {
+  if (head.indefinite || head.info === 25) {
+    throw new LenientRejectError();
+  }
+  if (head.info === 26 || head.info === 27) {
+    deviations.add(head.info === 26 ? "float32-value" : "float64-value");
+    const view = new DataView(
+      bytes.buffer,
+      bytes.byteOffset + head.argStart,
+      head.end - head.argStart
+    );
+    const value = head.info === 26 ? view.getFloat32(0) : view.getFloat64(0);
+    if (!Number.isSafeInteger(value)) {
+      throw new LenientRejectError();
+    }
+    emitHead(out, value < 0 ? 1 : 0, BigInt(value < 0 ? -1 - value : value));
+    return head.end;
+  }
+  out.push(...bytes.subarray(start, head.end));
+  return head.end;
+};
+
 // Rewrites one top-level CBOR item into its canonical byte form in `out`,
 // recording every canonical deviation it had to repair, and returns the
-// position after the item. Throws LenientReject when the input cannot be
+// position after the item. Throws LenientRejectError when the input cannot be
 // re-encoded canonically (unsupported majors, non-integral floats, or a
 // premature end of input).
 const canonItem = (
@@ -217,6 +310,89 @@ const canonItem = (
   out: number[],
   deviations: Set<DecodeDeviation>
 ): number => {
+  const canonArrayItem = (head: CborHead): number => {
+    const items: number[][] = [];
+    let cursor = head.end;
+    if (head.indefinite) {
+      deviations.add("indefinite-length-array");
+      for (;;) {
+        const marker = bytes[cursor];
+        if (marker === undefined) {
+          throw new LenientRejectError();
+        }
+        if (marker === CBOR_BREAK_BYTE) {
+          cursor += 1;
+          break;
+        }
+        const item: number[] = [];
+        cursor = canonItem(bytes, cursor, item, deviations);
+        items.push(item);
+      }
+    } else {
+      for (let remaining = head.arg ?? 0n; remaining > 0n; remaining -= 1n) {
+        const item: number[] = [];
+        cursor = canonItem(bytes, cursor, item, deviations);
+        items.push(item);
+      }
+    }
+    emitHead(out, head.major, BigInt(items.length));
+    for (const item of items) {
+      out.push(...item);
+    }
+    return cursor;
+  };
+  const canonMapItem = (head: CborHead): number => {
+    const entries: { key: number[]; value: number[] }[] = [];
+    let cursor = head.end;
+    const readEntry = (): void => {
+      const key: number[] = [];
+      cursor = canonItem(bytes, cursor, key, deviations);
+      const value: number[] = [];
+      cursor = canonItem(bytes, cursor, value, deviations);
+      entries.push({ key, value });
+    };
+    if (head.indefinite) {
+      deviations.add("indefinite-length-map");
+      for (;;) {
+        const marker = bytes[cursor];
+        if (marker === undefined) {
+          throw new LenientRejectError();
+        }
+        if (marker === CBOR_BREAK_BYTE) {
+          cursor += 1;
+          break;
+        }
+        readEntry();
+      }
+    } else {
+      for (let remaining = head.arg ?? 0n; remaining > 0n; remaining -= 1n) {
+        readEntry();
+      }
+    }
+    for (let index = 1; index < entries.length; index += 1) {
+      const order = compareCanonicalBytes(
+        entries[index - 1]?.key ?? [],
+        entries[index]?.key ?? []
+      );
+      if (order === 0) {
+        deviations.add("duplicate-map-key");
+      } else if (order > 0) {
+        deviations.add("unsorted-map-keys");
+      }
+    }
+    const deduplicated = new Map<string, { key: number[]; value: number[] }>();
+    for (const entry of entries) {
+      deduplicated.set(bytesKey(entry.key), entry);
+    }
+    const sorted = [...deduplicated.values()].toSorted((left, right) =>
+      compareCanonicalBytes(left.key, right.key)
+    );
+    emitHead(out, head.major, BigInt(sorted.length));
+    for (const entry of sorted) {
+      out.push(...entry.key, ...entry.value);
+    }
+    return cursor;
+  };
   const head = readHead(bytes, start);
   if (head.nonMinimal) {
     deviations.add(
@@ -228,176 +404,24 @@ const canonItem = (
   switch (head.major) {
     case 0:
     case 1: {
-      const arg = head.arg ?? 0n;
-      if (arg > MAX_SAFE_BIGINT) {
-        deviations.add("unsafe-integer");
-      }
-      emitHead(out, head.major, arg);
-      return head.end;
+      return canonIntegerItem(head, out, deviations);
     }
     case 2:
     case 3: {
-      if (!head.indefinite) {
-        const end = head.end + Number(head.arg ?? 0n);
-        if (end > bytes.length) {
-          throw new LenientReject();
-        }
-        emitHead(out, head.major, head.arg ?? 0n);
-        out.push(...bytes.subarray(head.end, end));
-        return end;
-      }
-      deviations.add(
-        head.major === 2
-          ? "indefinite-length-byte-string"
-          : "indefinite-length-text-string"
-      );
-      const content: number[] = [];
-      let cursor = head.end;
-      for (;;) {
-        const marker = bytes[cursor];
-        if (marker === undefined) {
-          throw new LenientReject();
-        }
-        if (marker === CBOR_BREAK_BYTE) {
-          break;
-        }
-        const chunk = readHead(bytes, cursor);
-        if (chunk.major !== head.major || chunk.indefinite) {
-          throw new LenientReject();
-        }
-        if (chunk.nonMinimal) {
-          deviations.add("non-minimal-length-head");
-        }
-        const chunkEnd = chunk.end + Number(chunk.arg ?? 0n);
-        if (chunkEnd > bytes.length) {
-          throw new LenientReject();
-        }
-        content.push(...bytes.subarray(chunk.end, chunkEnd));
-        cursor = chunkEnd;
-      }
-      emitHead(out, head.major, BigInt(content.length));
-      out.push(...content);
-      return cursor + 1;
+      return canonStringItem(bytes, head, out, deviations);
     }
     case 4: {
-      const items: number[][] = [];
-      let cursor = head.end;
-      if (head.indefinite) {
-        deviations.add("indefinite-length-array");
-        for (;;) {
-          const marker = bytes[cursor];
-          if (marker === undefined) {
-            throw new LenientReject();
-          }
-          if (marker === CBOR_BREAK_BYTE) {
-            cursor += 1;
-            break;
-          }
-          const item: number[] = [];
-          cursor = canonItem(bytes, cursor, item, deviations);
-          items.push(item);
-        }
-      } else {
-        for (
-          let remaining = head.arg ?? 0n;
-          remaining > 0n;
-          remaining -= 1n
-        ) {
-          const item: number[] = [];
-          cursor = canonItem(bytes, cursor, item, deviations);
-          items.push(item);
-        }
-      }
-      emitHead(out, head.major, BigInt(items.length));
-      for (const item of items) {
-        out.push(...item);
-      }
-      return cursor;
+      return canonArrayItem(head);
     }
     case 5: {
-      const entries: { key: number[]; value: number[] }[] = [];
-      let cursor = head.end;
-      const readEntry = (): void => {
-        const key: number[] = [];
-        cursor = canonItem(bytes, cursor, key, deviations);
-        const value: number[] = [];
-        cursor = canonItem(bytes, cursor, value, deviations);
-        entries.push({ key, value });
-      };
-      if (head.indefinite) {
-        deviations.add("indefinite-length-map");
-        for (;;) {
-          const marker = bytes[cursor];
-          if (marker === undefined) {
-            throw new LenientReject();
-          }
-          if (marker === CBOR_BREAK_BYTE) {
-            cursor += 1;
-            break;
-          }
-          readEntry();
-        }
-      } else {
-        for (
-          let remaining = head.arg ?? 0n;
-          remaining > 0n;
-          remaining -= 1n
-        ) {
-          readEntry();
-        }
-      }
-      for (let index = 1; index < entries.length; index += 1) {
-        const order = compareCanonicalBytes(
-          entries[index - 1]?.key ?? [],
-          entries[index]?.key ?? []
-        );
-        if (order === 0) {
-          deviations.add("duplicate-map-key");
-        } else if (order > 0) {
-          deviations.add("unsorted-map-keys");
-        }
-      }
-      const deduplicated = new Map<
-        string,
-        { key: number[]; value: number[] }
-      >();
-      for (const entry of entries) {
-        deduplicated.set(bytesKey(entry.key), entry);
-      }
-      const sorted = [...deduplicated.values()].sort((left, right) =>
-        compareCanonicalBytes(left.key, right.key)
-      );
-      emitHead(out, head.major, BigInt(sorted.length));
-      for (const entry of sorted) {
-        out.push(...entry.key, ...entry.value);
-      }
-      return cursor;
+      return canonMapItem(head);
     }
     case 6: {
       deviations.add("tagged-value");
       return canonItem(bytes, head.end, out, deviations);
     }
     default: {
-      if (head.indefinite || head.info === 25) {
-        throw new LenientReject();
-      }
-      if (head.info === 26 || head.info === 27) {
-        deviations.add(head.info === 26 ? "float32-value" : "float64-value");
-        const view = new DataView(
-          bytes.buffer,
-          bytes.byteOffset + head.argStart,
-          head.end - head.argStart
-        );
-        const value =
-          head.info === 26 ? view.getFloat32(0) : view.getFloat64(0);
-        if (!Number.isSafeInteger(value)) {
-          throw new LenientReject();
-        }
-        emitHead(out, value < 0 ? 1 : 0, BigInt(value < 0 ? -1 - value : value));
-        return head.end;
-      }
-      out.push(...bytes.subarray(start, head.end));
-      return head.end;
+      return canonSimpleItem(bytes, start, head, out, deviations);
     }
   }
 };
