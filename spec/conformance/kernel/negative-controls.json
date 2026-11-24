@@ -15,6 +15,174 @@
       ]
     },
     {
+      "mutantId": "kernel.accept-duplicate-map-key",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.duplicate-map-key"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a top-level map that repeats a key; the mutant keeps the last entry for the duplicated key and accepts the record",
+        "signal": "mutant.accept-duplicate-map-key.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.duplicate-map-key.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-float64-value",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.float64-value"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a top-level IEEE-754 float64 value; the mutant normalizes an integral float argument to a kernel integer and accepts the record",
+        "signal": "mutant.accept-float64-value.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.float64-value.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-indefinite-length-array",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.indefinite-length-array"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects an indefinite-length top-level array; the mutant rewrites it as a definite-length array and accepts the record",
+        "signal": "mutant.accept-indefinite-length-array.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.indefinite-length-array.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-indefinite-length-map",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.indefinite-length-map"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects an indefinite-length top-level map; the mutant rewrites it as a definite-length map and accepts the record",
+        "signal": "mutant.accept-indefinite-length-map.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.indefinite-length-map.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-indefinite-length-text-string",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.indefinite-length-text-string"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects an indefinite-length top-level text string; the mutant concatenates its chunks into a definite-length text string and accepts the record",
+        "signal": "mutant.accept-indefinite-length-text-string.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.indefinite-length-text-string.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-non-minimal-length-head",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.non-minimal-length-head"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a top-level collection whose argument head carries a length that fits in a shorter encoding; the mutant rewrites the head to its minimal form and accepts the record",
+        "signal": "mutant.accept-non-minimal-length-head.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.non-minimal-length-head.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-tagged-value",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.tagged-value"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a top-level value wrapped in a CBOR tag; the mutant discards the tag and accepts the tagged content",
+        "signal": "mutant.accept-tagged-value.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.tagged-value.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-trailing-bytes",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.trailing-bytes-after-top-level-value"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a canonical top-level value followed by trailing bytes; the mutant decodes the first item and ignores the trailing bytes",
+        "signal": "mutant.accept-trailing-bytes.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.trailing-bytes-after-top-level-value.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-truncated-input",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.truncated-input"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a byte stream that ends before the value its headers declare; the mutant pads the input with CBOR null until a complete value parses and accepts the record",
+        "signal": "mutant.accept-truncated-input.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.truncated-input.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-unsafe-negint",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.negative-int-beyond-safe-integer-range"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a top-level negative integer whose eight-byte argument falls below the JS safe-integer range; the mutant clamps it to the safe bound and accepts the record",
+        "signal": "mutant.accept-unsafe-negint.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.negative-int-beyond-safe-integer-range.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-unsafe-uint",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.uint-beyond-safe-integer-range"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a top-level unsigned integer whose eight-byte argument exceeds the JS safe-integer range; the mutant clamps it to the safe bound and accepts the record",
+        "signal": "mutant.accept-unsafe-uint.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.uint-beyond-safe-integer-range.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-unsorted-map-keys",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.unsorted-map-keys"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a map whose keys are not in bytewise-lexicographic order; the mutant sorts the entries canonically and accepts the record",
+        "signal": "mutant.accept-unsorted-map-keys.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.unsorted-map-keys.1.resultField"
+      ]
+    },
+    {
       "mutantId": "kernel.accept-stale-head-update",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#branch-head-movement",
@@ -78,6 +246,20 @@
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
         "kernel.syscall.reclamation.reachability.8.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.drop-canonical-map-entry",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.codec.decode.control-canonical-map"],
+      "activation": {
+        "precondition": "the deterministic decoder accepts the canonical encoding of the single-entry map {\"a\": 1}; the mutant decodes it into a record that drops the entry",
+        "signal": "mutant.drop-canonical-map-entry.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.codec.decode.control-canonical-map.decode.1.resultField"
       ]
     },
     {

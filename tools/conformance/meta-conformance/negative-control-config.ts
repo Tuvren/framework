@@ -50,10 +50,27 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.delete-object-reachable-through-live-root",
     ],
     unsupportedReasons: {
+      "kernel.accept-duplicate-map-key": "no Rust reproduction yet; not run",
+      "kernel.accept-float64-value": "no Rust reproduction yet; not run",
+      "kernel.accept-indefinite-length-array":
+        "no Rust reproduction yet; not run",
+      "kernel.accept-indefinite-length-map":
+        "no Rust reproduction yet; not run",
+      "kernel.accept-indefinite-length-text-string":
+        "no Rust reproduction yet; not run",
+      "kernel.accept-non-minimal-length-head":
+        "no Rust reproduction yet; not run",
       "kernel.accept-noncanonical-cbor": "no Rust reproduction yet; not run",
       "kernel.accept-stale-head-update": "no Rust reproduction yet; not run",
       "kernel.accept-stale-owner-after-takeover":
         "no Rust reproduction yet; not run",
+      "kernel.accept-tagged-value": "no Rust reproduction yet; not run",
+      "kernel.accept-trailing-bytes": "no Rust reproduction yet; not run",
+      "kernel.accept-truncated-input": "no Rust reproduction yet; not run",
+      "kernel.accept-unsafe-negint": "no Rust reproduction yet; not run",
+      "kernel.accept-unsafe-uint": "no Rust reproduction yet; not run",
+      "kernel.accept-unsorted-map-keys": "no Rust reproduction yet; not run",
+      "kernel.drop-canonical-map-entry": "no Rust reproduction yet; not run",
       "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
       "kernel.lease-takeover-before-expiry":
         "no Rust reproduction yet; not run",
