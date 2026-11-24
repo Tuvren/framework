@@ -70,9 +70,16 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.accept-unsafe-negint": "no Rust reproduction yet; not run",
       "kernel.accept-unsafe-uint": "no Rust reproduction yet; not run",
       "kernel.accept-unsorted-map-keys": "no Rust reproduction yet; not run",
+      "kernel.corrupt-branch-head-list": "no Rust reproduction yet; not run",
+      "kernel.corrupt-node-walk-lineage":
+        "no Rust reproduction yet; not run",
       "kernel.corrupt-schema-roundtrip": "no Rust reproduction yet; not run",
+      "kernel.corrupt-tree-manifest": "no Rust reproduction yet; not run",
+      "kernel.disorder-schema-paths": "no Rust reproduction yet; not run",
       "kernel.drop-canonical-map-entry": "no Rust reproduction yet; not run",
       "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
+      "kernel.ignore-thread-list-cursor":
+        "no Rust reproduction yet; not run",
       "kernel.lease-takeover-before-expiry":
         "no Rust reproduction yet; not run",
       "kernel.misreport-diff-schema-rejection":
@@ -93,6 +100,8 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
         "no Rust reproduction yet; not run",
       "kernel.resolve-object-across-scopes":
         "no Rust reproduction yet; DS owns the scope-resolution mutant",
+      "kernel.reverse-modify-transform-order":
+        "no Rust reproduction yet; not run",
       "kernel.sweep-inside-grace-window": "no Rust reproduction yet; not run",
       "kernel.wrong-schema-record-hash": "no Rust reproduction yet; not run",
       "kernel.wrong-turn-node-record-hash": "no Rust reproduction yet; not run",
