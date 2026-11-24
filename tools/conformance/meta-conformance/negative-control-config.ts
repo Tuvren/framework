@@ -75,21 +75,15 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
       "kernel.lease-takeover-before-expiry":
         "no Rust reproduction yet; not run",
-      "kernel.misreport-busy-branch-rejection":
-        "no Rust reproduction yet; not run",
       "kernel.misreport-diff-schema-rejection":
         "no Rust reproduction yet; not run",
       "kernel.misreport-duplicate-path-rejection":
         "no Rust reproduction yet; not run",
       "kernel.misreport-event-object-rejection":
         "no Rust reproduction yet; not run",
-      "kernel.misreport-lateral-head-rejection":
-        "no Rust reproduction yet; not run",
       "kernel.misreport-required-path-rejection":
         "no Rust reproduction yet; not run",
       "kernel.misreport-step-order-rejection":
-        "no Rust reproduction yet; not run",
-      "kernel.misreport-thread-mismatch-rejection":
         "no Rust reproduction yet; not run",
       "kernel.never-sweep-eligible-objects":
         "no Rust reproduction yet; not run",

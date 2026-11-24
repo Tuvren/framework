@@ -34,6 +34,7 @@ import {
 } from "../../scripts/conformance/certification-schemas.ts";
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
 import type {
+  ConformanceCheckResult,
   ConformanceEvidence,
   ConformanceEvidenceSummary,
   ConformanceRunStatus,
@@ -912,10 +913,26 @@ export const classifyMutantRun = (
         .join(", ")}`
     );
   }
-  // Any non-implementation failure anywhere in the run invalidates it.
+  // An accepting mutant leaves `$.adapterError` unset on the check whose
+  // forbidden call succeeded, so the designated `stateField` operand is
+  // unresolved and the check classifies as `verification`. That failure is the
+  // designated semantic failure ADR-0084 decision 3 requires, not a runner
+  // problem; any other non-implementation failure still invalidates the run.
+  const acceptingVerification = (check: ConformanceCheckResult): boolean =>
+    check.failure?.classification === "verification" &&
+    check.details?.adapterError === undefined &&
+    check.assertionResults.some(
+      (assertion) =>
+        designated.has(assertion.assertionId) &&
+        assertion.assertionId.endsWith(".stateField") &&
+        assertion.status === "fail" &&
+        assertion.message?.startsWith("unresolved") === true
+    );
   const infrastructure = evidence.checkResults.filter(
-    ({ failure, status }) =>
-      status === "fail" && failure?.classification !== "implementation"
+    (check) =>
+      check.status === "fail" &&
+      check.failure?.classification !== "implementation" &&
+      !acceptingVerification(check)
   );
   if (infrastructure.length > 0) {
     return result(

@@ -692,6 +692,63 @@ describe("mutant run classification", () => {
       ).outcome
     ).toBe("invalid");
   });
+
+  const ALPHA_STATE = "synthetic.alpha_check.1.stateField";
+
+  const unresolvedCheck = (assertionId: string): ConformanceCheckResult => ({
+    assertionResults: [
+      {
+        assertionId,
+        message: "unresolved actual operand",
+        status: "fail",
+      },
+    ],
+    checkId: assertionId.replace(/\.\d+\.[A-Za-z]+$/u, ""),
+    failure: { classification: "verification", replay: "replay" },
+    status: "fail",
+  });
+
+  test("an unresolved designated stateField after an accepted forbidden call is a kill", () => {
+    const designated = { ...control, designatedAssertions: [ALPHA_STATE] };
+    expect(
+      classifyMutantRun(designated, activatedRun([unresolvedCheck(ALPHA_STATE)]))
+    ).toMatchObject({
+      designatedFailures: [ALPHA_STATE],
+      outcome: "killed",
+    });
+  });
+
+  test("a verification failure on a non-designated check is still invalid", () => {
+    const designated = { ...control, designatedAssertions: [ALPHA_STATE] };
+    const passingDesignated: ConformanceCheckResult = {
+      assertionResults: [{ assertionId: ALPHA_STATE, status: "pass" }],
+      checkId: "synthetic.alpha_check",
+      status: "pass",
+    };
+    const classified = classifyMutantRun(
+      designated,
+      activatedRun([
+        passingDesignated,
+        unresolvedCheck("synthetic.beta_check.1.stateField"),
+      ])
+    );
+
+    expect(classified.outcome).toBe("invalid");
+    expect(classified.reason).toContain("verification");
+  });
+
+  test("an activated mutant with no designated failure still survives", () => {
+    const designated = { ...control, designatedAssertions: [ALPHA_STATE] };
+    const passingDesignated: ConformanceCheckResult = {
+      assertionResults: [{ assertionId: ALPHA_STATE, status: "pass" }],
+      checkId: "synthetic.alpha_check",
+      status: "pass",
+    };
+
+    expect(
+      classifyMutantRun(designated, activatedRun([passingDesignated])).outcome
+    ).toBe("survived");
+  });
 });
 
 test("control batches overlap independent adapter profiles while preserving each profile queue and report order", async () => {
