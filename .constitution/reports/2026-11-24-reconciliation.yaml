@@ -1,0 +1,24 @@
+date: 2026-11-24
+commit: c4e9cee
+epics: [DR]
+routed:
+  - stage: tasks
+    item: decision OD-28 added closed with the ruling EPIC-DR carried
+    from: DR
+  - stage: tech-spec
+    item: classifyMutantRun now treats an activated mutant as killed when the only non-implementation failure is an unresolved designated stateField and the check has no adapterError. Other non-implementation failures still invalidate the run. Record that rule. The guard reads details.adapterError and does not see stepped details.adapterErrors.
+    from: DR
+  - stage: tech-spec
+    item: "KRT-DL002 removes node:async_hooks from the testkit entry path. kernel-mutants-liveness.ts now imports AsyncLocalStorage the same way kernel-mutants-clock.ts and kernel-mutants-storage.ts do, and the removal list must include it."
+    from: DR
+  - stage: tech-spec
+    item: "code decision (pattern): An activated mutant whose designated stateField is unresolved because adapterError is absent is a kill. Any other non-implementation failure still makes the run invalid. [tools/conformance/meta-conformance/negative-controls.ts] at 27dc26bccac08166541861b62f6209783427bf25"
+    from: DR
+  - stage: tech-spec
+    item: "code decision (pattern): Codec identity mutants corrupt hashKernelRecord, hashTurnNodeIdentity, and hashTurnTreeIdentity through wrapCodec. encodeDeterministicKernelRecord stays the real import. [typescript/kernel/testkit/src/lib/kernel-mutants-codec.ts, typescript/kernel/conformance-adapter/src/host-syscalls.ts] at f2875505f8402886f6d67622b9363152eecd398d"
+    from: DR
+  - stage: tech-spec
+    item: "code decision (pattern): A duplicate-path mutant keeps the last definition of each path and then calls the real schema.register, because the memory backend rethrows duplicate_schema_path for the original bytes. [typescript/kernel/testkit/src/lib/kernel-mutants-edge.ts] at 27dc26bccac08166541861b62f6209783427bf25"
+    from: DR
+proposed_decisions: []
+candidate_terms: []

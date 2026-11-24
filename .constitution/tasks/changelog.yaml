@@ -1,4 +1,19 @@
 entries:
+  - version: v0.52.7
+    date: 2026-11-24
+    changed:
+      - "EPIC-DR closed the kernel.memory gaps that have an observable designated detector. TypeScript memory, SQLite, and PostgreSQL each kill all 49 kernel.memory controls. The register keeps three claims, busy-branch, lateral head, and cross-thread anchor, under closed ruling OD-28, because the memory backend still rejects those operations after the kernel guard is skipped. Certificates list those three claims."
+      - "EPIC-DR Close kernel.memory control gaps by rule archived: 6 tickets, 25 points, 5451 diff lines, 0 review rounds"
+    added:
+      - "Follow-up from EPIC-DR: OD-28 stays closed. Busy-branch, lateral head, and cross-thread anchor remain in kernel-memory-undetected.json until an unguarded backend write can accept those operations. A different error code is not a detection."
+      - "Follow-up from EPIC-DR: KRT-DN003's publish preflight must see OD-28 as closed after reconcile. The register reasons already name that id."
+      - "Follow-up from EPIC-DR: The two kernel.memory fleet tests in bundle-contract.test.ts and durable-bundle-contract.test.ts now allow 60 minutes. On this host they finished in about 19 and 24 minutes."
+    by: reconcile
+    fast_lane_through: c4e9cee382e3c2e4927e6bc2f79c1e9389465b8d
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.50.2
   - version: v0.52.6
     date: 2026-11-20
     changed:
