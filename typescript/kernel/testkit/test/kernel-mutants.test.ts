@@ -345,9 +345,9 @@ describe("kernel mutant registry", () => {
 
   const CANONICAL_CONTROL = Uint8Array.of(161, 97, 97, 1);
 
-  const DECODE_ACCEPT_CASES: readonly {
+  const DECODE_ACCEPT_CASES: {
     readonly bytes: number[];
-    readonly expected: unknown;
+    readonly expected: ReturnType<typeof decodeDeterministicKernelRecord>;
     readonly mutantId: string;
   }[] = [
     {

@@ -131,7 +131,7 @@ tickets:
       evidence: "The memory register is empty, or each remaining entry's reason names a closed OD. Every certificate lists the actual remaining claims and reasons."
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-DR006
     title: "Detect every migrated kernel.codec claim"
     type: Feature

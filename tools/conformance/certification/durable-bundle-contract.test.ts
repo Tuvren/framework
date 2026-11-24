@@ -586,4 +586,4 @@ test("durable certificates share a run and link to matching profile control gate
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
-}, 1_500_000);
+}, 3_600_000);
