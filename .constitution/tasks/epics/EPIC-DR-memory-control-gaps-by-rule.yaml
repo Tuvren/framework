@@ -155,3 +155,36 @@ tickets:
     flows: ["flow-multi-implementation-conformance-compatibility"]
     certainty: assumed
     status: done
+decisions:
+  - id: OD-28
+    question: "Can busy-branch, lateral-head, and cross-thread kernel.memory claims be detected by a mutant that accepts the forbidden operation?"
+    blocks:
+      - KRT-DR002
+      - kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch
+      - kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage
+      - kernel.syscall.lineage.cross_thread_rejection
+    options:
+      - name: "Keep the three claims in the register"
+        pros:
+          - "Does not call a different error code a detection of the forbidden acceptance."
+          - "The memory backend invariant still rejects the operation, and there is no unguarded write."
+        cons:
+          - "KRT-DR002 does not remove every edge and lineage claim."
+      - name: "Count the backend's different error code as a kill"
+        pros:
+          - "The designated stateField fails, and the negative-control gate reports killed."
+        cons:
+          - "The forbidden operation still does not succeed. ADR-0084 decision 3 is not met."
+    recommendation: "Keep the three claims in the register"
+    closure: ruling
+    ruler: "Owner, delegated to the EPIC-DR wave lead on 2026-11-24"
+    status: closed
+    asked:
+      date: 2026-11-24
+      in: EPIC-DR
+    proposed_by: EPIC-DR @ 27dc26bccac0
+    ruling:
+      ref: 27dc26bccac08166541861b62f6209783427bf25
+      date: 2026-11-24
+      summary: "Busy-branch, lateral head, and cross-thread anchor stay in kernel-memory-undetected.json. Skipping the kernel guard still loses to the memory backend invariant. A different error code is not acceptance."
+      chosen: "Keep the three claims in the register"
